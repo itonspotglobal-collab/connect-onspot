@@ -16,6 +16,7 @@ import {
   JOB_FORM_FUNCTION_OPTIONS,
 } from "@/lib/jobConstants";
 import type { JobFormData } from "@/lib/jobFormUtils";
+import { OTHER_JOB_FUNCTION } from "@shared/jobFunction";
 
 interface Props {
   formData: JobFormData;
@@ -114,7 +115,10 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
           </Label>
           <Select
             value={formData.jobFunction}
-            onValueChange={(v) => updateField("jobFunction", v)}
+            onValueChange={(v) => {
+              updateField("jobFunction", v);
+              if (v !== OTHER_JOB_FUNCTION) updateField("otherFunction", "");
+            }}
           >
             <SelectTrigger id="basics-function" className="mt-1.5">
               <SelectValue placeholder="Select a function…" />
@@ -134,6 +138,24 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
           </Select>
           {errors.jobFunction && (
             <p className="mt-1 text-xs text-red-500">{errors.jobFunction}</p>
+          )}
+          {formData.jobFunction === OTHER_JOB_FUNCTION && (
+            <div className="mt-4">
+              <Label htmlFor="basics-other-function">
+                Other Function <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="basics-other-function"
+                className="mt-1.5"
+                value={formData.otherFunction}
+                onChange={(event) => updateField("otherFunction", event.target.value)}
+                placeholder="Enter function..."
+                aria-invalid={Boolean(errors.otherFunction)}
+              />
+              {errors.otherFunction && (
+                <p className="mt-1 text-xs text-red-500">{errors.otherFunction}</p>
+              )}
+            </div>
           )}
         </div>
 

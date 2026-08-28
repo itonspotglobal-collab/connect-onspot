@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import type { Job } from "@shared/schema";
+import { getJobFunctionDisplay } from "@shared/jobFunction";
 import {
   buildRateDisplay,
   buildRateDisplayWithCode,
@@ -520,11 +521,7 @@ function SectionBody({
  *  Priority: 1. Same Function  2. Same Contract Type  3. Same Work Setup  4. Tag overlap
  *  Falls back to filling remaining slots with any other open job (already filtered open). */
 function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
-  const currentFunction = (
-    (currentJob as any).jobFunction ??
-    currentJob.category ??
-    ""
-  )
+  const currentFunction = getJobFunctionDisplay(currentJob)
     .toLowerCase()
     .trim();
   const currentContract = (currentJob.engagementType ?? "").toLowerCase().trim();
@@ -538,7 +535,7 @@ function getSimilarDbJobs(currentJob: Job, allJobs: Job[], limit = 3): Job[] {
     .map((j) => {
       let score = 0;
       // Priority 1 — same job function
-      const jFunction = ((j as any).jobFunction ?? j.category ?? "")
+      const jFunction = getJobFunctionDisplay(j)
         .toLowerCase()
         .trim();
       if (currentFunction && jFunction === currentFunction) score += 3;
@@ -796,7 +793,7 @@ function DbJobDetail({
               {
                 icon: BriefcaseBusiness,
                 label: "Function",
-                value: (job as any).jobFunction || job.category,
+                value: getJobFunctionDisplay(job),
               },
               {
                 icon: Layers,
@@ -1685,7 +1682,7 @@ function DbSimilarCard({
 }) {
   const pay = buildRateDisplay({ ...job, engagementType: job.engagementType ?? undefined });
   const displayTitle = (job as any).professionalRoleName || job.title;
-  const functionBadge = (job as any).jobFunction || job.category;
+  const functionBadge = getJobFunctionDisplay(job);
   const companyName = getPublicCompanyName(job as any);
   return (
     <button

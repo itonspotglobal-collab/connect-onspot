@@ -103,6 +103,7 @@ let server: http.Server;
 let otherClientJobId: string;
 let createdClientJobId: string;
 let createdDraftJobId: string;
+let createdAdminOtherJobId: string;
 
 async function createFixtures() {
   await query(
@@ -193,6 +194,7 @@ async function destroyFixtures() {
   ).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [createdClientJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [createdDraftJobId]).catch(() => {});
+  await query(`DELETE FROM jobs WHERE id = $1`, [createdAdminOtherJobId]).catch(() => {});
   await query(`DELETE FROM jobs WHERE id = $1`, [otherClientJobId]).catch(() => {});
   await query(`DELETE FROM client_talent_favorites WHERE client_id = $1 OR talent_id = $1`, [CLIENT_ID]).catch(() => {});
   await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]).catch(() => {});
@@ -250,6 +252,41 @@ describe("client profile and job authorization (production routes)", () => {
       const created = await query(`SELECT id FROM jobs WHERE title = $1`, [title]);
       assert.equal(created.rows.length, 0, "an invalid owner must not create a job");
     }
+  });
+
+  it("lets an admin persist a trimmed custom function on behalf of a client", async () => {
+    const missingCustom = await request(
+      server,
+      "POST",
+      "/api/admin/jobs",
+      adminToken,
+      {
+        ...jobPayload(CLIENT_ID, "Missing custom function"),
+        status: "open",
+        category: "Other",
+        jobFunction: "Other",
+        otherFunction: "   ",
+      },
+    );
+    assert.equal(missingCustom.status, 400, JSON.stringify(missingCustom.json));
+
+    const created = await request(
+      server,
+      "POST",
+      "/api/admin/jobs",
+      adminToken,
+      {
+        ...jobPayload(CLIENT_ID, "Admin custom function"),
+        status: "open",
+        category: "Other",
+        jobFunction: "Other",
+        otherFunction: "  Customer Education  ",
+      },
+    );
+    assert.equal(created.status, 201, JSON.stringify(created.json));
+    createdAdminOtherJobId = created.json.id;
+    assert.equal(created.json.jobFunction, "Other");
+    assert.equal(created.json.otherFunction, "Customer Education");
   });
 
   it("returns 403 to talent and admin sessions on client profile and job self-service routes", async () => {
@@ -526,6 +563,8 @@ describe("client profile and job authorization (production routes)", () => {
       status: "draft",
       draftStep: 2,
       professionalRoleName: "Draft UX Researcher",
+      jobFunction: "Other",
+      otherFunction: "   ",
       title: "",
       description: "Partial description",
       category: "",
@@ -537,8 +576,19 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(created.json.clientId, CLIENT_ID, "the authenticated client must own the draft");
     assert.equal(created.json.status, "draft");
     assert.equal(created.json.draftStep, 2);
+    assert.equal(created.json.jobFunction, "Other");
     const draftId = created.json.id;
     createdDraftJobId = draftId;
+
+    const statusOnlySubmission = await request(
+      server,
+      "PATCH",
+      `/api/client/jobs/${draftId}`,
+      clientToken,
+      { status: "open" },
+    );
+    assert.equal(statusOnlySubmission.status, 400, JSON.stringify(statusOnlySubmission.json));
+    assert.equal(statusOnlySubmission.json.error, "Other Function required");
 
     const updated = await request(server, "PATCH", `/api/client/jobs/${draftId}`, clientToken, {
       clientId: OTHER_CLIENT_ID,
@@ -548,6 +598,8 @@ describe("client profile and job authorization (production routes)", () => {
       title: "Draft UX Researcher",
       description: "Expanded partial description",
       category: "Design",
+      jobFunction: "Other",
+      otherFunction: "  Customer Education  ",
       experienceLevel: "intermediate",
       location: "Hybrid",
       skillTags: ["Research", "Interviews", "Figma"],
@@ -556,12 +608,15 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(updated.json.id, draftId);
     assert.equal(updated.json.clientId, CLIENT_ID);
     assert.equal(updated.json.draftStep, 3);
+    assert.equal(updated.json.otherFunction, "Customer Education");
 
     const resumed = await request(server, "GET", `/api/client/jobs/${draftId}`, clientToken);
     assert.equal(resumed.status, 200, JSON.stringify(resumed.json));
     assert.equal(resumed.json.description, "Expanded partial description");
     assert.deepEqual(resumed.json.skillTags, ["Research", "Interviews", "Figma"]);
     assert.equal(resumed.json.draftStep, 3);
+    assert.equal(resumed.json.jobFunction, "Other");
+    assert.equal(resumed.json.otherFunction, "Customer Education");
 
     const duplicateCheck = await query(
       `SELECT COUNT(*)::int AS count FROM jobs WHERE id = $1 AND client_id = $2`,
@@ -584,14 +639,28 @@ describe("client profile and job authorization (production routes)", () => {
     const publicItems = publicSearch.json.items ?? publicSearch.json.jobs ?? publicSearch.json;
     assert.ok(!publicItems.some((job: any) => job.id === draftId));
 
+    const blankSubmission = await request(server, "PATCH", `/api/client/jobs/${draftId}`, clientToken, {
+      status: "open",
+      title: "UX Researcher",
+      professionalRoleName: "UX Researcher",
+      description: "Complete job description",
+      category: "Other",
+      jobFunction: "Other",
+      otherFunction: "   ",
+      experienceLevel: "intermediate",
+      engagementType: "Standard",
+    });
+    assert.equal(blankSubmission.status, 400, JSON.stringify(blankSubmission.json));
+
     const submitted = await request(server, "PATCH", `/api/client/jobs/${draftId}`, clientToken, {
       status: "open",
       draftStep: null,
       title: "UX Researcher",
       professionalRoleName: "UX Researcher",
       description: "Complete job description",
-      category: "Design",
-      jobFunction: "Design",
+      category: "Other",
+      jobFunction: "Other",
+      otherFunction: "  Customer Education  ",
       experienceLevel: "intermediate",
       engagementType: "Standard",
       location: "Hybrid",
@@ -602,6 +671,19 @@ describe("client profile and job authorization (production routes)", () => {
     assert.equal(submitted.json.status, "open");
     assert.equal(submitted.json.approvalStatus, "pending");
     assert.equal(submitted.json.draftStep, null);
+    assert.equal(submitted.json.otherFunction, "Customer Education");
+
+    await query(`UPDATE jobs SET approval_status = 'approved' WHERE id = $1`, [draftId]);
+    const customSearch = await request(
+      server,
+      "GET",
+      "/api/jobs/search?q=customer%20education",
+    );
+    assert.equal(customSearch.status, 200, JSON.stringify(customSearch.json));
+    const customSearchItems =
+      customSearch.json.items ?? customSearch.json.jobs ?? customSearch.json;
+    assert.ok(customSearchItems.some((job: any) => job.id === draftId));
+    await query(`UPDATE jobs SET approval_status = 'pending' WHERE id = $1`, [draftId]);
   });
 
   it("reports a pending job instead of treating it as no jobs, including first-invite Terms status", async () => {

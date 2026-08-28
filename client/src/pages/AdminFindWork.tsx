@@ -60,6 +60,7 @@ import {
   ListFilter,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
+import { getJobFunctionDisplay } from "@shared/jobFunction";
 import { getJobBadges, getTimeAgo, buildRateDisplay, buildRateDisplayWithCode } from "@/lib/jobUtils";
 import { JobRichText } from "@/components/JobRichText";
 import { ClientEmailComposer, type ClientEmailPayload } from "@/components/ClientEmailComposer";
@@ -301,7 +302,7 @@ function AdminJobRow({
           )}
 
           <div className="flex flex-wrap items-center gap-3 text-[13px] text-slate-500 dark:text-slate-400">
-            <span className="capitalize">{((job as any).jobFunction || job.category)?.replace(/-/g, " ")}</span>
+            <span className="capitalize">{getJobFunctionDisplay(job).replace(/-/g, " ")}</span>
             <span className="text-slate-300 dark:text-white/20">·</span>
             <span>{job.location || "Remote"}</span>
             {pay && (
@@ -548,7 +549,7 @@ function PendingApprovalCard({
                   <span className="text-slate-300 dark:text-white/20">·</span>
                 </>
               )}
-              <span className="capitalize">{job.category?.replace(/-/g, " ")}</span>
+              <span className="capitalize">{getJobFunctionDisplay(job).replace(/-/g, " ")}</span>
               <span className="text-slate-300 dark:text-white/20">·</span>
               <span>{job.engagementType}</span>
               {job.location && (
@@ -613,7 +614,7 @@ function PendingApprovalCard({
               {duplicates.slice(0, 3).map((dup) => (
                 <li key={dup.id} className="flex items-center justify-between gap-2 text-xs text-orange-700 dark:text-orange-300">
                   <span className="font-medium">{dup.title}</span>
-                  <span className="text-orange-500 dark:text-orange-500 capitalize">{dup.category?.replace(/-/g, " ")}</span>
+                  <span className="text-orange-500 dark:text-orange-500 capitalize">{getJobFunctionDisplay(dup).replace(/-/g, " ")}</span>
                 </li>
               ))}
             </ul>
@@ -1610,7 +1611,7 @@ export default function AdminFindWork() {
                       }`}
                     >
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">{j.title}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{j.category?.replace(/-/g, " ")} · {j.location || "Remote"}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{getJobFunctionDisplay(j).replace(/-/g, " ")} · {j.location || "Remote"}</p>
                     </button>
                   ))
                 }
@@ -1669,7 +1670,7 @@ export default function AdminFindWork() {
                   )}
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Category</p>
-                    <p className="font-medium text-slate-800 dark:text-white capitalize">{dj.category?.replace(/-/g, " ")}</p>
+                    <p className="font-medium text-slate-800 dark:text-white capitalize">{getJobFunctionDisplay(dj).replace(/-/g, " ")}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Engagement Type</p>
@@ -1710,7 +1711,7 @@ export default function AdminFindWork() {
                         <li key={dup.id} className="text-xs text-orange-700 dark:text-orange-300">
                           <span className="font-medium">{dup.title}</span>
                           <span className="text-orange-500"> · </span>
-                          <span className="capitalize">{dup.category?.replace(/-/g, " ")}</span>
+                          <span className="capitalize">{getJobFunctionDisplay(dup).replace(/-/g, " ")}</span>
                         </li>
                       ))}
                     </ul>

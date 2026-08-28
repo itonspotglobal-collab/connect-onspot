@@ -33,6 +33,10 @@ import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Job } from "@shared/schema";
+import {
+  getJobFunctionDisplay,
+  getJobFunctionSearchValues,
+} from "@shared/jobFunction";
 import { buildRateDisplay, buildRateDisplayWithCode, getJobBadges, getTimeAgo, getPublicCompanyName } from "@/lib/jobUtils";
 import {
   saveUserActivity,
@@ -805,7 +809,7 @@ function DbJobCard({
                 <BriefcaseBusiness className="h-3 w-3" /> Category
               </div>
               <div className="mt-0.5 text-sm font-semibold capitalize text-slate-900 dark:text-white">
-                {job.category}
+                {getJobFunctionDisplay(job)}
               </div>
             </div>
             <div className="rounded-xl bg-slate-50 p-2.5 dark:bg-white/[0.04]">
@@ -974,11 +978,13 @@ export default function OnSpotFindWorkRedesign() {
         !q ||
         job.title.toLowerCase().includes(q) ||
         (job.description ?? "").toLowerCase().includes(q) ||
-        (job.category ?? "").toLowerCase().includes(q) ||
+        getJobFunctionSearchValues(job).some((value) => value.toLowerCase().includes(q)) ||
         (job.location ?? "").toLowerCase().includes(q);
       const kindPass =
         kind === "All work" ||
-        (job.category ?? "").toLowerCase() === kind.toLowerCase();
+        getJobFunctionSearchValues(job).some(
+          (value) => value.toLowerCase() === kind.toLowerCase(),
+        );
       const earningPass = (() => {
         if (earning === "Any pay") return true;
         const max = parseFloat(job.budget ?? "0");
@@ -1325,7 +1331,7 @@ export default function OnSpotFindWorkRedesign() {
                       activityType: "JobClick",
                       referenceId: id,
                       title: job.title,
-                      category: job.category ?? undefined,
+                      category: getJobFunctionDisplay(job) || undefined,
                       tags: job.skillTags ?? undefined,
                       page: "FindWork-Recommended",
                     });
@@ -1358,7 +1364,7 @@ export default function OnSpotFindWorkRedesign() {
                     activityType: "JobClick",
                     referenceId: id,
                     title: job.title,
-                    category: job.category ?? undefined,
+                    category: getJobFunctionDisplay(job) || undefined,
                     tags: job.skillTags ?? undefined,
                     page: "FindWork",
                   });

@@ -43,6 +43,10 @@ import {
 import { randomUUID } from "crypto";
 import { db, pool, query as dbQuery } from "./db";
 import { eq, ne, and, or, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
+import {
+  getJobFunctionDisplay,
+  getJobFunctionSearchValues,
+} from "../shared/jobFunction";
 
 // Type for creating user with password
 export interface CreateUserData {
@@ -1063,11 +1067,12 @@ export class MemStorage implements IStorage {
     }
 
     // Category/industry: +10
-    if (talentCandidate?.category && job.category &&
-        talentCandidate.category.toLowerCase() === job.category.toLowerCase()) {
+    const effectiveJobFunction = getJobFunctionDisplay(job);
+    if (talentCandidate?.category && effectiveJobFunction &&
+        talentCandidate.category.toLowerCase() === effectiveJobFunction.toLowerCase()) {
       totalScore += 10;
       reasons.categoryMatch = true;
-      reasons.factors.push(`Industry: ${job.category}`);
+      reasons.factors.push(`Industry: ${effectiveJobFunction}`);
     }
 
     // Experience level: +10 if within ±1 tier
@@ -1332,7 +1337,9 @@ export class MemStorage implements IStorage {
         j.id, j.title, j.company, j.location, j.description,
         j.budget, j.budget_currency    AS "budgetCurrency",
         j.engagement_type              AS "engagementType",
-        j.category, j.experience_level AS "experienceLevel",
+        j.category, j.job_function AS "jobFunction",
+        j.other_function AS "otherFunction",
+        j.experience_level AS "experienceLevel",
         j.status, j.created_at         AS "createdAt",
         j.time_zone                    AS "timeZone",
         j.skill_tags                   AS "skillTags"
@@ -1351,6 +1358,7 @@ export class MemStorage implements IStorage {
         location: row.location ?? null, description: row.description ?? null,
         budget: row.budget ?? null, budgetCurrency: row.budgetCurrency ?? null,
         engagementType: row.engagementType ?? null, category: row.category ?? null,
+        jobFunction: row.jobFunction ?? null, otherFunction: row.otherFunction ?? null,
         experienceLevel: row.experienceLevel ?? null, status: row.status,
         createdAt: row.createdAt, timeZone: row.timeZone ?? null,
         skills: Array.isArray(row.skillTags) ? row.skillTags : [],
@@ -3151,8 +3159,8 @@ export class DbStorage extends MemStorage {
     if (filters.categories && filters.categories.length > 0) {
       const normCats = filters.categories.map(normStr);
       jobs = jobs.filter(j => {
-        const jobCat = normStr((j as any).jobFunction || j.category || "");
-        return normCats.some(c => jobCat === c);
+        const jobFunctions = getJobFunctionSearchValues(j).map(normStr);
+        return normCats.some(c => jobFunctions.includes(c));
       });
     } else if (filters.category) {
       // Single-category filter: try exact normalised match first (frontend sends real DB values),
@@ -3166,8 +3174,8 @@ export class DbStorage extends MemStorage {
         writing: ["writing", "translation", "content", "copywriting", "editor"],
       };
       jobs = jobs.filter(j => {
-        const jobCat = normStr((j as any).jobFunction || j.category || "");
-        if (jobCat === cat) return true;
+        const jobFunctions = getJobFunctionSearchValues(j).map(normStr);
+        if (jobFunctions.includes(cat)) return true;
         // Keyword expansion for slug-style callers
         const keywords = categoryKeywords[cat];
         if (keywords) return keywords.some(kw => j.title.toLowerCase().includes(kw));
@@ -3206,7 +3214,7 @@ export class DbStorage extends MemStorage {
         j.title.toLowerCase().includes(q) ||
         j.description.toLowerCase().includes(q) ||
         j.category.toLowerCase().includes(q) ||
-        ((j as any).jobFunction ?? "").toLowerCase().includes(q) ||
+        getJobFunctionSearchValues(j).some(value => value.toLowerCase().includes(q)) ||
         ((j as any).professionalRoleName ?? "").toLowerCase().includes(q) ||
         (j.location ?? "").toLowerCase().includes(q) ||
         ((j as any).skillTags ?? []).some((t: string) => t.toLowerCase().includes(q)) ||
@@ -3373,6 +3381,7 @@ export class DbStorage extends MemStorage {
     // letters would be stripped if lower() runs after the regex.  This must mirror the
     // JS normStr helper which also lowercases first.
     const normDbJobFunction = sqlOp`trim(regexp_replace(replace(lower(COALESCE(${jobsTable.jobFunction}, '')), '&', 'and'), '[^a-z0-9]+', ' ', 'g'))`;
+    const normDbOtherFunction = sqlOp`trim(regexp_replace(replace(lower(COALESCE(${jobsTable.otherFunction}, '')), '&', 'and'), '[^a-z0-9]+', ' ', 'g'))`;
     const normDbCategory    = sqlOp`trim(regexp_replace(replace(lower(COALESCE(${jobsTable.category},    '')), '&', 'and'), '[^a-z0-9]+', ' ', 'g'))`;
 
     // ── Build WHERE conditions ─────────────────────────────────────────────────
@@ -3402,12 +3411,13 @@ export class DbStorage extends MemStorage {
       // Build: (normDbJobFunction = c OR normDbCategory = c) for each c, all OR'd together
       const catOrs = normCats.flatMap(c => [
         sqlOp`${normDbJobFunction} = ${c}`,
+        sqlOp`${normDbOtherFunction} = ${c}`,
         sqlOp`${normDbCategory} = ${c}`,
       ]);
       conditions.push(sqlOp`(${sqlOp.join(catOrs, sqlOp` OR `)})`);
     } else if (filters.category) {
       const cat = normStr(filters.category);
-      conditions.push(sqlOp`(${normDbJobFunction} = ${cat} OR ${normDbCategory} = ${cat})`);
+      conditions.push(sqlOp`(${normDbJobFunction} = ${cat} OR ${normDbOtherFunction} = ${cat} OR ${normDbCategory} = ${cat})`);
     }
 
     // Engagement type — normalized comparison: strips hyphens/spaces/underscores so
@@ -3469,6 +3479,7 @@ export class DbStorage extends MemStorage {
         OR lower(${jobsTable.description}) LIKE ${qLike}
         OR lower(${jobsTable.category}) LIKE ${qLike}
         OR lower(COALESCE(${jobsTable.jobFunction}, '')) LIKE ${qLike}
+        OR lower(COALESCE(${jobsTable.otherFunction}, '')) LIKE ${qLike}
         OR lower(COALESCE(${jobsTable.professionalRoleName}, '')) LIKE ${qLike}
         OR lower(COALESCE(${jobsTable.location}, '')) LIKE ${qLike}
         OR (${jobsTable.isCompanyConfidential} = false

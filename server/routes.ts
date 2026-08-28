@@ -191,6 +191,29 @@ export function validateJobFormMetadata(
   value: Record<string, unknown>,
 ): { error: string; message: string } | null {
   if (
+    value.otherFunction !== undefined &&
+    value.otherFunction !== null &&
+    typeof value.otherFunction !== "string"
+  ) {
+    return {
+      error: "Invalid other function",
+      message: "otherFunction must be text.",
+    };
+  }
+
+  if (
+    typeof value.jobFunction === "string" &&
+    value.jobFunction.trim() === "Other" &&
+    value.status !== "draft" &&
+    (typeof value.otherFunction !== "string" || !value.otherFunction.trim())
+  ) {
+    return {
+      error: "Other Function required",
+      message: "Please specify the function.",
+    };
+  }
+
+  if (
     value.compensationDisplayType !== undefined &&
     !JOB_COMPENSATION_DISPLAY_TYPES.includes(value.compensationDisplayType as never)
   ) {
@@ -216,6 +239,24 @@ export function validateJobFormMetadata(
   }
 
   return null;
+}
+
+function validateEffectiveJobFormMetadata(
+  updates: Record<string, unknown>,
+  existing?: Record<string, any> | null,
+): { error: string; message: string } | null {
+  return validateJobFormMetadata({
+    ...updates,
+    status: updates.status ?? existing?.status,
+    jobFunction:
+      Object.prototype.hasOwnProperty.call(updates, "jobFunction")
+        ? updates.jobFunction
+        : existing?.jobFunction ?? existing?.job_function,
+    otherFunction:
+      Object.prototype.hasOwnProperty.call(updates, "otherFunction")
+        ? updates.otherFunction
+        : existing?.otherFunction ?? existing?.other_function,
+  });
 }
 
 function hasMeaningfulDraftData(value: Record<string, unknown>): boolean {
@@ -248,6 +289,12 @@ function normalizeDraftJobBody(
   }
   if (!normalized.jobFunction && existing?.job_function) {
     normalized.jobFunction = existing.job_function;
+  }
+  if (
+    !Object.prototype.hasOwnProperty.call(normalized, "otherFunction") &&
+    (existing?.otherFunction || existing?.other_function)
+  ) {
+    normalized.otherFunction = existing.otherFunction || existing.other_function;
   }
   normalized.status = "draft";
   normalized.approvalStatus = "pending";
@@ -7970,6 +8017,12 @@ export async function registerRoutes(
           });
         }
 
+        const metadataError = validateJobFormMetadata({
+          ...req.body,
+          status: effectiveStatus,
+        });
+        if (metadataError) return res.status(400).json(metadataError);
+
         const validated = insertJobSchema.parse(req.body);
         const job = await storage.createJob(validated);
         res.status(201).json(job);
@@ -7986,6 +8039,11 @@ export async function registerRoutes(
 
   app.patch("/api/jobs/:id", async (req, res) => {
     try {
+      const existingJob = await storage.getJob(req.params.id);
+      const effectiveStatus = req.body.status ?? existingJob?.status;
+      const metadataError = validateEffectiveJobFormMetadata(req.body, existingJob as any);
+      if (metadataError) return res.status(400).json(metadataError);
+
       const updates = insertJobSchema.partial().parse(req.body);
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
@@ -7993,8 +8051,6 @@ export async function registerRoutes(
       if (etErrPatch) return res.status(400).json(etErrPatch);
 
       // Guard 2: published jobs must have an engagement type set.
-      const existingJob = await storage.getJob(req.params.id);
-      const effectiveStatus = updates.status ?? existingJob?.status;
       const effectiveEngagementType =
         "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
       if (
@@ -10300,7 +10356,10 @@ export async function registerRoutes(
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const adminPatchEtErr = validateEngagementType(updates.engagementType);
       if (adminPatchEtErr) return res.status(400).json(adminPatchEtErr);
-      const adminPatchMetadataErr = validateJobFormMetadata(updates);
+      const adminPatchMetadataErr = validateEffectiveJobFormMetadata(
+        updates,
+        existingJob as any,
+      );
       if (adminPatchMetadataErr) return res.status(400).json(adminPatchMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.
@@ -15413,7 +15472,10 @@ export async function registerRoutes(
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientPatchEtErr = validateEngagementType(updates.engagementType);
       if (clientPatchEtErr) return res.status(400).json(clientPatchEtErr);
-      const clientPatchMetadataErr = validateJobFormMetadata(updates);
+      const clientPatchMetadataErr = validateEffectiveJobFormMetadata(
+        updates,
+        existingJob as any,
+      );
       if (clientPatchMetadataErr) return res.status(400).json(clientPatchMetadataErr);
 
       // Guard 2: published jobs must have an engagement type set.

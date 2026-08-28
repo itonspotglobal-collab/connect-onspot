@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { buildRateDisplay, getTimeAgo } from "@/lib/jobUtils";
+import { getJobFunctionDisplay } from "@shared/jobFunction";
 import {
   Building2,
   User,
@@ -514,7 +515,7 @@ function ClientJobPreviewDialog({ job, onClose }: { job: Job | null; onClose: ()
 
   const fields: { label: string; value: string | null | undefined }[] = [
     { label: "Engagement Type", value: (job as any).engagementType },
-    { label: "Category",        value: (job as any).category },
+    { label: "Function",        value: getJobFunctionDisplay(job) },
     { label: "Rate / Salary",   value: pay || null },
     { label: "Location",        value: (job as any).location },
     { label: "Posted",          value: job.createdAt ? getTimeAgo(job.createdAt) : null },
@@ -669,7 +670,7 @@ function ClientJobRow({
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-500 dark:text-slate-400">
-            <span className="capitalize">{job.category?.replace(/-/g, " ")}</span>
+            <span className="capitalize">{getJobFunctionDisplay(job).replace(/-/g, " ")}</span>
             <span className="text-slate-300 dark:text-white/20">·</span>
             <span>{job.location || "Remote"}</span>
             {pay && (

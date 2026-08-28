@@ -57,6 +57,7 @@ export const defaultFormData = {
   professionalRoleName: "",
   originalRoleName: "",
   jobFunction: "",
+  otherFunction: "",
   category: "",
   engagementType: "",
   experienceLevel: "entry",
@@ -151,6 +152,7 @@ export function jobToFormData(job: Job): JobFormData {
       (job as any).jobFunction ||
       ((job.status === "draft" && job.category === "Uncategorized") ? "" : job.category) ||
       "",
+    otherFunction: (job as any).otherFunction || "",
     category: job.category || "",
     engagementType: (job as any).engagementType || "",
     experienceLevel: job.experienceLevel || "entry",

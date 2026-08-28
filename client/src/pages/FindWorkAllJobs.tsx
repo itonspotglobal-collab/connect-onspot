@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Job, Candidate } from "@shared/schema";
+import { getJobFunctionDisplay } from "@shared/jobFunction";
 import {
   buildRateDisplay,
   buildRateDisplayWithCode,
@@ -1190,7 +1191,7 @@ export default function FindWorkAllJobs() {
               activityType: "JobClick",
               referenceId: id,
               title: job.title,
-              category: job.category ?? undefined,
+              category: getJobFunctionDisplay(job) || undefined,
               tags: job.skillTags ?? undefined,
               page: "FindWorkAllJobs",
             });

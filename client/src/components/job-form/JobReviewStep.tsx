@@ -4,6 +4,7 @@ import type { JobFormData } from "@/lib/jobFormUtils";
 import { getCurrencySymbol } from "@/lib/jobUtils";
 import { getEngagementTypeLabel, getExperienceLevelLabel } from "@/lib/jobConstants";
 import { JobRichText } from "@/components/JobRichText";
+import { getJobFunctionDisplay } from "@shared/jobFunction";
 
 interface Props {
   formData: JobFormData;
@@ -70,6 +71,7 @@ export function JobReviewStep({
     "—";
 
   const currSymbol = getCurrencySymbol(formData.currency, formData.customCurrencyCode);
+  const functionLabel = getJobFunctionDisplay(formData);
 
   // Basics summary
   const basicsSummary = [formData.location, expLabel, contractLabel, formData.duration]
@@ -137,7 +139,7 @@ export function JobReviewStep({
             )}
           </h3>
           <div className="flex flex-wrap gap-2 mb-3">
-            {formData.jobFunction && <MetaChip label={formData.jobFunction} />}
+            {functionLabel && <MetaChip label={functionLabel} />}
             {expLabel && <MetaChip label={expLabel} />}
             {contractLabel && <MetaChip label={contractLabel} />}
             {formData.duration && <MetaChip label={formData.duration} />}
@@ -163,6 +165,9 @@ export function JobReviewStep({
               <span className="text-muted-foreground italic">No title yet</span>
             )}
           </p>
+          {functionLabel && (
+            <p className="text-muted-foreground text-xs">Function: {functionLabel}</p>
+          )}
           <p className="text-muted-foreground text-xs">{basicsSummary}</p>
         </ReviewCard>
 

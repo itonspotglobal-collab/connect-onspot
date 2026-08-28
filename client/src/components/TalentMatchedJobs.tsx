@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, MapPin, Briefcase, DollarSign, Clock, RefreshCw, AlertCircle } from "lucide-react";
+import { getJobFunctionDisplay } from "@shared/jobFunction";
 
 interface MatchReasons {
   skillOverlap: string[];
@@ -34,6 +35,8 @@ interface MatchedJob {
     budgetCurrency: string | null;
     engagementType: string | null;
     category: string | null;
+    jobFunction?: string | null;
+    otherFunction?: string | null;
     experienceLevel: string | null;
     status: string;
     skills: string[];
@@ -99,8 +102,8 @@ function MatchCard({ match }: { match: MatchedJob }) {
               {Number(job.budget).toLocaleString()} {job.budgetCurrency ?? ""}
             </span>
           )}
-          {job.category && (
-            <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{job.category}</span>
+          {getJobFunctionDisplay(job) && (
+            <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{getJobFunctionDisplay(job)}</span>
           )}
         </div>
 

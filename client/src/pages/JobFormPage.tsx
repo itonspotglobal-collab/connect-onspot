@@ -43,6 +43,7 @@ import { JobRequirementsStep } from "@/components/job-form/JobRequirementsStep";
 import { JobReviewStep } from "@/components/job-form/JobReviewStep";
 import { ClientEmailComposer, type ClientEmailPayload } from "@/components/ClientEmailComposer";
 import type { Job } from "@shared/schema";
+import { OTHER_JOB_FUNCTION } from "@shared/jobFunction";
 
 // ─── Step names ───────────────────────────────────────────────────────────────
 const STEPS = ["Basics", "Description", "Requirements", "Review"] as const;
@@ -787,6 +788,12 @@ function validateStep(
     if (!formData.professionalRoleName.trim())
       errors.professionalRoleName = "Job title is required";
     if (!formData.jobFunction.trim()) errors.jobFunction = "Function is required";
+    if (
+      formData.jobFunction === OTHER_JOB_FUNCTION &&
+      !formData.otherFunction.trim()
+    ) {
+      errors.otherFunction = "Please specify the function.";
+    }
     if (!formData.engagementType?.trim()) errors.engagementType = "An Engagement Type (Lite or Standard) must be set before publishing a job.";
     if (!formData.experienceLevel) errors.experienceLevel = "Experience level is required";
   }
@@ -795,13 +802,18 @@ function validateStep(
 }
 
 function buildPayload(formData: JobFormData): any {
+  const jobFunction = formData.jobFunction.trim();
   const payload: Record<string, unknown> = {
     professionalRoleName: formData.professionalRoleName.trim(),
     title: formData.professionalRoleName.trim(),
-    jobFunction: formData.jobFunction.trim(),
+    jobFunction,
+    otherFunction:
+      jobFunction === OTHER_JOB_FUNCTION
+        ? formData.otherFunction.trim() || null
+        : null,
     company: formData.company.trim() || null,
     location: formData.location || null,
-    category: formData.jobFunction.trim(),
+    category: jobFunction,
     engagementType: formData.engagementType?.trim() || "",
     experienceLevel: formData.experienceLevel,
     description: isEmptyQuill(formData.description) ? "" : formData.description.trim(),

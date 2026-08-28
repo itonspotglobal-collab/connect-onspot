@@ -54,6 +54,7 @@ function makeJob(overrides: Partial<Job & { skills: string[] }> = {}): Job & { s
     professionalRoleName: null,
     originalRoleName: null,
     jobFunction: null,
+    otherFunction: null,
     reportingTo: null,
     division: null,
     jobCode: null,
@@ -271,5 +272,28 @@ describe("calculateJobMatches — engagement-type scoring", () => {
     const [result] = results!;
     assert.ok(typeof result.score === "number" && Number.isFinite(result.score),
       `score must be a finite number; got ${result.score}`);
+  });
+
+  it("(e) matches an Other job by its custom function instead of the literal Other label", async () => {
+    const job = makeJob({
+      id: "job-e",
+      category: "Other",
+      jobFunction: "Other",
+      otherFunction: "Customer Education",
+    });
+
+    const storage = new TestStorage();
+    storage.injectedJobs = [job];
+    storage.injectedCandidate = {
+      ...makeCandidate(),
+      category: "Customer Education",
+    };
+
+    const [result] = await storage.calculateJobMatches("talent-1", {
+      skills: ["JavaScript"],
+    });
+
+    assert.equal(result.matchReasons.categoryMatch, true);
+    assert.ok(result.matchReasons.factors.includes("Industry: Customer Education"));
   });
 });

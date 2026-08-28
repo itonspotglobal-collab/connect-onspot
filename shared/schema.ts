@@ -188,6 +188,7 @@ export const jobs = pgTable("jobs", {
   professionalRoleName: text("professional_role_name"),
   originalRoleName: text("original_role_name"),
   jobFunction: text("job_function"),
+  otherFunction: text("other_function"),
   description: text("description").notNull(),
   company: text("company").default("OnSpot"),
   location: text("location").default("Remote"),
@@ -759,6 +760,7 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   updatedAt: true,
   requiredSkills: true,
 }).extend({
+  otherFunction: z.string().trim().max(120).nullable().optional(),
   requiredSkills: z
     .array(
       z.object({

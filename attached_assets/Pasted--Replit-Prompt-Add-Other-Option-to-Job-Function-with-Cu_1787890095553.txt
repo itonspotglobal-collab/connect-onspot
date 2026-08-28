@@ -1,0 +1,1124 @@
+# Replit Prompt — Add “Other” Option to Job Function with Custom Input
+
+Implement this change **immediately in the existing OnSpot application**.
+
+**Do NOT perform an audit, architecture review, code review, impact-analysis report, or implementation proposal first. Inspect only the files necessary to make the change, then implement it directly. Do not stop to explain what you found before coding.**
+
+Also:
+
+**Do not ruin, remove, refactor unnecessarily, or alter other features that are already working.**
+
+This is a targeted enhancement to the existing Job Posting **Function** field and all features connected to that field.
+
+---
+
+# GOAL
+
+The Job Posting form currently has a required **Function** dropdown with options such as:
+
+```text
+Sales & Business Development
+Customer Support
+Marketing
+Finance & Accounting
+Operations & Admin
+Engineering & Tech
+Design & Creative
+```
+
+Add one additional option:
+
+```text
+Other
+```
+
+When the user selects:
+
+```text
+Other
+```
+
+show an additional text input immediately below the Function dropdown so the user can type a Function that is not included in the predefined list.
+
+Example:
+
+```text
+Function *
+
+[ Other ▼ ]
+
+Please specify the function *
+
+[ Enter function... ]
+```
+
+If the user selects any normal predefined Function, the additional input must be hidden.
+
+---
+
+# 1. ADD “OTHER” TO THE FUNCTION DROPDOWN
+
+Keep all existing Function options unchanged.
+
+Add:
+
+```text
+Other
+```
+
+as the last option in the existing dropdown.
+
+Do not rename, reorder unnecessarily, or remove the existing values.
+
+Expected options:
+
+```text
+Sales & Business Development
+Customer Support
+Marketing
+Finance & Accounting
+Operations & Admin
+Engineering & Tech
+Design & Creative
+Other
+```
+
+Use the existing dropdown/select component and styling.
+
+Do not redesign the field.
+
+---
+
+# 2. SHOW CUSTOM FUNCTION INPUT CONDITIONALLY
+
+When:
+
+```ts
+function === "Other"
+```
+
+or the equivalent value used by the existing application, display another required text field below it.
+
+Suggested label:
+
+```text
+Other Function *
+```
+
+or:
+
+```text
+Please specify the function *
+```
+
+Suggested placeholder:
+
+```text
+Enter function...
+```
+
+Use the existing form input component, typography, spacing, error state, and validation styling.
+
+Do not create a visually inconsistent custom input.
+
+---
+
+# 3. HIDE THE FIELD FOR NORMAL OPTIONS
+
+If the user chooses:
+
+```text
+Customer Support
+Marketing
+Engineering & Tech
+```
+
+or any other predefined option, hide the custom Function input.
+
+If the user previously selected `Other`, entered a custom value, and then switches back to a predefined Function:
+
+clear the custom Function value unless the existing form architecture intentionally preserves hidden values.
+
+Preferred behavior:
+
+```ts
+if (function !== "Other") {
+  otherFunction = "";
+}
+```
+
+This prevents stale custom Function data from accidentally being submitted.
+
+---
+
+# 4. VALIDATION
+
+Existing Function validation must continue working.
+
+### Normal predefined Function
+
+If the selected Function is:
+
+```text
+Marketing
+```
+
+then that is sufficient.
+
+No additional Function input should be required.
+
+### Other
+
+If the selected Function is:
+
+```text
+Other
+```
+
+then the custom Function field becomes required.
+
+For example:
+
+```text
+Function: Other
+Other Function: Healthcare Administration
+```
+
+is valid.
+
+But:
+
+```text
+Function: Other
+Other Function: empty
+```
+
+must fail final submission validation.
+
+Show an appropriate validation message such as:
+
+```text
+Please specify the function.
+```
+
+Use the project's existing validation/error system.
+
+Do not introduce a separate validation library just for this field.
+
+---
+
+# 5. DRAFT SUPPORT
+
+This must work with the recently implemented Job Draft feature.
+
+If the user selects:
+
+```text
+Function = Other
+```
+
+and types:
+
+```text
+Healthcare Administration
+```
+
+then saves the Job Posting as a Draft:
+
+```text
+Save Draft & Exit
+```
+
+the Draft must persist BOTH:
+
+```text
+Function = Other
+Other Function = Healthcare Administration
+```
+
+When reopening the Draft:
+
+```text
+Drafts
+→ Continue Editing
+```
+
+the form must show:
+
+```text
+Function: Other
+Other Function: Healthcare Administration
+```
+
+The custom Function must not disappear.
+
+This must work for both:
+
+```text
+Admin JobFormPage
+Client JobFormPage
+```
+
+because they share the Job Posting flow.
+
+Do not break the currently working Draft implementation.
+
+---
+
+# 6. FINAL SUBMISSION
+
+When a job is finally submitted with:
+
+```text
+Function = Other
+Other Function = Healthcare Administration
+```
+
+persist the custom Function correctly.
+
+The job must continue through the existing:
+
+```text
+Client submission
+Admin approval
+Open/Closed
+Find Work
+Job details
+matching/search
+```
+
+workflow exactly as normal.
+
+Do not cause jobs using `Other` to bypass normal status or approval logic.
+
+---
+
+# 7. DATA MODEL
+
+First inspect how the existing Function value is stored.
+
+Prefer the smallest safe change.
+
+If the existing database contains something similar to:
+
+```ts
+function: string
+```
+
+then add a nullable field such as:
+
+```ts
+otherFunction?: string | null
+```
+
+only if needed.
+
+For example:
+
+```text
+function
+other_function
+```
+
+or whatever naming convention the project already follows.
+
+Do not create a separate table for this feature.
+
+Do not redesign the Job schema.
+
+If the current schema can safely store the resolved custom Function directly without losing the fact that `Other` was selected, follow the existing architecture.
+
+However, preserve enough information so the form can correctly reopen and show:
+
+```text
+Other selected
++
+custom Function input populated
+```
+
+for editing and Draft resumption.
+
+---
+
+# 8. API PAYLOADS
+
+Update the existing Job create/update/draft payloads.
+
+For normal Function values, preserve current behavior.
+
+Example:
+
+```json
+{
+  "function": "Marketing"
+}
+```
+
+For Other:
+
+```json
+{
+  "function": "Other",
+  "otherFunction": "Healthcare Administration"
+}
+```
+
+or the equivalent field names already used by the backend.
+
+Do not invent unnecessary new APIs.
+
+Update the existing:
+
+```text
+Create Job
+Update Job
+Create Draft
+Update Draft
+Resume Draft
+Final Submit
+```
+
+flows as necessary.
+
+---
+
+# 9. DISPLAY VALUE — IMPORTANT
+
+Any place in the application that displays a Job's Function should show the **actual custom Function** when the job uses `Other`.
+
+For example, do NOT display:
+
+```text
+Other
+```
+
+to users when the real Function is:
+
+```text
+Healthcare Administration
+```
+
+Instead display:
+
+```text
+Healthcare Administration
+```
+
+Use a shared resolved display value wherever possible.
+
+Conceptually:
+
+```ts
+const displayFunction =
+  job.function === "Other" && job.otherFunction
+    ? job.otherFunction
+    : job.function;
+```
+
+Adapt this to the project's actual data structure.
+
+Avoid duplicating this logic inconsistently across many components if there is already an appropriate helper/view-model location.
+
+---
+
+# 10. UPDATE CONNECTED JOB VIEWS
+
+Inspect all existing components that display the Function and make sure custom Functions render correctly.
+
+This includes, where applicable:
+
+```text
+Admin Job Management
+Admin Drafts
+Admin Job Preview
+Client Job Postings
+Client Drafts
+Client Job Preview
+JobForm Review step
+Public Find Work cards
+Public Job Details
+Candidate-facing job pages
+Application job summary
+Admin approval views
+Client dashboard job cards
+```
+
+If the existing Function is shown in another connected Job component, make sure that component displays the resolved custom value too.
+
+Do not change unrelated UI.
+
+---
+
+# 11. REVIEW STEP
+
+The Job Posting form's Review step must show the entered custom Function.
+
+Example:
+
+User chooses:
+
+```text
+Other
+```
+
+and enters:
+
+```text
+Medical Services
+```
+
+The Review page should show:
+
+```text
+Function
+Medical Services
+```
+
+not merely:
+
+```text
+Other
+```
+
+This ensures the user can verify the actual Function before submitting.
+
+---
+
+# 12. EDIT EXISTING JOB
+
+When editing a job that uses a custom Function:
+
+```text
+Function = Other
+Other Function = Medical Services
+```
+
+the form must correctly hydrate:
+
+```text
+Dropdown: Other
+Custom input: Medical Services
+```
+
+Do not convert it into a blank custom field.
+
+Saving again must update the same Job record.
+
+---
+
+# 13. FILTERING / SEARCH / MATCHING
+
+Inspect whether the Function field is used by:
+
+```text
+Find Work filters
+Admin filters
+Client filters
+search
+candidate matching
+recommendations
+job categorization
+analytics
+```
+
+Do not break these connected features.
+
+For jobs using a predefined Function, preserve current behavior exactly.
+
+For jobs using `Other`, use the custom Function where appropriate.
+
+For example, a job with:
+
+```text
+Other Function = Healthcare Administration
+```
+
+should not behave as though its meaningful Function text is simply `"Other"` if search/indexing currently searches the Function value.
+
+If search uses text matching, make sure the custom Function can be found.
+
+Do not redesign the matching algorithm.
+
+Only extend it safely to support the custom value.
+
+---
+
+# 14. DROPDOWN FILTERS
+
+If Function is also used as a filter elsewhere in the application, do NOT automatically add every user-entered custom Function to the global predefined Function dropdown unless the existing architecture is designed for dynamic values.
+
+The predefined filter may continue containing:
+
+```text
+Sales & Business Development
+Customer Support
+Marketing
+Finance & Accounting
+Operations & Admin
+Engineering & Tech
+Design & Creative
+Other
+```
+
+If `Other` is selected in a filter, only implement custom filtering if it naturally fits the existing filter architecture.
+
+Do not create an uncontrolled ever-growing global options list.
+
+---
+
+# 15. ADMIN AND CLIENT COMPATIBILITY
+
+This functionality must work for both:
+
+```text
+Admin
+Client
+```
+
+because both use JobFormPage.
+
+Do not implement it only in the Admin rendering.
+
+Do not implement it only in Client.
+
+Reuse the shared form logic whenever possible.
+
+Preserve existing role-specific:
+
+```text
+permissions
+ownership
+API routes
+approval status
+navigation
+draft behavior
+```
+
+---
+
+# 16. FORM STATE
+
+Add the custom Function field to the existing form state properly.
+
+If the project uses:
+
+```text
+React Hook Form
+Formik
+useState
+Zod
+Yup
+shared JobForm type
+```
+
+follow that exact architecture.
+
+Do not manage the field through an unrelated state mechanism if it belongs inside the form state.
+
+It must participate in:
+
+```text
+default values
+validation
+draft serialization
+form hydration
+edit mode
+submission
+reset behavior
+```
+
+---
+
+# 17. TYPES
+
+Update existing TypeScript interfaces/types if needed.
+
+For example:
+
+```ts
+interface JobFormData {
+  function: string;
+  otherFunction?: string;
+}
+```
+
+Use the project's actual naming conventions.
+
+Do not introduce `any` to bypass TypeScript errors.
+
+Do not weaken existing types.
+
+---
+
+# 18. DATABASE MIGRATION
+
+Only create a migration if the database actually requires a new field.
+
+If required, make the smallest backward-compatible migration.
+
+Example concept:
+
+```sql
+ALTER TABLE jobs
+ADD COLUMN other_function TEXT NULL;
+```
+
+Use the project's existing ORM/migration system instead of manually creating incompatible SQL if the project uses Drizzle, Prisma, Sequelize, etc.
+
+Existing Job records must remain valid.
+
+The new field must be optional/null for existing predefined Functions.
+
+Do not alter existing Job statuses or unrelated columns.
+
+---
+
+# 19. BACKEND VALIDATION
+
+Backend validation must match frontend validation.
+
+Do not rely only on React.
+
+Server logic should enforce:
+
+If:
+
+```text
+function != Other
+```
+
+then:
+
+```text
+otherFunction may be null/empty
+```
+
+If final submission has:
+
+```text
+function = Other
+```
+
+then:
+
+```text
+otherFunction must contain a non-empty valid value
+```
+
+Draft saves should remain allowed even if the user has not finished entering the custom Function yet, consistent with the existing relaxed Draft validation.
+
+Do not break Draft saving.
+
+---
+
+# 20. SANITIZE / TRIM
+
+Trim the custom Function before persistence.
+
+For example:
+
+```text
+"   Healthcare Administration   "
+```
+
+should become:
+
+```text
+"Healthcare Administration"
+```
+
+Do not allow a string containing only whitespace to pass final validation.
+
+Follow existing field-length/security validation conventions.
+
+Do not introduce arbitrary restrictions that differ from similar text fields unless necessary.
+
+---
+
+# 21. DO NOT BREAK EXISTING FUNCTIONS
+
+All existing predefined Function values must behave exactly as before.
+
+Regression-test at least:
+
+```text
+Customer Support
+Marketing
+Engineering & Tech
+```
+
+A normal user selecting those values should never be forced to interact with the custom field.
+
+Normal jobs already stored with those Function values must continue displaying correctly.
+
+---
+
+# 22. MINIMAL-CHANGE POLICY
+
+This is a targeted enhancement.
+
+Do not:
+
+```text
+rewrite JobFormPage
+replace the dropdown library
+redesign the Job Posting form
+change unrelated database tables
+change authentication
+change Client ownership
+change Admin authorization
+change job status logic
+change Draft architecture
+change approval workflow
+rewrite Find Work
+rename unrelated fields/components
+```
+
+Make only the changes required for:
+
+```text
+Other option
++
+conditional custom Function
++
+persistence
++
+connected display/search support
+```
+
+---
+
+# REQUIRED IMPLEMENTATION FLOW
+
+Implement directly.
+
+Internally inspect:
+
+```text
+1. Existing Function options
+2. JobForm form-state/type
+3. Job create/update payload
+4. Draft create/update payload
+5. Job database schema
+6. Review step
+7. Job edit/resume hydration
+8. Admin Job display
+9. Client Job display
+10. Public Job display
+11. Search/filter/matching usages of function
+```
+
+Then make the smallest safe changes necessary.
+
+Do NOT give me an audit before making the changes.
+
+---
+
+# ACCEPTANCE TESTS
+
+Do not consider this complete until these pass.
+
+## Test A — Existing Function
+
+Create a job with:
+
+```text
+Function = Customer Support
+```
+
+Expected:
+
+* custom Function field does not appear
+* job saves normally
+* Draft works
+* final submission works
+* displays `Customer Support`
+
+---
+
+## Test B — Other appears
+
+Open Job Posting form.
+
+Expected dropdown contains:
+
+```text
+Other
+```
+
+as the last choice.
+
+---
+
+## Test C — Conditional field
+
+Choose:
+
+```text
+Other
+```
+
+Expected:
+
+```text
+Other Function *
+[ Enter function... ]
+```
+
+appears.
+
+Change back to:
+
+```text
+Marketing
+```
+
+Expected:
+
+custom input disappears.
+
+---
+
+## Test D — Required validation
+
+Choose:
+
+```text
+Other
+```
+
+leave custom input blank, then attempt final submission.
+
+Expected:
+
+submission blocked with an appropriate validation message.
+
+---
+
+## Test E — Custom value submission
+
+Choose:
+
+```text
+Other
+```
+
+enter:
+
+```text
+Healthcare Administration
+```
+
+Finish the Job Posting.
+
+Expected:
+
+job is saved successfully.
+
+Connected job views display:
+
+```text
+Healthcare Administration
+```
+
+rather than only:
+
+```text
+Other
+```
+
+---
+
+## Test F — Admin Draft
+
+Admin selects:
+
+```text
+Other
+```
+
+enters:
+
+```text
+Healthcare Administration
+```
+
+then:
+
+```text
+Save Draft & Exit
+```
+
+Resume Draft.
+
+Expected:
+
+```text
+Function dropdown = Other
+Other Function = Healthcare Administration
+```
+
+---
+
+## Test G — Client Draft
+
+Repeat the same test using Client Job Posting.
+
+Expected same successful persistence and hydration.
+
+Do not regress the Client Draft fix.
+
+---
+
+## Test H — Edit
+
+Open an existing custom-Function job in edit mode.
+
+Expected:
+
+```text
+Other
+```
+
+is selected and the custom value is populated.
+
+Update the custom Function.
+
+Save.
+
+Expected:
+
+same Job record is updated.
+
+---
+
+## Test I — Review
+
+Before final submission, Review displays:
+
+```text
+Function
+Healthcare Administration
+```
+
+not merely:
+
+```text
+Other
+```
+
+---
+
+## Test J — Admin views
+
+Verify the custom Function appears correctly on all relevant Admin job cards/details/previews.
+
+---
+
+## Test K — Client views
+
+Verify the custom Function appears correctly on Client Job Postings, Drafts, previews, and related job details.
+
+---
+
+## Test L — Public views
+
+For a published/open job using a custom Function, verify public Find Work / Job Details displays:
+
+```text
+Healthcare Administration
+```
+
+where Function is shown.
+
+Draft privacy rules must remain unchanged.
+
+---
+
+## Test M — Search
+
+If existing search indexes or queries the Function field, verify searching:
+
+```text
+Healthcare Administration
+```
+
+can match the job where appropriate.
+
+Do not alter unrelated search behavior.
+
+---
+
+## Test N — Regression
+
+Verify all existing Function choices still work.
+
+Verify:
+
+```text
+Admin Drafts
+Client Drafts
+normal Job creation
+editing
+Admin approval
+Find Work
+job visibility
+job counts
+authentication
+ownership
+notifications
+```
+
+continue functioning.
+
+---
+
+# EXPECTED FINAL RESULT
+
+The Function dropdown becomes:
+
+```text
+Sales & Business Development
+Customer Support
+Marketing
+Finance & Accounting
+Operations & Admin
+Engineering & Tech
+Design & Creative
+Other
+```
+
+When `Other` is selected:
+
+```text
+Function *
+[ Other ]
+
+Other Function *
+[ Healthcare Administration ]
+```
+
+The custom Function is persisted through:
+
+```text
+Admin Draft
+Client Draft
+Resume Draft
+Edit Job
+Final Submit
+Admin Approval
+Client Job Views
+Find Work
+Job Details
+Search / matching where Function is used
+```
+
+and all connected screens display the actual custom Function rather than just `Other`.
+
+Implement this now.
+
+Do not perform an audit first.
+
+Do not stop at recommendations or snippets.
+
+Do not break currently working features.

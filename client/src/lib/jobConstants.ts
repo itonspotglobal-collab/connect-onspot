@@ -32,6 +32,7 @@ export const JOB_FUNCTIONS = [
   "Strategy",
   "Project & Program Management",
   "Research & Development (R&D)",
+  "Other",
 ] as const;
 
 export type JobFunction = (typeof JOB_FUNCTIONS)[number];
@@ -92,6 +93,7 @@ export const JOB_FORM_FUNCTION_OPTIONS = [
   "Operations & Admin",
   "Engineering & Tech",
   "Design & Creative",
+  "Other",
 ] as const;
 
 // ── Engagement Types ──────────────────────────────────────────────────────────
