@@ -296,4 +296,58 @@ describe("calculateJobMatches — engagement-type scoring", () => {
     assert.equal(result.matchReasons.categoryMatch, true);
     assert.ok(result.matchReasons.factors.includes("Industry: Customer Education"));
   });
+
+  it("uses full-profile semantic evidence when exact job skills do not overlap", async () => {
+    const storage = new TestStorage();
+    storage.injectedJobs = [makeJob({
+      id: "job-semantic-fallback",
+      title: "Developer",
+      professionalRoleName: "Software Developer",
+      description: "Build and maintain web applications.",
+      skills: ["React"],
+      skillTags: ["React"],
+      engagementType: null,
+    })];
+    storage.injectedTalentSkills = ["C#"];
+    storage.injectedCandidate = {
+      ...makeCandidate(),
+      targetPosition: "Software Engineer",
+      category: "Developers",
+      secondarySkills: ["Programming", "Full Stack Developer"],
+      summary: "Software engineering and application development background.",
+    } as Candidate;
+
+    const [match] = await storage.calculateJobMatches("talent-1");
+    assert.ok(match.score > 0);
+    assert.deepEqual(match.overlapSkills, []);
+    assert.ok(match.matchReasons.componentScores.role >= 70);
+  });
+
+  it("uses role and profile evidence when the talent has no structured skills", async () => {
+    const storage = new TestStorage();
+    storage.injectedJobs = [makeJob({
+      id: "job-empty-skills-fallback",
+      title: "Developer",
+      professionalRoleName: "Software Developer",
+      description: "Build and maintain web applications.",
+      skills: ["React"],
+      skillTags: ["React"],
+      engagementType: null,
+    })];
+    storage.injectedTalentSkills = [];
+    storage.injectedCandidate = {
+      ...makeCandidate(),
+      targetPosition: "Software Engineer",
+      headline: "Full stack application developer",
+      workHistory: [{ role: "Software Engineer", description: "Built web applications." }],
+    } as Candidate;
+    storage.injectedProfile = {
+      title: "Software Engineer",
+      bio: "Professional application development experience.",
+    } as Profile;
+
+    const [match] = await storage.calculateJobMatches("talent-1");
+    assert.ok(match.score > 0);
+    assert.ok(match.matchReasons.componentScores.role >= 70);
+  });
 });

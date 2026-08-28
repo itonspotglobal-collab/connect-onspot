@@ -93,6 +93,61 @@ const ROLE_ALIASES: Array<[RegExp, string[]]> = [
   [/marketing|social media|content strategist/i, ["marketing"]],
 ];
 
+const ROLE_FAMILIES = {
+  software_development: [
+    "developer", "software engineer", "software engineering", "software development",
+    "programmer", "programming", "full stack", "frontend", "front end", "backend",
+    "back end", "web development", "application development", "react", "node",
+    "javascript", "typescript", "csharp", ".net", "java", "python",
+  ],
+  it_support: [
+    "it administrator", "system administrator", "systems administrator",
+    "network administrator", "it support", "technical support", "helpdesk",
+    "help desk", "active directory", "microsoft 365", "windows server",
+    "networking", "infrastructure",
+  ],
+  quality_testing: [
+    "qa engineer", "quality assurance", "software tester", "software testing",
+    "manual testing", "automation testing", "automation engineer", "test automation", "test engineer",
+    "selenium", "cypress",
+  ],
+  admin_assistance: [
+    "virtual assistant", "administrative assistant", "executive assistant",
+    "office administration", "administration", "calendar management",
+    "inbox management", "scheduling", "data entry",
+  ],
+  customer_support: [
+    "customer support", "customer service", "customer success", "client support",
+    "email support", "chat support", "ticketing", "helpdesk",
+  ],
+  project_management: [
+    "project manager", "project management", "program manager", "scrum master",
+    "agile", "project coordination", "project coordinator",
+  ],
+  marketing: [
+    "marketing", "digital marketing", "social media", "seo", "content marketing",
+    "paid advertising", "advertising", "campaign",
+  ],
+  sales: [
+    "sales", "sales representative", "business development", "account executive",
+    "lead generation", "cold calling", "crm",
+  ],
+  finance_accounting: [
+    "accounting", "accountant", "bookkeeper", "bookkeeping", "accounts payable",
+    "accounts receivable", "quickbooks", "payroll", "financial reporting",
+  ],
+  design: [
+    "graphic designer", "graphic design", "ui designer", "ux designer",
+    "web designer", "visual design", "branding", "figma", "canva",
+  ],
+  data_analytics: [
+    "data analyst", "data analytics", "business intelligence", "data science",
+    "machine learning", "sql", "power bi", "tableau",
+  ],
+} as const;
+
+export type RoleFamily = keyof typeof ROLE_FAMILIES;
+
 const aiCache = new Map<string, VanessaSemanticResult>();
 const MAX_AI_CACHE = 1000;
 
@@ -109,11 +164,35 @@ function clean(value: unknown): string {
     .toLowerCase()
     .replace(/node\.js/g, "node js")
     .replace(/react\.js/g, "react js")
+    .replace(/\bfullstack\b/g, "full stack")
+    .replace(/\bfront-end\b/g, "frontend")
+    .replace(/\bback-end\b/g, "backend")
+    .replace(/\bc[\s-]*sharp\b/g, "csharp")
+    .replace(/\bdotnet\b/g, ".net")
     .replace(/c\+\+/g, "cpp")
     .replace(/c#/g, "csharp")
     .replace(/[^a-z0-9+#.\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function roleFamilies(value: unknown): RoleFamily[] {
+  const text = clean(value);
+  if (!text) return [];
+  return (Object.entries(ROLE_FAMILIES) as Array<[RoleFamily, readonly string[]]>)
+    .filter(([, terms]) => terms.some((term) => {
+      const normalizedTerm = clean(term);
+      if (normalizedTerm.length <= 2) {
+        return text.split(/\s+/).includes(normalizedTerm);
+      }
+      return text.includes(normalizedTerm);
+    }))
+    .map(([family]) => family);
+}
+
+function sharesRoleFamily(left: unknown, right: unknown): boolean {
+  const rightFamilies = new Set(roleFamilies(right));
+  return roleFamilies(left).some((family) => rightFamilies.has(family));
 }
 
 function canonicalSkill(value: unknown, context = ""): string {
@@ -161,15 +240,19 @@ function strings(value: unknown): string[] {
 
 function normalizedCandidate(value: TalentMatchInput["candidate"]): Record<string, any> {
   const candidate = value as Record<string, any>;
+  const preferPopulated = (primary: unknown, fallback: unknown) =>
+    Array.isArray(primary) && primary.length === 0 && Array.isArray(fallback) && fallback.length > 0
+      ? fallback
+      : primary ?? fallback;
   return {
     ...candidate,
     id: candidate.id,
     fullName: candidate.fullName ?? candidate.full_name,
     targetPosition: candidate.targetPosition ?? candidate.target_position,
-    coreSkills: candidate.coreSkills ?? candidate.core_skills,
-    secondarySkills: candidate.secondarySkills ?? candidate.secondary_skills,
+    coreSkills: preferPopulated(candidate.coreSkills, candidate.core_skills),
+    secondarySkills: preferPopulated(candidate.secondarySkills, candidate.secondary_skills),
     experienceYears: candidate.experienceYears ?? candidate.experience_years,
-    workHistory: candidate.workHistory ?? candidate.work_history,
+    workHistory: preferPopulated(candidate.workHistory, candidate.work_history),
     moreAboutMe: candidate.moreAboutMe ?? candidate.more_about_me,
     preferredRoles: candidate.preferredRoles ?? candidate.preferred_roles,
     profilePhotoUrl: candidate.profilePhotoUrl ?? candidate.profile_photo_url,
@@ -213,6 +296,7 @@ function roleSimilarity(jobTitle: string, candidateRole: string): number {
   const candidate = clean(candidateRole);
   if (!job || !candidate) return 0;
   if (job === candidate || candidate.includes(job) || job.includes(candidate)) return 100;
+  if (sharesRoleFamily(job, candidate)) return 85;
   for (const [pattern, concepts] of ROLE_ALIASES) {
     if (pattern.test(job) && pattern.test(candidate)) return 90;
     const jobHasConcept = concepts.some((concept) => job.includes(concept));
@@ -315,6 +399,284 @@ function candidateCorpus(input: TalentMatchInput): string {
     profile.title,
     profile.bio,
   ].map(jsonText).filter(Boolean).join(" ");
+}
+
+export type TalentSearchDocument = {
+  targetPosition: string;
+  profileTitle: string;
+  headline: string;
+  summary: string;
+  profileBio: string;
+  moreAboutMe: string;
+  category: string;
+  coreSkills: string[];
+  secondarySkills: string[];
+  userSkills: string[];
+  workTitles: string[];
+  workText: string;
+  certifications: string;
+  education: string;
+  interests: string[];
+  experienceYears: number | null;
+  seniority: string;
+};
+
+export type ParsedTalentSearchQuery = {
+  normalizedQuery: string;
+  roleTerms: string[];
+  skillTerms: string[];
+  seniorityTerms: string[];
+  roleFamily: RoleFamily | null;
+};
+
+export type TalentSearchMatchResult = {
+  score: number;
+  overlapSkills: string[];
+  matchedSkills: string[];
+  reasons: string[];
+  componentScores: {
+    role: number;
+    skills: number;
+    profile: number;
+    workHistory: number;
+    category: number;
+  };
+  matchReasons: Record<string, any>;
+};
+
+const GENERIC_ROLE_TERMS = new Set([
+  "administrator", "assistant", "consultant", "coordinator", "developer",
+  "designer", "engineer", "manager", "marketer", "marketing", "representative",
+  "sales", "specialist", "support", "technician", "tester",
+]);
+const ROLE_DESCRIPTOR_TERMS = new Set([
+  "administrative", "backend", "customer", "executive", "frontend", "full",
+  "it", "quality", "software", "stack", "system", "systems", "virtual",
+]);
+const SENIORITY_TERMS = new Set([
+  "entry", "junior", "jr", "mid", "senior", "sr", "lead", "principal",
+  "staff", "director", "executive",
+]);
+
+export function parseTalentSearchQuery(value: string): ParsedTalentSearchQuery {
+  const normalizedQuery = clean(value);
+  const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  const seniorityTerms = queryTokens.filter((term) => SENIORITY_TERMS.has(term));
+  const roleTerms = queryTokens.filter((term) => GENERIC_ROLE_TERMS.has(term));
+  const skillTerms = queryTokens.filter((term) =>
+    term.length >= 2 &&
+    !STOP_WORDS.has(term) &&
+    !GENERIC_ROLE_TERMS.has(term) &&
+    !ROLE_DESCRIPTOR_TERMS.has(term) &&
+    !SENIORITY_TERMS.has(term),
+  );
+  return {
+    normalizedQuery,
+    roleTerms,
+    skillTerms,
+    seniorityTerms,
+    roleFamily: roleFamilies(normalizedQuery)[0] ?? null,
+  };
+}
+
+export function buildTalentSearchDocument(input: TalentMatchInput): TalentSearchDocument {
+  const candidate = normalizedCandidate(input.candidate);
+  const profile = input.profile ?? {};
+  const history = candidateHistory(candidate);
+  const workTitles = history
+    .flatMap((item) => strings(item.jobTitle ?? item.title ?? item.role ?? item.position));
+  const workText = history
+    .map((item) => jsonText({
+      title: item.jobTitle ?? item.title ?? item.role ?? item.position,
+      description: item.description,
+      responsibilities: item.responsibilities,
+      achievements: item.achievements,
+    }))
+    .filter(Boolean)
+    .join(" ");
+  return {
+    targetPosition: String(candidate.targetPosition ?? ""),
+    profileTitle: String(profile.title ?? ""),
+    headline: String(candidate.headline ?? ""),
+    summary: String(candidate.summary ?? ""),
+    profileBio: String(profile.bio ?? ""),
+    moreAboutMe: String(candidate.moreAboutMe ?? ""),
+    category: String(candidate.category ?? ""),
+    coreSkills: strings(candidate.coreSkills),
+    secondarySkills: strings(candidate.secondarySkills),
+    userSkills: strings(input.userSkills),
+    workTitles,
+    workText,
+    certifications: jsonText(candidate.certifications),
+    education: jsonText(candidate.education),
+    interests: candidateInterests(candidate),
+    experienceYears: parseYears(candidate.experienceYears),
+    seniority: String(candidate.seniority ?? ""),
+  };
+}
+
+function textRelevance(query: string, value: unknown): number {
+  const queryText = clean(query);
+  const candidateText = clean(jsonText(value));
+  if (!queryText || !candidateText) return 0;
+  if (candidateText.includes(queryText) || queryText.includes(candidateText)) return 100;
+
+  const queryTokens = Array.from(tokens(queryText));
+  const candidateTokens = tokens(candidateText);
+  const coverage = queryTokens.length === 0
+    ? 0
+    : Math.round((queryTokens.filter((term) => candidateTokens.has(term)).length / queryTokens.length) * 100);
+  const familyScore = sharesRoleFamily(queryText, candidateText) ? 85 : 0;
+  return Math.max(coverage, familyScore);
+}
+
+function candidateSeniorityMatches(query: ParsedTalentSearchQuery, document: TalentSearchDocument): boolean {
+  if (query.seniorityTerms.length === 0) return true;
+  const seniority = clean(document.seniority);
+  const years = document.experienceYears;
+  return query.seniorityTerms.some((term) => {
+    if (seniority.includes(term)) return true;
+    if (term === "entry" || term === "junior" || term === "jr") return years != null && years <= 3;
+    if (term === "mid") return years != null && years >= 2 && years < 6;
+    return years != null && years >= 5;
+  });
+}
+
+function familySkillEvidence(
+  query: ParsedTalentSearchQuery,
+  document: TalentSearchDocument,
+): { score: number; matched: string[] } {
+  const weightedSkills = [
+    ...document.coreSkills.map((skill) => ({ skill, weight: 1 })),
+    ...document.userSkills.map((skill) => ({ skill, weight: 1 })),
+    ...document.secondarySkills.map((skill) => ({ skill, weight: 0.75 })),
+  ];
+  const matched = weightedSkills.filter(({ skill }) =>
+    query.roleFamily
+      ? roleFamilies(skill).includes(query.roleFamily)
+      : textRelevance(query.normalizedQuery, skill) >= 70,
+  );
+  const unique = Array.from(new Map(matched.map((item) => [canonicalSkill(item.skill), item])).values());
+  const evidence = unique.reduce((sum, item) => sum + item.weight, 0);
+  const score = evidence <= 0 ? 0
+    : evidence < 1 ? 35
+      : evidence < 2 ? 55
+        : evidence < 3 ? 75
+          : evidence < 4 ? 88
+            : 96;
+  return { score, matched: unique.map((item) => item.skill).slice(0, 8) };
+}
+
+function explicitSkillRelevance(queryTerm: string, candidateSkill: string): number {
+  const querySkill = canonicalSkill(queryTerm);
+  const skill = canonicalSkill(candidateSkill);
+  if (!querySkill || !skill) return 0;
+  if (querySkill === skill) return 100;
+  if (
+    querySkill.length >= 4 &&
+    skill.length >= 4 &&
+    (querySkill.includes(skill) || skill.includes(querySkill))
+  ) {
+    return 85;
+  }
+  return 0;
+}
+
+export function matchTalentToSearch(
+  searchText: string,
+  input: TalentMatchInput,
+): TalentSearchMatchResult {
+  const query = parseTalentSearchQuery(searchText);
+  const document = buildTalentSearchDocument(input);
+  const roleEvidence = [
+    document.targetPosition,
+    document.profileTitle,
+    document.headline,
+    ...document.workTitles,
+    ...document.interests,
+  ].filter(Boolean);
+  let role = roleEvidence.length
+    ? Math.max(...roleEvidence.map((value) => roleSimilarity(query.normalizedQuery, value)))
+    : 0;
+  if (!candidateSeniorityMatches(query, document)) role = Math.round(role * 0.75);
+
+  const familyEvidence = familySkillEvidence(query, document);
+  let skills = familyEvidence.score;
+  let matchedSkills = familyEvidence.matched;
+  if (query.skillTerms.length > 0) {
+    const weightedSkills = [
+      ...document.coreSkills.map((skill) => ({ skill, weight: 1 })),
+      ...document.userSkills.map((skill) => ({ skill, weight: 1 })),
+      ...document.secondarySkills.map((skill) => ({ skill, weight: 0.75 })),
+    ];
+    const explicitScores = query.skillTerms.map((term) => {
+      let best = 0;
+      for (const item of weightedSkills) {
+        const direct = explicitSkillRelevance(term, item.skill);
+        best = Math.max(best, Math.round(direct * item.weight));
+      }
+      return best;
+    });
+    const explicitScore = explicitScores.length
+      ? explicitScores.reduce((sum, value) => sum + value, 0) / explicitScores.length
+      : 0;
+    skills = Math.round(explicitScore * 0.75 + familyEvidence.score * 0.25);
+    matchedSkills = Array.from(new Set([
+      ...weightedSkills
+        .filter(({ skill }) => query.skillTerms.some((term) => explicitSkillRelevance(term, skill) > 0))
+        .map(({ skill }) => skill),
+    ])).slice(0, 8);
+  }
+
+  const profileText = [
+    document.headline,
+    document.summary,
+    document.profileBio,
+    document.moreAboutMe,
+    document.certifications,
+    document.education,
+  ].filter(Boolean).join(" ");
+  const profile = textRelevance(query.normalizedQuery, profileText);
+  const workHistory = Math.max(
+    document.workTitles.length
+      ? Math.max(...document.workTitles.map((title) => roleSimilarity(query.normalizedQuery, title)))
+      : 0,
+    textRelevance(query.normalizedQuery, document.workText),
+  );
+  const category = textRelevance(query.normalizedQuery, document.category);
+
+  const componentScores = { role, skills, profile, workHistory, category };
+  const score = Math.round(clamp(
+    role * 0.30 +
+    skills * 0.30 +
+    profile * 0.15 +
+    workHistory * 0.15 +
+    category * 0.10,
+  ));
+  const reasons: string[] = [];
+  if (role >= 70) reasons.push("Professional role aligns with the search");
+  if (skills >= 50) reasons.push("Relevant skills support this role");
+  if (profile >= 60) reasons.push("Profile summary or headline is relevant");
+  if (workHistory >= 60) reasons.push("Work history contains related experience");
+  if (category >= 60) reasons.push("Professional category is related");
+  if (reasons.length === 0) reasons.push("Limited profile evidence for this search");
+
+  return {
+    score,
+    overlapSkills: matchedSkills,
+    matchedSkills,
+    reasons,
+    componentScores,
+    matchReasons: {
+      skillOverlap: matchedSkills,
+      factors: reasons,
+      componentScores,
+      categoryMatch: category >= 60,
+      experienceMatch: workHistory >= 60,
+      searchQuery: query.normalizedQuery,
+      roleFamily: query.roleFamily,
+    },
+  };
 }
 
 function tier(score: number): TalentMatchResult["matchTier"] {

@@ -15,3 +15,6 @@ description: Non-obvious constraints around calculateJobMatches, job skill data 
 - **Reverse job-to-talent ranking is a separate centralized service.** Deterministic evidence is scored and stably sorted first; Vanessa only enriches a bounded top shortlist and never replaces the fallback.
   **Why:** AI reranking from arbitrary database order can boost weaker candidates while stronger candidates never receive enrichment, and the existing talent-facing scorer has legacy behavior that must not regress.
   **How to apply:** keep `matchTalentToJob` as the authoritative evidence scorer, normalize DB DTOs before calling it, sort before selecting an AI pool, and preserve the existing client invitation contract.
+- **Generic Hire Talent search scores the full professional profile, not extracted query tags.**
+  **Why:** generic role searches such as "Developer" previously discarded the role term and returned 0% despite strong title, summary, secondary-skill, and work-history evidence.
+  **How to apply:** batch-load candidate/profile/skill data, normalize snake/camel fields, weight role/skills/profile/history/category, and reserve "AI-matched" wording for requests where AI actually contributes.

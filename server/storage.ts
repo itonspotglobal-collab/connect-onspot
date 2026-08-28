@@ -49,6 +49,7 @@ import {
 } from "../shared/jobFunction";
 import {
   enrichTalentMatchesWithVanessa,
+  matchTalentToSearch,
   matchTalentToJob,
   type TalentMatchInput,
   type TalentMatchWithIdentity,
@@ -1042,8 +1043,20 @@ export class MemStorage implements IStorage {
       )
     );
 
-    if (overlapSkills.length === 0 && talentSkills.length > 0) {
-      return { job, score: 0, overlapSkills: [], matchReasons: blank };
+    if (overlapSkills.length === 0) {
+      const semanticFallback = matchTalentToJob(job, {
+        candidate: talentCandidate ?? {},
+        profile: talentProfile,
+        userSkills: talentSkills,
+      });
+      return semanticFallback.score > 0
+        ? {
+            job,
+            score: semanticFallback.score,
+            overlapSkills: semanticFallback.overlapSkills,
+            matchReasons: semanticFallback.matchReasons,
+          }
+        : { job, score: 0, overlapSkills: [], matchReasons: blank };
     }
 
     const skillsUnion = Array.from(new Set([...talentSkills, ...job.skills]));
@@ -1213,7 +1226,7 @@ export class MemStorage implements IStorage {
 
     for (const job of allJobs) {
       const result = this.scoreJobForCandidate(talentSkills, talentProfile, talentCandidate, job);
-      if (result.overlapSkills.length > 0 || talentSkills.length === 0) {
+      if (result.overlapSkills.length > 0 || result.score > 0 || talentSkills.length === 0) {
         jobMatches.push({
           ...result,
           factors: {
@@ -1534,45 +1547,25 @@ export class MemStorage implements IStorage {
     matchReasons: Record<string, any>;
     candidate: Record<string, any>;
   }>> {
-    // Derive skill keywords from title — same stop-word extraction used by the route.
-    const STOP_WORDS = new Set([
-      'a','an','the','and','or','of','in','for','with','to','on','at','is','are',
-      'be','as','by','i','we','you','they','it','this','that','looking','need',
-      'experience','who','has','have','their','our','your','role','position','job',
-      'senior','junior','mid','level','developer','engineer','manager','specialist',
-      'consultant','lead','team','strong','good','great','excellent','proficient',
-    ]);
-    const skillTags = Array.from(new Set(
-      params.title
-        .split(/[\s,/+|&()\-]+/)
-        .map((t) => t.replace(/[^a-zA-Z0-9#+.]/g, '').trim())
-        .filter((t) => t.length >= 2 && !STOP_WORDS.has(t.toLowerCase()))
-        .slice(0, 10),
-    ));
-
-    // Virtual job object — same shape expected by scoreJobForCandidate.
-    // No id, no DB row: scoring is pure in-memory.
-    const virtualJob: any = {
-      id: `virtual-${Date.now()}`,
-      title: params.title,
-      category: params.category,
-      engagementType: params.engagementType,
-      experienceLevel: 'Mid-level',
-      skills: skillTags,
-      budget: null,
-      budgetCurrency: 'PHP',
-      timeZone: null,
-      createdAt: new Date(),
-      status: 'draft',
-    };
-
     const candidatesRes = await dbQuery(
-      `SELECT c.id, COALESCE(c.user_id, u.id) AS user_id
+      `SELECT
+          c.id,
+          COALESCE(c.user_id, u.id) AS user_id,
+          row_to_json(c) AS candidate,
+          row_to_json(p) AS profile,
+          COALESCE(
+            json_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL),
+            '[]'::json
+          ) AS user_skill_names
          FROM candidates c
          JOIN users u
            ON u.role = 'talent'
           AND (u.id = c.user_id
-               OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))`,
+                OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))
+         LEFT JOIN profiles p ON p.user_id = COALESCE(c.user_id, u.id)
+         LEFT JOIN user_skills us ON us.user_id = COALESCE(c.user_id, u.id)
+         LEFT JOIN skills s ON s.id = us.skill_id
+        GROUP BY c.id, u.id, p.id`,
     );
 
     const results: Array<{
@@ -1581,33 +1574,32 @@ export class MemStorage implements IStorage {
       score: number;
       overlapSkills: string[];
       matchReasons: Record<string, any>;
+      matchedSkills: string[];
+      reasons: string[];
+      componentScores: Record<string, number>;
       candidate: Record<string, any>;
     }> = [];
 
-    for (const row of candidatesRes.rows as Array<{ id: string; user_id: string }>) {
+    for (const row of candidatesRes.rows as Array<{
+      id: string;
+      user_id: string;
+      candidate: Record<string, any>;
+      profile: Record<string, any> | null;
+      user_skill_names: string[] | null;
+    }>) {
       try {
-        const [userSkills, profile, candidate] = await Promise.all([
-          this.getUserSkillsWithNames(row.user_id),
-          this.getProfileByUserId(row.user_id),
-          this.getCandidate(row.id),
-        ]);
-        let talentSkills = (userSkills as any[]).map((us) => us.skill?.name || '').filter(Boolean);
-        if (talentSkills.length === 0 && candidate) {
-          talentSkills = [
-            ...((candidate.coreSkills as string[]) ?? []),
-            ...((candidate.secondarySkills as string[]) ?? []),
-          ].filter(Boolean);
-        }
-        const { score, overlapSkills, matchReasons } = this.scoreJobForCandidate(
-          talentSkills, profile, candidate, virtualJob,
-        );
+        const candidate = row.candidate ?? {};
+        const match = matchTalentToSearch(params.title, {
+          candidate,
+          profile: row.profile,
+          userSkills: Array.isArray(row.user_skill_names) ? row.user_skill_names : [],
+          userId: row.user_id,
+        });
         results.push({
           candidateId: row.id,
           userId: row.user_id,
-          score,
-          overlapSkills,
-          matchReasons,
-          candidate: (candidate ?? {}) as Record<string, any>,
+          candidate,
+          ...match,
         });
       } catch (err) {
         console.error(`❌ rankTalentByParams failed for candidate ${row.id}:`, err);
@@ -1615,7 +1607,9 @@ export class MemStorage implements IStorage {
     }
 
     console.log(`✅ rankTalentByParams: scored ${results.length} candidates for "${params.title}"`);
-    return results.sort((a, b) => b.score - a.score).slice(0, limit);
+    return results
+      .sort((a, b) => b.score - a.score || a.candidateId.localeCompare(b.candidateId))
+      .slice(0, limit);
   }
 
 

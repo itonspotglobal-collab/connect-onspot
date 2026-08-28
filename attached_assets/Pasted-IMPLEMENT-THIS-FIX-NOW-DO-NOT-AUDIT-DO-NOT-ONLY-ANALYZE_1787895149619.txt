@@ -1,0 +1,1192 @@
+IMPLEMENT THIS FIX NOW. DO NOT AUDIT. DO NOT ONLY ANALYZE. DO NOT GIVE ME A PLAN FIRST.
+
+Modify the existing code and make the Talent Search / AI Match scoring genuinely accurate.
+
+============================================================
+BUG TO FIX
+============================================================
+
+The current talent matching/search percentage is incorrect.
+
+Real example from the current app:
+
+Search query:
+"Developer"
+
+Talent:
+Frenzy L.
+
+Profile contains evidence such as:
+- Category: Developers
+- Profile role/header: Software Engineer
+- Experience: 1-3 years
+- programming-related skills
+- C#
+- Language C
+- Machine Learning
+- Automation Testing
+- System
+- Full Stack Developer
+- technical/project background
+- other related secondary skills
+
+Yet the Hire Talent page displays:
+
+Frenzy L. — 0% AI-matched profile
+
+This is objectively wrong.
+
+The matcher appears to be using too little of the Talent Profile, exact keyword overlap only, or an overly narrow scoring method.
+
+FIX THE ACTUAL IMPLEMENTATION.
+
+Do not hardcode Frenzy.
+Do not hardcode "Developer".
+This must work for EVERY talent and EVERY role/search query.
+
+Examples include:
+
+Developer
+React Developer
+Full Stack Developer
+Backend Developer
+IT Administrator
+Virtual Assistant
+Administrative Assistant
+Customer Support
+Project Manager
+Automation Engineer
+QA Engineer
+Marketing Specialist
+Bookkeeper
+Graphic Designer
+Sales Representative
+and any other role entered by the user.
+
+============================================================
+NO AUDIT — IMPLEMENT
+============================================================
+
+Do NOT spend the task producing:
+- an audit document
+- recommendations only
+- a root-cause report only
+- TODO comments
+- placeholder services
+
+Open the existing implementation, identify the scoring path, modify it, add tests, run them, and leave the feature working.
+
+============================================================
+IMPORTANT CURRENT ARCHITECTURE
+============================================================
+
+The repository already has talent ranking infrastructure.
+
+Locate and modify the real implementations behind:
+
+DbStorage.rankTalentByParams(...)
+
+DbStorage.rankTalentForJob(...)
+
+DbStorage.recomputeMatchesForJob(...)
+
+There is also existing job_matches / match_reasons behavior.
+
+DO NOT create an entirely separate parallel matching system if the existing functions can be improved/shared.
+
+Extract shared matching helpers/service if necessary so all search paths use the same core scoring logic.
+
+The Hire Talent frontend already consumes fields such as:
+
+candidate.targetPosition
+candidate.target_position
+candidate.headline
+candidate.summary
+candidate.coreSkills
+candidate.core_skills
+candidate.secondarySkills
+candidate.secondary_skills
+candidate.category
+candidate.experienceYears
+candidate.workHistory
+
+USE THESE FIELDS IN MATCHING.
+
+============================================================
+PRIMARY REQUIREMENT
+============================================================
+
+A talent's match percentage must be calculated using their ENTIRE RELEVANT TALENT PROFILE, not just one field.
+
+For free-text talent search, build a searchable/matchable profile representation from:
+
+1. Target position
+2. Professional role/title
+3. Headline
+4. Primary/profile summary
+5. Core skills
+6. Secondary skills
+7. Category
+8. Work-history role titles
+9. Work-history descriptions
+10. Work-history responsibilities
+11. Experience level / years
+12. Relevant certifications if already available
+13. Relevant education if already available
+14. Career interests/preferences when relevant
+15. Any other existing professional profile fields that represent capabilities
+
+Do not use private/contact/sensitive personal information.
+
+============================================================
+CRITICAL FIX: ROLE UNDERSTANDING
+============================================================
+
+The matcher must understand related concepts and roles.
+
+For example:
+
+Search:
+Developer
+
+These should receive meaningful positive relevance when supported by profile data:
+
+Software Engineer
+Software Developer
+Full Stack Developer
+Full-Stack Developer
+Frontend Developer
+Front-end Developer
+Backend Developer
+Back-end Developer
+Web Developer
+Application Developer
+React Developer
+Node Developer
+Programmer
+Programming
+Software Development
+
+A candidate should NOT need the exact literal word "Developer" in coreSkills to score.
+
+Likewise:
+
+IT Administrator should understand:
+Systems Administrator
+System Administrator
+IT Support
+Active Directory
+Microsoft 365
+Windows Server
+Networking
+Infrastructure
+Helpdesk
+Technical Support
+
+Administrative Assistant should understand:
+Virtual Assistant
+Administration
+Calendar Management
+Inbox Management
+Scheduling
+Data Entry
+Office Administration
+
+Customer Support should understand:
+Customer Service
+Helpdesk
+Client Support
+Ticketing
+Email Support
+Chat Support
+
+QA Engineer should understand:
+Quality Assurance
+QA
+Software Testing
+Manual Testing
+Automation Testing
+Test Automation
+Selenium
+Cypress
+
+Do this for arbitrary roles through normalization + semantic/profile relevance, not by hardcoding only these examples.
+
+============================================================
+MATCHING STRATEGY
+============================================================
+
+Implement a HYBRID deterministic relevance algorithm.
+
+For free-text searches such as:
+
+"Developer"
+
+score the candidate from multiple components.
+
+Recommended weighting:
+
+Role / title alignment                   30%
+Skills relevance                         30%
+Profile summary / headline relevance     15%
+Work history relevance                   15%
+Category/domain alignment                10%
+
+Adjust slightly if needed, but do not allow one missing exact keyword to make the total score 0.
+
+For a job-specific search, retain additional job-specific scoring such as:
+- required skills
+- experience requirements
+- job responsibilities
+- preferred skills
+- role alignment
+
+============================================================
+TOKEN / TEXT NORMALIZATION
+============================================================
+
+Create reusable normalization.
+
+At minimum:
+
+lowercase
+trim
+remove punctuation noise
+normalize whitespace
+normalize hyphens
+normalize common variants
+
+Examples:
+
+full-stack -> full stack
+fullstack -> full stack
+front-end -> frontend
+back-end -> backend
+react.js -> react
+node.js -> node
+c sharp -> c#
+dotnet -> .net where appropriate
+
+Handle plural/singular variations where safe.
+
+Do NOT use strict string equality as the primary matching method.
+
+============================================================
+ROLE FAMILY / SEMANTIC RELATIONSHIP
+============================================================
+
+Add role-family understanding.
+
+Example role families:
+
+software/development:
+developer
+software engineer
+programmer
+full stack
+frontend
+backend
+web development
+application development
+
+IT/support:
+IT administrator
+systems administrator
+network administrator
+IT support
+technical support
+helpdesk
+infrastructure
+
+quality/testing:
+QA
+quality assurance
+software tester
+manual testing
+automation testing
+test engineer
+
+admin/VA:
+virtual assistant
+administrative assistant
+executive assistant
+office administration
+calendar management
+inbox management
+
+marketing:
+digital marketing
+social media
+SEO
+content marketing
+paid advertising
+
+etc.
+
+IMPORTANT:
+This should help semantic scoring, not automatically give someone a high score.
+
+Profile evidence is still required.
+
+============================================================
+SKILLS MUST INCLUDE SECONDARY SKILLS
+============================================================
+
+This is especially important.
+
+Do NOT score only core_skills/coreSkills.
+
+Both:
+
+coreSkills
+secondarySkills
+
+must participate.
+
+Core skills can have higher weight, e.g.:
+
+core skill relevance = 1.0
+secondary skill relevance = 0.65-0.8
+
+But secondary skills absolutely count.
+
+For Frenzy's profile, things such as:
+
+Full Stack Developer
+Programming
+C#
+Language C
+Machine Learning
+Automation Testing
+System
+
+must contribute appropriately to a "Developer" query.
+
+Do not ignore them merely because they are secondary skills.
+
+============================================================
+PROFILE SUMMARY / HEADLINE
+============================================================
+
+The profile's professional summary and headline must contribute.
+
+If the primary summary describes someone as a:
+
+Full Stack Developer
+
+then a search for:
+
+Developer
+
+must receive a strong relevance contribution.
+
+Likewise:
+
+"Experienced software engineer building React and Node applications"
+
+must strongly contribute to:
+
+Developer
+Software Engineer
+React Developer
+Full Stack Developer
+
+Do not require exact equality.
+
+============================================================
+WORK HISTORY
+============================================================
+
+Use work history.
+
+Extract:
+
+role
+jobTitle
+description
+responsibilities
+
+A work-history role such as:
+
+Software Engineer
+
+must contribute strongly to a Developer search.
+
+A description such as:
+
+"Developed internal web applications using React, Node.js and PostgreSQL"
+
+must also contribute.
+
+Do not treat an empty/generic company name as useful evidence.
+
+============================================================
+CATEGORY
+============================================================
+
+Category is supporting evidence.
+
+Example:
+
+candidate.category = "Developers"
+query = "Developer"
+
+This should contribute positively.
+
+However, category alone must NOT generate an 80-100% score.
+
+Category should be roughly 10% of overall relevance.
+
+============================================================
+ZERO SCORE RULE
+============================================================
+
+A 0% match should mean:
+
+"There is essentially no evidence in this profile that relates to the requested role."
+
+Do NOT return 0 merely because:
+- exact skill tag is missing
+- capitalization differs
+- query is singular and category is plural
+- title uses "Software Engineer" instead of "Developer"
+- matching evidence exists in secondarySkills instead of coreSkills
+- evidence exists in summary/work history rather than structured skills
+
+For a profile with several meaningful signals, 0% is invalid.
+
+============================================================
+PERCENTAGE CALIBRATION
+============================================================
+
+Make scores understandable.
+
+Suggested meaning:
+
+85-100:
+Excellent / highly relevant
+
+70-84:
+Strong match
+
+50-69:
+Moderate match
+
+30-49:
+Some relevant evidence
+
+10-29:
+Weak relevance
+
+1-9:
+Very little evidence
+
+0:
+No meaningful evidence
+
+Do not artificially force candidates into these bands.
+
+The evidence should generate the score.
+
+============================================================
+GENERIC QUERY HANDLING
+============================================================
+
+A major requirement:
+
+Generic role queries must work.
+
+Examples:
+
+Developer
+Designer
+Manager
+Assistant
+Engineer
+Support
+Marketing
+Sales
+Accounting
+
+Do not expect generic searches to contain a list of technical skills.
+
+For a query like:
+
+Developer
+
+the algorithm must infer the ROLE DOMAIN first and then evaluate the candidate's full profile.
+
+For a query like:
+
+React Developer
+
+both:
+- developer role relevance
+- React skill relevance
+
+should matter.
+
+Therefore:
+
+"Developer"
+should evaluate role-family fit.
+
+"React Developer"
+should evaluate role-family + React skill evidence.
+
+"Senior React Developer"
+should evaluate role + React + seniority/experience where available.
+
+============================================================
+QUERY PARSING
+============================================================
+
+Create a lightweight query interpretation function.
+
+Example:
+
+parseTalentSearchQuery("Senior React Developer")
+
+could produce something conceptually like:
+
+{
+  normalizedQuery: "senior react developer",
+  roleTerms: ["developer"],
+  skillTerms: ["react"],
+  seniorityTerms: ["senior"],
+  roleFamily: "software_development"
+}
+
+Do not overengineer an NLP parser.
+
+Use existing app/AI infrastructure if appropriate.
+
+============================================================
+VANESSA AI
+============================================================
+
+If Vanessa AI is already available in this codebase, it may be used for semantic interpretation/reranking.
+
+But:
+
+DO NOT make a network AI call for every talent on every keystroke.
+
+Use deterministic profile matching as the baseline.
+
+Recommended:
+
+1. deterministic scoring of all eligible profiles
+2. take top candidates
+3. optionally use Vanessa to semantically rerank them
+4. blend result safely
+
+Example:
+
+finalScore =
+deterministicScore * 0.8 +
+vanessaSemanticScore * 0.2
+
+AI must NOT be required for the basic matcher to work.
+
+If Vanessa errors/times out:
+use deterministic results.
+
+No search request should fail because Vanessa failed.
+
+============================================================
+DO NOT LABEL FAKE RESULTS AS AI
+============================================================
+
+The UI currently shows:
+
+"10% AI-matched profile"
+
+and:
+"0% AI-matched profile"
+
+Make sure that label is truthful.
+
+If Vanessa is not actually used in that scoring request, either:
+
+change it to:
+"10% match"
+
+or:
+"10% profile match"
+
+If Vanessa genuinely contributes, "AI-matched profile" is acceptable.
+
+Do not claim AI generated a result that came only from a simplistic keyword formula.
+
+============================================================
+SORT ORDER
+============================================================
+
+After calculating scores:
+
+ORDER BY FINAL MATCH SCORE DESCENDING.
+
+A relevant candidate must appear above unrelated candidates.
+
+Using the current example:
+
+Search:
+Developer
+
+A candidate whose profile contains:
+- Software Engineer
+- Developers category
+- Full Stack Developer
+- Programming
+- C#
+- technical experience
+
+must rank ABOVE candidates whose profiles contain no development evidence.
+
+The screenshot currently shows several generic profiles at 10% above Frenzy at 0%.
+
+That must no longer happen.
+
+============================================================
+SEARCH FILTER VS MATCH SCORE
+============================================================
+
+Do not confuse filtering and scoring.
+
+The user search should:
+
+1. evaluate all eligible talent
+2. calculate profile relevance
+3. sort strongest matches first
+
+Avoid filtering out meaningful semantic matches simply because exact text is absent.
+
+Example:
+
+query = Developer
+profile title = Software Engineer
+
+Candidate should still be included.
+
+============================================================
+USE A PROFILE SEARCH DOCUMENT
+============================================================
+
+Implement a reusable helper to build a candidate search document.
+
+Conceptually:
+
+buildTalentSearchDocument(candidate)
+
+returning normalized information such as:
+
+{
+  targetPosition,
+  headline,
+  summary,
+  category,
+  coreSkills,
+  secondarySkills,
+  workRoles,
+  workDescriptions,
+  experienceYears
+}
+
+Then score the search query against this normalized structure.
+
+Do not keep duplicating parsing logic inside SQL/routes.
+
+============================================================
+CENTRALIZE MATCHING
+============================================================
+
+If current logic exists directly inside:
+
+rankTalentByParams
+
+and a different implementation exists inside:
+
+rankTalentForJob
+
+extract shared helpers such as:
+
+normalizeMatchText()
+normalizeSkill()
+inferRoleFamily()
+buildTalentSearchDocument()
+scoreRoleAlignment()
+scoreSkillRelevance()
+scoreProfileSummary()
+scoreWorkHistory()
+calculateTalentSearchMatch()
+
+Use naming appropriate to this repository.
+
+Do not maintain two contradictory scoring systems.
+
+============================================================
+DB / SQL REQUIREMENTS
+============================================================
+
+Inspect the queries used by rankTalentByParams.
+
+Make sure the query actually SELECTS the fields required for scoring.
+
+This is critical.
+
+If the DB query currently only fetches:
+
+candidate id
+name
+core skills
+
+and does NOT fetch:
+
+target_position
+headline
+summary
+secondary_skills
+category
+experience
+work history
+
+then FIX THE SELECT / joins so the matcher receives the actual profile information.
+
+Do not write a better TypeScript scorer while still passing it incomplete database records.
+
+Check the actual schema names before changing SQL.
+
+============================================================
+VERY IMPORTANT: SNAKE_CASE / CAMELCASE
+============================================================
+
+The frontend already tolerates fields like:
+
+targetPosition
+target_position
+
+coreSkills
+core_skills
+
+secondarySkills
+secondary_skills
+
+Ensure backend matching also correctly handles the ACTUAL DB naming.
+
+Do not accidentally score:
+
+candidate.secondarySkills
+
+when the DB result only contains:
+
+secondary_skills
+
+and therefore silently treat it as [].
+
+Normalize the database row into one canonical internal TalentMatchProfile before scoring.
+
+Example:
+
+const profile = {
+  targetPosition:
+    row.targetPosition ??
+    row.target_position ??
+    null,
+
+  coreSkills:
+    row.coreSkills ??
+    row.core_skills ??
+    [],
+
+  secondarySkills:
+    row.secondarySkills ??
+    row.secondary_skills ??
+    [],
+  ...
+};
+
+This is a likely source of silent matching errors, so verify it during implementation.
+
+============================================================
+FRENZY REGRESSION TEST
+============================================================
+
+Add a regression test modeled on this real failure.
+
+Candidate profile:
+
+{
+  targetPosition: "Software Engineer",
+  category: "Developers",
+  experienceYears: "1-3",
+  coreSkills: [
+    "Research",
+    "Project Coordination"
+  ],
+  secondarySkills: [
+    "Automation Testing",
+    "Project Management",
+    "Quality Assurance",
+    "Machine Learning",
+    "Manual Testing",
+    "C#",
+    "Programming",
+    "Language C",
+    "System",
+    "Full Stack Developer"
+  ],
+  summary:
+    "Software engineering / full stack development background"
+}
+
+Search:
+
+Developer
+
+EXPECTED:
+
+score > 0
+
+More specifically, it should be a meaningful developer match, not 0-10%.
+
+Target expectation:
+approximately 55-80 depending on final weighting.
+
+Do NOT assert one exact number if small weighting changes would make the test fragile.
+
+Instead assert:
+
+score >= 50
+
+and assert this candidate outranks an unrelated Marketing profile.
+
+============================================================
+MORE AUTOMATED TESTS
+============================================================
+
+Add tests:
+
+TEST 1
+Search: Developer
+
+Candidate:
+Software Engineer
+Full Stack Developer
+Programming
+React
+Node
+
+Expected:
+Strong score.
+
+TEST 2
+Search: Developer
+
+Candidate:
+Social Media Manager
+Canva
+Facebook Ads
+Content Creation
+
+Expected:
+Low score.
+
+TEST 3
+Search: React Developer
+
+Candidate:
+Software Engineer
+React
+TypeScript
+Node.js
+
+Expected:
+Very strong.
+
+TEST 4
+Search: React Developer
+
+Candidate:
+Backend Java Developer
+
+Expected:
+Some developer relevance but substantially below the React candidate.
+
+TEST 5
+Search: IT Administrator
+
+Candidate:
+Systems Administrator
+Active Directory
+Microsoft 365
+Windows Server
+Networking
+
+Expected:
+Strong.
+
+TEST 6
+Search: Virtual Assistant
+
+Candidate:
+Administrative Assistant
+Calendar Management
+Inbox Management
+Scheduling
+
+Expected:
+Strong.
+
+TEST 7
+Summary-only evidence
+
+Search:
+Full Stack Developer
+
+candidate summary:
+"Experienced full stack developer building web applications"
+
+even when structured skills are sparse.
+
+Expected:
+non-zero meaningful score.
+
+TEST 8
+Secondary-skills evidence
+
+Search:
+Developer
+
+core skills unrelated
+secondary skills include:
+Full Stack Developer
+Programming
+C#
+
+Expected:
+meaningful score.
+
+TEST 9
+Work-history evidence
+
+Search:
+Developer
+
+targetPosition missing
+skills sparse
+workHistory role:
+Software Engineer
+
+Expected:
+meaningful score.
+
+TEST 10
+No evidence
+
+Search:
+Developer
+
+profile:
+Bookkeeping
+QuickBooks
+Accounts Payable
+
+Expected:
+very low or zero.
+
+TEST 11
+Sort order
+
+Strong developer profile MUST appear before weak developer profile.
+
+TEST 12
+Case/punctuation aliases:
+
+developer
+Developer
+DEVELOPER
+
+should behave the same.
+
+React.js / React
+Node.js / Node
+
+should normalize correctly.
+
+============================================================
+JOB-SPECIFIC MATCHING
+============================================================
+
+The generic Hire Talent search and job-specific talent matching must share the corrected profile understanding.
+
+Do NOT fix only:
+
+rankTalentByParams
+
+while leaving:
+
+rankTalentForJob
+
+with broken exact-keyword matching.
+
+Use the same normalized profile inputs and shared semantic helpers.
+
+Job-specific matching should additionally consider actual job fields.
+
+============================================================
+PRESERVE SECURITY
+============================================================
+
+Do not alter current eligibility restrictions.
+
+Keep:
+- only valid talent users
+- converted/non-talent accounts excluded
+- existing legacy email-linked talent behavior
+- safe client DTOs
+- PII stripping
+- auth checks
+- invite permissions
+
+Existing tests already cover some of these behaviors.
+
+Do not weaken them.
+
+============================================================
+PRESERVE EXISTING UI
+============================================================
+
+Do NOT redesign HireTalentPage.
+
+Do NOT redesign the profile popup.
+
+Do NOT remove:
+- Preview
+- Favorites
+- Request Interview
+- Message
+- profile popup
+- search chips
+- Copy link
+- Refine
+- existing invite flow
+
+Only change UI text if needed to correctly communicate match score.
+
+The primary bug is MATCHING DATA / RANKING.
+
+============================================================
+NO HARDCODED SCORE PATCH
+============================================================
+
+These are NOT acceptable fixes:
+
+if name === "Frenzy L." score = 70
+
+if query === "Developer" score += 50
+
+if category === "Developers" score = 80
+
+score = Math.max(score, 10)
+
+Do not insert artificial minimum percentages.
+
+The algorithm must derive the score from actual evidence.
+
+============================================================
+ACCEPTANCE CHECK USING THE SCREENSHOT CASE
+============================================================
+
+After implementation:
+
+Search:
+Developer
+
+Frenzy L.'s profile:
+
+Software Engineer
+Developers
+Full Stack Developer
+Programming
+C#
+technical/testing/programming background
+
+MUST:
+
+1. return a non-zero meaningful score
+2. appear above unrelated profiles
+3. reflect relevant profile evidence
+4. show matched evidence when available
+
+A reasonable result might look like:
+
+Frenzy L.
+68% match
+Software Engineer
+
+Matches:
+Software Engineer
+Full Stack Developer
+Programming
+C#
+
+The exact percentage may vary based on the implemented weighting.
+
+The important requirement is that the percentage is supported by evidence.
+
+============================================================
+IMPLEMENTATION ORDER
+============================================================
+
+DO THIS NOW:
+
+1. Locate DbStorage.rankTalentByParams.
+2. Locate DbStorage.rankTalentForJob.
+3. Locate recomputeMatchesForJob.
+4. Inspect the candidate DB fields those functions actually retrieve.
+5. Ensure full relevant profile data is loaded.
+6. Normalize candidate DB shape.
+7. Implement shared role/skill/text normalization.
+8. Build the full candidate match document.
+9. Implement weighted profile relevance scoring.
+10. Ensure secondary skills are included.
+11. Ensure summary/headline are included.
+12. Ensure work history is included.
+13. Ensure role/category semantic relationships are included.
+14. Fix generic role query handling.
+15. Sort descending by score.
+16. Make the Hire Talent route use corrected scores.
+17. Make job-specific matching use the shared matcher.
+18. Preserve safe DTO behavior.
+19. Add regression tests including the Frenzy scenario.
+20. Run existing tests.
+21. Run TypeScript/typecheck.
+22. Run build.
+23. Fix any regression introduced by these changes.
+
+============================================================
+DEFINITION OF DONE
+============================================================
+
+Do not finish until:
+
+- "Developer" correctly matches Software Engineer / Full Stack Developer profiles.
+- Secondary skills are included.
+- Summary/headline are included.
+- Target position is included.
+- Category is included as a supporting signal.
+- Work history is included.
+- Generic roles work.
+- Specific roles/skills work.
+- Strong talent sorts above weak talent.
+- Relevant profiles no longer incorrectly show 0%.
+- No fake score floor is introduced.
+- No name/query hardcoding is introduced.
+- Client-safe profile behavior still works.
+- Invite/interview/favorite/message functionality is unaffected.
+- Existing tests pass.
+- New matching tests pass.
+- Typecheck passes.
+- Build passes.
+
+IMPLEMENT THE CODE. DO NOT RETURN AN AUDIT.

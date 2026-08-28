@@ -611,8 +611,8 @@ function ResultRow({
   const isAvailable = !candidate.seniority?.toLowerCase().includes("unavailable");
 
   const signal = isAvailable
-    ? `Available now · ${result.score}% AI-matched profile`
-    : `${result.score}% AI-matched profile`;
+    ? `Available now · ${result.score}% profile match`
+    : `${result.score}% profile match`;
 
   const desc = candidate.category
     ? `${resolveBrowseCategory(candidate.category) ?? candidate.category} specialist`

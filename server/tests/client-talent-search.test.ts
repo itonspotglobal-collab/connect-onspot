@@ -329,6 +329,61 @@ describe("client talent-search — route SQL invariants (PostgreSQL integration)
       await query(`DELETE FROM users WHERE id = $1`, [userId]).catch(() => {});
     }
   });
+
+  it("job-match recomputation persists role evidence for talent with no structured skills", async () => {
+    const suffix = Date.now();
+    const userId = `semantic-empty-skills-talent-${suffix}`;
+    const candidateId = `semantic-empty-skills-candidate-${suffix}`;
+    const jobId = `semantic-empty-skills-job-${suffix}`;
+    const email = `${userId}@test.local`;
+    const clientId = await getClientUserId();
+    try {
+      await query(
+        `INSERT INTO users (id, email, role) VALUES ($1, $2, 'talent')`,
+        [userId, email],
+      );
+      await query(
+        `INSERT INTO candidates
+           (id, user_id, email, full_name, target_position, headline, summary,
+            category, core_skills, secondary_skills, work_history)
+         VALUES ($1, $2, $3, 'Semantic Match Talent', 'Software Engineer',
+                 'Full stack application developer',
+                 'Software engineering and web application development background',
+                 'Developers', ARRAY[]::text[], ARRAY[]::text[],
+                 $4::jsonb)`,
+        [candidateId, userId, email, JSON.stringify([
+          { role: "Software Engineer", description: "Built internal web applications." },
+        ])],
+      );
+      await query(
+        `INSERT INTO jobs
+           (id, title, professional_role_name, category, job_function, engagement_type,
+            status, approval_status, is_client_submitted, client_id, created_via, description,
+            skill_tags, experience_level)
+         VALUES ($1, 'Developer', 'Software Developer', 'Developers', 'Developers',
+                 'Standard', 'open', 'approved', true, $2, 'test',
+                 'Build and maintain web applications.', $3, 'intermediate')`,
+        [jobId, clientId, ["React"]],
+      );
+
+      await new DbStorage().recomputeMatchesForJob(jobId);
+      const match = await query(
+        `SELECT compatibility_score, match_reasons
+           FROM job_matches
+          WHERE talent_id = $1 AND job_id = $2`,
+        [candidateId, jobId],
+      );
+      assert.equal(match.rows.length, 1);
+      assert.ok(Number(match.rows[0].compatibility_score) > 0);
+      assert.ok(Number(match.rows[0].match_reasons?.componentScores?.role) >= 70);
+    } finally {
+      await query(`DELETE FROM job_matches WHERE talent_id = $1 AND job_id = $2`, [candidateId, jobId]).catch(() => {});
+      await query(`DELETE FROM notifications WHERE user_id = $1`, [userId]).catch(() => {});
+      await query(`DELETE FROM jobs WHERE id = $1`, [jobId]).catch(() => {});
+      await query(`DELETE FROM candidates WHERE id = $1`, [candidateId]).catch(() => {});
+      await query(`DELETE FROM users WHERE id = $1`, [userId]).catch(() => {});
+    }
+  });
 });
 
 describe("interview timezone validation", () => {
