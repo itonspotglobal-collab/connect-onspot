@@ -1,0 +1,875 @@
+BUILD THIS FEATURE NOW — DO NOT ONLY AUDIT, ANALYZE, OR WRITE A PLAN.
+
+We need to improve the existing Talent Matching / Invite Talent to Apply system in this application.
+
+IMPORTANT:
+This is an existing production-style system with working Client/Admin job posting, talent profiles, talent search, invitations, interview scheduling, messaging, and other features.
+
+Your task is to IMPLEMENT the improved matching system directly while preserving existing working behavior.
+
+Do NOT redesign unrelated features.
+Do NOT replace working flows unnecessarily.
+Do NOT break existing APIs, invitations, applicant flows, messaging, job posting, profile preview, authentication, or permissions.
+
+==================================================
+PRIMARY GOAL
+==================================================
+
+When a Client or Admin opens a job and searches for talent to invite, the system must prioritize the talent who actually match that specific job.
+
+Currently talent can appear with weak or inaccurate percentages, causing Client/Admin users to randomly invite people.
+
+Replace/improve the current matching logic so that:
+
+1. Talent is evaluated against the ACTUAL job opening.
+2. Strong candidates appear first.
+3. Weak/unrelated candidates appear later.
+4. The percentage shown represents a meaningful match.
+5. The matching uses as much useful Talent Profile information as is safely available.
+6. Vanessa AI should be used where it improves semantic matching and contextual understanding.
+7. Matching must still work safely if the AI service is unavailable.
+
+Example:
+
+Job:
+IT Administrator
+
+Talent:
+Frenzy L.
+
+Talent Profile:
+- IT administration background
+- Windows / Microsoft 365 experience
+- Active Directory
+- networking
+- troubleshooting
+- technical support experience
+- interested in IT Administrator / Systems Administrator work
+
+Expected result:
+
+Frenzy L. — approximately 80% match
+
+Reason:
+"Strong match because the candidate's IT administration experience, technical skills, and preferred roles closely match this job."
+
+The exact percentage should come from the matching algorithm, not be hardcoded.
+
+==================================================
+EXISTING FLOW THAT MUST BE PRESERVED
+==================================================
+
+There is already an existing Client job talent search flow.
+
+The frontend currently calls:
+
+POST /api/client/jobs/:jobId/talent-search
+
+and expects results containing data similar to:
+
+{
+  candidateId,
+  userId,
+  score,
+  overlapSkills,
+  candidate
+}
+
+The existing Invite Talent dialog already displays:
+
+"{score}% match"
+
+and has:
+- talent search
+- talent profile preview
+- proposed interview time
+- meeting link
+- Invite to Apply
+- invited state
+
+DO NOT replace this workflow.
+
+Enhance the backend matching and make only the minimum frontend changes needed to expose better matching information.
+
+Also find the equivalent Admin talent matching/invite flow and reuse the SAME matching service rather than implementing two separate scoring algorithms.
+
+==================================================
+ARCHITECTURE REQUIREMENT
+==================================================
+
+Create ONE reusable centralized talent/job matching service.
+
+Example structure, adapted to the actual repository:
+
+server/
+  services/
+    talentMatchingService.ts
+
+or the closest existing service structure.
+
+Do not scatter scoring formulas across route handlers or React components.
+
+The service should accept:
+
+job
+candidate / talent profile
+optional AI matching context
+
+and return something like:
+
+{
+  score: 0-100,
+  tier: "excellent" | "strong" | "moderate" | "weak",
+  matchedSkills: string[],
+  missingSkills: string[],
+  reasons: string[],
+  aiReason?: string,
+  componentScores: {
+    skills: number,
+    experience: number,
+    role: number,
+    interests: number,
+    domain: number,
+    availability?: number
+  }
+}
+
+Adjust naming to the repository conventions.
+
+==================================================
+MATCHING INPUTS
+==================================================
+
+Inspect the actual database schema and use the real fields available in:
+
+JOB DATA
+- job title
+- description
+- responsibilities
+- required skills
+- preferred skills
+- category
+- experience requirements
+- seniority if available
+- employment type if relevant
+- industry/domain if available
+- required certifications if available
+- location/timezone requirements if relevant
+- schedule/availability requirements if available
+- any structured job requirement fields already in the schema
+
+TALENT PROFILE DATA
+- target position / preferred role
+- headline
+- professional summary
+- core skills
+- secondary skills
+- experience history
+- years of experience
+- previous job titles
+- interests / desired roles
+- certifications
+- education when relevant
+- industry/domain background
+- availability
+- timezone/location when relevant
+- vetted/verified information
+- any other existing profile fields that genuinely indicate job fit
+
+Do NOT use protected or irrelevant personal characteristics in ranking.
+
+==================================================
+SCORING MODEL
+==================================================
+
+Implement a transparent weighted scoring model.
+
+Start with approximately:
+
+Required/Core skill match          35%
+Relevant experience                20%
+Role/title alignment               15%
+Semantic job/profile similarity    15%
+Career interest alignment          10%
+Preferred/bonus criteria            5%
+
+These percentages may be adjusted slightly based on the real schema, but SKILLS + EXPERIENCE + ROLE ALIGNMENT must carry most of the score.
+
+Do not calculate a score merely by:
+- counting words
+- checking one category
+- matching only the job title
+- giving everyone a default 10%
+- giving arbitrary/random scores
+
+==================================================
+SKILL MATCHING
+==================================================
+
+Implement normalized skill matching.
+
+Examples that should be recognized as related:
+
+"React.js" ~= "React"
+"Node.js" ~= "Node"
+"Microsoft 365" ~= "Office 365" where appropriate
+"Active Directory" ~= "AD" only when context confirms it
+"Customer Support" ~= "Customer Service"
+"System Administrator" ~= "Systems Administration"
+
+Normalize:
+- casing
+- punctuation
+- common abbreviations
+- harmless pluralization
+- common technology aliases
+
+Maintain a small reusable alias/synonym map if useful.
+
+Do not make aliases so broad that unrelated skills become matches.
+
+Required skills should score more heavily than preferred skills.
+
+==================================================
+EXPERIENCE MATCHING
+==================================================
+
+Experience matching should use more than total years.
+
+Consider:
+- relevance of previous role titles
+- similarity of responsibilities
+- number of relevant years
+- recency if the data supports it
+- domain alignment
+
+For example:
+
+5 years of unrelated sales experience should NOT score the same as
+5 years of systems administration experience
+for an IT Administrator job.
+
+==================================================
+ROLE / INTENT MATCHING
+==================================================
+
+Compare the job title and job responsibilities against:
+
+- targetPosition
+- headline
+- desired role
+- professional summary
+- prior roles
+- career interests if stored
+
+Examples:
+
+Job: IT Administrator
+
+Good profile role matches:
+- IT Administrator
+- Systems Administrator
+- System Administrator
+- IT Support Administrator
+- IT Infrastructure Specialist
+
+Partial matches:
+- IT Support Specialist
+- Technical Support Specialist
+- Network Support
+
+Weak:
+- Social Media Manager
+- Bookkeeper
+- Graphic Designer
+
+==================================================
+VANESSA AI INTEGRATION
+==================================================
+
+Use the existing Vanessa AI integration if one already exists in this repository.
+
+DO NOT create a completely separate AI stack if the application already has one.
+
+Vanessa AI should be used for SEMANTIC FIT, not as an unchecked source of truth.
+
+Use it to compare:
+
+JOB:
+- title
+- description
+- responsibilities
+- skills
+- requirements
+
+against
+
+TALENT:
+- role
+- summary
+- skills
+- experience
+- interests
+
+Ask Vanessa to return STRICT JSON only.
+
+Example internal response:
+
+{
+  "semanticScore": 84,
+  "roleAlignment": 88,
+  "domainAlignment": 80,
+  "reasons": [
+    "Candidate has systems administration experience",
+    "Microsoft 365 and Active Directory align with the job",
+    "Preferred role is closely related to IT administration"
+  ]
+}
+
+Validate the AI response on the server.
+
+Clamp all numeric values to 0-100.
+
+If Vanessa:
+- times out
+- fails
+- returns invalid JSON
+- is unavailable
+
+DO NOT fail the talent search.
+
+Use the deterministic matching score as the fallback.
+
+==================================================
+IMPORTANT AI PERFORMANCE RULE
+==================================================
+
+DO NOT call Vanessa individually for hundreds of candidates on every keystroke.
+
+Build this efficiently.
+
+Recommended pipeline:
+
+STEP 1
+Use deterministic matching to cheaply score all eligible candidates.
+
+STEP 2
+Sort candidates by preliminary deterministic score.
+
+STEP 3
+Run Vanessa semantic reranking only for the strongest limited candidate pool, e.g. top 20-30.
+
+STEP 4
+Blend deterministic + Vanessa score.
+
+Example:
+
+finalScore =
+  deterministicScore * 0.75 +
+  aiSemanticScore * 0.25
+
+You may tune this, but deterministic structured evidence must remain the dominant signal.
+
+Add:
+- timeout
+- graceful fallback
+- concurrency limit if needed
+- caching if appropriate
+
+Cache AI match results using something similar to:
+
+jobId + jobUpdatedAt + talentProfileUpdatedAt
+
+or equivalent profile/job versioning.
+
+Do NOT recalculate identical AI matches unnecessarily.
+
+==================================================
+HARD FILTERS VS RANKING
+==================================================
+
+Separate HARD requirements from ranking preferences.
+
+If the job has true mandatory constraints in structured data, such as:
+
+- required certification
+- required timezone/location
+- required language
+- required availability
+- minimum mandatory experience
+
+then a candidate who fails an actual hard requirement should be penalized heavily or excluded when appropriate.
+
+Do not infer "mandatory" requirements from casual wording unless the schema or job content clearly supports it.
+
+==================================================
+RESULT ORDERING
+==================================================
+
+Default ordering must be:
+
+highest match score
+→ lowest match score
+
+High-quality candidates must appear first.
+
+Suggested display tiers:
+
+85–100 = Excellent match
+70–84  = Strong match
+50–69  = Moderate match
+30–49  = Weak match
+0–29   = Low match
+
+Do not hide all lower-scoring talent permanently unless product rules require it.
+
+Instead:
+- prioritize high matches at the top
+- allow Client/Admin to intentionally browse lower matches if needed
+
+For the Invite Talent dialog, it is acceptable to show the best matches first and optionally place weak matches below a "Other talent" or similar section.
+
+==================================================
+SEARCH FIELD BEHAVIOR
+==================================================
+
+The existing search field must continue to work.
+
+Search text like:
+
+"React developer"
+"IT administrator"
+"Microsoft 365"
+"customer support"
+"5 years bookkeeping"
+
+should filter/narrow the already job-aware candidate ranking.
+
+IMPORTANT:
+
+Searching must NOT replace job matching.
+
+The score should remain primarily:
+
+candidate vs current job
+
+with the user-entered search query acting as an additional filter or relevance signal.
+
+==================================================
+FRONTEND DISPLAY
+==================================================
+
+Preserve the existing Invite Talent to Apply UI.
+
+Improve each talent result to show:
+
+Talent Name           82% match
+Role / headline
+
+Matched:
+React, Node.js, PostgreSQL
+
+Optional short reason:
+"Strong skills and role alignment"
+
+Buttons:
+Preview
+Invite to Apply
+
+Do not overcrowd the UI.
+
+For high matches optionally use:
+
+82% Strong match
+
+Instead of only:
+
+82% match
+
+If space is limited, keep the current percentage badge and add the tier/reason in the profile preview.
+
+==================================================
+MATCH EXPLANATION
+==================================================
+
+Add a safe explanation for why the talent received the score.
+
+Example:
+
+80% Strong match
+
+Why this candidate matches:
+✓ 5 of 6 important skills matched
+✓ 4 years of related IT administration experience
+✓ Target role aligns with IT Administrator
+✓ Strong semantic similarity with job responsibilities
+
+Missing / weaker areas:
+- AWS experience not found
+- CCNA certification not listed
+
+Do not expose:
+- internal AI prompts
+- chain-of-thought
+- sensitive/private fields
+- raw scoring implementation details inappropriate for the client
+
+Use concise evidence-based explanations.
+
+==================================================
+CLIENT + ADMIN CONSISTENCY
+==================================================
+
+Both Client and Admin matching/invite views must use the same backend matching service.
+
+Do not allow:
+
+Client score = 82%
+Admin score = 41%
+
+for the same job/talent pair because of separate formulas.
+
+Reuse one service and one response model wherever possible.
+
+==================================================
+ELIGIBILITY / SECURITY
+==================================================
+
+Before ranking candidates:
+
+Preserve all existing eligibility/security restrictions.
+
+Do not accidentally expose:
+- private emails
+- phone numbers
+- internal notes
+- sensitive profile fields
+- users not eligible to appear in Client search
+- deactivated/deleted users
+- candidates that existing business rules intentionally hide
+
+The current client profile preview is intentionally safe/client-facing. Preserve that principle.
+
+Never weaken authentication or authorization to make matching easier.
+
+==================================================
+DATABASE CHANGES
+==================================================
+
+Only add schema changes if genuinely necessary.
+
+Prefer calculating match results dynamically first.
+
+If caching is needed, create a small match cache/table only if this significantly improves performance.
+
+Possible fields:
+
+job_id
+talent_user_id
+deterministic_score
+ai_score
+final_score
+matched_skills
+reasons
+job_version
+profile_version
+calculated_at
+
+Do not add a large invasive schema migration unless needed.
+
+All migrations must be backward compatible.
+
+==================================================
+EXISTING CATEGORY MATCHING
+==================================================
+
+There is already category/search inference logic in the repository.
+
+Reuse it as a supporting signal.
+
+Do NOT let category alone determine the candidate score.
+
+Example:
+
+Job category = Developers
+
+A talent should not automatically receive a high score simply because their profile is also categorized as Developer.
+
+Their actual:
+- skills
+- background
+- target role
+- experience
+- job-specific relevance
+
+must determine the majority of the score.
+
+==================================================
+AVOID FAKE SCORES
+==================================================
+
+Remove or correct any logic that causes obviously artificial results such as:
+
+every candidate = 10%
+every candidate in same category = 50%
+random percentage
+constant baseline displayed as a meaningful match
+
+Scores must reflect actual evidence.
+
+If there is insufficient profile data, return a lower-confidence score and optionally:
+
+"Limited profile information"
+
+Do not invent qualifications.
+
+==================================================
+TEST CASES
+==================================================
+
+Add automated tests for the matching engine.
+
+TEST 1 — Strong IT Match
+
+Job:
+IT Administrator
+
+Candidate:
+- target role: Systems Administrator
+- Active Directory
+- Microsoft 365
+- Windows Server
+- networking
+- troubleshooting
+- 4 years IT support/admin experience
+
+Expected:
+High score, approximately 75-95.
+
+TEST 2 — Weak IT Match
+
+Same job.
+
+Candidate:
+- Social Media Manager
+- Canva
+- Facebook Ads
+- Content Creation
+- 5 years marketing experience
+
+Expected:
+Low score, likely below 30.
+
+TEST 3 — Partial Match
+
+IT Administrator job.
+
+Candidate:
+- Technical Support
+- Windows troubleshooting
+- Microsoft 365
+- no Active Directory
+- 2 years experience
+
+Expected:
+Moderate/strong range depending on requirements.
+
+TEST 4 — Developer Job
+
+Job:
+Senior React Developer
+
+Candidate A:
+React, TypeScript, Node, PostgreSQL, 5 years
+
+Candidate B:
+WordPress, Photoshop, Canva, 3 years
+
+Candidate A MUST rank much higher.
+
+TEST 5 — Missing Profile Information
+
+A nearly empty talent profile should NOT receive a high match.
+
+TEST 6 — Vanessa failure
+
+Mock Vanessa failure/timeout.
+
+Search must still return valid deterministic rankings.
+
+TEST 7 — Sorting
+
+Results returned by job talent search must be descending by final score.
+
+TEST 8 — Existing invite behavior
+
+Improved ranking must not break:
+- invite sending
+- already-invited state
+- interview time
+- meeting link
+- profile preview
+
+==================================================
+PERFORMANCE
+==================================================
+
+Talent search should remain responsive.
+
+Avoid:
+- N+1 database queries
+- one AI request per every candidate
+- recalculating static profile data repeatedly
+- loading private/full profile records unnecessarily
+
+Batch-fetch profile data when possible.
+
+Use deterministic ranking first.
+
+Only semantically rerank a bounded candidate shortlist.
+
+==================================================
+IMPLEMENTATION SEQUENCE
+==================================================
+
+Do not spend the whole task writing an audit.
+
+Start implementation.
+
+1. Locate the current:
+   - /api/client/jobs/:jobId/talent-search route
+   - Admin equivalent
+   - talent/profile schema
+   - jobs schema
+   - Vanessa AI integration
+
+2. Extract or create one centralized talentMatchingService.
+
+3. Build deterministic matching.
+
+4. Add normalized skill aliases.
+
+5. Add experience/role/interest scoring.
+
+6. Add Vanessa semantic reranking with strict JSON validation and fallback.
+
+7. Update Client route to use the centralized service.
+
+8. Update Admin route to use the same service.
+
+9. Return richer matching metadata without breaking the existing response contract.
+
+10. Ensure results sort descending by final score.
+
+11. Update Client/Admin UI minimally to expose match tier/reason.
+
+12. Add tests.
+
+13. Run existing tests, typecheck, and build.
+
+14. Fix regressions caused by this implementation before finishing.
+
+==================================================
+BACKWARD COMPATIBILITY
+==================================================
+
+The existing frontend currently depends on:
+
+score
+overlapSkills
+candidateId
+userId
+candidate
+
+These must continue working.
+
+You may extend the response:
+
+{
+  candidateId,
+  userId,
+  score,
+  overlapSkills,
+  matchTier,
+  matchReasons,
+  missingSkills,
+  componentScores,
+  candidate
+}
+
+but do NOT rename/remove existing fields unless every consumer is safely migrated.
+
+==================================================
+DO NOT TOUCH UNRELATED WORKING FEATURES
+==================================================
+
+Do not make broad refactors.
+
+Do not rewrite:
+- authentication
+- navigation
+- messaging
+- invitations
+- interview scheduling
+- job posting
+- application workflow
+- dashboard layout
+- profile management
+
+unless a tiny change is strictly required for this feature.
+
+When touching an existing shared function:
+- preserve its current behavior for unrelated callers
+- add compatibility where needed
+- test affected flows
+
+==================================================
+DEFINITION OF DONE
+==================================================
+
+This task is complete only when:
+
+- Job-specific talent matching is implemented.
+- Talent is ranked by meaningful final score.
+- Best matches appear first.
+- Scores are evidence-based, not arbitrary.
+- Skills, experience, role alignment, and interests affect ranking.
+- Vanessa AI improves semantic matching where available.
+- Deterministic fallback works when Vanessa fails.
+- Client and Admin use one consistent matcher.
+- Existing invite flow still works.
+- Existing safe profile preview still works.
+- Existing search still works.
+- Existing interview time and meeting link still work.
+- Existing already-invited handling still works.
+- Automated tests cover strong/weak/partial matching.
+- Build/typecheck/tests pass.
+- Unrelated existing features remain untouched.
+
+==================================================
+EXPECTED USER EXPERIENCE
+==================================================
+
+When Client/Admin opens:
+
+Invite Talent to Apply
+Search talent for IT Administrator
+
+The first results should look approximately like:
+
+Frenzy L.        84% Strong match
+Systems Administrator
+Matches: Active Directory, Microsoft 365, Networking, Troubleshooting
+
+Jane D.          71% Strong match
+Technical Support Specialist
+Matches: Microsoft 365, Windows, Helpdesk
+
+Mark A.          22% Low match
+Marketing Specialist
+
+not a list where unrelated talents all show the same 10% score.
+
+BUILD THE FEATURE DIRECTLY.
+
+Inspect the existing repository first, preserve all existing working functionality, reuse existing services and Vanessa integration where possible, and make the smallest safe set of changes necessary to deliver accurate job-to-talent matching.
