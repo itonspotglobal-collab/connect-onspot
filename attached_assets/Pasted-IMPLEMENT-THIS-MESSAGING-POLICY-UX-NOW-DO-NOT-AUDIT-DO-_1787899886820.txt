@@ -1,0 +1,1038 @@
+IMPLEMENT THIS MESSAGING POLICY UX NOW.
+
+DO NOT AUDIT.
+DO NOT REDESIGN THE MESSAGING PAGE.
+BUILD THIS ON TOP OF THE WORKING PII REDACTION THAT IS ALREADY IMPLEMENTED.
+
+============================================================
+GOAL
+============================================================
+
+Now that sensitive information is successfully being redacted in messages, add TWO user-facing privacy features:
+
+1. A warning whenever a message had sensitive information automatically redacted.
+2. A Messaging Terms / Communication Policy popup that users must accept once before using messaging, with a permanent small link near the chat composer so they can reopen it anytime.
+
+This must work for BOTH:
+
+- Client users
+- Talent users
+
+Do not create separate behavior for each role.
+
+============================================================
+FEATURE 1 — REDACTION WARNING AFTER SEND
+============================================================
+
+When a user sends sensitive information and the server redacts it, show a clear but non-disruptive warning to the SENDER.
+
+Example:
+
+User sends:
+
+val@onspotglobal.com
+
+Server stores/returns:
+
+*****.com
+
+Then show something like:
+
+"Personal information was hidden"
+
+"Sharing personal contact information, passwords, or account credentials is not allowed. Sensitive information in your message was automatically hidden."
+
+This should appear immediately after the sanitized message is successfully sent.
+
+Do NOT block the message if the remaining sanitized message can still be sent.
+
+============================================================
+WARNING UX
+============================================================
+
+Use either:
+
+- toast
+- small inline warning above/below composer
+- existing app notification component
+
+Prefer the existing toast system if already available.
+
+Suggested UI:
+
+Title:
+Personal information hidden
+
+Message:
+For your safety, personal contact details and credentials must remain private. Sensitive information in your message was automatically hidden.
+
+Keep it concise.
+
+Do NOT show:
+
+- the original raw email
+- raw phone number
+- password
+- detected secret
+- exact private value
+
+============================================================
+HOW FRONTEND KNOWS REDACTION HAPPENED
+============================================================
+
+Do NOT make the frontend guess using regex.
+
+The server should explicitly tell the frontend that redaction occurred.
+
+Extend the existing POST /api/messages response safely.
+
+Example:
+
+{
+  ...savedMessage,
+  privacy: {
+    redacted: true,
+    categories: ["email"]
+  }
+}
+
+or:
+
+{
+  message: {...},
+  redacted: true,
+  privacyCategories: ["email"]
+}
+
+Choose whichever response structure best fits the existing app.
+
+DO NOT return detected values.
+
+Only safe categories such as:
+
+email
+phone
+credential
+secret
+obfuscated_contact
+
+============================================================
+BACKWARD COMPATIBILITY
+============================================================
+
+If the existing frontend expects the saved message directly, do not break that contract unnecessarily.
+
+Prefer adding fields to the returned message if possible:
+
+{
+  id,
+  threadId,
+  senderId,
+  content,
+  ...,
+  privacyRedacted: true,
+  privacyCategories: ["email"]
+}
+
+If internal DB fields do not need to store these response-only values, they may be attached by the route/service response.
+
+============================================================
+FRONTEND SEND MUTATION
+============================================================
+
+The current Messages.tsx send flow uses:
+
+POST /api/messages
+
+and currently clears the draft and invalidates message/thread queries after success.
+
+Extend that onSuccess handler.
+
+Conceptually:
+
+onSuccess: (savedMessage) => {
+  setDraft("");
+  invalidate...
+
+  if (savedMessage.privacyRedacted) {
+    toast({
+      title: "Personal information hidden",
+      description:
+        "Sharing personal contact information or credentials is not allowed. Sensitive information was automatically hidden."
+    });
+  }
+}
+
+Use the existing toast hook/component already used elsewhere in this repository.
+
+Do not build a custom notification system.
+
+============================================================
+WARNING SHOULD ONLY SHOW WHEN ACTUAL REDACTION HAPPENED
+============================================================
+
+Do NOT show the warning for every normal message.
+
+Example:
+
+"Can we schedule the interview tomorrow?"
+
+No warning.
+
+Example:
+
+"My email is test@gmail.com"
+
+Warning.
+
+Example:
+
+"My password is hello123"
+
+Warning.
+
+Example:
+
+"+63 917 123 4723"
+
+Warning.
+
+============================================================
+MULTIPLE SENSITIVE VALUES
+============================================================
+
+If one message contains:
+
+- email
+- phone
+- password
+
+show ONE warning.
+
+Do not show 3 separate toasts.
+
+============================================================
+FEATURE 2 — MESSAGING TERMS POPUP
+============================================================
+
+Add a Messaging Terms / Communication Policy modal.
+
+The modal should explain the rules for using OnSpot messaging.
+
+It should appear automatically ONLY ONCE for each user until that user accepts it.
+
+They must check an agreement checkbox before they can confirm.
+
+============================================================
+TERMS MODAL CONTENT
+============================================================
+
+Title:
+
+Messaging & Communication Policy
+
+Suggested body:
+
+"To keep clients and talent safe, all communication must remain on the OnSpot platform.
+
+Do not share personal or sensitive information through chat, including:
+
+• Email addresses
+• Personal phone numbers
+• Usernames or external contact handles
+• Passwords
+• PINs or one-time passwords
+• Login credentials
+• API keys or access tokens
+• Other private account or contact information
+
+Sensitive information may be automatically detected and hidden before a message is delivered.
+
+By using OnSpot Messages, you agree to keep communication on-platform and not attempt to bypass these protections."
+
+Then checkbox:
+
+"I understand and agree to the Messaging & Communication Policy."
+
+Primary button:
+
+Agree and Continue
+
+Secondary button:
+
+Close
+
+============================================================
+IMPORTANT ACCEPTANCE RULE
+============================================================
+
+The "Agree and Continue" button MUST remain disabled until the checkbox is checked.
+
+Example:
+
+[ ] I understand and agree...
+
+[Agree and Continue] disabled
+
+After checked:
+
+[x] I understand and agree...
+
+[Agree and Continue] enabled
+
+============================================================
+FIRST-TIME BEHAVIOR
+============================================================
+
+When a user enters:
+
+/messages
+
+or:
+
+/messages/:threadId
+
+check whether that authenticated user has already accepted the current messaging policy.
+
+If NOT accepted:
+
+automatically open the modal.
+
+Prefer preventing message sending until they accept.
+
+The user may still be allowed to see their existing messages if product rules allow it, but the composer should be disabled until acceptance.
+
+Preferred:
+
+- conversation remains readable
+- composer disabled
+- send button disabled
+- policy modal shown
+
+============================================================
+AFTER ACCEPTANCE
+============================================================
+
+Once the user accepts:
+
+- store acceptance server-side
+- close modal
+- enable composer
+- do not automatically show it again
+
+Do NOT rely only on:
+
+localStorage
+
+because that can be:
+- cleared
+- bypassed
+- device-specific
+- different across browsers
+
+Server-side acceptance should be the source of truth.
+
+============================================================
+DATABASE STORAGE
+============================================================
+
+Use a small additive schema change.
+
+Preferred approach:
+
+Add fields to users if appropriate:
+
+messaging_policy_accepted_at timestamp nullable
+messaging_policy_version varchar/text nullable
+
+or create a small user policy acceptance table if that better matches the schema.
+
+Example:
+
+user_policy_acceptances
+
+id
+user_id
+policy_type
+policy_version
+accepted_at
+
+If there is already a generic terms/consent mechanism, reuse it.
+
+Do NOT create a second duplicate consent system if one already exists.
+
+============================================================
+POLICY VERSIONING
+============================================================
+
+Use a policy version.
+
+Example:
+
+MESSAGING_POLICY_VERSION = "2026-08-28"
+
+or:
+
+"1.0"
+
+Store:
+
+accepted version
+accepted timestamp
+
+This allows us to require users to agree again later if the policy materially changes.
+
+Logic:
+
+acceptedVersion === CURRENT_VERSION
+→ accepted
+
+acceptedVersion !== CURRENT_VERSION
+→ show modal again
+
+============================================================
+API
+============================================================
+
+Add small endpoints or extend an existing current-user endpoint.
+
+Possible:
+
+GET /api/me/messaging-policy
+
+Response:
+
+{
+  accepted: true,
+  acceptedAt: "...",
+  version: "1.0"
+}
+
+POST /api/me/messaging-policy/accept
+
+Body:
+
+{
+  version: "1.0"
+}
+
+Server must ignore attempts to accept arbitrary future versions.
+
+Server should use the currently configured policy version.
+
+Response:
+
+{
+  accepted: true,
+  acceptedAt: "...",
+  version: "1.0"
+}
+
+Use naming consistent with existing routes.
+
+============================================================
+AUTHORIZATION
+============================================================
+
+Both endpoints must use the current authenticated user.
+
+Never accept:
+
+userId
+
+from the frontend request body.
+
+Use the same canonical user resolution already used by messaging.
+
+This must work for:
+
+- Client JWT
+- Talent normal user auth
+- Talent/candidate auth if that path is supported in Messages
+
+Resolve to canonical users.id before storing acceptance.
+
+============================================================
+PERMANENT TERMS LINK NEAR COMPOSER
+============================================================
+
+After the user accepts, keep a small unobtrusive policy link visible near the bottom of the message box.
+
+Place it around the composer area.
+
+The current composer has:
+
+Textarea
+Send button
+error message
+
+Add a small line beneath it, something like:
+
+"Messaging Policy"
+
+or:
+
+"Communication & Privacy Policy"
+
+Example:
+
+Write a message...
+[ Send ]
+
+Messages are protected by our Communication Policy · View policy
+
+"View policy" should be clickable.
+
+Do not use a large toggle switch.
+
+The user said "toggle it anytime" — interpret this as:
+they should be able to OPEN/CLOSE the policy modal anytime.
+
+Use a small text button/link rather than a literal boolean switch.
+
+============================================================
+REOPENING TERMS
+============================================================
+
+Clicking:
+
+View policy
+
+should open the same modal.
+
+When reopened after acceptance:
+
+- checkbox can appear already checked
+- primary button may say "Done" or "Close"
+- do NOT require them to re-accept unnecessarily
+
+Better UX:
+
+If already accepted:
+
+show:
+
+✓ You accepted this policy on Aug 28, 2026
+
+and a Close button.
+
+Do not overwrite accepted_at every time they simply view it.
+
+============================================================
+OPTIONAL SMALL INLINE REMINDER
+============================================================
+
+Under the composer, something like:
+
+"Keep communication on OnSpot. Personal contact details and credentials are automatically hidden. View policy"
+
+Keep it subtle and visually consistent.
+
+Do not make the composer cluttered.
+
+============================================================
+TERMS SHOULD MATCH ACTUAL TECHNICAL BEHAVIOR
+============================================================
+
+Do not promise that AI catches absolutely everything.
+
+Avoid wording like:
+
+"We guarantee no sensitive information can ever be shared."
+
+Use:
+
+"Sensitive information may be automatically detected and hidden."
+
+or:
+
+"OnSpot automatically filters common personal contact details and credentials."
+
+============================================================
+DO NOT CALL IT A LEGAL TERMS OF SERVICE REPLACEMENT
+============================================================
+
+This popup is a Messaging / Communication Policy acknowledgment.
+
+Do not make it replace the site's main Terms of Service or Privacy Policy.
+
+Title should stay:
+
+Messaging & Communication Policy
+
+unless an existing product naming convention already exists.
+
+============================================================
+REDUCTION OF USER FRICTION
+============================================================
+
+Do not show the policy modal:
+
+- on every page load after acceptance
+- every time they switch threads
+- every time they send a message
+
+Only show automatically when:
+
+user has NOT accepted the CURRENT policy version.
+
+============================================================
+THREAD SWITCHING
+============================================================
+
+If user accepts on one conversation:
+
+they must NOT see the modal again when opening another thread.
+
+Acceptance is per USER, not per THREAD.
+
+============================================================
+MULTIPLE DEVICES
+============================================================
+
+Because acceptance is server-side:
+
+User accepts on laptop.
+
+Then logs into OnSpot on another device.
+
+Do NOT show the same current policy again.
+
+============================================================
+NEW USER / EXISTING USER
+============================================================
+
+Existing users who have never accepted the messaging policy:
+
+show it once next time they open Messages.
+
+New users:
+
+show it on their first Messages visit.
+
+============================================================
+SEND ENDPOINT DEFENSE
+============================================================
+
+Do NOT rely only on the disabled frontend composer.
+
+For stronger enforcement, POST /api/messages should also verify:
+
+the authenticated user has accepted CURRENT_MESSAGING_POLICY_VERSION.
+
+If not:
+
+return:
+
+403 or 409
+
+with a structured error such as:
+
+{
+  error: "messaging_policy_required",
+  message: "Please accept the Messaging & Communication Policy before sending messages."
+}
+
+This prevents API bypass.
+
+============================================================
+FRONTEND HANDLING OF POLICY REQUIRED
+============================================================
+
+If POST /api/messages returns:
+
+messaging_policy_required
+
+then:
+
+- do not lose the user's draft
+- open the policy modal
+- show a helpful message
+
+After acceptance:
+
+keep the draft so they can send it again.
+
+============================================================
+IMPORTANT SYSTEM MESSAGES
+============================================================
+
+Do not require policy acceptance for trusted server-generated system messages.
+
+Only user-generated sends should be blocked.
+
+============================================================
+DO NOT BREAK EXISTING PII REDACTION
+============================================================
+
+This is critical.
+
+The working redaction must remain intact.
+
+Current working examples:
+
+val@onspotglobal.com
+→ *****.com
+
+phone numbers
+→ ***last4
+
+credentials
+→ ********
+
+Do NOT refactor the sanitizer unnecessarily.
+
+The new warning must use the sanitizer's safe metadata.
+
+Do not reintroduce raw PII anywhere.
+
+============================================================
+NO RAW CONTENT IN WARNING
+============================================================
+
+Bad:
+
+"Your email val@onspotglobal.com was hidden."
+
+Good:
+
+"Personal information was hidden."
+
+Never echo the original private value.
+
+============================================================
+UI PLACEMENT IN CURRENT Messages.tsx
+============================================================
+
+Preserve the current Messages layout.
+
+The existing page already has:
+
+- Messages header
+- communication reminder
+- thread list
+- active conversation
+- textarea
+- send button
+
+Do not redesign these.
+
+Add:
+
+1. privacy-policy modal
+2. small policy reminder/link below composer
+3. sender warning toast after redaction
+
+============================================================
+RESPONSIVE DESIGN
+============================================================
+
+Make the modal usable on desktop and mobile.
+
+Use the existing Dialog component.
+
+Suggested:
+
+max-w-lg
+max-h-[85vh]
+overflow-y-auto
+
+Do not create a full-screen modal on desktop.
+
+============================================================
+ACCESSIBILITY
+============================================================
+
+Use existing:
+
+Dialog
+DialogTitle
+DialogDescription
+Checkbox
+Button
+
+Make checkbox label clickable.
+
+Ensure keyboard users can operate it.
+
+Do not prevent Escape/Close when the user is just reviewing an already accepted policy.
+
+For first-time required acceptance:
+if they close the popup without agreeing, messaging remains disabled.
+
+============================================================
+TESTS
+============================================================
+
+Add tests.
+
+TEST 1 — First visit
+
+User has no messaging acceptance.
+
+GET policy:
+
+accepted = false
+
+Messages page opens modal.
+
+============================================================
+
+TEST 2 — Checkbox required
+
+Unchecked:
+
+Agree button disabled.
+
+Checked:
+
+Agree button enabled.
+
+============================================================
+
+TEST 3 — Accept
+
+POST accept.
+
+Expected DB:
+
+user accepted current version
+accepted_at populated.
+
+============================================================
+
+TEST 4 — Revisit
+
+User already accepted current version.
+
+Messages page:
+
+modal does NOT auto-open.
+
+============================================================
+
+TEST 5 — View policy
+
+Accepted user clicks:
+
+View policy
+
+Modal opens.
+
+No new acceptance timestamp is written just from viewing.
+
+============================================================
+
+TEST 6 — Policy version change
+
+User accepted:
+
+version 1.0
+
+Current:
+
+version 2.0
+
+Expected:
+
+accepted = false
+
+Modal opens again.
+
+============================================================
+
+TEST 7 — API bypass
+
+User has not accepted.
+
+POST /api/messages
+
+Expected:
+
+messaging_policy_required
+
+No message inserted.
+
+============================================================
+
+TEST 8 — Accepted send
+
+User accepts.
+
+POST /api/messages
+
+Normal message inserts successfully.
+
+============================================================
+
+TEST 9 — Redaction warning
+
+Accepted user sends:
+
+test@gmail.com
+
+Expected server response:
+
+sanitized content
+privacyRedacted = true
+
+Frontend shows ONE privacy warning.
+
+============================================================
+
+TEST 10 — Normal message
+
+Send:
+
+"Can we meet tomorrow?"
+
+Expected:
+
+privacyRedacted = false
+
+No warning.
+
+============================================================
+
+TEST 11 — Privacy still enforced
+
+Send:
+
+"My email is test@gmail.com"
+
+Expected DB:
+
+"My email is *****.com"
+
+Warning shown.
+
+============================================================
+
+TEST 12 — Both roles
+
+Client acceptance works.
+
+Talent acceptance works.
+
+============================================================
+
+TEST 13 — Thread change
+
+User accepts.
+
+Switch conversations.
+
+Modal does not reopen.
+
+============================================================
+
+TEST 14 — Draft preservation
+
+Unaccepted user types:
+
+"Hello"
+
+attempts send.
+
+Server says policy required.
+
+Modal opens.
+
+User accepts.
+
+Draft remains:
+
+"Hello"
+
+============================================================
+SUGGESTED POLICY COPY
+============================================================
+
+Use polished copy approximately like this:
+
+TITLE:
+
+Messaging & Communication Policy
+
+BODY:
+
+"OnSpot Messages is designed to keep communication between clients and talent secure and on-platform.
+
+Please do not share personal or sensitive information in chat, including email addresses, personal phone numbers, external usernames or contact handles, passwords, PINs, one-time passwords, login credentials, API keys, access tokens, or other private account information.
+
+OnSpot may automatically detect and hide sensitive information before a message is delivered. Repeated attempts to bypass these protections may be reviewed.
+
+Use Messages to discuss job requirements, interviews, schedules, deliverables, and other work-related communication."
+
+CHECKBOX:
+
+"I understand and agree to keep communication on-platform and follow the Messaging & Communication Policy."
+
+BUTTON:
+
+Agree and Continue
+
+============================================================
+SUGGESTED REDACTION WARNING COPY
+============================================================
+
+TITLE:
+
+Personal information hidden
+
+DESCRIPTION:
+
+"Sharing personal contact information or credentials is not allowed in Messages. Sensitive information in your message was automatically hidden."
+
+============================================================
+SUGGESTED COMPOSER REMINDER
+============================================================
+
+"Keep communication on OnSpot. Personal contact details and credentials are automatically protected. View policy"
+
+============================================================
+DO NOT BREAK
+============================================================
+
+Do not break:
+
+- existing message redaction
+- message persistence
+- Client messaging
+- Talent messaging
+- unread counts
+- read receipts
+- polling
+- thread switching
+- notifications
+- direct messaging
+- invitation-created conversations
+- mobile layout
+- existing auth flows
+
+============================================================
+DEFINITION OF DONE
+============================================================
+
+Complete only when:
+
+- Sensitive-info send produces a sender warning.
+- Warning contains no raw private values.
+- Messaging policy automatically opens once for unaccepted users.
+- User must check agreement before accepting.
+- Acceptance is stored server-side.
+- Acceptance is tied to policy version.
+- Accepted users do not see popup again automatically.
+- Users can reopen policy from beneath composer anytime.
+- Composer is disabled until required policy is accepted.
+- Direct API send cannot bypass policy acceptance.
+- Draft is preserved when policy acceptance is required.
+- Client and Talent both work.
+- Existing redaction remains working.
+- Existing messaging functionality is not redesigned/broken.
+- Tests pass.
+- Typecheck passes.
+- Build passes.
+
+IMPLEMENT THIS NOW.
+DO NOT RETURN AN AUDIT.

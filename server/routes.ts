@@ -157,6 +157,8 @@ import { z } from "zod";
 // terminal status (distinct from declined/revoked) so owners can resend to
 // the same address without revoking or deleting invitation history.
 export const ORGANIZATION_INVITATION_EXPIRY_DAYS = 30;
+export const CURRENT_MESSAGING_POLICY_VERSION = "2026-08-28";
+const MESSAGING_POLICY_TYPE = "messaging_communication";
 
 /**
  * Canonical engagement type values shared across all job-write routes.
@@ -486,9 +488,26 @@ const authenticateJWT = async (
     // ({ userId, email, role }). Accept it here by resolving the linked user account.
     if ((decoded as any).type === "candidate" && (decoded as any).candidateId) {
       const candidateEmail = (decoded as any).email;
-      const talentUserQuery =
-        "SELECT id, email, role FROM users WHERE lower(email) = lower($1) LIMIT 1";
-      const talentUserResult = await query(talentUserQuery, [candidateEmail]);
+      // Prefer the stable candidates.user_id link. The email fallback is kept
+      // only for legacy candidate rows that predate that link.
+      const talentUserResult = await query(
+        `SELECT u.id, u.email, u.role
+           FROM candidates c
+           JOIN users u ON u.id = c.user_id
+          WHERE c.id = $1
+         UNION ALL
+         SELECT u.id, u.email, u.role
+           FROM users u
+          WHERE lower(u.email) = lower($2)
+            AND NOT EXISTS (
+              SELECT 1
+                FROM candidates c
+                JOIN users linked ON linked.id = c.user_id
+               WHERE c.id = $1
+            )
+          LIMIT 1`,
+        [(decoded as any).candidateId, candidateEmail],
+      );
 
       if (talentUserResult.rows.length === 0) {
         // No linked user account — use candidateId as the user id so profile
@@ -2846,6 +2865,29 @@ export async function registerRoutes(
     console.log("✅ Migration 0013: email delivery ledger and message email cooldowns ready");
   } catch (err: any) {
     console.error("❌ Migration 0013 (email delivery ledger) failed:", err.message);
+  }
+
+  // ── Migration 0014: versioned Messaging & Communication Policy acceptance ──
+  // This table intentionally does not foreign-key users.id because the talent
+  // portal can authenticate a candidate identity before a users row exists.
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS user_policy_acceptances (
+        id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id         varchar NOT NULL,
+        policy_type     varchar NOT NULL,
+        policy_version  varchar NOT NULL,
+        accepted_at     timestamptz NOT NULL DEFAULT NOW(),
+        UNIQUE (user_id, policy_type)
+      )
+    `);
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_user_policy_acceptances_user
+        ON user_policy_acceptances(user_id, policy_type)
+    `);
+    console.log("✅ Migration 0014: messaging policy acceptance table ready");
+  } catch (err: any) {
+    console.error("❌ Migration 0014 (messaging policy acceptance) failed:", err.message);
   }
 
   // ── Customer billing and talent payout views — Phase 3 ────────────────────
@@ -10750,6 +10792,97 @@ export async function registerRoutes(
   const getAuthedUserId = (req: Request): string | undefined =>
     (req as any).user?.id;
 
+  const getCanonicalMessagingUserId = async (
+    req: Request,
+  ): Promise<string | undefined> => {
+    const authenticatedId = getAuthedUserId(req);
+    if (!authenticatedId) return undefined;
+    const result = await query(
+      `SELECT id FROM users WHERE id = $1 LIMIT 1`,
+      [authenticatedId],
+    );
+    return result.rows[0]?.id;
+  };
+
+  const sendMessagingAccountLinkRequired = (res: Response) =>
+    res.status(409).json({
+      error: "messaging_account_link_required",
+      message:
+        "Your talent profile must be linked to your OnSpot account before using Messages.",
+    });
+
+  const getMessagingPolicyAcceptance = async (userId: string) => {
+    const result = await query(
+      `SELECT accepted_at AS "acceptedAt", policy_version AS "version"
+         FROM user_policy_acceptances
+        WHERE user_id = $1 AND policy_type = $2
+        LIMIT 1`,
+      [userId, MESSAGING_POLICY_TYPE],
+    );
+    return result.rows[0] as { acceptedAt: Date | string; version: string } | undefined;
+  };
+
+  app.get("/api/me/messaging-policy", authenticateJWT, async (req, res) => {
+    try {
+      const authenticatedId = getAuthedUserId(req);
+      if (!authenticatedId) return res.status(401).json({ error: "Unauthorized" });
+      const userId = await getCanonicalMessagingUserId(req);
+      if (!userId) return sendMessagingAccountLinkRequired(res);
+      const acceptance = await getMessagingPolicyAcceptance(userId);
+      return res.json({
+        accepted: acceptance?.version === CURRENT_MESSAGING_POLICY_VERSION,
+        acceptedAt: acceptance?.acceptedAt ?? null,
+        version: acceptance?.version ?? null,
+        currentVersion: CURRENT_MESSAGING_POLICY_VERSION,
+      });
+    } catch (error) {
+      console.error("GET /api/me/messaging-policy error:", error);
+      return res.status(500).json({ error: "Failed to load messaging policy status" });
+    }
+  });
+
+  app.post("/api/me/messaging-policy/accept", authenticateJWT, async (req, res) => {
+    try {
+      const authenticatedId = getAuthedUserId(req);
+      if (!authenticatedId) return res.status(401).json({ error: "Unauthorized" });
+      const userId = await getCanonicalMessagingUserId(req);
+      if (!userId) return sendMessagingAccountLinkRequired(res);
+      const parsed = z.object({ version: z.string().min(1) }).safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: "invalid_messaging_policy_version",
+          message: "A policy version is required.",
+          currentVersion: CURRENT_MESSAGING_POLICY_VERSION,
+        });
+      }
+      if (parsed.data.version !== CURRENT_MESSAGING_POLICY_VERSION) {
+        return res.status(400).json({
+          error: "invalid_messaging_policy_version",
+          message: "That Messaging & Communication Policy version is not current.",
+          currentVersion: CURRENT_MESSAGING_POLICY_VERSION,
+        });
+      }
+
+      const result = await query(
+        `INSERT INTO user_policy_acceptances (user_id, policy_type, policy_version)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, policy_type)
+         DO UPDATE SET policy_version = EXCLUDED.policy_version, accepted_at = NOW()
+         RETURNING accepted_at AS "acceptedAt", policy_version AS "version"`,
+        [userId, MESSAGING_POLICY_TYPE, CURRENT_MESSAGING_POLICY_VERSION],
+      );
+      return res.json({
+        accepted: true,
+        acceptedAt: result.rows[0].acceptedAt,
+        version: result.rows[0].version,
+        currentVersion: CURRENT_MESSAGING_POLICY_VERSION,
+      });
+    } catch (error) {
+      console.error("POST /api/me/messaging-policy/accept error:", error);
+      return res.status(500).json({ error: "Failed to save messaging policy acceptance" });
+    }
+  });
+
   const resolveSafeMessageSenderName = async (
     senderId: string,
     recipientId: string,
@@ -10910,8 +11043,10 @@ export async function registerRoutes(
 
   app.get("/api/message-threads/:id", authenticateJWT, async (req, res) => {
     try {
-      const userId = getAuthedUserId(req);
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const authenticatedId = getAuthedUserId(req);
+      if (!authenticatedId) return res.status(401).json({ error: "Unauthorized" });
+      const userId = await getCanonicalMessagingUserId(req);
+      if (!userId) return sendMessagingAccountLinkRequired(res);
       const thread = await storage.getMessageThread(req.params.id);
       if (!thread) {
         return res.status(404).json({ error: "Thread not found" });
@@ -11137,12 +11272,22 @@ export async function registerRoutes(
 
   app.post("/api/messages", authenticateJWT, async (req, res) => {
     try {
-      const userId = getAuthedUserId(req);
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      const authenticatedId = getAuthedUserId(req);
+      if (!authenticatedId) return res.status(401).json({ error: "Unauthorized" });
+      const userId = await getCanonicalMessagingUserId(req);
+      if (!userId) return sendMessagingAccountLinkRequired(res);
       const validated = insertMessageSchema.parse({
         ...req.body,
         senderId: userId, // sender is always the authenticated user
       });
+      const policyAcceptance = await getMessagingPolicyAcceptance(userId);
+      if (policyAcceptance?.version !== CURRENT_MESSAGING_POLICY_VERSION) {
+        return res.status(403).json({
+          error: "messaging_policy_required",
+          message: "Please accept the Messaging & Communication Policy before sending messages.",
+          currentVersion: CURRENT_MESSAGING_POLICY_VERSION,
+        });
+      }
       if (validated.content.length > MAX_USER_MESSAGE_CHARS) {
         return res.status(400).json({
           error: `Message content must be ${MAX_USER_MESSAGE_CHARS} characters or fewer`,
@@ -11191,7 +11336,11 @@ export async function registerRoutes(
 
       // Strip admin-only field before returning to sender
       const { flaggedForReview: _omit, ...safeMessage } = message;
-      res.status(201).json(safeMessage);
+      res.status(201).json({
+        ...safeMessage,
+        privacyRedacted: privacy.originalDetected,
+        privacyCategories: Array.from(new Set(privacy.detections.map((d) => d.type))),
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res

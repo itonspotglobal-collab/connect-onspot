@@ -28,6 +28,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-fallback-secret";
 const CLIENT_ID = "msgprod-client-user";
 const TALENT_ID = "msgprod-talent-user";
 const OUTSIDER_ID = "msgprod-outsider-user";
+const CANDIDATE_ID = "msgprod-linked-candidate";
+const LEGACY_CANDIDATE_ID = "msgprod-unlinked-candidate";
 const JOB_ID = "msgprod-job-1";
 
 const tok = (userId: string, role: string) =>
@@ -68,6 +70,15 @@ function request(
 }
 
 async function cleanup() {
+  const policyTable = await query(
+    `SELECT to_regclass('public.user_policy_acceptances') AS name`,
+  );
+  if (policyTable.rows[0]?.name) {
+    await query(
+      `DELETE FROM user_policy_acceptances WHERE user_id IN ($1, $2, $3)`,
+      [CLIENT_ID, TALENT_ID, OUTSIDER_ID],
+    );
+  }
   await query(
     `DELETE FROM notifications WHERE user_id IN ($1, $2, $3)`,
     [CLIENT_ID, TALENT_ID, OUTSIDER_ID],
@@ -80,6 +91,10 @@ async function cleanup() {
   await query(`DELETE FROM message_threads WHERE participants && ARRAY[$1, $2, $3]::text[]`, [CLIENT_ID, TALENT_ID, OUTSIDER_ID]);
   await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]);
   await query(`DELETE FROM jobs WHERE id = $1`, [JOB_ID]);
+  await query(
+    `DELETE FROM candidates WHERE id IN ($1, $2)`,
+    [CANDIDATE_ID, LEGACY_CANDIDATE_ID],
+  );
   await query(`DELETE FROM users WHERE id IN ($1, $2, $3)`, [CLIENT_ID, TALENT_ID, OUTSIDER_ID]);
 }
 
@@ -105,6 +120,24 @@ describe("production messaging routes (registerRoutes)", () => {
   const clientTok = tok(CLIENT_ID, "client");
   const talentTok = tok(TALENT_ID, "talent");
   const outsiderTok = tok(OUTSIDER_ID, "client");
+  const candidateTok = jwt.sign(
+    {
+      type: "candidate",
+      candidateId: CANDIDATE_ID,
+      email: "msgprod-talent@example.com",
+    },
+    JWT_SECRET,
+    { expiresIn: "1h" },
+  );
+  const unlinkedCandidateTok = jwt.sign(
+    {
+      type: "candidate",
+      candidateId: LEGACY_CANDIDATE_ID,
+      email: "msgprod-unlinked@example.com",
+    },
+    JWT_SECRET,
+    { expiresIn: "1h" },
+  );
 
   before(async () => {
     await cleanup();
@@ -120,6 +153,12 @@ describe("production messaging routes (registerRoutes)", () => {
        VALUES ($1, $2, 'Msgprod Job', 'other', 'test', 'active', 'mid')`,
       [JOB_ID, CLIENT_ID],
     );
+    await query(
+      `INSERT INTO candidates (id, user_id, email)
+       VALUES ($1, $2, 'msgprod-talent@example.com'),
+              ($3, NULL, 'msgprod-unlinked@example.com')`,
+      [CANDIDATE_ID, TALENT_ID, LEGACY_CANDIDATE_ID],
+    );
     const app = express();
     app.use(express.json());
     const httpServer = await registerRoutes(app);
@@ -130,6 +169,152 @@ describe("production messaging routes (registerRoutes)", () => {
   after(async () => {
     srv?.close();
     await cleanup();
+  });
+
+  it("reports the current messaging policy as unaccepted on first visit", async () => {
+    const asClient = await request(srv, "GET", "/api/me/messaging-policy", clientTok);
+    const asTalent = await request(srv, "GET", "/api/me/messaging-policy", talentTok);
+    const asCandidate = await request(
+      srv,
+      "GET",
+      "/api/me/messaging-policy",
+      candidateTok,
+    );
+    assert.equal(asClient.status, 200);
+    assert.equal(asTalent.status, 200);
+    assert.equal(asCandidate.status, 200);
+    assert.equal(asClient.json.accepted, false);
+    assert.equal(asTalent.json.accepted, false);
+    assert.equal(asCandidate.json.accepted, false);
+    assert.equal(typeof asClient.json.currentVersion, "string");
+    assert.ok(asClient.json.currentVersion.length > 0);
+  });
+
+  it("fails safely when a legacy candidate has no canonical messaging account", async () => {
+    const status = await request(
+      srv,
+      "GET",
+      "/api/me/messaging-policy",
+      unlinkedCandidateTok,
+    );
+    assert.equal(status.status, 409);
+    assert.equal(status.json.error, "messaging_account_link_required");
+
+    const accepted = await request(
+      srv,
+      "POST",
+      "/api/me/messaging-policy/accept",
+      unlinkedCandidateTok,
+      { version: "2026-08-28" },
+    );
+    assert.equal(accepted.status, 409);
+    assert.equal(accepted.json.error, "messaging_account_link_required");
+
+    const sent = await request(
+      srv,
+      "POST",
+      "/api/messages",
+      unlinkedCandidateTok,
+      { threadId: "missing-thread", content: "Hello" },
+    );
+    assert.equal(sent.status, 409);
+    assert.equal(sent.json.error, "messaging_account_link_required");
+
+    const stored = await query(
+      `SELECT COUNT(*)::int AS count
+         FROM user_policy_acceptances
+        WHERE user_id = $1`,
+      [LEGACY_CANDIDATE_ID],
+    );
+    assert.equal(stored.rows[0].count, 0);
+  });
+
+  it("blocks an unaccepted user's direct API send without inserting a message", async () => {
+    const before = await query(
+      `SELECT COUNT(*)::int AS count FROM messages WHERE sender_id = $1`,
+      [CLIENT_ID],
+    );
+    const sent = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: "missing-thread",
+      content: "Hello",
+    });
+    assert.equal(sent.status, 403);
+    assert.equal(sent.json.error, "messaging_policy_required");
+    const afterCount = await query(
+      `SELECT COUNT(*)::int AS count FROM messages WHERE sender_id = $1`,
+      [CLIENT_ID],
+    );
+    assert.equal(afterCount.rows[0].count, before.rows[0].count);
+  });
+
+  it("rejects arbitrary versions and accepts the current policy for both roles", async () => {
+    const status = await request(srv, "GET", "/api/me/messaging-policy", clientTok);
+    const invalid = await request(
+      srv,
+      "POST",
+      "/api/me/messaging-policy/accept",
+      clientTok,
+      { version: "future-version" },
+    );
+    assert.equal(invalid.status, 400);
+    assert.equal(invalid.json.error, "invalid_messaging_policy_version");
+
+    await query(
+      `INSERT INTO user_policy_acceptances (user_id, policy_type, policy_version)
+       VALUES ($1, 'messaging_communication', 'old-version')`,
+      [CLIENT_ID],
+    );
+    const outdated = await request(srv, "GET", "/api/me/messaging-policy", clientTok);
+    assert.equal(outdated.status, 200);
+    assert.equal(outdated.json.accepted, false);
+    assert.equal(outdated.json.version, "old-version");
+
+    const clientAccepted = await request(
+      srv,
+      "POST",
+      "/api/me/messaging-policy/accept",
+      clientTok,
+      { version: status.json.currentVersion },
+    );
+    const talentAccepted = await request(
+      srv,
+      "POST",
+      "/api/me/messaging-policy/accept",
+      talentTok,
+      { version: status.json.currentVersion },
+    );
+    assert.equal(clientAccepted.status, 200);
+    assert.equal(talentAccepted.status, 200);
+    assert.equal(clientAccepted.json.accepted, true);
+    assert.equal(talentAccepted.json.accepted, true);
+
+    const acceptedAt = clientAccepted.json.acceptedAt;
+    const revisited = await request(srv, "GET", "/api/me/messaging-policy", clientTok);
+    assert.equal(revisited.json.accepted, true);
+    assert.equal(revisited.json.acceptedAt, acceptedAt);
+    const candidateRevisited = await request(
+      srv,
+      "GET",
+      "/api/me/messaging-policy",
+      candidateTok,
+    );
+    assert.equal(candidateRevisited.status, 200);
+    assert.equal(candidateRevisited.json.accepted, true);
+    assert.equal(candidateRevisited.json.acceptedAt, talentAccepted.json.acceptedAt);
+
+    const stored = await query(
+      `SELECT user_id, policy_version, accepted_at
+         FROM user_policy_acceptances
+        WHERE user_id IN ($1, $2)`,
+      [CLIENT_ID, TALENT_ID],
+    );
+    assert.equal(stored.rows.length, 2);
+    assert.ok(stored.rows.every((row: any) => row.accepted_at));
+    assert.ok(
+      stored.rows.every(
+        (row: any) => row.policy_version === status.json.currentVersion,
+      ),
+    );
   });
 
   it("rejects accepting a talent-initiated 'invited' submission and creates no thread", async () => {
@@ -207,16 +392,30 @@ describe("production messaging routes (registerRoutes)", () => {
       "Email *****.com or call ***4723. Password: ********, please use it.",
     );
     assert.equal(clientSent.json.senderId, CLIENT_ID);
+    assert.equal(clientSent.json.privacyRedacted, true);
+    assert.ok(clientSent.json.privacyCategories.includes("phone"));
+    assert.ok(clientSent.json.privacyCategories.includes("credential"));
+    assert.ok(
+      clientSent.json.privacyCategories.includes("email") ||
+        clientSent.json.privacyCategories.includes("obfuscated_contact"),
+    );
+    assert.ok(
+      clientSent.json.privacyCategories.every((category: string) =>
+        ["email", "phone", "credential", "token", "obfuscated_contact"].includes(category),
+      ),
+    );
     assert.ok(!JSON.stringify(clientSent.json).includes("val@gmail.com"));
     assert.ok(!JSON.stringify(clientSent.json).includes("hello123"));
 
-    const talentSent = await request(srv, "POST", "/api/messages", talentTok, {
+    const talentSent = await request(srv, "POST", "/api/messages", candidateTok, {
       threadId: acceptedThreadId,
       content: "OTP is 839221; do not share it.",
     });
     assert.equal(talentSent.status, 201, JSON.stringify(talentSent.json));
     assert.equal(talentSent.json.content, "OTP is ******; do not share it.");
     assert.equal(talentSent.json.senderId, TALENT_ID);
+    assert.equal(talentSent.json.privacyRedacted, true);
+    assert.deepEqual(talentSent.json.privacyCategories, ["credential"]);
 
     const persisted = await query(
       `SELECT content, flagged_for_review AS "flaggedForReview"
@@ -262,6 +461,26 @@ describe("production messaging routes (registerRoutes)", () => {
     assert.ok(!notificationJson.includes("val@gmail.com"));
     assert.ok(!notificationJson.includes("hello123"));
     assert.ok(!notificationJson.includes("839221"));
+
+    const normalSent = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: acceptedThreadId,
+      content: "Can we schedule the interview tomorrow?",
+    });
+    assert.equal(normalSent.status, 201);
+    assert.equal(normalSent.json.privacyRedacted, false);
+    assert.deepEqual(normalSent.json.privacyCategories, []);
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const grouped = await query(
+        `SELECT message_count
+           FROM notifications
+          WHERE user_id = $1 AND type = 'new_message' AND related_id = $2
+          ORDER BY created_at DESC
+          LIMIT 1`,
+        [TALENT_ID, acceptedThreadId],
+      );
+      if ((grouped.rows[0]?.message_count ?? 0) >= 2) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   });
 
   it("rejects messages too long for complete semantic screening", async () => {

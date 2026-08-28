@@ -5,8 +5,13 @@ import { apiRequest } from "@/lib/queryClient";
 import { useInvalidateUnreadMessages } from "@/hooks/useUnreadMessagesCount";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import {
+  MessagingPolicyDialog,
+  type MessagingPolicyStatus,
+} from "@/components/MessagingPolicyDialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, MessageSquare, Send, ArrowLeft } from "lucide-react";
 
 interface MessageThread {
@@ -55,14 +60,21 @@ function ThreadView({
   otherName,
   otherParticipantId,
   onBack,
+  messagingPolicyAccepted,
+  onViewPolicy,
+  onPolicyRequired,
 }: {
   thread: MessageThread;
   meId: string;
   otherName: string;
   otherParticipantId: string;
   onBack: () => void;
+  messagingPolicyAccepted: boolean;
+  onViewPolicy: () => void;
+  onPolicyRequired: () => void;
 }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const invalidateUnreadMessages = useInvalidateUnreadMessages();
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -104,10 +116,25 @@ function ThreadView({
       });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (savedMessage: ThreadMessage & {
+      privacyRedacted?: boolean;
+      privacyCategories?: string[];
+    }) => {
       setDraft("");
       queryClient.invalidateQueries({ queryKey: ["thread-messages", thread.id] });
       queryClient.invalidateQueries({ queryKey: ["my-message-threads"] });
+      if (savedMessage.privacyRedacted) {
+        toast({
+          title: "Personal information hidden",
+          description:
+            "Sharing personal contact information or credentials is not allowed in Messages. Sensitive information in your message was automatically hidden.",
+        });
+      }
+    },
+    onError: (error: Error) => {
+      if (error.message.includes("messaging_policy_required")) {
+        onPolicyRequired();
+      }
     },
   });
 
@@ -182,6 +209,7 @@ function ThreadView({
         <div className="flex items-end gap-2">
           <Textarea
             value={draft}
+            disabled={!messagingPolicyAccepted || sendMutation.isPending}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -189,14 +217,18 @@ function ThreadView({
                 handleSend();
               }
             }}
-            placeholder="Write a message… (please keep communication on-platform)"
+            placeholder={
+              messagingPolicyAccepted
+                ? "Write a message… (please keep communication on-platform)"
+                : "Accept the Messaging Policy to send messages"
+            }
             className="min-h-[44px] max-h-32 resize-none text-sm"
             data-testid="input-message"
           />
           <Button
             size="icon"
             className="h-10 w-10 shrink-0 rounded-full bg-[#474ead] hover:bg-[#3d439c]"
-            disabled={!draft.trim() || sendMutation.isPending}
+            disabled={!messagingPolicyAccepted || !draft.trim() || sendMutation.isPending}
             onClick={handleSend}
             data-testid="button-send-message"
           >
@@ -208,8 +240,25 @@ function ThreadView({
           </Button>
         </div>
         {sendMutation.isError && (
-          <p className="mt-1 text-xs text-red-500">Failed to send. Please try again.</p>
+          <p className="mt-1 text-xs text-red-500">
+            {sendMutation.error instanceof Error &&
+            sendMutation.error.message.includes("messaging_policy_required")
+              ? "Please accept the Messaging & Communication Policy before sending."
+              : "Failed to send. Please try again."}
+          </p>
         )}
+        <p className="mt-2 text-[11px] text-slate-400">
+          Keep communication on OnSpot. Personal contact details and credentials
+          are automatically protected.{" "}
+          <button
+            type="button"
+            className="font-medium text-[#474ead] underline-offset-2 hover:underline"
+            onClick={onViewPolicy}
+            data-testid="button-view-messaging-policy"
+          >
+            View policy
+          </button>
+        </p>
       </div>
     </div>
   );
@@ -217,10 +266,62 @@ function ThreadView({
 
 export default function Messages() {
   const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
   const [matched, params] = useRoute("/messages/:threadId");
   const activeThreadId = matched ? params?.threadId : undefined;
   const { user } = useAuth();
+  const { toast } = useToast();
   const isTalent = user?.role === "talent" || Boolean(loadTalentAuth());
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const hasAutoOpenedPolicy = useRef(false);
+
+  const { data: policyStatus, isLoading: isPolicyLoading } =
+    useQuery<MessagingPolicyStatus>({
+      queryKey: ["messaging-policy"],
+      queryFn: async () => {
+        const res = await apiRequest("GET", "/api/me/messaging-policy");
+        return res.json();
+      },
+      staleTime: 0,
+      refetchOnMount: "always",
+    });
+
+  const acceptPolicyMutation = useMutation({
+    mutationFn: async () => {
+      if (!policyStatus?.currentVersion) {
+        throw new Error("The current policy version is unavailable.");
+      }
+      const res = await apiRequest("POST", "/api/me/messaging-policy/accept", {
+        version: policyStatus.currentVersion,
+      });
+      return res.json() as Promise<MessagingPolicyStatus>;
+    },
+    onSuccess: (accepted) => {
+      queryClient.setQueryData(["messaging-policy"], accepted);
+      setPolicyOpen(false);
+    },
+  });
+
+  useEffect(() => {
+    if (
+      !isPolicyLoading &&
+      policyStatus &&
+      !policyStatus.accepted &&
+      !hasAutoOpenedPolicy.current
+    ) {
+      hasAutoOpenedPolicy.current = true;
+      setPolicyOpen(true);
+    }
+  }, [isPolicyLoading, policyStatus]);
+
+  const handlePolicyRequired = () => {
+    queryClient.invalidateQueries({ queryKey: ["messaging-policy"] });
+    setPolicyOpen(true);
+    toast({
+      title: "Messaging policy required",
+      description: "Please accept the Messaging & Communication Policy before sending.",
+    });
+  };
 
   const handlePageBack = () => {
     navigate(isTalent ? "/my-applications" : "/dashboard");
@@ -332,6 +433,9 @@ export default function Messages() {
               otherName={nameOf(activeThread)}
               otherParticipantId={otherOf(activeThread)}
               onBack={() => navigate("/messages")}
+              messagingPolicyAccepted={policyStatus?.accepted === true}
+              onViewPolicy={() => setPolicyOpen(true)}
+              onPolicyRequired={handlePolicyRequired}
             />
           ) : (
             <div className="flex h-full items-center justify-center">
@@ -340,6 +444,18 @@ export default function Messages() {
           )}
         </div>
       </div>
+      <MessagingPolicyDialog
+        open={policyOpen}
+        onOpenChange={setPolicyOpen}
+        status={policyStatus}
+        isAccepting={acceptPolicyMutation.isPending}
+        error={
+          acceptPolicyMutation.isError
+            ? "We couldn't save your acceptance. Please try again."
+            : null
+        }
+        onAccept={() => acceptPolicyMutation.mutate()}
+      />
     </div>
   );
 }
