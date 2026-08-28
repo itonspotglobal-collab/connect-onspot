@@ -64,6 +64,7 @@ import { getJobFunctionDisplay } from "@shared/jobFunction";
 import { getJobBadges, getTimeAgo, buildRateDisplay, buildRateDisplayWithCode } from "@/lib/jobUtils";
 import { JobRichText } from "@/components/JobRichText";
 import { ClientEmailComposer, type ClientEmailPayload } from "@/components/ClientEmailComposer";
+import { ClientJobTalentSearchDialog } from "@/components/ClientJobTalentSearchDialog";
 
 // ─── Badge icon map ───────────────────────────────────────────────────────────
 const BADGE_ICONS: Record<string, React.ElementType> = {
@@ -218,6 +219,7 @@ function AdminJobRow({
   onReject,
   onMoveToPending,
   onRefresh,
+  onFindTalent,
   copiedId,
   isToggling,
   isDeleting,
@@ -235,6 +237,7 @@ function AdminJobRow({
   onReject: () => void;
   onMoveToPending: () => void;
   onRefresh: () => void;
+  onFindTalent: () => void;
   copiedId: string | null;
   isToggling: boolean;
   isDeleting: boolean;
@@ -412,6 +415,15 @@ function AdminJobRow({
           )}
 
           {/* ── Standard actions ── */}
+          {isOpen && approvalStatus === "approved" && (
+            <Button
+              size="sm"
+              className="bg-[#474ead] text-white hover:bg-[#3d439c]"
+              onClick={onFindTalent}
+            >
+              <Users className="w-3.5 h-3.5 mr-1.5" /> Find Talent
+            </Button>
+          )}
           {!isDraft && <Button variant="outline" size="sm" onClick={onToggle} disabled={isToggling}>
             {isOpen ? (
               <><EyeOff className="w-3.5 h-3.5 mr-1.5" />Close</>
@@ -795,6 +807,7 @@ export default function AdminFindWork() {
   const [emailDecision, setEmailDecision] = useState<"approved" | "unapproved" | "rejected">("rejected");
   const [composerRejectionReason, setComposerRejectionReason] = useState("");
   const [composerTransitionEventKey, setComposerTransitionEventKey] = useState<string | null>(null);
+  const [talentSearchJob, setTalentSearchJob] = useState<{ id: string; title: string } | null>(null);
   const openCreate = () => navigate("/admin/find-work/jobs/new");
   const openEdit = (job: Job) => navigate(`/admin/find-work/jobs/${job.id}/edit`);
   const openApproveComposer = (job: Pick<Job, "id" | "title">) => {
@@ -1427,6 +1440,7 @@ export default function AdminFindWork() {
                   onReject={() => { setRejectModalJobId(job.id); setRejectionReason(""); }}
                   onMoveToPending={() => setUnapproveConfirmJobId(job.id)}
                   onRefresh={() => refreshMutation.mutate(job.id)}
+                  onFindTalent={() => setTalentSearchJob({ id: job.id, title: job.title })}
                   copiedId={copiedId}
                   isToggling={toggleStatusMutation.isPending}
                   isDeleting={deleteMutation.isPending}
@@ -1500,6 +1514,13 @@ export default function AdminFindWork() {
           if (!composerJob) return;
           composerSendMutation.mutate({ id: composerJob.id, payload });
         }}
+      />
+
+      <ClientJobTalentSearchDialog
+        open={!!talentSearchJob}
+        onOpenChange={(open) => { if (!open) setTalentSearchJob(null); }}
+        job={talentSearchJob}
+        mode="admin"
       />
 
       <Dialog open={!!unapproveConfirmJobId} onOpenChange={(open) => { if (!open) setUnapproveConfirmJobId(null); }}>

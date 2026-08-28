@@ -26,6 +26,12 @@ type SearchResult = {
   userId: string;
   score: number;
   overlapSkills: string[];
+  matchedSkills?: string[];
+  missingSkills?: string[];
+  matchTier?: string;
+  reasons?: string[];
+  aiReason?: string;
+  componentScores?: Record<string, number>;
   candidate: SafeCandidate;
 };
 
@@ -38,14 +44,18 @@ export interface ClientJobTalentSearchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   job: { id: string; title: string } | null;
+  mode?: "client" | "admin";
 }
 
 export function ClientJobTalentSearchDialog({
   open,
   onOpenChange,
   job,
+  mode = "client",
 }: ClientJobTalentSearchDialogProps) {
   const { toast } = useToast();
+  const canInvite = mode === "client";
+  const routePrefix = mode === "admin" ? "/api/admin/jobs" : "/api/client/jobs";
   const [searchDraft, setSearchDraft] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [proposedTime, setProposedTime] = useState("");
@@ -72,12 +82,12 @@ export function ClientJobTalentSearchDialog({
   }, [open, searchDraft]);
 
   const search = useQuery<SearchResponse>({
-    queryKey: ["/api/client/jobs", job?.id, "talent-search", appliedSearch],
+    queryKey: [routePrefix, job?.id, "talent-search", appliedSearch],
     enabled: open && Boolean(job),
     retry: false,
     placeholderData: keepPreviousData,
     queryFn: async () => {
-      const response = await apiRequest("POST", `/api/client/jobs/${job!.id}/talent-search`, {
+      const response = await apiRequest("POST", `${routePrefix}/${job!.id}/talent-search`, {
         searchText: appliedSearch,
       });
       if (!response.ok) {
@@ -93,12 +103,18 @@ export function ClientJobTalentSearchDialog({
   }, [search.data]);
 
   const preview = useQuery<SafeCandidate>({
-    queryKey: ["/api/client/talent-profile", previewing?.userId],
+    queryKey: [mode === "admin" ? "/api/admin/talent" : "/api/client/talent-profile", previewing?.userId],
     enabled: Boolean(previewing),
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/client/talent-profile/${previewing!.userId}`);
+      const response = await apiRequest(
+        "GET",
+        mode === "admin"
+          ? `/api/admin/talent/${previewing!.userId}`
+          : `/api/client/talent-profile/${previewing!.userId}`,
+      );
       if (!response.ok) throw new Error("We couldn't load this talent profile right now.");
-      return response.json();
+      const body = await response.json();
+      return mode === "admin" ? (body.talent ?? body) : body;
     },
   });
 
@@ -159,13 +175,13 @@ export function ClientJobTalentSearchDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[calc(100svh-3rem)] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Invite Talent to Apply</DialogTitle>
+            <DialogTitle>{canInvite ? "Invite Talent to Apply" : "Find Talent for This Job"}</DialogTitle>
             <DialogDescription>
-              {job ? <>Search talent for <span className="font-semibold text-foreground">{job.title}</span>.</> : "Choose a job posting to search talent."}
+              {job ? <>{canInvite ? "Search and invite talent for" : "Review ranked talent for"} <span className="font-semibold text-foreground"> {job.title}</span>.</> : "Choose a job posting to search talent."}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03] md:grid-cols-[1fr_250px]">
+          <div className={`grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03] ${canInvite ? "md:grid-cols-[1fr_250px]" : ""}`}>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="talent-search">
                 Search talent
@@ -188,7 +204,7 @@ export function ClientJobTalentSearchDialog({
                 </Button>
               </div>
             </div>
-            <div>
+            {canInvite && <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="invite-time">
                 Suggested first interview time
               </label>
@@ -199,9 +215,9 @@ export function ClientJobTalentSearchDialog({
                 onChange={(event) => setProposedTime(event.target.value)}
               />
               <p className="mt-1 text-[11px] text-slate-500">Talent can accept this time or suggest alternatives.</p>
-            </div>
+            </div>}
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+          {canInvite && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
             <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="invite-meeting-link">
               Meeting link <span className="font-normal text-slate-500">(optional)</span>
             </label>
@@ -212,7 +228,7 @@ export function ClientJobTalentSearchDialog({
               onChange={(event) => setMeetingLink(event.target.value)}
               placeholder="https://meet.google.com/…"
             />
-          </div>
+          </div>}
 
           <div className="min-h-36">
             {search.isLoading ? (
@@ -256,12 +272,20 @@ export function ClientJobTalentSearchDialog({
                         {result.overlapSkills.length > 0 && (
                           <p className="mt-1.5 text-xs text-slate-500">Matches: {result.overlapSkills.slice(0, 4).join(", ")}</p>
                         )}
+                        {(result.missingSkills?.length || result.reasons?.length) ? (
+                          <div className="mt-2 space-y-1 text-xs">
+                            {result.reasons?.[0] && <p className="text-slate-600 dark:text-slate-300">{result.reasons[0]}</p>}
+                            {result.missingSkills && result.missingSkills.length > 0 && (
+                              <p className="text-amber-700 dark:text-amber-400">Missing: {result.missingSkills.slice(0, 3).join(", ")}</p>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                       <div className="flex shrink-0 gap-2">
                         <Button size="sm" variant="outline" onClick={() => setPreviewing(result)}>
                           <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview
                         </Button>
-                        <Button
+                        {canInvite && <Button
                           size="sm"
                           disabled={isInvited || isSending}
                           className="bg-[#474ead] text-white hover:bg-[#3d439c]"
@@ -269,7 +293,7 @@ export function ClientJobTalentSearchDialog({
                         >
                           {isSending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus className="mr-1.5 h-3.5 w-3.5" />}
                           {isInvited ? "Invited" : "Invite to Apply"}
-                        </Button>
+                        </Button>}
                       </div>
                     </div>
                   );
@@ -284,7 +308,7 @@ export function ClientJobTalentSearchDialog({
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>{preview.data?.maskedName ?? previewing?.candidate.maskedName ?? "Talent profile"}</DialogTitle>
-            <DialogDescription>Safe client-facing profile preview</DialogDescription>
+            <DialogDescription>{mode === "admin" ? "Talent Acquisition profile preview" : "Safe client-facing profile preview"}</DialogDescription>
           </DialogHeader>
           {preview.isLoading ? (
             <div className="flex min-h-32 items-center justify-center text-sm text-slate-500"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading profile...</div>

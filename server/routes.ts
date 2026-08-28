@@ -15983,14 +15983,16 @@ export async function registerRoutes(
             const searchable = [
               safeCandidate.maskedName,
               candidate.targetPosition,
+              candidate.target_position,
               candidate.headline,
               candidate.summary,
               candidate.category,
               candidate.seniority,
               candidate.location,
               candidate.experienceYears,
-              ...(Array.isArray(candidate.coreSkills) ? candidate.coreSkills : []),
-              ...(Array.isArray(candidate.secondarySkills) ? candidate.secondarySkills : []),
+              candidate.experience_years,
+              ...(Array.isArray(candidate.coreSkills) ? candidate.coreSkills : candidate.core_skills ?? []),
+              ...(Array.isArray(candidate.secondarySkills) ? candidate.secondarySkills : candidate.secondary_skills ?? []),
             ]
               .filter(Boolean)
               .join(" ")
@@ -16022,6 +16024,12 @@ export async function registerRoutes(
           score: result.score,
           overlapSkills: result.overlapSkills,
           matchReasons: result.matchReasons,
+          matchTier: result.matchTier,
+          matchedSkills: result.matchedSkills,
+          missingSkills: result.missingSkills,
+          reasons: result.reasons,
+          aiReason: result.aiReason,
+          componentScores: result.componentScores,
           candidate: sanitizeSearchCandidate(result.candidate),
         })),
         invitedTalentIds: invitations.rows.map((row: any) => row.talent_id),
@@ -16031,6 +16039,97 @@ export async function registerRoutes(
       return res.status(500).json({ error: "We couldn't load talent right now. Please try again." });
     }
   });
+
+  // POST /api/admin/jobs/:jobId/talent-search — the Talent Acquisition view
+  // uses the identical server-side matcher. Admins can search any eligible
+  // posting, but the response remains masked and invitation state is read-only
+  // here; invitations continue through the owning Client's guarded flow.
+  app.post(
+    "/api/admin/jobs/:jobId/talent-search",
+    authenticateJWT,
+    requireAdmin,
+    requireAdminSubRole(["talent_acquisition"]),
+    async (req: Request, res: Response) => {
+      try {
+        const jobId = req.params.jobId;
+        if (!jobId || jobId.length > 200) return res.status(400).json({ error: "A valid job ID is required" });
+
+        const jobResult = await query(
+          `SELECT id, client_id, status, approval_status, created_via
+             FROM jobs
+            WHERE id = $1
+            LIMIT 1`,
+          [jobId],
+        );
+        if (!jobResult.rows.length) return res.status(404).json({ error: "Job not found" });
+        const job = jobResult.rows[0];
+        if (job.created_via === "search_scaffold") {
+          return res.status(400).json({ error: "Search placeholders cannot be used to invite talent" });
+        }
+        if (job.status !== "open" || job.approval_status !== "approved") {
+          return res.status(400).json({ error: "Only open, approved job postings can be searched for talent" });
+        }
+
+        const searchText = typeof req.body?.searchText === "string" ? req.body.searchText.trim() : "";
+        if (searchText.length > 120) return res.status(400).json({ error: "Search text must be 120 characters or fewer" });
+        const terms = searchText.toLowerCase().split(/\s+/).filter(Boolean);
+        const ranked = await storage.rankTalentForJob(jobId, Number.POSITIVE_INFINITY);
+        const filtered = terms.length
+          ? ranked.filter((result) => {
+              const candidate = result.candidate ?? {};
+              const safeCandidate = sanitizeSearchCandidate(candidate);
+              const searchable = [
+                safeCandidate.maskedName,
+                candidate.targetPosition,
+                candidate.target_position,
+                candidate.headline,
+                candidate.summary,
+                candidate.category,
+                candidate.seniority,
+                candidate.location,
+                candidate.experienceYears,
+                candidate.experience_years,
+                ...(Array.isArray(candidate.coreSkills) ? candidate.coreSkills : candidate.core_skills ?? []),
+                ...(Array.isArray(candidate.secondarySkills) ? candidate.secondarySkills : candidate.secondary_skills ?? []),
+              ].filter(Boolean).join(" ").toLowerCase();
+              return terms.every((term: string) => searchable.includes(term));
+            })
+          : ranked;
+        const visibleResults = filtered.slice(0, 50);
+        const invitations = await query(
+          `SELECT DISTINCT talent_id
+             FROM job_submissions
+            WHERE client_id = $1
+              AND job_id = $2
+              AND (workflow_type = 'client_invitation'
+                OR (workflow_type = 'application' AND initiated_by = 'client' AND status <> 'shortlisted'))
+              AND status NOT IN ('declined', 'rejected', 'withdrawn')`,
+          [job.client_id, jobId],
+        );
+
+        return res.json({
+          results: visibleResults.map((result) => ({
+            candidateId: result.candidateId,
+            userId: result.userId,
+            score: result.score,
+            overlapSkills: result.overlapSkills,
+            matchReasons: result.matchReasons,
+            matchTier: result.matchTier,
+            matchedSkills: result.matchedSkills,
+            missingSkills: result.missingSkills,
+            reasons: result.reasons,
+            aiReason: result.aiReason,
+            componentScores: result.componentScores,
+            candidate: sanitizeSearchCandidate(result.candidate),
+          })),
+          invitedTalentIds: invitations.rows.map((row: any) => row.talent_id),
+        });
+      } catch (err: any) {
+        console.error("POST /api/admin/jobs/:jobId/talent-search error:", err);
+        return res.status(500).json({ error: "We couldn't load talent right now. Please try again." });
+      }
+    },
+  );
 
   // PATCH /api/client/talent-search/:jobId — REMOVED.
   // Engagement-type rescoring is now handled by re-calling POST /api/client/talent-search

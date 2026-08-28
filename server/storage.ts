@@ -47,6 +47,12 @@ import {
   getJobFunctionDisplay,
   getJobFunctionSearchValues,
 } from "../shared/jobFunction";
+import {
+  enrichTalentMatchesWithVanessa,
+  matchTalentToJob,
+  type TalentMatchInput,
+  type TalentMatchWithIdentity,
+} from "./services/talentMatchingService";
 
 // Type for creating user with password
 export interface CreateUserData {
@@ -259,6 +265,12 @@ export interface IStorage {
     score: number;
     overlapSkills: string[];
     matchReasons: Record<string, any>;
+    matchTier?: string;
+    matchedSkills?: string[];
+    missingSkills?: string[];
+    reasons?: string[];
+    aiReason?: string;
+    componentScores?: Record<string, number>;
     candidate: Record<string, any>;
   }>>;
 
@@ -276,6 +288,12 @@ export interface IStorage {
     score: number;
     overlapSkills: string[];
     matchReasons: Record<string, any>;
+    matchTier?: string;
+    matchedSkills?: string[];
+    missingSkills?: string[];
+    reasons?: string[];
+    aiReason?: string;
+    componentScores?: Record<string, number>;
     candidate: Record<string, any>;
   }>>;
 
@@ -1434,15 +1452,11 @@ export class MemStorage implements IStorage {
    * Includes the same coreSkills/secondarySkills fallback as calculateJobMatches
    * for parity with talent-facing match scores.
    */
-  async rankTalentForJob(jobId: string, limit = 50): Promise<Array<{
-    candidateId: string;
-    userId: string;
-    score: number;
-    overlapSkills: string[];
-    matchReasons: Record<string, any>;
-    candidate: Record<string, any>;
-  }>> {
-    // Works with any job status (including 'draft' scaffold jobs)
+  async rankTalentForJob(jobId: string, limit = 50): Promise<TalentMatchWithIdentity[]> {
+    // Works with any job status (including 'draft' scaffold jobs). The
+    // endpoint that exposes this method applies the real-job eligibility
+    // checks; keeping the storage method status-agnostic preserves its use by
+    // internal recomputation and tests.
     const job = await this.getJobWithSkills(jobId);
     if (!job) {
       console.warn(`⚠️  rankTalentForJob: job ${jobId} not found`);
@@ -1450,51 +1464,54 @@ export class MemStorage implements IStorage {
     }
 
     const candidatesRes = await dbQuery(
-      `SELECT c.id, COALESCE(c.user_id, u.id) AS user_id
+      `SELECT
+          c.id,
+          COALESCE(c.user_id, u.id) AS user_id,
+          row_to_json(c) AS candidate,
+          row_to_json(p) AS profile,
+          COALESCE(
+            json_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL),
+            '[]'::json
+          ) AS user_skill_names
          FROM candidates c
          JOIN users u
            ON u.role = 'talent'
           AND (u.id = c.user_id
-               OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))`,
+               OR (c.user_id IS NULL AND lower(u.email) = lower(c.email)))
+         LEFT JOIN profiles p ON p.user_id = COALESCE(c.user_id, u.id)
+         LEFT JOIN user_skills us ON us.user_id = COALESCE(c.user_id, u.id)
+         LEFT JOIN skills s ON s.id = us.skill_id
+        GROUP BY c.id, u.id, p.id`,
     );
 
-    const results: Array<{
-      candidateId: string;
-      userId: string;
-      score: number;
-      overlapSkills: string[];
-      matchReasons: Record<string, any>;
+    const inputs = new Map<string, TalentMatchInput>();
+    const results: TalentMatchWithIdentity[] = [];
+    for (const row of candidatesRes.rows as Array<{
+      id: string;
+      user_id: string;
       candidate: Record<string, any>;
-    }> = [];
-
-    for (const row of candidatesRes.rows as Array<{ id: string; user_id: string }>) {
-      try {
-        const [userSkills, profile, candidate] = await Promise.all([
-          this.getUserSkillsWithNames(row.user_id),
-          this.getProfileByUserId(row.user_id),
-          this.getCandidate(row.id),
-        ]);
-        // Parity fix: fall back to candidate.coreSkills/secondarySkills when user_skills is empty
-        let talentSkills = (userSkills as any[]).map(us => us.skill?.name || '').filter(Boolean);
-        if (talentSkills.length === 0 && candidate) {
-          talentSkills = [
-            ...((candidate.coreSkills as string[]) ?? []),
-            ...((candidate.secondarySkills as string[]) ?? []),
-          ].filter(Boolean);
-        }
-        const { score, overlapSkills, matchReasons } = this.scoreJobForCandidate(talentSkills, profile, candidate, job);
-        results.push({
-          candidateId: row.id,
-          userId: row.user_id,
-          score,
-          overlapSkills,
-          matchReasons,
-          candidate: (candidate ?? {}) as Record<string, any>,
-        });
-      } catch (err) {
-        console.error(`❌ rankTalentForJob failed for candidate ${row.id}:`, err);
-      }
+      profile: Record<string, any> | null;
+      user_skill_names: string[] | null;
+    }>) {
+      const candidate = row.candidate ?? {};
+      const input: TalentMatchInput = {
+        candidate,
+        profile: row.profile,
+        userSkills: Array.isArray(row.user_skill_names) ? row.user_skill_names : [],
+        userId: row.user_id,
+      };
+      inputs.set(row.user_id, input);
+      inputs.set(row.id, input);
+      const match = matchTalentToJob(job, input);
+      results.push({
+        candidateId: row.id,
+        userId: row.user_id,
+        candidate,
+        ...match,
+      });
     }
+
+    await enrichTalentMatchesWithVanessa(job, results, inputs);
 
     console.log(`✅ rankTalentForJob: job=${jobId} scored ${results.length} candidates`);
     return results

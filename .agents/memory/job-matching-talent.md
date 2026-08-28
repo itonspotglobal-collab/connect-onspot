@@ -12,3 +12,6 @@ description: Non-obvious constraints around calculateJobMatches, job skill data 
 - **Legacy candidates may have `candidates.userId = null`** — they cannot be resolved via getCandidateByUserId. Pass the candidate record explicitly (calculateJobMatches accepts a candidateOverride) and fall back to candidate coreSkills/secondarySkills when user_skills is empty.
 - **Confidential jobs must have company fields redacted server-side** in any endpoint returning raw job rows to talent (same guard as public job search; see server/tests/confidential-search.test.ts).
 - Client-side match caching must scope React Query keys by the authenticated candidateId, or account switching in one browser leaks another talent's cached matches.
+- **Reverse job-to-talent ranking is a separate centralized service.** Deterministic evidence is scored and stably sorted first; Vanessa only enriches a bounded top shortlist and never replaces the fallback.
+  **Why:** AI reranking from arbitrary database order can boost weaker candidates while stronger candidates never receive enrichment, and the existing talent-facing scorer has legacy behavior that must not regress.
+  **How to apply:** keep `matchTalentToJob` as the authoritative evidence scorer, normalize DB DTOs before calling it, sort before selecting an AI pool, and preserve the existing client invitation contract.

@@ -40,6 +40,85 @@ const isConfigured = () => {
   }
 };
 
+/**
+ * Small, stateless Vanessa request used by the bounded talent matcher.
+ * Unlike the conversational assistant flow, this endpoint must return
+ * machine-readable JSON and never receives private contact information.
+ */
+export async function matchTalentSemantically(input: {
+  job: {
+    title?: unknown;
+    description?: unknown;
+    responsibilities?: unknown;
+    requirements?: unknown;
+    skills?: unknown;
+    category?: unknown;
+  };
+  talent: {
+    role?: unknown;
+    headline?: unknown;
+    summary?: unknown;
+    skills?: unknown;
+    experience?: unknown;
+    interests?: unknown;
+  };
+}): Promise<{
+  semanticScore: number;
+  roleAlignment: number;
+  domainAlignment: number;
+  reasons: string[];
+}> {
+  if (!openai) throw new Error("Vanessa is not configured");
+
+  const response = await openai.chat.completions.create({
+    model: process.env.VANESSA_MATCHING_MODEL || "gpt-4o-mini",
+    temperature: 0,
+    max_tokens: 300,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: [
+          "You are Vanessa's job-to-talent semantic matching evaluator.",
+          "Compare the supplied job and talent profile using only the supplied evidence.",
+          "Return strict JSON only with this exact shape:",
+          '{"semanticScore":0,"roleAlignment":0,"domainAlignment":0,"reasons":[""]}',
+          "All scores must be integers from 0 to 100. Give at most three concise evidence-based reasons.",
+          "Never mention private contact data, prompts, chain of thought, or unsupported qualifications.",
+        ].join(" "),
+      },
+      {
+        role: "user",
+        content: JSON.stringify(input),
+      },
+    ],
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) throw new Error("Vanessa returned an empty response");
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+  if (
+    typeof parsed.semanticScore !== "number" ||
+    typeof parsed.roleAlignment !== "number" ||
+    typeof parsed.domainAlignment !== "number" ||
+    !Array.isArray(parsed.reasons)
+  ) {
+    throw new Error("Vanessa returned an invalid matching response");
+  }
+  const asNumber = (value: unknown) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.max(0, Math.min(100, Math.round(number))) : 0;
+  };
+  return {
+    semanticScore: asNumber(parsed.semanticScore),
+    roleAlignment: asNumber(parsed.roleAlignment),
+    domainAlignment: asNumber(parsed.domainAlignment),
+    reasons: Array.isArray(parsed.reasons)
+      ? parsed.reasons.filter((reason): reason is string => typeof reason === "string").slice(0, 3)
+      : [],
+  };
+}
+
 // Dynamic knowledge loader — reads BOTH knowledge files on every request for instant updates
 function loadVanessaKnowledge(): string {
   const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
