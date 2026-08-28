@@ -1,0 +1,1061 @@
+IMPLEMENT THIS FEATURE NOW. DO NOT AUDIT. DO NOT ONLY WRITE A PLAN.
+
+We are strengthening the existing OnSpot Client ↔ Talent messaging system.
+
+The goal is STRICT CONTACT / CREDENTIAL PROTECTION.
+
+Whenever a Client or Talent sends a chat message containing private contact information or credentials, the system must automatically redact the sensitive value BEFORE it is delivered to the other person.
+
+Examples:
+
+Input:
+val@onspotglobal.com
+
+Displayed/stored message:
+*****.com
+
+Input:
++63 917 123 4723
+
+Displayed/stored message:
+***4723
+
+Input:
+My password is SuperSecret123!
+
+Displayed/stored message:
+My password is ********
+
+Vanessa AI should also act as an additional semantic privacy guard, but deterministic server-side protection must be the primary enforcement layer.
+
+============================================================
+IMPORTANT: IMPLEMENT, NOT AUDIT
+============================================================
+
+Do not spend the task creating an audit document.
+
+Find the existing messaging send path and implement this directly.
+
+Known existing messaging architecture includes:
+
+- POST /api/messages
+- message_threads
+- messages
+- server/lib/piiPatterns.ts
+- messages.flagged_for_review
+- admin flagged-message review
+- Client/Talent messaging
+- direct client-to-talent messaging
+- notification flow
+- unread/read states
+
+Preserve all currently working messaging features.
+
+============================================================
+NEW PRODUCT POLICY
+============================================================
+
+The old behavior may only flag PII for review.
+
+CHANGE THE POLICY TO:
+
+Sensitive contact information must be REDACTED before another ordinary user can see it.
+
+The following must be protected:
+
+1. Email addresses
+2. Phone numbers
+3. Passwords / credentials
+4. Authentication secrets
+5. Obvious API keys/tokens where detectable
+6. Obfuscated attempts to share email/phone details
+7. Contact-sharing attempts that Vanessa identifies with high confidence
+
+Do not expose the original sensitive value to the recipient.
+
+============================================================
+MOST IMPORTANT SECURITY RULE
+============================================================
+
+REDACTION MUST HAPPEN SERVER-SIDE.
+
+Do NOT rely on frontend masking.
+
+A malicious user must not be able to bypass the protection by:
+
+- calling the API directly
+- modifying frontend JavaScript
+- sending through another messaging screen
+- using Client auth vs Talent auth
+- sending via direct-message flow
+- sending through invitation-created conversations
+
+Every user-generated message must pass through ONE canonical redaction pipeline before persistence/delivery.
+
+============================================================
+CENTRAL REDACTION SERVICE
+============================================================
+
+Create or extend one reusable service/helper.
+
+For example:
+
+server/lib/messagePrivacyFilter.ts
+
+or the closest existing project structure.
+
+Conceptually:
+
+filterMessageContent(content: string)
+
+returns:
+
+{
+  originalDetected: boolean,
+  sanitizedContent: string,
+  detections: [
+    {
+      type: "email" | "phone" | "credential" | "token" | "obfuscated_contact",
+      confidence: number,
+      source: "deterministic" | "vanessa"
+    }
+  ],
+  flaggedForReview: boolean
+}
+
+Do not return the original sensitive values in normal API responses.
+
+============================================================
+PIPELINE
+============================================================
+
+For every new user-generated chat message:
+
+1. Validate authentication.
+2. Validate thread membership.
+3. Validate message content.
+4. Run deterministic privacy detection.
+5. Redact detected sensitive content.
+6. Optionally run Vanessa semantic privacy detection.
+7. Apply any additional Vanessa-approved redactions.
+8. Store ONLY the sanitized message content.
+9. Set flagged_for_review when appropriate.
+10. Update thread last_message_at.
+11. Create notifications.
+12. Return sanitized content only.
+
+The recipient must never receive the raw unfiltered content.
+
+============================================================
+EMAIL REDACTION
+============================================================
+
+Detect normal email formats, including:
+
+val@onspotglobal.com
+hello@gmail.com
+john.doe+jobs@example.co.uk
+
+Desired masking:
+
+val@onspotglobal.com
+→ *****.com
+
+john@gmail.com
+→ *****.com
+
+name@example.co.uk
+→ *****.co.uk
+
+In general:
+- hide the username
+- hide the domain name
+- preserve only the public suffix/TLD portion when practical
+
+DO NOT expose:
+
+val@*****
+v***@onspotglobal.com
+*****@onspotglobal.com
+
+because those still reveal useful contact information.
+
+Preferred:
+
+*****.com
+
+or for multi-part public suffix:
+
+*****.co.uk
+
+============================================================
+OBFUSCATED EMAIL DETECTION
+============================================================
+
+Detect common attempts such as:
+
+val at gmail dot com
+val [at] gmail [dot] com
+val(at)gmail(dot)com
+val @ gmail . com
+v a l @ gmail . com
+
+When detected, redact the entire contact-bearing expression.
+
+Example:
+
+"email me at val at gmail dot com"
+
+becomes:
+
+"email me at *****.com"
+
+Do not over-mask ordinary sentences containing words like "at" and "dot" unless the surrounding pattern strongly resembles an email.
+
+============================================================
+PHONE NUMBER REDACTION
+============================================================
+
+Detect common phone formats:
+
+09171234723
+9171234723
++639171234723
++63 917 123 4723
+(0917) 123-4723
+0917-123-4723
+
+Redaction rule:
+
+Preserve at most the LAST FOUR digits.
+
+Examples:
+
++63 917 123 4723
+→ ***4723
+
+09171234723
+→ ***4723
+
+(0917) 123-4723
+→ ***4723
+
+If fewer than four safe trailing digits exist, redact the entire number.
+
+============================================================
+AVOID FALSE PHONE MATCHES
+============================================================
+
+Do not treat every numeric value as a phone number.
+
+Examples that should NOT automatically be treated as phone numbers:
+
+$5,000
+2026
+3 years
+10%
+ticket #12345
+job ID
+invoice amounts
+dates
+times
+
+Use reasonable phone-number context/length rules.
+
+============================================================
+OBFUSCATED PHONE NUMBERS
+============================================================
+
+Detect obvious contact-sharing attempts such as:
+
+zero nine one seven...
+0917 123 4723
+0917 dot 123 dot 4723
+09-one-seven...
+message me at nine one seven...
+
+Vanessa can help detect these contextual/obfuscated cases.
+
+Only redact when confidence is sufficiently high.
+
+============================================================
+PASSWORD / CREDENTIAL REDACTION
+============================================================
+
+We cannot determine whether every arbitrary string is a password.
+
+Therefore detect credentials primarily using CONTEXT.
+
+Examples:
+
+password: SuperSecret123
+password is SuperSecret123
+pwd = abc123
+my login password is qwerty
+temporary password: Welcome2026!
+passcode: 837221
+PIN: 4821
+OTP: 339912
+
+Desired:
+
+password: ********
+password is ********
+pwd = ********
+temporary password: ********
+passcode: ******
+PIN: ****
+OTP: ******
+
+Do not reveal any portion of credential values.
+
+============================================================
+AUTHENTICATION SECRETS
+============================================================
+
+Also detect obvious secret formats when practical:
+
+API key:
+sk-...
+Bearer token:
+Bearer eyJ...
+access token:
+token=...
+secret key:
+api_key=...
+
+Redact the secret completely.
+
+Example:
+
+API key: sk-abc123xyz
+
+becomes:
+
+API key: ********
+
+Do NOT log raw detected secrets.
+
+============================================================
+DO NOT MASK NORMAL JOB DISCUSSION
+============================================================
+
+Avoid aggressive false positives.
+
+Examples that should remain readable:
+
+"I have experience with email marketing."
+
+"I managed phone support for 3 years."
+
+"I worked with password-reset workflows."
+
+"The client's website requires authentication."
+
+"React version 19."
+
+"Call volume was 200 tickets per day."
+
+Words alone such as:
+
+email
+phone
+password
+login
+
+are NOT violations.
+
+Only the sensitive VALUE must be redacted.
+
+============================================================
+DETERMINISTIC FILTER FIRST
+============================================================
+
+Do NOT depend on Vanessa for obvious PII.
+
+Emails and normal phone numbers should be handled synchronously through deterministic code.
+
+Use the existing:
+
+server/lib/piiPatterns.ts
+
+as the starting point.
+
+Extend/refactor it rather than creating conflicting duplicate regex systems.
+
+Possible structure:
+
+detectAndRedactPII(content)
+
+with separate helpers:
+
+redactEmails()
+redactPhones()
+redactCredentials()
+redactSecretTokens()
+
+============================================================
+VANESSA AI ROLE
+============================================================
+
+Vanessa should act as the SECOND privacy layer.
+
+Her job is to detect contextual attempts that deterministic rules may miss.
+
+Examples:
+
+"you can reach me on gee mail, username is val and domain is..."
+"my number is nine one seven..."
+"contact me outside this platform"
+"my password for the account is..."
+"here's my WhatsApp..."
+
+Vanessa should NOT be the only protection.
+
+============================================================
+VANESSA REQUEST
+============================================================
+
+If an existing Vanessa service already exists, reuse it.
+
+Do not build another AI integration.
+
+Send ONLY the minimum message text necessary.
+
+Ask Vanessa to return STRICT JSON.
+
+Example response:
+
+{
+  "containsSensitiveInfo": true,
+  "detections": [
+    {
+      "type": "obfuscated_email",
+      "start": 14,
+      "end": 39,
+      "confidence": 0.96
+    }
+  ]
+}
+
+Or use another safe structured format matching the existing AI integration.
+
+Validate everything server-side.
+
+Never trust arbitrary model output blindly.
+
+============================================================
+IMPORTANT: VANESSA MUST NOT RECEIVE RAW PASSWORDS IF A
+DETERMINISTIC RULE ALREADY FOUND THEM
+============================================================
+
+Run deterministic credential redaction BEFORE sending content to Vanessa.
+
+Example:
+
+Original:
+
+"My password is SuperSecret123 and email is val@gmail.com"
+
+Before Vanessa:
+
+"My password is [REDACTED_CREDENTIAL] and email is [REDACTED_EMAIL]"
+
+This avoids unnecessarily sending credentials to the AI service.
+
+Vanessa should analyze the remaining text for missed/obfuscated disclosures.
+
+============================================================
+VANESSA FAILURE BEHAVIOR
+============================================================
+
+If Vanessa:
+
+- times out
+- returns malformed JSON
+- is unavailable
+- throws an exception
+
+DO NOT fail message sending solely because of this.
+
+Apply deterministic filtering and continue.
+
+Log only safe metadata such as:
+
+privacy_ai_failed=true
+
+Never log the raw message.
+
+============================================================
+24/7 GUARDING BEHAVIOR
+============================================================
+
+"Vanessa guarding chats 24/7" should mean:
+
+Every NEW user-generated message is screened during the server-side send pipeline.
+
+Do NOT implement a background infinite AI polling job.
+
+Do NOT continuously rescan unchanged conversations.
+
+Screen each message when it is sent.
+
+This gives effective continuous protection without wasting AI requests.
+
+============================================================
+STORE SANITIZED CONTENT
+============================================================
+
+VERY IMPORTANT:
+
+Prefer storing only:
+
+sanitizedContent
+
+in the normal messages.content field.
+
+Do NOT store the raw sensitive message in:
+
+messages.content
+logs
+analytics
+notifications
+error traces
+browser state
+toast messages
+
+This reduces the chance of future leakage.
+
+If the moderation system absolutely requires evidence for admin review, store only safe detection metadata by default.
+
+Do not create a raw_message column unless there is a very strong existing product/legal requirement.
+
+============================================================
+FLAGGED MESSAGE FLOW
+============================================================
+
+Preserve:
+
+messages.flagged_for_review
+
+and the existing admin review workflow.
+
+New behavior:
+
+If sensitive information was detected:
+
+flagged_for_review = true
+
+but the stored/displayed message should already be sanitized.
+
+Example:
+
+Original user input:
+"Email me at val@onspotglobal.com"
+
+Stored content:
+"Email me at *****.com"
+
+flagged_for_review:
+true
+
+Admin sees the sanitized message plus safe metadata such as:
+
+Detected:
+email
+
+Do NOT require exposing the original PII to Admin unless an existing explicit requirement demands it.
+
+============================================================
+OPTIONAL USER FEEDBACK
+============================================================
+
+After sending a message where content was redacted, the sender may receive a subtle notice:
+
+"Personal contact information was hidden to keep communication on-platform."
+
+Do NOT prevent the rest of the message from sending if it remains meaningful.
+
+Example:
+
+Original:
+
+"Hi, I am available tomorrow. My email is val@gmail.com."
+
+Sent:
+
+"Hi, I am available tomorrow. My email is *****.com."
+
+============================================================
+ENTIRELY SENSITIVE MESSAGE
+============================================================
+
+If after redaction the message contains essentially no meaningful content:
+
+Original:
+val@gmail.com
+
+Result:
+*****.com
+
+It is acceptable to still send the masked result OR display a warning depending on existing UX.
+
+Preferred behavior:
+
+Send:
+
+*****.com
+
+and show sender notice:
+
+"Personal contact information was hidden."
+
+Do not send the raw value.
+
+============================================================
+MESSAGE PREVIEW / NOTIFICATION SAFETY
+============================================================
+
+Thread previews and notifications MUST use the sanitized stored message.
+
+Never construct notifications from the pre-filter/original input.
+
+Example notification preview:
+
+"Email me at *****.com"
+
+NOT:
+
+"Email me at val@gmail.com"
+
+============================================================
+ALL MESSAGE ENTRY POINTS
+============================================================
+
+Search the repo for every path capable of creating user-generated messages.
+
+At minimum inspect:
+
+POST /api/messages
+
+POST /api/client/message-talent
+
+invitation-to-thread flows
+
+Messages.tsx
+
+Inbox.tsx
+
+HireTalentPage message entry point
+
+Any admin/client/talent direct-message endpoints
+
+The centralized server-side message creation function must apply filtering regardless of which frontend triggered it.
+
+============================================================
+SYSTEM MESSAGES
+============================================================
+
+Do not unnecessarily pass trusted internally generated system messages through Vanessa.
+
+Example:
+
+"Invitation accepted"
+
+should not require AI scanning.
+
+However, if system messages interpolate user-supplied free text, sanitize that user-supplied portion.
+
+============================================================
+AUTH / SECURITY MUST REMAIN UNCHANGED
+============================================================
+
+Preserve:
+
+- participant-only access
+- server-controlled sender identity
+- client authentication
+- talent authentication
+- candidate-token → canonical users.id mapping
+- thread authorization
+- notification authorization
+- safe profile masking
+- pre-invite identity privacy
+- existing unread behavior
+
+Do not weaken any authorization to implement filtering.
+
+============================================================
+FRONTEND
+============================================================
+
+Do NOT redesign messaging.
+
+Only make minimal UI updates if useful.
+
+Possible sender feedback:
+
+"Some personal information was automatically hidden."
+
+The frontend must display whatever SANITIZED content is returned/stored by the server.
+
+Do not reimplement the primary filter in React.
+
+You may add lightweight optimistic-client masking only if necessary for UX, but server output is authoritative.
+
+============================================================
+TESTS
+============================================================
+
+Add comprehensive automated tests.
+
+TEST 1 — Email
+
+Input:
+"Contact me at val@onspotglobal.com"
+
+Expected stored/displayed:
+"Contact me at *****.com"
+
+Expected:
+flagged_for_review = true
+
+============================================================
+
+TEST 2 — Gmail
+
+Input:
+"My email is john.doe@gmail.com"
+
+Expected:
+"My email is *****.com"
+
+============================================================
+
+TEST 3 — .co.uk
+
+Input:
+"john@example.co.uk"
+
+Expected:
+"*****.co.uk"
+
+============================================================
+
+TEST 4 — Phone
+
+Input:
+"Call me at +63 917 123 4723"
+
+Expected:
+"Call me at ***4723"
+
+============================================================
+
+TEST 5 — Philippine local number
+
+Input:
+"09171234723"
+
+Expected:
+"***4723"
+
+============================================================
+
+TEST 6 — Password
+
+Input:
+"password: SuperSecret123!"
+
+Expected:
+"password: ********"
+
+Never store SuperSecret123.
+
+============================================================
+
+TEST 7 — OTP
+
+Input:
+"OTP is 839221"
+
+Expected:
+"OTP is ******"
+
+============================================================
+
+TEST 8 — API token
+
+Input:
+"Bearer eyJhbGciOiJIUzI1NiJ9.test.signature"
+
+Expected:
+"Bearer ********"
+
+============================================================
+
+TEST 9 — Normal numbers
+
+Input:
+"I have 3 years experience and handled 200 tickets."
+
+Expected:
+unchanged.
+
+============================================================
+
+TEST 10 — Email marketing phrase
+
+Input:
+"I have 4 years of email marketing experience."
+
+Expected:
+unchanged.
+
+============================================================
+
+TEST 11 — Password terminology only
+
+Input:
+"I implemented password reset functionality."
+
+Expected:
+unchanged.
+
+============================================================
+
+TEST 12 — Obfuscated email
+
+Input:
+"reach me at val at gmail dot com"
+
+Expected:
+contact expression redacted.
+
+============================================================
+
+TEST 13 — Obfuscated phone
+
+Input:
+"my number is nine one seven one two three four seven two three"
+
+Vanessa mock:
+detect phone/contact sharing
+
+Expected:
+redacted.
+
+============================================================
+
+TEST 14 — Vanessa failure
+
+Input:
+"val@gmail.com"
+
+Vanessa throws.
+
+Expected:
+email still deterministically redacted and message still succeeds.
+
+============================================================
+
+TEST 15 — Notification privacy
+
+Send:
+"my email is val@gmail.com"
+
+Expected notification preview:
+"my email is *****.com"
+
+Raw email must never appear in notification payload.
+
+============================================================
+
+TEST 16 — Thread preview privacy
+
+Same input.
+
+Expected thread last-message preview:
+sanitized version only.
+
+============================================================
+
+TEST 17 — Both roles
+
+Client → Talent:
+redaction works.
+
+Talent → Client:
+redaction works.
+
+============================================================
+
+TEST 18 — API bypass
+
+Call POST /api/messages directly with raw email.
+
+Expected DB:
+sanitized content.
+
+This proves frontend bypass does not work.
+
+============================================================
+
+TEST 19 — Multiple sensitive values
+
+Input:
+
+"Email val@gmail.com or call +639171234723. Password: hello123"
+
+Expected approximately:
+
+"Email *****.com or call ***4723. Password: ********"
+
+============================================================
+
+TEST 20 — No raw sensitive logs
+
+Mock/capture logging around the send route.
+
+Ensure raw credentials/contact information are not emitted by application logging added for this feature.
+
+============================================================
+DATABASE
+============================================================
+
+Avoid destructive migrations.
+
+Reuse:
+
+messages.flagged_for_review
+
+if available.
+
+If additional moderation metadata is helpful, add an optional safe JSON field only if necessary, for example:
+
+privacy_detections
+
+containing:
+
+[
+  {
+    "type": "email",
+    "source": "deterministic"
+  }
+]
+
+Do NOT store detected_value.
+
+Do NOT store original_content.
+
+============================================================
+PERFORMANCE
+============================================================
+
+Message sending must stay responsive.
+
+Deterministic detection should be very fast.
+
+Vanessa must have:
+
+- short timeout
+- graceful fallback
+- bounded request
+- no retries that delay chat excessively
+
+Do not make users wait 10+ seconds to send a message because AI is unavailable.
+
+If necessary:
+
+deterministic filter is mandatory/synchronous.
+
+Vanessa semantic check may use a very short bounded synchronous call where existing infrastructure supports it.
+
+Do not allow a delayed Vanessa result to reveal already-delivered raw PII.
+
+============================================================
+PRIVACY ORDER OF OPERATIONS
+============================================================
+
+Correct:
+
+raw input
+↓
+deterministic redaction
+↓
+Vanessa analyzes already-partially-redacted text
+↓
+additional redaction
+↓
+DB save
+↓
+notifications
+↓
+API response
+↓
+recipient display
+
+WRONG:
+
+raw input
+↓
+DB save
+↓
+notification
+↓
+Vanessa scans later
+
+The WRONG approach creates a leakage window.
+
+Never persist/deliver first and sanitize later.
+
+============================================================
+DO NOT BREAK WORKING FEATURES
+============================================================
+
+Do not rewrite:
+
+- messaging UI
+- auth
+- notification system
+- invitations
+- job applications
+- unread counts
+- thread creation
+- profile privacy
+- direct messaging
+- Talent search
+- Client dashboard
+
+Only make the smallest changes necessary to centralize and enforce message privacy filtering.
+
+============================================================
+DEFINITION OF DONE
+============================================================
+
+This feature is complete only when:
+
+- Emails are automatically masked.
+- Phone numbers are automatically masked.
+- Password/credential values are automatically masked.
+- Obvious secret tokens are masked.
+- Obfuscated contact sharing is detected where practical.
+- Deterministic filtering runs for EVERY user-generated message.
+- Vanessa provides an additional semantic protection layer.
+- Vanessa failure does not disable deterministic protection.
+- Raw PII is never delivered to another user.
+- Raw PII is not used in notifications.
+- Raw PII is not used in thread previews.
+- Raw credentials are not stored in normal message content.
+- flagged_for_review still works.
+- Admin moderation remains working.
+- Client → Talent messages are protected.
+- Talent → Client messages are protected.
+- Direct API calls cannot bypass protection.
+- Existing thread/read/unread/notification behavior remains working.
+- Existing tests pass.
+- New privacy-filter tests pass.
+- Typecheck passes.
+- Build passes.
+
+IMPLEMENT THIS NOW. DO NOT RETURN AN AUDIT.

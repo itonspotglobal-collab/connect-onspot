@@ -40,7 +40,11 @@ import {
 } from "./lib/interviewTime";
 import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
 import { maskClientTalentName } from "../shared/talentName";
-import { containsPii } from "./lib/piiPatterns";
+import {
+  filterMessageContentWithVanessa,
+  MAX_USER_MESSAGE_CHARS,
+} from "./lib/messagePrivacyFilter";
+import { filterMessageContent } from "./lib/piiPatterns";
 import fs from "fs";
 import path from "path";
 import { createServer, type Server } from "http";
@@ -11139,12 +11143,21 @@ export async function registerRoutes(
         ...req.body,
         senderId: userId, // sender is always the authenticated user
       });
+      if (validated.content.length > MAX_USER_MESSAGE_CHARS) {
+        return res.status(400).json({
+          error: `Message content must be ${MAX_USER_MESSAGE_CHARS} characters or fewer`,
+        });
+      }
       const thread = await storage.getMessageThread(validated.threadId);
       if (!thread) return res.status(404).json({ error: "Thread not found" });
       if (!thread.participants.includes(userId)) {
         return res.status(403).json({ error: "Not a participant of this thread" });
       }
-      const message = await storage.createMessage(validated);
+      const privacy = await filterMessageContentWithVanessa(validated.content);
+      const message = await storage.createMessage(
+        { ...validated, content: privacy.sanitizedContent },
+        { flaggedForReview: privacy.flaggedForReview },
+      );
 
       // Canonical threads have one other participant. Group unread notifications
       // by recipient/thread after persistence; the message body and contact
@@ -11174,16 +11187,6 @@ export async function registerRoutes(
             notifErr,
           ),
         );
-      }
-
-      // PII detection: runs post-save so it never blocks delivery.
-      // Errors are caught and logged; sender receives no indication either way.
-      try {
-        if (containsPii(validated.content)) {
-          await storage.flagMessageForReview(message.id);
-        }
-      } catch (piiErr) {
-        console.error("[pii-flag] Failed to evaluate/flag message", message.id, piiErr);
       }
 
       // Strip admin-only field before returning to sender
@@ -16938,8 +16941,12 @@ export async function registerRoutes(
         // thread row. If no pre-invite thread exists, create a new null-job_id
         // thread now. Either way, post a system message so both sides know the
         // invitation has been accepted.
-        const systemMsg = jobTitle
-          ? `Invitation accepted — ${jobTitle}. You can now coordinate next steps, such as scheduling an interview.`
+        const sanitizedJobTitle = jobTitle
+          ? filterMessageContent(jobTitle)
+          : null;
+        const safeJobTitle = sanitizedJobTitle?.sanitizedContent;
+        const systemMsg = safeJobTitle
+          ? `Invitation accepted — ${safeJobTitle}. You can now coordinate next steps, such as scheduling an interview.`
           : "Invitation accepted. You can use this thread to coordinate next steps, such as scheduling an interview.";
         const preInviteThread = await txClient.query(
           `SELECT id FROM message_threads
@@ -16961,16 +16968,16 @@ export async function registerRoutes(
             [
               clientId,
               userId,
-              jobTitle ? `Invitation accepted — ${jobTitle}` : "Invitation accepted",
+               safeJobTitle ? `Invitation accepted — ${safeJobTitle}` : "Invitation accepted",
             ],
           );
           threadId = created.rows[0].id;
         }
         // System message so neither side opens an empty thread
         await txClient.query(
-          `INSERT INTO messages (thread_id, sender_id, content, message_type)
-           VALUES ($1, $2, $3, 'system')`,
-          [threadId, userId, systemMsg],
+          `INSERT INTO messages (thread_id, sender_id, content, message_type, flagged_for_review)
+           VALUES ($1, $2, $3, 'system', $4)`,
+          [threadId, userId, systemMsg, sanitizedJobTitle?.flaggedForReview ?? false],
         );
         await txClient.query("COMMIT");
       } catch (threadErr: any) {

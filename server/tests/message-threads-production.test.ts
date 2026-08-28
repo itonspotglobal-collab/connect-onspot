@@ -21,6 +21,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { query } from "../db.js";
 import { registerRoutes } from "../routes.js";
+import { MAX_USER_MESSAGE_CHARS } from "../lib/messagePrivacyFilter.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-fallback-secret";
 
@@ -68,6 +69,10 @@ function request(
 
 async function cleanup() {
   await query(
+    `DELETE FROM notifications WHERE user_id IN ($1, $2, $3)`,
+    [CLIENT_ID, TALENT_ID, OUTSIDER_ID],
+  );
+  await query(
     `DELETE FROM messages WHERE thread_id IN (
        SELECT id FROM message_threads WHERE participants && ARRAY[$1, $2, $3]::text[])`,
     [CLIENT_ID, TALENT_ID, OUTSIDER_ID],
@@ -96,6 +101,7 @@ const threadCount = async () =>
 
 describe("production messaging routes (registerRoutes)", () => {
   let srv: http.Server;
+  let acceptedThreadId: string;
   const clientTok = tok(CLIENT_ID, "client");
   const talentTok = tok(TALENT_ID, "talent");
   const outsiderTok = tok(OUTSIDER_ID, "client");
@@ -172,6 +178,7 @@ describe("production messaging routes (registerRoutes)", () => {
     assert.equal(res.json.status, "new"); // canonical DB value; UI displays as 'submitted'
     assert.ok(res.json.threadId);
     const threadId = res.json.threadId;
+    acceptedThreadId = threadId;
 
     // Participants can read; outsider cannot
     const asTalent = await request(srv, "GET", `/api/message-threads/${threadId}/messages`, talentTok);
@@ -182,5 +189,86 @@ describe("production messaging routes (registerRoutes)", () => {
     assert.equal(asOutsider.status, 403);
     const unauth = await request(srv, "GET", `/api/message-threads/${threadId}/messages`);
     assert.equal(unauth.status, 401);
+  });
+
+  it("redacts and flags messages from both roles before persistence", async () => {
+    assert.ok(acceptedThreadId);
+
+    const clientInput =
+      "Email val@gmail.com or call +639171234723. Password: hello123, please use it.";
+    const clientSent = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: acceptedThreadId,
+      content: clientInput,
+      senderId: OUTSIDER_ID,
+    });
+    assert.equal(clientSent.status, 201, JSON.stringify(clientSent.json));
+    assert.equal(
+      clientSent.json.content,
+      "Email *****.com or call ***4723. Password: ********, please use it.",
+    );
+    assert.equal(clientSent.json.senderId, CLIENT_ID);
+    assert.ok(!JSON.stringify(clientSent.json).includes("val@gmail.com"));
+    assert.ok(!JSON.stringify(clientSent.json).includes("hello123"));
+
+    const talentSent = await request(srv, "POST", "/api/messages", talentTok, {
+      threadId: acceptedThreadId,
+      content: "OTP is 839221; do not share it.",
+    });
+    assert.equal(talentSent.status, 201, JSON.stringify(talentSent.json));
+    assert.equal(talentSent.json.content, "OTP is ******; do not share it.");
+    assert.equal(talentSent.json.senderId, TALENT_ID);
+
+    const persisted = await query(
+      `SELECT content, flagged_for_review AS "flaggedForReview"
+         FROM messages
+        WHERE id = ANY($1::text[])
+        ORDER BY created_at`,
+      [[clientSent.json.id, talentSent.json.id]],
+    );
+    assert.equal(persisted.rows.length, 2);
+    assert.ok(persisted.rows.every((row: any) => row.flaggedForReview === true));
+    const persistedJson = JSON.stringify(persisted.rows);
+    assert.ok(!persistedJson.includes("val@gmail.com"));
+    assert.ok(!persistedJson.includes("hello123"));
+    assert.ok(!persistedJson.includes("839221"));
+
+    const recipientView = await request(
+      srv,
+      "GET",
+      `/api/message-threads/${acceptedThreadId}/messages`,
+      talentTok,
+    );
+    assert.equal(recipientView.status, 200);
+    const recipientJson = JSON.stringify(recipientView.json);
+    assert.ok(recipientJson.includes("*****.com"));
+    assert.ok(recipientJson.includes("***4723"));
+    assert.ok(!recipientJson.includes("val@gmail.com"));
+    assert.ok(!recipientJson.includes("hello123"));
+
+    let notifications: any[] = [];
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const rows = await query(
+        `SELECT user_id, title, message
+           FROM notifications
+          WHERE user_id IN ($1, $2) AND type = 'new_message'`,
+        [CLIENT_ID, TALENT_ID],
+      );
+      notifications = rows.rows;
+      if (notifications.length >= 2) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    assert.equal(notifications.length, 2);
+    const notificationJson = JSON.stringify(notifications);
+    assert.ok(!notificationJson.includes("val@gmail.com"));
+    assert.ok(!notificationJson.includes("hello123"));
+    assert.ok(!notificationJson.includes("839221"));
+  });
+
+  it("rejects messages too long for complete semantic screening", async () => {
+    const sent = await request(srv, "POST", "/api/messages", clientTok, {
+      threadId: acceptedThreadId,
+      content: "a".repeat(MAX_USER_MESSAGE_CHARS + 1),
+    });
+    assert.equal(sent.status, 400);
   });
 });

@@ -194,7 +194,10 @@ export interface IStorage {
     latestMessageAt: Date | null;
   }>>;
   getMessage(id: string): Promise<Message | undefined>;
-  createMessage(message: InsertMessage): Promise<Message>;
+  createMessage(
+    message: InsertMessage,
+    options?: { flaggedForReview?: boolean },
+  ): Promise<Message>;
   listMessagesByThread(threadId: string): Promise<Message[]>;
   markMessagesAsRead(threadId: string, userId: string): Promise<void>;
   flagMessageForReview(messageId: string): Promise<void>;
@@ -1671,7 +1674,10 @@ export class MemStorage implements IStorage {
     return this.messages.get(id);
   }
 
-  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+  async createMessage(
+    insertMessage: InsertMessage,
+    options?: { flaggedForReview?: boolean },
+  ): Promise<Message> {
     const id = randomUUID();
     const message: Message = {
       ...insertMessage,
@@ -1679,7 +1685,7 @@ export class MemStorage implements IStorage {
       attachments: insertMessage.attachments ?? null,
       messageType: insertMessage.messageType ?? "text",
       readBy: [],
-      flaggedForReview: false,
+      flaggedForReview: options?.flaggedForReview ?? false,
       createdAt: new Date()
     };
     this.messages.set(id, message);
@@ -3810,10 +3816,16 @@ export class DbStorage extends MemStorage {
     return msg ?? undefined;
   }
 
-  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+  async createMessage(
+    insertMessage: InsertMessage,
+    options?: { flaggedForReview?: boolean },
+  ): Promise<Message> {
     const [msg] = await db
       .insert(messagesTable)
-      .values(insertMessage)
+      .values({
+        ...insertMessage,
+        flaggedForReview: options?.flaggedForReview ?? false,
+      })
       .returning();
     // Update thread lastMessageAt in-place
     await db

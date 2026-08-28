@@ -119,6 +119,67 @@ export async function matchTalentSemantically(input: {
   };
 }
 
+export type MessagePrivacyAiDetection = {
+  type?: unknown;
+  start?: unknown;
+  end?: unknown;
+  confidence?: unknown;
+};
+
+/**
+ * Small, bounded privacy classification request. The caller must provide
+ * content after deterministic redaction; this function does not accept raw
+ * message input from the send route.
+ */
+export async function detectMessagePrivacySemantically(content: string): Promise<{
+  containsSensitiveInfo: boolean;
+  detections: MessagePrivacyAiDetection[];
+}> {
+  if (!openai) return { containsSensitiveInfo: false, detections: [] };
+
+  const response = await openai.chat.completions.create(
+    {
+      model: process.env.VANESSA_PRIVACY_MODEL || process.env.VANESSA_MATCHING_MODEL || "gpt-4o-mini",
+      temperature: 0,
+      max_tokens: 220,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: [
+            "You are Vanessa's privacy classifier for an in-platform hiring chat.",
+            "The message has already had obvious emails, phones, credentials, and tokens removed.",
+            "Detect only high-confidence remaining contact-sharing or credential disclosures.",
+            "Return strict JSON only: {\"containsSensitiveInfo\":false,\"detections\":[]}.",
+            "Each detection must include type, start, end, and confidence from 0 to 1.",
+            "Use character offsets in the supplied message. Do not quote or repeat sensitive values.",
+            "Only return detections with confidence at least 0.9.",
+          ].join(" "),
+        },
+        {
+          role: "user",
+          content,
+        },
+      ],
+    },
+    { timeout: 1500, maxRetries: 0 },
+  );
+
+  const raw = response.choices[0]?.message?.content;
+  if (!raw) throw new Error("Vanessa returned an empty privacy response");
+  const parsed = JSON.parse(raw) as Record<string, unknown>;
+  if (typeof parsed.containsSensitiveInfo !== "boolean" || !Array.isArray(parsed.detections)) {
+    throw new Error("Vanessa returned an invalid privacy response");
+  }
+  return {
+    containsSensitiveInfo: parsed.containsSensitiveInfo,
+    detections: parsed.detections.filter(
+      (d): d is MessagePrivacyAiDetection =>
+        !!d && typeof d === "object",
+    ),
+  };
+}
+
 // Dynamic knowledge loader — reads BOTH knowledge files on every request for instant updates
 function loadVanessaKnowledge(): string {
   const knowledgePath = path.join(process.cwd(), "resources", "vanessa_knowledge.txt");
