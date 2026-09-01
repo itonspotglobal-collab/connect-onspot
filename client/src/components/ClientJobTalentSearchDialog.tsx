@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { Eye, Loader2, Search, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,8 @@ export function ClientJobTalentSearchDialog({
   const [meetingLink, setMeetingLink] = useState("");
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [previewing, setPreviewing] = useState<SearchResult | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const inviteTimeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +73,7 @@ export function ClientJobTalentSearchDialog({
     setMeetingLink("");
     setInvitedIds(new Set());
     setPreviewing(null);
+    setInviteError(null);
   }, [open, job?.id]);
 
   useEffect(() => {
@@ -152,6 +155,7 @@ export function ClientJobTalentSearchDialog({
     },
     onSuccess: ({ talentUserId, alreadyInvited }) => {
       setInvitedIds((current) => new Set(current).add(talentUserId));
+      setInviteError(null);
       toast({
         title: alreadyInvited ? "Already invited" : "Invitation sent",
         description: alreadyInvited
@@ -160,11 +164,18 @@ export function ClientJobTalentSearchDialog({
       });
     },
     onError: (error: Error) => {
-      toast({ title: "Could not send invitation", description: error.message, variant: "destructive" });
+      setInviteError(error.message);
+      if (/interview time/i.test(error.message)) {
+        window.requestAnimationFrame(() => inviteTimeRef.current?.focus());
+      }
     },
   });
 
   const results = search.data?.results ?? [];
+  const handleInvite = (talentUserId: string) => {
+    setInviteError(null);
+    invite.mutate(talentUserId);
+  };
   const previewSkills = useMemo(
     () => [...(preview.data?.coreSkills ?? []), ...(preview.data?.secondarySkills ?? [])].slice(0, 12),
     [preview.data],
@@ -173,64 +184,86 @@ export function ClientJobTalentSearchDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[calc(100svh-3rem)] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{canInvite ? "Invite Talent to Apply" : "Find Talent for This Job"}</DialogTitle>
-            <DialogDescription>
-              {job ? <>{canInvite ? "Search and invite talent for" : "Review ranked talent for"} <span className="font-semibold text-foreground"> {job.title}</span>.</> : "Choose a job posting to search talent."}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="!flex max-h-[calc(100svh-3rem)] max-w-4xl flex-col !overflow-hidden">
+          <div className="shrink-0 space-y-3">
+            <DialogHeader>
+              <DialogTitle>{canInvite ? "Invite Talent to Apply" : "Find Talent for This Job"}</DialogTitle>
+              <DialogDescription>
+                {job ? <>{canInvite ? "Search and invite talent for" : "Review ranked talent for"} <span className="font-semibold text-foreground"> {job.title}</span>.</> : "Choose a job posting to search talent."}
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className={`grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03] ${canInvite ? "md:grid-cols-[1fr_250px]" : ""}`}>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="talent-search">
-                Search talent
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  id="talent-search"
-                  value={searchDraft}
-                  onChange={(event) => setSearchDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      setAppliedSearch(searchDraft.trim());
-                    }
-                  }}
-                  placeholder="Search by role, skill, or experience..."
-                />
-                <Button type="button" variant="outline" onClick={() => setAppliedSearch(searchDraft.trim())}>
-                  <Search className="mr-1.5 h-4 w-4" /> Search
-                </Button>
+            <div className={`grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03] ${canInvite ? "md:grid-cols-[1fr_250px]" : ""}`}>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="talent-search">
+                  Search talent
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    id="talent-search"
+                    value={searchDraft}
+                    onChange={(event) => setSearchDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setAppliedSearch(searchDraft.trim());
+                      }
+                    }}
+                    placeholder="Search by role, skill, or experience..."
+                  />
+                  <Button type="button" variant="outline" onClick={() => setAppliedSearch(searchDraft.trim())}>
+                    <Search className="mr-1.5 h-4 w-4" /> Search
+                  </Button>
+                </div>
               </div>
+              {canInvite && <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="invite-time">
+                  Suggested first interview time
+                  <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+                </label>
+                <Input
+                  ref={inviteTimeRef}
+                  id="invite-time"
+                  type="datetime-local"
+                  required
+                  aria-required="true"
+                  value={proposedTime}
+                  onChange={(event) => {
+                    setProposedTime(event.target.value);
+                    setInviteError(null);
+                  }}
+                />
+                <p className="mt-1 text-[11px] text-slate-500">Talent can accept this time or suggest alternatives.</p>
+              </div>}
             </div>
-            {canInvite && <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="invite-time">
-                Suggested first interview time
+
+            {canInvite && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="invite-meeting-link">
+                Meeting link <span className="font-normal text-slate-500">(optional)</span>
               </label>
               <Input
-                id="invite-time"
-                type="datetime-local"
-                value={proposedTime}
-                onChange={(event) => setProposedTime(event.target.value)}
+                id="invite-meeting-link"
+                type="url"
+                value={meetingLink}
+                onChange={(event) => {
+                  setMeetingLink(event.target.value);
+                  setInviteError(null);
+                }}
+                placeholder="https://meet.google.com/…"
               />
-              <p className="mt-1 text-[11px] text-slate-500">Talent can accept this time or suggest alternatives.</p>
-            </div>}
+              </div>}
+            {inviteError && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300"
+              >
+                {inviteError}
+              </div>
+            )}
           </div>
-          {canInvite && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-            <label className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300" htmlFor="invite-meeting-link">
-              Meeting link <span className="font-normal text-slate-500">(optional)</span>
-            </label>
-            <Input
-              id="invite-meeting-link"
-              type="url"
-              value={meetingLink}
-              onChange={(event) => setMeetingLink(event.target.value)}
-              placeholder="https://meet.google.com/…"
-            />
-          </div>}
 
-          <div className="min-h-36">
+          <div className="min-h-0 flex-1 overflow-y-auto border-t border-slate-200 pt-3 dark:border-white/10">
             {search.isLoading ? (
               <div className="flex min-h-36 items-center justify-center gap-2 text-sm text-slate-500">
                 <Loader2 className="h-4 w-4 animate-spin" /> Searching talent...
@@ -289,7 +322,7 @@ export function ClientJobTalentSearchDialog({
                           size="sm"
                           disabled={isInvited || isSending}
                           className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-                          onClick={() => invite.mutate(result.userId)}
+                           onClick={() => handleInvite(result.userId)}
                         >
                           {isSending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <UserPlus className="mr-1.5 h-3.5 w-3.5" />}
                           {isInvited ? "Invited" : "Invite to Apply"}

@@ -1,0 +1,296 @@
+Update ONLY the existing:
+
+client/src/components/ClientJobTalentSearchDialog.tsx
+
+Do not redesign unrelated pages or change the invite/search API behavior.
+
+The goal is to improve visual hierarchy and modal usability in this specific “Invite Talent to Apply” dialog.
+
+==================================================
+1. MAKE THE TOP FORM AREA STAY VISIBLE WHILE TALENT RESULTS SCROLL
+==================================================
+
+Current problem:
+The entire DialogContent has:
+
+max-h-[calc(100svh-3rem)] overflow-y-auto
+
+so everything scrolls, including:
+- “Invite Talent to Apply”
+- job description/title
+- Search talent
+- Suggested first interview time
+- Meeting link
+
+I want this entire top area to stay visible while the user scrolls through the talent results below it.
+
+Desired structure:
+
+DialogContent
+├── Fixed / non-scrolling top section
+│   ├── DialogHeader
+│   │   ├── Invite Talent to Apply
+│   │   └── Search and invite talent for [job title]
+│   ├── Search talent
+│   ├── Suggested first interview time
+│   └── Meeting link
+└── Scrollable talent results area
+    ├── loading/error/empty state
+    └── talent result cards
+
+Do NOT use `position: fixed` relative to the page.
+
+Instead:
+- make DialogContent itself `overflow-hidden`
+- use a flex-column or grid layout
+- keep the upper form area shrink-0
+- give only the talent results section `overflow-y-auto`
+- add `min-h-0` where needed so scrolling works correctly inside the modal
+
+Conceptually:
+
+<DialogContent
+  className="
+    max-w-4xl
+    max-h-[calc(100svh-3rem)]
+    overflow-hidden
+    flex
+    flex-col
+  "
+>
+  <div className="shrink-0 ...">
+    header + search + interview time + meeting link
+  </div>
+
+  <div className="min-h-0 flex-1 overflow-y-auto ...">
+    results
+  </div>
+</DialogContent>
+
+The talent list should scroll independently while the invite controls stay visible.
+
+Make sure this works on desktop and mobile.
+
+==================================================
+2. IMPROVE VISUAL HIERARCHY
+==================================================
+
+Keep the existing design language, but clarify the information hierarchy.
+
+Priority should visually be:
+
+1. Dialog title
+2. Job being invited for
+3. Required interview scheduling
+4. Talent search
+5. Optional meeting link
+6. Talent results
+
+Do not make the UI dramatically larger.
+
+Suggested refinements:
+
+- Keep “Invite Talent to Apply” as the strongest text.
+- Keep the job title emphasized inside the description.
+- Make required interview scheduling visually obvious.
+- Keep Search talent as an important action, but do not let it overpower the title.
+- Keep Meeting link lower emphasis because it is optional.
+- Add a subtle divider or spacing between the form area and talent results.
+- Preserve current rounded cards, borders, colors, and dark-mode support.
+
+Do not redesign the talent result cards.
+
+==================================================
+3. MARK “SUGGESTED FIRST INTERVIEW TIME” AS REQUIRED
+==================================================
+
+The existing mutation already rejects invitations when `proposedTime` is empty:
+
+“Choose an initial interview time before sending an invitation.”
+
+Do not change that business logic.
+
+Update the UI label so users know this field is required BEFORE clicking Invite.
+
+Change:
+
+Suggested first interview time
+
+to something visually like:
+
+Suggested first interview time *
+
+The `*` should:
+- be clearly visible
+- use the project’s destructive/red styling
+- not dominate the label
+
+Example:
+
+<label ...>
+  Suggested first interview time
+  <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+</label>
+
+Also add:
+- `required` to the datetime-local input
+- `aria-required="true"` if appropriate
+
+Keep the existing helper text:
+
+Talent can accept this time or suggest alternatives.
+
+Do not make Meeting link required.
+
+==================================================
+4. SHOW INVITE ERRORS IN FRONT OF THE DIALOG
+==================================================
+
+Current behavior:
+Invite mutation errors use:
+
+toast({
+  title: "Could not send invitation",
+  description: error.message,
+  variant: "destructive"
+});
+
+In practice, the toast can appear behind the modal/dialog overlay.
+
+Fix this for errors triggered inside ClientJobTalentSearchDialog.
+
+Preferred solution:
+Show the invitation validation/API error INSIDE the dialog itself, above the talent results or directly below the invite controls.
+
+Do NOT rely only on the global toast for these modal errors.
+
+Add local state, for example:
+
+const [inviteError, setInviteError] = useState<string | null>(null);
+
+Behavior:
+- clear the error when the dialog opens/reset occurs
+- clear it when a new invite attempt begins
+- on mutation error, set the message into `inviteError`
+- render a destructive error alert inside the dialog
+- the error must always be visible above the modal content, never behind it
+
+Example placement:
+after Meeting link and before talent results.
+
+Example visual style:
+
+<div
+  role="alert"
+  className="
+    rounded-lg
+    border border-red-200
+    bg-red-50
+    px-4 py-3
+    text-sm text-red-700
+    dark:border-red-900/40
+    dark:bg-red-950/20
+    dark:text-red-300
+  "
+>
+  {inviteError}
+</div>
+
+If the project already has an Alert component, reuse it.
+
+Do not create a second modal for errors.
+
+You may keep the success toast for:
+- Invitation sent
+- Already invited
+
+But invitation errors should be visible inside the active dialog.
+
+==================================================
+5. VALIDATION UX
+==================================================
+
+When the user clicks “Invite to Apply” without selecting an interview time:
+
+- do not silently fail
+- show the local error inside the modal
+- ideally focus the interview-time field
+
+If practical, add a ref to the datetime input and focus it after the validation error.
+
+Do not change the API request contract.
+
+For an invalid meeting link:
+- show the existing validation message inside the modal
+- do not close the dialog
+
+For server/API errors:
+- show the error inside the modal
+- do not hide it behind any overlay
+
+Clear the error when:
+- the user changes the interview time
+- the user changes the meeting link
+- a new invite succeeds
+- the dialog closes/reopens
+
+==================================================
+6. PRESERVE EXISTING FUNCTIONALITY
+==================================================
+
+Do NOT change:
+
+- talent search endpoint
+- debounce behavior
+- React Query query keys
+- candidate masking/name display
+- talent matching score
+- preview dialog
+- invited talent tracking
+- POST /api/client/invitations payload
+- job title behavior
+- meeting-link URL validation logic
+- search result card design
+- “Preview” behavior
+- “Invite to Apply” / “Invited” state
+- dark mode
+
+Do not touch any other file unless a shared UI z-index component absolutely requires it.
+
+Prefer solving the error display locally inside this dialog rather than changing global toast z-index across the whole app.
+
+==================================================
+7. RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop:
+- modal remains max-w-4xl
+- top controls stay visible
+- result list scrolls inside remaining height
+
+Mobile:
+- keep a usable maximum viewport height
+- controls can stack as they already do
+- only talent results should become the long scroll area
+- do not allow the dialog to overflow beyond the viewport
+- close button must remain accessible
+
+==================================================
+8. ACCEPTANCE CRITERIA
+==================================================
+
+After the change:
+
+1. “Invite Talent to Apply” through “Meeting link” stays visible while scrolling talent results.
+2. Only the talent-results section scrolls.
+3. “Suggested first interview time” clearly shows a required indicator.
+4. The datetime-local input remains functionally required.
+5. Invite validation/API errors appear inside and in front of the modal.
+6. Errors never appear behind the dialog overlay.
+7. Success behavior remains unchanged.
+8. Preview still works.
+9. Search still works.
+10. Invite API behavior remains unchanged.
+11. No unrelated component or page is redesigned.
+
+Please make the smallest clean change necessary inside ClientJobTalentSearchDialog.tsx.
