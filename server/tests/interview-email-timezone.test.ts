@@ -26,6 +26,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import { formatInterviewTime } from "../services/interviewEmailService.js";
+import { convertLocalDateTimeToUtc } from "../../client/src/lib/formatInterviewTime.js";
 
 // Reference timestamp: 2025-09-03T14:30:00.000Z (Wednesday, 3 Sep 2025, 14:30 UTC)
 const ISO = "2025-09-03T14:30:00.000Z";
@@ -96,5 +97,31 @@ describe("formatInterviewTime", () => {
     assert.ok(result.includes("September"), `Expected month in result, got: ${result}`);
     assert.ok(result.includes("2"), `Expected day 2 in result, got: ${result}`);
     assert.ok(result.includes("9:00"), `Expected 9:00 pm, got: ${result}`);
+  });
+});
+
+describe("selected invitation timezone conversion and email display", () => {
+  it("interprets 9:00 AM as New York wall-clock time even when the browser is elsewhere", () => {
+    const start = convertLocalDateTimeToUtc("2026-09-10T09:00", "America/New_York");
+    assert.equal(start, "2026-09-10T13:00:00.000Z");
+
+    const emailDisplay = formatInterviewTime(start, "America/New_York", false);
+    assert.ok(emailDisplay.includes("9:00"), `Expected 9:00 AM in the email, got: ${emailDisplay}`);
+    assert.ok(
+      emailDisplay.includes("America/New_York"),
+      `Expected selected timezone in the email, got: ${emailDisplay}`,
+    );
+  });
+
+  it("converts and displays the same wall-clock time using Asia/Manila", () => {
+    const start = convertLocalDateTimeToUtc("2026-09-10T09:00", "Asia/Manila");
+    assert.equal(start, "2026-09-10T01:00:00.000Z");
+
+    const emailDisplay = formatInterviewTime(start, "Asia/Manila", false);
+    assert.ok(emailDisplay.includes("9:00"), `Expected 9:00 AM in the email, got: ${emailDisplay}`);
+    assert.ok(
+      emailDisplay.includes("Asia/Manila"),
+      `Expected selected timezone in the email, got: ${emailDisplay}`,
+    );
   });
 });

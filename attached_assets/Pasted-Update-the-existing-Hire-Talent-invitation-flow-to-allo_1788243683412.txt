@@ -1,0 +1,574 @@
+Update the existing Hire Talent invitation flow to allow the CLIENT to explicitly choose the timezone for the proposed interview time.
+
+IMPORTANT:
+Do NOT redesign or rewrite the existing invitation flow.
+Do NOT change unrelated Hire Talent functionality.
+
+Primary file to inspect:
+
+client/src/pages/HireTalentPage.tsx
+
+Also inspect the existing backend invitation/email implementation for:
+
+POST /api/client/invitations
+
+The existing code already sends:
+
+proposedTimes: [{
+  start: ...,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+}]
+
+Do NOT remove timezone support.
+
+The change is to let the user SELECT the timezone instead of always silently using the browser-detected timezone.
+
+==================================================
+1. ADD A TIMEZONE SELECTOR TO THE INVITE MODAL
+==================================================
+
+Current modal flow:
+
+Invite [Talent] to which role?
+
+Select one of your open job postings.
+
+Propose an initial interview time
+[ datetime input ]
+
+[ Job option ]
+[ Job option ]
+
+Cancel | Send invitation
+
+Add a new field directly underneath:
+
+“Propose an initial interview time”
+
+The layout should become:
+
+Propose an initial interview time *
+[ date/time input ]
+
+Timezone *
+[ timezone selector ]
+
+[ job options ]
+
+The timezone selector should visually match the existing input styling.
+
+Do NOT make it look like an unrelated control.
+
+==================================================
+2. DEFAULT TO THE USER’S CURRENT TIMEZONE
+==================================================
+
+When the invitation modal opens, automatically detect the client's browser timezone using:
+
+Intl.DateTimeFormat().resolvedOptions().timeZone
+
+Example:
+
+Asia/Manila
+America/New_York
+Europe/London
+
+Set this as the initial selected timezone.
+
+Example:
+
+const detectedTimezone =
+  Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+The client should be able to change it before sending the invitation.
+
+Do NOT force everybody to Asia/Manila.
+
+==================================================
+3. USE IANA TIMEZONE VALUES
+==================================================
+
+Use proper IANA timezone identifiers.
+
+Examples:
+
+Asia/Manila
+Asia/Singapore
+Asia/Tokyo
+America/New_York
+America/Chicago
+America/Denver
+America/Los_Angeles
+Europe/London
+Europe/Paris
+Australia/Sydney
+Pacific/Auckland
+UTC
+
+Do NOT store/display timezone selections only as:
+
+PST
+EST
+CST
+
+because those are ambiguous and do not correctly handle daylight-saving rules.
+
+The value sent to the backend must remain an IANA timezone string.
+
+==================================================
+4. TIMEZONE SELECTOR UX
+==================================================
+
+Prefer a searchable Select/Combobox if the project already has one.
+
+Users should be able to quickly find their timezone.
+
+Recommended display:
+
+(GMT+08:00) Asia/Manila
+(GMT-04:00) America/New_York
+(GMT+01:00) Europe/London
+
+However, the actual stored value should remain:
+
+Asia/Manila
+America/New_York
+Europe/London
+
+If displaying dynamic UTC offsets becomes unnecessarily complicated, showing the IANA names alone is acceptable.
+
+Do NOT introduce a large new timezone dependency if the project/browser already supports:
+
+Intl.supportedValuesOf("timeZone")
+
+Prefer:
+
+Intl.supportedValuesOf("timeZone")
+
+when supported.
+
+Provide a reasonable fallback timezone list if browser support is unavailable.
+
+==================================================
+5. TIMEZONE IS REQUIRED
+==================================================
+
+The interview date/time and timezone are both required.
+
+Show a required indicator:
+
+Propose an initial interview time *
+Timezone *
+
+Use the same subtle red required indicator used elsewhere.
+
+Do not make Job selection or other fields behave differently.
+
+The Send invitation button should not successfully submit without:
+
+- selected interview date/time
+- selected timezone
+- selected job
+
+Show the existing validation style if either required scheduling field is missing.
+
+==================================================
+6. IMPORTANT: CORRECT TIME CONVERSION
+==================================================
+
+This is critical.
+
+The value from:
+
+<input type="datetime-local">
+
+has NO timezone information.
+
+Do NOT blindly do:
+
+new Date(inviteDateTime).toISOString()
+
+after the user selects a timezone different from their browser timezone.
+
+That would interpret the value in the browser's local timezone rather than the timezone the user selected.
+
+Example:
+
+User enters:
+
+September 10, 2026
+9:00 AM
+
+and selects:
+
+America/New_York
+
+It must mean:
+
+9:00 AM in America/New_York
+
+even if the client's computer is physically in:
+
+Asia/Manila
+
+Convert that selected local wall-clock time to the correct UTC instant using the selected IANA timezone.
+
+Then send:
+
+{
+  start: "<correct ISO UTC value>",
+  timezone: "America/New_York"
+}
+
+Do NOT alter the user's selected wall-clock time.
+
+Use an existing date/time library already present in the project if it has timezone support.
+
+If the project already uses:
+- date-fns-tz
+- Luxon
+- Temporal/polyfill
+
+reuse it.
+
+Do NOT add a new library unless necessary.
+
+==================================================
+7. UPDATE THE EXISTING INVITATION PAYLOAD
+==================================================
+
+Current behavior is approximately:
+
+const invitePayload = {
+  jobId,
+  talentUserId,
+  proposedTimes: inviteDateTime
+    ? [{
+        start: new Date(inviteDateTime).toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      }]
+    : undefined,
+};
+
+Change it conceptually to:
+
+const invitePayload = {
+  jobId,
+  talentUserId,
+  proposedTimes: inviteDateTime
+    ? [{
+        start: convertedUtcDateTime,
+        timezone: selectedTimezone
+      }]
+    : undefined,
+};
+
+Do NOT rename:
+
+proposedTimes
+start
+timezone
+
+The backend already supports this structure.
+
+Do NOT break the existing invitation API contract.
+
+==================================================
+8. PRESERVE TIMEZONE THROUGH THE ENTIRE FEATURE
+==================================================
+
+Inspect the connected invitation flow and make sure the selected timezone continues through:
+
+Client Hire Talent page
+↓
+POST /api/client/invitations
+↓
+Invitation record
+↓
+Talent invitation
+↓
+Interview proposal
+↓
+Interview confirmation
+
+Do NOT replace the existing backend timezone behavior if it already works.
+
+Only fix missing propagation if you find a path that drops the selected timezone.
+
+The selected timezone must remain associated with the proposed time.
+
+==================================================
+9. INCLUDE TIMEZONE IN THE TALENT INVITATION EMAIL
+==================================================
+
+This is REQUIRED.
+
+Inspect the email sent when a client invites a talent.
+
+Find the existing invitation email template/service used by:
+
+POST /api/client/invitations
+
+Update the email scheduling section to include the selected timezone.
+
+If the email currently shows something similar to:
+
+Proposed interview time:
+September 10, 2026 at 9:00 AM
+
+change it to something like:
+
+Proposed interview time:
+September 10, 2026 at 9:00 AM
+Timezone: America/New_York
+
+Or preferably:
+
+September 10, 2026 at 9:00 AM (America/New_York)
+
+Do not hide the timezone.
+
+The Talent needs to understand exactly which timezone the proposed interview uses.
+
+==================================================
+10. EMAIL DATE/TIME MUST MATCH THE SELECTED TIMEZONE
+==================================================
+
+Do NOT format the email date using the SERVER timezone.
+
+Do NOT format it using UTC unless the selected timezone is UTC.
+
+When formatting the invitation email, explicitly use the timezone stored in:
+
+proposedTimes[0].timezone
+
+For example:
+
+If stored data is:
+
+start:
+2026-09-10T13:00:00.000Z
+
+timezone:
+America/New_York
+
+the email should show:
+
+9:00 AM (America/New_York)
+
+NOT:
+
+1:00 PM UTC
+
+and NOT:
+
+9:00 PM Asia/Manila
+
+Use Intl.DateTimeFormat with:
+
+timeZone: selectedTimezone
+
+or the project's existing interview time formatter.
+
+==================================================
+11. DO NOT BREAK EXISTING EMAIL CONTENT
+==================================================
+
+Preserve all existing invitation email information.
+
+Do not remove:
+
+- talent name
+- client/company
+- job title
+- invitation CTA
+- interview information
+- meeting link if one exists
+- existing branding
+- existing URLs
+
+Only enhance the interview scheduling information with the selected timezone.
+
+==================================================
+12. RESET BEHAVIOR
+==================================================
+
+When the invite modal opens:
+
+- reset interview date/time as it currently does
+- default timezone to browser-detected timezone
+
+When the modal closes and opens again:
+- do not retain a random previous talent's state unless that is intentional existing behavior
+
+Do not change unrelated modal state.
+
+==================================================
+13. VISUAL HIERARCHY
+==================================================
+
+Keep the modal clean.
+
+Recommended hierarchy:
+
+Invite [Talent] to which role?
+↓
+Short description
+↓
+Interview scheduling
+   Date/time *
+   Timezone *
+↓
+Available job roles
+↓
+Cancel / Send invitation
+
+The date/time and timezone fields should feel like one scheduling group.
+
+Suggested spacing:
+
+Propose an initial interview time *
+[input]
+
+Timezone *
+[selector]
+
+Then a slightly larger gap before the job-role choices.
+
+Do NOT significantly increase the modal size unless needed.
+
+If necessary, allow the modal body to scroll on small screens.
+
+==================================================
+14. ACCESSIBILITY
+==================================================
+
+The timezone selector must have:
+
+- visible label
+- keyboard navigation
+- accessible selected value
+- focus state
+
+Required fields should expose:
+
+aria-required="true"
+
+Do not rely only on the red asterisk.
+
+==================================================
+15. TEST THE EXISTING TIMEZONE FLOW
+==================================================
+
+There is already backend smoke coverage for invitation/interview timezone propagation.
+
+Inspect:
+
+server/tests/invite-interview-timezone.test.ts
+
+Do NOT remove or weaken those tests.
+
+Extend coverage where appropriate for the newly user-selected timezone behavior.
+
+At minimum verify:
+
+1. selected IANA timezone reaches POST /api/client/invitations
+2. backend preserves that timezone
+3. invitation response preserves it
+4. Talent invitation preserves it
+5. interview proposal preserves it
+
+==================================================
+16. ADD EMAIL TEST COVERAGE
+==================================================
+
+Add or update email tests to ensure:
+
+Selected timezone:
+
+America/New_York
+
+Results in the talent invitation email containing:
+
+America/New_York
+
+and the displayed interview time corresponds to that timezone.
+
+Also test another timezone such as:
+
+Asia/Manila
+
+This protects against future regressions where the email accidentally falls back to the server/browser timezone.
+
+==================================================
+17. TEST CROSS-TIMEZONE SCENARIO
+==================================================
+
+Explicitly test this case:
+
+Browser/client timezone:
+Asia/Manila
+
+Entered interview time:
+09/10/2026 09:00
+
+Selected timezone:
+America/New_York
+
+Expected behavior:
+
+- Invitation represents 9:00 AM New York time.
+- UTC `start` is calculated from New York time.
+- payload timezone is America/New_York.
+- Talent invitation retains America/New_York.
+- invitation email shows 9:00 AM America/New_York.
+
+The browser timezone must NOT affect the meaning of the selected interview time once the user manually chooses another timezone.
+
+==================================================
+18. DO NOT CHANGE THESE FEATURES
+==================================================
+
+Do NOT modify:
+
+- Hire Talent search
+- candidate name privacy formatter
+- AI match scores
+- talent profile preview
+- favorites
+- shortlist behavior
+- existing job filtering
+- job readiness rules
+- job selection behavior
+- candidate cards
+- login/signup behavior
+- search suggestions
+- existing invitation status
+- interview response behavior
+- unrelated email templates
+
+Do not refactor unrelated code.
+
+==================================================
+19. ACCEPTANCE CRITERIA
+==================================================
+
+After implementation:
+
+1. Invite modal has a Timezone selector.
+2. Timezone defaults to the user's browser timezone.
+3. User can select a different IANA timezone.
+4. Date/time remains required.
+5. Timezone is required.
+6. Selected date/time is interpreted in the SELECTED timezone, not the browser timezone.
+7. Correct UTC timestamp is sent to the backend.
+8. `proposedTimes[].timezone` contains the selected IANA timezone.
+9. Existing invitation API continues working.
+10. Existing talent/interview timezone flow remains working.
+11. Talent invitation email displays the selected timezone.
+12. Email date/time is formatted using that selected timezone.
+13. Existing invitation email content remains intact.
+14. Existing Hire Talent functionality is not changed.
+15. Existing timezone smoke tests continue passing.
+
+Please inspect the existing implementation before editing and make the smallest end-to-end change necessary.

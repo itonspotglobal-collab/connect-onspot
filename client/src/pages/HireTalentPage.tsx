@@ -21,6 +21,8 @@ import { SignUpDialog } from "@/components/SignUpDialog";
 import { LoginDialog } from "@/components/LoginDialog";
 import { useClientFavorites } from "@/hooks/useClientFavorites";
 import { getPrivacySafeTalentDisplayName } from "@/lib/formatPublicTalentName";
+import { convertLocalDateTimeToUtc } from "@/lib/formatInterviewTime";
+import { TimezoneSelect } from "@/components/TimezoneSelect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -102,6 +104,14 @@ interface PendingSearchState {
 }
 
 const STORAGE_KEY = "onspot_pending_search";
+
+function getDetectedTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
 
 function getInitials(name?: string | null): string {
   if (!name || name.toLowerCase() === "talent profile") return "TA";
@@ -786,6 +796,7 @@ export default function HireTalentPage() {
   const [pickerSelectedJobId, setPickerSelectedJobId] = useState<string | null>(null);
   const [pickerSending, setPickerSending] = useState(false);
   const [inviteDateTime, setInviteDateTime] = useState("");
+  const [inviteTimezone, setInviteTimezone] = useState(getDetectedTimezone);
   const [termsConfirmed, setTermsConfirmed] = useState(false);
   const [acceptingTerms, setAcceptingTerms] = useState(false);
 
@@ -1055,6 +1066,7 @@ export default function HireTalentPage() {
     setPickerError(null);
     setPickerSelectedJobId(null);
     setInviteDateTime("");
+    setInviteTimezone(getDetectedTimezone());
     setTermsConfirmed(false);
   }
 
@@ -1064,6 +1076,7 @@ export default function HireTalentPage() {
     setPickerError(null);
     setPickerReadiness(null);
     setPickerSelectedJobId(null);
+    setInviteTimezone(getDetectedTimezone());
     setTermsConfirmed(false);
     try {
       const res = await apiRequest("GET", "/api/client/invitation-readiness");
@@ -1114,6 +1127,25 @@ export default function HireTalentPage() {
       });
       return;
     }
+    if (!inviteTimezone) {
+      toast({
+        title: "Choose a timezone",
+        description: "Select the timezone for the proposed interview time.",
+        variant: "destructive",
+      });
+      return;
+    }
+    let convertedUtcDateTime: string;
+    try {
+      convertedUtcDateTime = convertLocalDateTimeToUtc(inviteDateTime, inviteTimezone);
+    } catch (error) {
+      toast({
+        title: "Choose a valid interview time",
+        description: error instanceof Error ? error.message : "Please check the date, time, and timezone.",
+        variant: "destructive",
+      });
+      return;
+    }
     const { talentUserId } = pickerTarget;
     setPickerSending(true);
     setInvitingId(talentUserId);
@@ -1121,9 +1153,7 @@ export default function HireTalentPage() {
       const invitePayload = {
         jobId,
         talentUserId,
-        proposedTimes: inviteDateTime
-          ? [{ start: new Date(inviteDateTime).toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }]
-          : undefined,
+        proposedTimes: [{ start: convertedUtcDateTime, timezone: inviteTimezone }],
       };
       let res = await apiRequest("POST", "/api/client/invitations", invitePayload);
       if (!res.ok) {
@@ -1546,7 +1576,7 @@ export default function HireTalentPage() {
             onClick={closePicker}
           >
             <div
-              className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden"
+              className="max-h-[calc(100svh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
               onClick={(e) => e.stopPropagation()}
             >
               {pickerLoading ? (
@@ -1665,21 +1695,36 @@ export default function HireTalentPage() {
                       <span className="ml-1 text-slate-400">· {pickerJobs[0].engagementType}</span>
                     )}
                   </p>
-                 <label className="block mb-5">
-                   <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <div className="mb-5">
+                    <label htmlFor="invite-date-time" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                      Propose an initial interview time
-                   </span>
+                      <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+                    </label>
                    <input
+                      id="invite-date-time"
                      type="datetime-local"
                      value={inviteDateTime}
                      onChange={(e) => setInviteDateTime(e.target.value)}
                      className="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#474ead] focus:ring-2 focus:ring-[#474ead]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                      required
+                      aria-required="true"
                    />
                    <span className="mt-1 block text-[11px] text-slate-400">
                      The talent can accept this time or suggest alternatives.
                    </span>
-                 </label>
+                    <label htmlFor="invite-timezone" className="mb-1.5 mt-4 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Timezone
+                      <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+                    </label>
+                    <TimezoneSelect
+                      id="invite-timezone"
+                      value={inviteTimezone}
+                      onChange={setInviteTimezone}
+                      ariaLabel="Interview timezone"
+                      ariaRequired
+                      triggerClassName="!h-10 !border-slate-200 !bg-white text-sm dark:!border-slate-700 dark:!bg-slate-800 dark:text-white"
+                    />
+                  </div>
                   <div className="flex gap-2 justify-end">
                     <button
                       onClick={closePicker}
@@ -1690,7 +1735,7 @@ export default function HireTalentPage() {
                     </button>
                     <button
                       onClick={() => confirmInvite(pickerJobs[0].id)}
-                      disabled={pickerSending || !inviteDateTime || Boolean(pickerReadiness?.msa.required)}
+                      disabled={pickerSending || !inviteDateTime || !inviteTimezone || Boolean(pickerReadiness?.msa.required)}
                       className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {pickerSending ? (
@@ -1727,18 +1772,33 @@ export default function HireTalentPage() {
                   <p className="text-[13.5px] text-slate-400 mb-4">
                     Select one of your open job postings.
                   </p>
-                   <label className="block mb-4">
-                     <span className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    <div className="mb-4">
+                      <label htmlFor="invite-date-time" className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                        Propose an initial interview time
-                     </span>
+                        <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+                      </label>
                      <input
+                        id="invite-date-time"
                        type="datetime-local"
                        value={inviteDateTime}
                        onChange={(e) => setInviteDateTime(e.target.value)}
                        className="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#474ead] focus:ring-2 focus:ring-[#474ead]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                        required
+                        aria-required="true"
                      />
-                   </label>
+                      <label htmlFor="invite-timezone" className="mb-1.5 mt-4 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Timezone
+                        <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+                      </label>
+                      <TimezoneSelect
+                        id="invite-timezone"
+                        value={inviteTimezone}
+                        onChange={setInviteTimezone}
+                        ariaLabel="Interview timezone"
+                        ariaRequired
+                        triggerClassName="!h-10 !border-slate-200 !bg-white text-sm dark:!border-slate-700 dark:!bg-slate-800 dark:text-white"
+                      />
+                    </div>
                   <div className="flex flex-col gap-2 max-h-64 overflow-y-auto mb-5 pr-1">
                     {pickerJobs.map((job) => (
                       <button
@@ -1770,7 +1830,7 @@ export default function HireTalentPage() {
                     </button>
                     <button
                       onClick={() => pickerSelectedJobId && confirmInvite(pickerSelectedJobId)}
-                      disabled={!pickerSelectedJobId || !inviteDateTime || pickerSending || Boolean(pickerReadiness?.msa.required)}
+                      disabled={!pickerSelectedJobId || !inviteDateTime || !inviteTimezone || pickerSending || Boolean(pickerReadiness?.msa.required)}
                       className="rounded-[10px] bg-[#474ead] px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-[#363c87] transition-colors disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {pickerSending ? (

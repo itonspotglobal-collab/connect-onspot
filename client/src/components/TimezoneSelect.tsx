@@ -60,7 +60,7 @@ function buildTimezoneOptions(): TimezoneOption[] {
   if (_cachedOptions) return _cachedOptions;
 
   // Intl.supportedValuesOf is available in all modern browsers and Node ≥ 18.
-  const zones: string[] = (Intl as any).supportedValuesOf?.("timeZone") ?? [
+  const supportedZones: string[] = (Intl as any).supportedValuesOf?.("timeZone") ?? [
     // Minimal fallback for very old environments
     "Africa/Abidjan","America/Anchorage","America/Chicago","America/Denver",
     "America/Los_Angeles","America/New_York","America/Sao_Paulo",
@@ -70,6 +70,7 @@ function buildTimezoneOptions(): TimezoneOption[] {
     "Europe/Amsterdam","Europe/Berlin","Europe/London","Europe/Moscow",
     "Europe/Paris","Pacific/Auckland","Pacific/Honolulu","UTC",
   ];
+  const zones = Array.from(new Set([...supportedZones, "UTC"]));
 
   _cachedOptions = zones
     .map((tz) => {
@@ -98,21 +99,27 @@ function buildTimezoneOptions(): TimezoneOption[] {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface TimezoneSelectProps {
+  id?: string;
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;
   triggerStyle?: React.CSSProperties;
   triggerClassName?: string;
+  ariaLabel?: string;
+  ariaRequired?: boolean;
   /** data-testid forwarded to the trigger button */
   "data-testid"?: string;
 }
 
 export function TimezoneSelect({
+  id,
   value,
   onChange,
   placeholder = "Select timezone",
   triggerStyle,
   triggerClassName,
+  ariaLabel,
+  ariaRequired = false,
   "data-testid": testId,
 }: TimezoneSelectProps) {
   const [open, setOpen] = useState(false);
@@ -150,9 +157,12 @@ export function TimezoneSelect({
       <PopoverTrigger asChild>
         <button
           ref={triggerRef}
+          id={id}
           type="button"
           role="combobox"
           aria-expanded={open}
+          aria-label={ariaLabel}
+          aria-required={ariaRequired || undefined}
           data-testid={testId}
           className={cn(
             "flex w-full items-center justify-between whitespace-nowrap rounded-[10px] border px-[14px] text-left text-[15px]",
