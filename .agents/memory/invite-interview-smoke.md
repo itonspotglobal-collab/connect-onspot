@@ -14,3 +14,9 @@ For client-entered `datetime-local` values, interpret the wall-clock fields in t
 **Why:** `datetime-local` has no timezone. Calling `new Date(value).toISOString()` uses the browser timezone and silently changes the intended instant whenever the selected interview timezone differs.
 
 **How to apply:** Test the same wall-clock value in at least two IANA zones, including a cross-browser-zone scenario, and assert that invitation emails format the UTC instant back in the stored selected timezone with the timezone label visible.
+
+Talent invitation emails must send both “View Invitation” and “My Applications” to `https://onspotglobal.com/my-applications`; do not derive this flow’s destination from a shared or legacy Talent host.
+
+**Why:** Shared public-base configuration can resolve to a legacy Talent subdomain that is not part of the active application flow, while other email types may still depend on that shared configuration.
+
+**How to apply:** Override the applicant portal URL only in the Talent invitation email’s server-owned context. Never accept the destination from the invitation request, and do not globally replace URLs used by other emails.

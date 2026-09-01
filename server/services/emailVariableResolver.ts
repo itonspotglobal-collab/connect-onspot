@@ -36,6 +36,9 @@ export interface EmailVariableContext {
   jobUrl?: string;
 }
 
+/** Canonical destination for Talent invitation CTAs. */
+export const TALENT_APPLICATIONS_URL = "https://onspotglobal.com/my-applications";
+
 const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
   applicant_first_name: "applicantFirstName",
   applicant_last_name: "applicantLastName",
@@ -260,12 +263,16 @@ export function buildEmailContext(opts: {
   applicationId?: string | null;
   jobPostingId?: string | null;
   submittedAt?: Date | string | null;
+  /** Trusted server-side override for a flow with a dedicated applicant destination. */
+  portalUrlOverride?: string;
 }): EmailVariableContext {
   const firstName = opts.firstName?.trim() ?? opts.applicantName?.trim().split(/\s+/)[0] ?? "";
   const lastName = opts.lastName?.trim() ?? (opts.applicantName?.trim().split(/\s+/).slice(1).join(" ") ?? "");
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || opts.applicantName?.trim() || opts.email;
   const baseUrl = resolvePublicBaseUrl();
-  const portalUrl = baseUrl ? `${baseUrl}/my-applications` : undefined;
+  const portalUrl = opts.portalUrlOverride !== undefined
+    ? toSafeHttpsUrl(opts.portalUrlOverride)
+    : (baseUrl ? `${baseUrl}/my-applications` : undefined);
   const logoUrl = toSafeHttpsUrl(process.env.ONSPOT_EMAIL_LOGO_URL) ?? (
     baseUrl ? `${baseUrl}/new-onspot.png` : undefined
   );

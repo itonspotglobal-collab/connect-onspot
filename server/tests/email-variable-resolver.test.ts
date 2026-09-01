@@ -4,6 +4,7 @@ import {
   buildEmailContext,
   renderApplicantEmail,
   resolveVariables,
+  TALENT_APPLICATIONS_URL,
 } from "../services/emailVariableResolver.js";
 import { htmlToPlainText } from "../lib/htmlToPlainText.js";
 
@@ -32,6 +33,7 @@ describe("application status email variables", () => {
     assert.deepEqual(result.unresolvedKeys, []);
   });
 });
+
 
 
 describe("email-safe job descriptions", () => {
@@ -104,5 +106,34 @@ describe("email-safe job descriptions", () => {
       rendered.bodyHtml,
       "<p>Required skills:<br>• React<br>• TypeScript</p>",
     );
+  });
+
+  it("uses the trusted Talent invitation destination without changing shared public URL configuration", () => {
+    const previousPublicAppUrl = process.env.PUBLIC_APP_URL;
+    process.env.PUBLIC_APP_URL = "https://talent.onspotglobal.com";
+
+    try {
+      const context = buildEmailContext({
+        email: "talent@example.com",
+        portalUrlOverride: TALENT_APPLICATIONS_URL,
+      });
+      const rendered = renderApplicantEmail(
+        {
+          subject: "You've been invited to a role",
+          bodyHtml: '<a href="{{portal_url}}">View Invitation</a><a href="{{portal_url}}">My Applications</a>',
+        },
+        context,
+      );
+
+      assert.equal(rendered.unresolvedKeys.length, 0);
+      assert.equal(
+        (rendered.bodyHtml.match(/https:\/\/onspotglobal\.com\/my-applications/g) ?? []).length,
+        2,
+      );
+      assert.doesNotMatch(rendered.bodyHtml, /talent\.onspotglobal\.com/);
+    } finally {
+      if (previousPublicAppUrl === undefined) delete process.env.PUBLIC_APP_URL;
+      else process.env.PUBLIC_APP_URL = previousPublicAppUrl;
+    }
   });
 });

@@ -1264,7 +1264,7 @@ async function fireInvitationEmail(opts: {
     // mail or depends on Microsoft Graph credentials.
     if (process.env.INVITATION_EMAIL_TRANSPORT === "noop") return { success: true };
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
-    const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout } =
+    const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout, TALENT_APPLICATIONS_URL } =
       await import("./services/emailVariableResolver.ts");
 
     const safeName  = escHtml(opts.talentName);
@@ -1315,6 +1315,7 @@ async function fireInvitationEmail(opts: {
         email: opts.talentEmail,
         jobTitle: opts.jobTitle,
         jobDescription: opts.jobDescription,
+        portalUrlOverride: TALENT_APPLICATIONS_URL,
       }),
     );
     if (rendered.unresolvedKeys.length > 0) {

@@ -1,0 +1,422 @@
+Apply this fix now.
+
+Do NOT perform another broad audit, planning pass, redesign, or unrelated refactor.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+There is currently a wrong URL in the Talent invitation email.
+
+# BUG
+
+When a Talent receives the existing email:
+
+`You've been invited to a role`
+
+the email contains the button:
+
+`View Invitation`
+
+Currently, clicking that button redirects to:
+
+`talent.onspotglobal.com`
+
+This is incorrect and is not part of the current OnSpot Talent application flow.
+
+The actual working Talent application page is:
+
+`https://onspotglobal.com/my-applications`
+
+# REQUIRED FIX
+
+Change the destination of the existing:
+
+`View Invitation`
+
+button so it directs the Talent to:
+
+`https://onspotglobal.com/my-applications`
+
+The Talent can then see the invitation inside the existing My Applications page and use the existing invitation/application workflow.
+
+# EXPECTED FLOW
+
+Client invites Talent
+→ existing invitation record is created
+→ existing proposed interview information remains attached if provided
+→ existing notification is created
+→ existing invitation email is sent
+→ Talent receives email
+→ Talent clicks `View Invitation`
+→ browser opens:
+
+`https://onspotglobal.com/my-applications`
+
+→ if Talent is already authenticated, My Applications loads normally
+→ Talent sees the invited application
+→ Talent continues using the existing application/invitation actions
+
+Do NOT create a new Talent invitation page.
+
+Do NOT use:
+
+`talent.onspotglobal.com`
+
+for this workflow.
+
+# IMPORTANT — FIX THE SOURCE, NOT JUST THE HTML
+
+Find where the invitation email's CTA URL is actually generated.
+
+It may come from:
+
+* an email-template variable such as `{{invitation_url}}`
+* `{{application_url}}`
+* `{{portal_url}}`
+* an email context builder
+* environment/configuration
+* invitation email service
+* template variable resolver
+
+Fix the authoritative URL generation used by the invitation email.
+
+Do NOT simply hardcode over the rendered HTML if the application already has a centralized URL/context mechanism.
+
+For this invitation workflow, the final resolved CTA must be:
+
+`https://onspotglobal.com/my-applications`
+
+# CHECK FOR LEGACY TALENT DOMAIN
+
+Search the invitation email implementation for references to:
+
+`talent.onspotglobal.com`
+
+Determine why that legacy/incorrect domain is being used.
+
+If there is a configuration such as conceptually:
+
+```ts
+TALENT_PORTAL_URL
+TALENT_APP_URL
+FRONTEND_URL
+APP_URL
+PORTAL_URL
+```
+
+do NOT globally change it unless it is proven to be exclusively for the same Talent application destination.
+
+There may be other working emails or flows using shared URL configuration.
+
+Make the smallest safe correction necessary.
+
+# EMAIL TEMPLATE
+
+Preserve the existing email content shown in the working invitation email:
+
+`You've been invited to a role`
+
+Talent greeting
+
+Job title
+
+Job description
+
+Proposed interview time
+
+Meeting link
+
+`View Invitation`
+
+`My Applications`
+
+Do NOT redesign the email.
+
+Do NOT alter its branding.
+
+Do NOT alter the job-description HTML sanitization that is already working.
+
+Do NOT alter proposed interview time formatting.
+
+Do NOT alter the meeting link.
+
+Only correct the Talent destination URL.
+
+# VIEW INVITATION BUTTON
+
+The button:
+
+`View Invitation`
+
+must resolve to:
+
+`https://onspotglobal.com/my-applications`
+
+# MY APPLICATIONS TEXT LINK
+
+The email also currently says:
+
+`You can accept or decline the invitation from your My Applications page.`
+
+Check the existing `My Applications` hyperlink as well.
+
+It should also resolve to:
+
+`https://onspotglobal.com/my-applications`
+
+If it already does, leave its implementation alone.
+
+If it is also using the incorrect Talent domain, correct it using the same canonical URL mechanism.
+
+Both links should ultimately lead to the same working My Applications page.
+
+# DO NOT CHANGE THE APPLICATION PAGE
+
+The existing page:
+
+`/my-applications`
+
+is already working.
+
+Do NOT create another page.
+
+Do NOT modify its existing:
+
+* application list
+* invited status
+* Active tab
+* Interview tab
+* Completed tab
+* View Job
+* View submission
+* Timeline
+* Withdraw
+* invitation acceptance
+* invitation decline
+* proposed interview handling
+* meeting links
+
+This task is an email-link correction only.
+
+# AUTHENTICATION
+
+Preserve existing authentication behavior.
+
+If the Talent clicks the email while already signed in:
+
+→ `/my-applications` should load.
+
+If the Talent is not signed in:
+
+→ allow the existing authentication/protected-route system to handle login.
+
+After authentication, preserve whatever return-path behavior currently exists.
+
+Do NOT build a separate authentication flow for the email.
+
+Do NOT introduce special tokens or guest authentication just for this fix.
+
+# DO NOT CHANGE INVITATION CREATION
+
+Do not change:
+
+* invitation creation
+* `POST /api/client/invitations`
+* interview creation
+* proposed times
+* confirmed times
+* meeting link
+* application/submission records
+* Talent association
+* Client association
+* notification creation
+* email recipient
+* email sender
+* email delivery provider
+
+The invitation itself is working.
+
+Only the CTA destination is wrong.
+
+# EMAIL SENDER
+
+Preserve the currently working sender configuration.
+
+Do NOT modify Microsoft Graph or the email sender configuration as part of this task.
+
+# TEMPLATE VARIABLES
+
+If the email currently uses a variable such as:
+
+```text
+{{invitation_url}}
+```
+
+or:
+
+```text
+{{application_url}}
+```
+
+make sure that for Talent invitation emails it resolves to:
+
+`https://onspotglobal.com/my-applications`
+
+Prefer resolving this server-side from the canonical OnSpot application URL rather than trusting a frontend-provided URL.
+
+# SECURITY
+
+Do not accept an arbitrary redirect URL from the invitation request payload.
+
+The server should determine the trusted OnSpot destination.
+
+Do not create an open redirect.
+
+# REGRESSION PROTECTION
+
+Explicitly verify that this change does NOT affect:
+
+* Client invitation creation
+* Talent invitation records
+* Talent My Applications
+* Talent application statuses
+* proposed interview time
+* interview scheduling
+* meeting links
+* Talent notifications
+* Client notifications
+* Admin notifications
+* ApplicantEmailComposer
+* ClientEmailComposer
+* job approval emails
+* job rejection emails
+* job unapproval emails
+* Admin-on-behalf emails
+* application status emails
+* Microsoft Graph sending
+* login/authentication
+* role protection
+
+# SEARCH FOR OTHER WRONG REFERENCES
+
+As part of implementing this narrowly scoped fix, search the invitation-email code/template/config for:
+
+`talent.onspotglobal.com`
+
+If another link **inside this same Talent invitation email** incorrectly uses that domain, correct it to the canonical My Applications destination as well.
+
+Do NOT perform a broad replacement throughout the repository.
+
+Other usages must remain untouched unless they are demonstrably part of this exact invitation-email flow.
+
+# TESTS
+
+Add/update focused regression coverage.
+
+1. Create/send a Talent invitation email.
+
+2. Render the invitation email.
+
+3. Verify `View Invitation` resolves to:
+
+`https://onspotglobal.com/my-applications`
+
+4. Verify it does NOT resolve to:
+
+`talent.onspotglobal.com`
+
+5. Verify the `My Applications` text link also resolves to:
+
+`https://onspotglobal.com/my-applications`
+
+6. Verify Talent recipient remains unchanged.
+
+7. Verify job title remains rendered.
+
+8. Verify sanitized job description remains rendered correctly.
+
+9. Verify proposed interview time remains rendered.
+
+10. Verify meeting link remains unchanged.
+
+11. Verify invitation creation still succeeds.
+
+12. Verify existing invitation/application record is unchanged.
+
+13. Verify Talent My Applications still loads invited records.
+
+14. Verify no Client/Admin email URLs were unintentionally changed.
+
+15. Run:
+
+`npx tsc --noEmit`
+
+16. Run:
+
+`git diff --check`
+
+17. Run the existing invitation/email regression tests.
+
+# MANUAL VERIFICATION
+
+Perform an actual test invitation.
+
+1. Log in as Client.
+2. Invite a Talent to the test job.
+3. Include the existing proposed interview time if desired.
+4. Verify invitation succeeds.
+5. Verify Talent receives the invitation email.
+6. Hover/check the `View Invitation` CTA.
+
+Expected URL:
+
+`https://onspotglobal.com/my-applications`
+
+7. Click `View Invitation`.
+
+Expected:
+
+`https://onspotglobal.com/my-applications`
+
+8. Verify the Talent My Applications page loads.
+
+9. Verify the newly invited job appears with the existing:
+
+`invited`
+
+status.
+
+10. Verify the Talent can continue through the existing invitation flow.
+
+11. Click the email's `My Applications` text link.
+
+Expected:
+
+`https://onspotglobal.com/my-applications`
+
+12. Confirm neither invitation link sends the user to:
+
+`talent.onspotglobal.com`
+
+# COMPLETION REPORT
+
+After implementation, report:
+
+1. Exact files changed.
+2. Where the incorrect `talent.onspotglobal.com` URL originated.
+3. Whether it came from template, configuration, context builder, or another source.
+4. Canonical URL now used.
+5. `View Invitation` resolved URL.
+6. `My Applications` resolved URL.
+7. Confirmation invitation creation was not changed.
+8. Confirmation proposed interview handling was not changed.
+9. Confirmation meeting-link behavior was not changed.
+10. Confirmation Talent My Applications was not changed.
+11. Confirmation other Client/Admin email links were not globally modified.
+12. Tests executed and results.
+13. `npx tsc --noEmit` result.
+14. `git diff --check` result.
+15. Manual email CTA test result.
+
+Apply this as a narrowly scoped email URL correction.
+
+Do not audit or redesign the existing invitation system, and do not alter other currently working features.
