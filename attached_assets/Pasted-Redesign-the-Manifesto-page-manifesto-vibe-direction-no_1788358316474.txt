@@ -1,0 +1,53 @@
+Redesign the Manifesto page (/manifesto) — vibe direction, not literal
+spec. Trust your own design judgment on exact execution.
+
+THE FEELING: this should read like a personal letter, not a marketing
+page. Quiet confidence, not a pitch. Someone should land on this page and
+feel like they're being let in on something honest, not sold something.
+Think: a founder's private note that happened to become public, not a
+"brand values" section.
+
+WHAT'S CLUTTERED RIGHT NOW, FIX THIS:
+- Too many things competing for attention above the fold — a nav pill,
+  an eyebrow tag, the giant headline, AND a floating "WRITTEN FOR"
+  module all fighting each other in the same visual space. Quiet all of
+  that down to ONE loud moment (the headline) and let everything else
+  recede.
+- The eyebrow label currently just repeats the headline word-for-word
+  ("THE ONSPOT MANIFESTO" above "The OnSpot Manifesto") — replace with
+  something that doesn't restate the title, or drop it.
+- The "WRITTEN FOR" sidebar element feels like a UI widget bolted onto a
+  piece of writing. A manifesto doesn't need metadata chrome — if
+  authorship needs to appear, it belongs as a quiet signature at the very
+  END of the piece, like how someone actually signs a letter, not as a
+  floating label competing with the opening.
+
+WHAT STAYS, DO NOT TOUCH:
+- The large, tight-leading, overlapping headline treatment ("The OnSpot
+  Manifesto" stacked with intentional letter/line overlap) — that's the
+  one deliberate, confident visual statement on the page. Keep it.
+
+THE HANDWRITTEN TOUCH: use a refined script/handwriting webfont
+SPARINGLY — a few emphasis lines within the body ("We don't accept
+that.", the closing "Work Without Limits.") and the sign-off signature at
+the end ("— Nur Laminero, Co-Founder & CEO"). Not the whole body text —
+that would hurt readability at this length. It should feel like a
+handwritten note dropped into a typeset letter, not a page written
+entirely in cursive.
+
+PACING: let this breathe. Generous whitespace between paragraphs, a
+comfortable single-column reading width (not full-bleed sprawling text),
+nothing decorative competing with the words themselves. The restraint IS
+the design — if a screen could be mistaken for a template, that's the
+signal something's still too busy.
+
+BRAND: stay within the existing system — navy, purple, gold used
+sparingly (gold has one job: the one or two moments that need emphasis,
+not decoration), Bricolage Grotesque for display type, Inter for body,
+the real logo component in the nav (not plain text).
+
+Also fix: the top-left "OnSpot" text should be the actual logo component/
+asset already used elsewhere in the site, not plain rendered text.
+
+Report back with a real screenshot of the redesigned page before this is
+considered done.

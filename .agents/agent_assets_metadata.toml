@@ -391,3 +391,17 @@ mtime_ms = 1788358160184
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/a375b68a-79c9-42f5-86b9-22b45d5ca8e9/c8597607-b864-4eab-88da-3288f8d1804c"
 storage_version_token = "1788358177929635"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "WFZ3jsPTI6MNAdUfbrLN8"
+uri = "file://screenshots/manifesto-vibe-redesign.jpg"
+type = "image"
+title = "OnSpot Manifesto — Refined Letter Design"
+description = "Real screenshot of the redesigned /manifesto page with the quieter navigation, single-column letter layout, real OnSpot logo, and preserved overlapping headline."
+logical_id = "cd9ce2c7-e5f9-40dc-9e1e-5684e9536ae4"
+content_hash = "sha256:d2b1e00fdf086db9ada9da58f10ceca9f2c182956784c2326d4f3b66aa393f2b"
+size = 42909
+mtime_ms = 1788358423260
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/cd9ce2c7-e5f9-40dc-9e1e-5684e9536ae4/e5bc56e6-1876-4440-b9db-89190f7c9cd4"
+storage_version_token = "1788358436994918"
+content_type = "image/jpeg"
