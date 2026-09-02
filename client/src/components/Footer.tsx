@@ -50,7 +50,6 @@ const VARIANT_STYLES = {
 const NAV_LINKS = [
   { href: "/why-onspot/about",    label: "About" },
   { href: "/manifesto",           label: "Manifesto" },
-  { href: "/amazing",             label: "Stories" },
   { href: "/insights",            label: "Insights" },
   { href: "/how-it-works",        label: "How It Works" },
   { href: "/hire-talent",         label: "Hire Talent" },
@@ -58,7 +57,6 @@ const NAV_LINKS = [
   { href: "/affiliate-marketing", label: "Affiliate" },
   { href: "/bpo-partner",         label: "BPO Partner" },
   { href: "/investors",           label: "Investors" },
-  { href: "/operations-playbook", label: "Playbook" },
   { href: "/privacy-policy",      label: "Privacy Policy" },
   { href: "/terms-and-conditions",label: "Terms" },
 ];
@@ -112,7 +110,8 @@ export function Footer({ variant = "indigo", separator = true }: FooterProps) {
           alignItems: "center",
           justifyContent: "space-between",
           gap: 24,
-          flexWrap: "wrap",
+          flexWrap: "nowrap",
+          minWidth: 0,
         }}
       >
         {/* Left: copyright */}
@@ -124,6 +123,7 @@ export function Footer({ variant = "indigo", separator = true }: FooterProps) {
             margin: 0,
             letterSpacing: "0.02em",
             whiteSpace: "nowrap",
+            flexShrink: 0,
           }}
         >
           Work Without Limits · © {new Date().getFullYear()} OnSpot
@@ -134,9 +134,14 @@ export function Footer({ variant = "indigo", separator = true }: FooterProps) {
           aria-label="Footer navigation"
           style={{
             display: "flex",
-            flexWrap: "wrap",
+            flexWrap: "nowrap",
             gap: "4px 18px",
-            justifyContent: "flex-end",
+            justifyContent: "flex-start",
+            marginLeft: "auto",
+            minWidth: 0,
+            overflowX: "auto",
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch",
           }}
         >
           {NAV_LINKS.map(({ href, label }) => (
@@ -148,6 +153,8 @@ export function Footer({ variant = "indigo", separator = true }: FooterProps) {
                 color: styles.link,
                 textDecoration: "none",
                 transition: "color 0.14s",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
               onMouseEnter={(e: any) =>
                 (e.currentTarget.style.color = styles.hover)
