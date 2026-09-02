@@ -1,0 +1,53 @@
+Bigger creative pivot for the Manifesto page (/manifesto) — the page
+should now feel like a rolled scroll that unfurls/reveals as the visitor
+scrolls down, not a flat static letter.
+
+BRAND CONSTRAINT — read this before building: do NOT go literal aged-
+paper/parchment (no beige/tan color palette, no burnt-edge or aged-paper
+texture). Stay entirely within the existing OnSpot brand system — navy,
+purple, gold, Bricolage Grotesque + Inter. The "scroll" should be
+expressed through MOTION and SHAPE (a rolled panel unfurling, a curved/
+rolled edge effect) — not through a literal historical-parchment
+aesthetic. This should still read as a modern, premium tech product, just
+with a distinctive reveal mechanic.
+
+COLOR — the "paper" surface should BLEND INTO the page background, not
+sit as a visually distinct card/panel on top of it. Use a LIGHTER overall
+background for this page than the current dark navy — the paper and the
+page background should read as nearly the same tone, so the scroll feels
+like it's emerging from the page itself rather than looking like a
+separate object placed on a different-colored backdrop. Propose the
+actual light tone (working within the brand palette — e.g. a very pale
+tint of the existing colors, not a random new color) before implementing.
+
+MECHANIC: as the visitor scrolls, the manifesto content should feel like
+it's unrolling from a rolled/curled state into the flat reading view —
+propose your own technical approach (scroll-linked transform, a curved
+top/bottom edge that appears to unfurl, or similar) and explain it before
+building, since this is a real interaction pattern worth getting right
+the first time given how many rounds this page has already been through.
+
+HARD REQUIREMENTS, non-negotiable:
+1. Respect prefers-reduced-motion — for users with that setting, show the
+   full content statically, no animation at all. Do not force motion on
+   anyone who's opted out.
+2. Must perform smoothly on mobile — no janky scroll-jacking, no
+   frame-drops. If the mechanic can't be made to feel premium and smooth
+   on a real phone, scale back the effect rather than shipping something
+   that feels broken.
+3. The overlapping headline treatment, the quiet About link beneath it,
+   the reduced handwritten emphasis sizing, and the tightened footer
+   spacing from the last round all stay exactly as they are — this is
+   additive motion/shape/color work on top of that, not a rebuild from
+   scratch. Note: since the background is changing from dark to light,
+   confirm text colors and the headline treatment still read correctly
+   against the new lighter background — flag if anything needs
+   recoloring to stay legible.
+4. Readability is not sacrificed for the effect — text must stay fully
+   legible at every point in the unfurl, never distorted or hard to read
+   mid-animation.
+
+Propose your technical approach, the exact light background tone, and a
+description of exactly what the unfurl will look/feel like before
+implementing — this is a significant enough change that I want to confirm
+the direction before you build it, not after.
