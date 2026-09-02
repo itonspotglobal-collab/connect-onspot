@@ -2,12 +2,11 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { Footer } from "@/components/Footer";
 
-const INK = "#F8F7F2";
-const MUTED = "rgba(248,247,242,0.68)";
-const SOFT = "rgba(248,247,242,0.48)";
-const GOLD = "#F5B942";
-const NAVY = "#080B2A";
-const NAVY_MID = "#10154A";
+const INK = "#080B2A";
+const MUTED = "rgba(8,11,42,0.72)";
+const SOFT = "rgba(8,11,42,0.54)";
+const GOLD = "#9A6500";
+const PAPER = "#F2F3FF";
 
 const freedoms = [
   "Freedom to choose the work that's actually worth your time.",
@@ -71,19 +70,122 @@ export default function Manifesto() {
     <div
       className="manifesto-page min-h-screen"
       style={{
-        background: `radial-gradient(circle at 84% 8%, rgba(71,78,173,0.32), transparent 29rem), linear-gradient(160deg, ${NAVY_MID} 0%, ${NAVY} 48%, #050614 100%)`,
+        background: `radial-gradient(circle at 84% 8%, rgba(71,78,173,0.12), transparent 30rem), linear-gradient(160deg, #F4F5FF 0%, ${PAPER} 54%, #EDEFFF 100%)`,
         color: INK,
       }}
     >
+      <style>{`
+        .manifesto-unfurl {
+          position: relative;
+          isolation: isolate;
+          padding-top: 2.25rem;
+          background: rgba(242, 243, 255, 0.34);
+        }
+
+        .manifesto-unfurl::before,
+        .manifesto-unfurl::after {
+          content: "";
+          position: absolute;
+          left: 4%;
+          right: 4%;
+          height: 1.25rem;
+          pointer-events: none;
+          border-radius: 999px;
+          background: linear-gradient(
+            180deg,
+            rgba(71, 78, 173, 0.2),
+            rgba(71, 78, 173, 0.04) 58%,
+            transparent
+          );
+          box-shadow: 0 -0.75rem 1.75rem rgba(71, 78, 173, 0.08);
+        }
+
+        .manifesto-unfurl::before {
+          top: 0;
+          transform-origin: center bottom;
+        }
+
+        .manifesto-unfurl::after {
+          bottom: 0;
+          transform: scaleY(0.55);
+          opacity: 0.48;
+          transform-origin: center top;
+          background: linear-gradient(
+            180deg,
+            transparent,
+            rgba(71, 78, 173, 0.04) 42%,
+            rgba(71, 78, 173, 0.16)
+          );
+          box-shadow: 0 0.75rem 1.75rem rgba(71, 78, 173, 0.06);
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+          @supports (animation-timeline: scroll()) {
+            .manifesto-unfurl::before {
+              animation: manifesto-lip-settle 1ms linear both;
+              animation-timeline: scroll(root block);
+              animation-range: 0% 18%;
+            }
+
+            .manifesto-unfurl::after {
+              animation: manifesto-tail-unfurl 1ms linear both;
+              animation-timeline: scroll(root block);
+              animation-range: 82% 100%;
+            }
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .manifesto-unfurl::before,
+          .manifesto-unfurl::after {
+            animation: none;
+          }
+        }
+
+        @keyframes manifesto-lip-settle {
+          from {
+            transform: scaleY(1) translateY(0);
+            opacity: 0.9;
+          }
+          to {
+            transform: scaleY(0.22) translateY(-0.55rem);
+            opacity: 0.26;
+          }
+        }
+
+        @keyframes manifesto-tail-unfurl {
+          from {
+            transform: scaleY(0.35);
+            opacity: 0.18;
+          }
+          to {
+            transform: scaleY(0.95);
+            opacity: 0.58;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .manifesto-unfurl {
+            padding-top: 1.75rem;
+          }
+
+          .manifesto-unfurl::before,
+          .manifesto-unfurl::after {
+            left: 2%;
+            right: 2%;
+            height: 0.9rem;
+          }
+        }
+      `}</style>
       <main>
         <section className="mx-auto max-w-[1000px] px-6 pb-4 pt-12 sm:px-10 sm:pb-6 sm:pt-20 lg:px-14 lg:pb-8 lg:pt-28">
           <div className="max-w-[840px]">
-            <p className="mb-7 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#F5B942]">
-              <span aria-hidden className="h-px w-9 bg-[#F5B942]" />
+            <p className="mb-7 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#9A6500]">
+              <span aria-hidden className="h-px w-9 bg-[#9A6500]" />
               Why We Built OnSpot
             </p>
             <h1
-              className="max-w-[800px] text-white"
+              className="max-w-[800px] text-[#080B2A]"
               style={{
                 fontFamily: "'Bricolage Grotesque', sans-serif",
                 fontSize: "clamp(3.3rem, 10vw, 8.5rem)",
@@ -95,17 +197,17 @@ export default function Manifesto() {
             >
               The OnSpot
               <br />
-              <span style={{ color: "rgba(248,247,242,0.72)" }}>Manifesto</span>
+              <span style={{ color: "rgba(8,11,42,0.64)" }}>Manifesto</span>
             </h1>
             <Link href="/why-onspot/about">
-              <span className="mt-6 inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-white/55 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F5B942]">
+              <span className="mt-6 inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-[#080B2A]/55 transition-colors hover:text-[#080B2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9A6500]">
                 <ArrowLeft className="h-3.5 w-3.5" />
                 About OnSpot
               </span>
             </Link>
           </div>
 
-          <div className="mt-20 max-w-[680px] lg:mt-32">
+          <div className="manifesto-unfurl mt-20 max-w-[680px] lg:mt-32">
             <article className="space-y-9 sm:space-y-12">
               <ManifestoParagraph>
                 Somewhere along the way, work got complicated. Not the work itself — the systems built up around it.
@@ -148,11 +250,11 @@ export default function Manifesto() {
 
               <ul
                 aria-label="The freedoms OnSpot stands for"
-                className="manifesto-freedom-list list-none space-y-6 border-y border-white/15 py-9 sm:space-y-8 sm:py-12"
+                className="manifesto-freedom-list list-none space-y-6 border-y border-[rgba(8,11,42,0.15)] py-9 sm:space-y-8 sm:py-12"
               >
                 {freedoms.map((freedom) => (
                   <li key={freedom} className="flex gap-4">
-                    <span aria-hidden className="mt-[0.8em] h-1.5 w-1.5 shrink-0 rounded-full bg-[#F5B942]" />
+                    <span aria-hidden className="mt-[0.8em] h-1.5 w-1.5 shrink-0 rounded-full bg-[#9A6500]" />
                     <span
                       style={{
                         color: INK,
@@ -192,7 +294,7 @@ export default function Manifesto() {
                 We're on the side of the transaction actually being fair to both.
               </ManifestoParagraph>
 
-              <div className="border-t border-white/15 pt-10 sm:pt-14">
+              <div className="border-t border-[rgba(8,11,42,0.15)] pt-10 sm:pt-14">
                 <p
                   style={{
                     color: INK,
@@ -223,13 +325,13 @@ export default function Manifesto() {
           </div>
         </section>
 
-        <section className="border-t border-white/10 bg-black/10">
+        <section className="border-t border-[rgba(8,11,42,0.1)] bg-[rgba(71,78,173,0.04)]">
           <div className="mx-auto flex max-w-[1000px] flex-col gap-5 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-6 lg:px-14">
-            <p className="max-w-xl text-sm leading-relaxed text-white/50">
+            <p className="max-w-xl text-sm leading-relaxed text-[#080B2A]/55">
               OnSpot exists to make the way work happens more direct, more visible, and more fair.
             </p>
             <Link href="/why-onspot/about">
-              <span className="inline-flex min-h-12 cursor-pointer items-center gap-2 text-sm font-semibold text-[#F5B942] transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F5B942]">
+              <span className="inline-flex min-h-12 cursor-pointer items-center gap-2 text-sm font-semibold text-[#9A6500] transition-colors hover:text-[#080B2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9A6500]">
                 More about OnSpot <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -237,7 +339,7 @@ export default function Manifesto() {
         </section>
       </main>
 
-      <Footer variant="dark" separator />
+      <Footer variant="light" separator />
     </div>
   );
 }

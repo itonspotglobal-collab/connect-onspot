@@ -419,3 +419,17 @@ mtime_ms = 1788358887429
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8005f8c6-398e-4cf6-9c32-416943bb985b/ca7e9fe5-c5ad-4d20-8b4e-c8159a134620"
 storage_version_token = "1788358904795648"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "u4bIwgnwqUtCdU2tMqMli"
+uri = "file://screenshots/manifesto-light-unfurl.jpg"
+type = "image"
+title = "OnSpot Manifesto — Light Unfurl Direction"
+description = "Real screenshot of the implemented pale-indigo Manifesto design with the branded curved scroll edge and preserved headline treatment."
+logical_id = "36ff9a24-f82e-44ae-a0e6-068de145ce87"
+content_hash = "sha256:9f9af5d3b47b102257be27f9117bfa108646cbd688cc4444210abf6355c0b8e0"
+size = 47272
+mtime_ms = 1788359565700
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/36ff9a24-f82e-44ae-a0e6-068de145ce87/9701ec8c-cb5d-4b77-a7b6-0017ec4b8d35"
+storage_version_token = "1788359580758170"
+content_type = "image/jpeg"
