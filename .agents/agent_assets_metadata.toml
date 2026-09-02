@@ -405,3 +405,17 @@ mtime_ms = 1788358423260
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/cd9ce2c7-e5f9-40dc-9e1e-5684e9536ae4/e5bc56e6-1876-4440-b9db-89190f7c9cd4"
 storage_version_token = "1788358436994918"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "0hQ5ME0gQGf54oZrQ-RFG"
+uri = "file://screenshots/manifesto-headerless-letter.jpg"
+type = "image"
+title = "Manifesto — Headerless Letter Layout"
+description = "Real screenshot of the updated /manifesto page with no top header, About OnSpot beneath the headline, restrained handwritten emphasis, and tighter closing spacing."
+logical_id = "8005f8c6-398e-4cf6-9c32-416943bb985b"
+content_hash = "sha256:83f3804d7932ece3c8e9b3daeeb9660d0e155ca6a3532c1718b4332110d932eb"
+size = 51114
+mtime_ms = 1788358887429
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8005f8c6-398e-4cf6-9c32-416943bb985b/ca7e9fe5-c5ad-4d20-8b4e-c8159a134620"
+storage_version_token = "1788358904795648"
+content_type = "image/jpeg"

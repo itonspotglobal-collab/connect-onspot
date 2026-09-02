@@ -1,7 +1,6 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { Footer } from "@/components/Footer";
-import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 const INK = "#F8F7F2";
 const MUTED = "rgba(248,247,242,0.68)";
@@ -76,24 +75,8 @@ export default function Manifesto() {
         color: INK,
       }}
     >
-      <header className="mx-auto flex w-full max-w-[1180px] items-center justify-between px-6 py-6 sm:px-10 lg:px-14">
-        <Link href="/" className="flex shrink-0 items-center">
-          <img
-            src={onspotLogo}
-            alt="OnSpot"
-            className="block h-[56px] w-auto object-contain sm:h-[64px]"
-          />
-        </Link>
-        <Link href="/why-onspot/about">
-          <span className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-white/55 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F5B942]">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            About OnSpot
-          </span>
-        </Link>
-      </header>
-
       <main>
-        <section className="mx-auto max-w-[1000px] px-6 pb-20 pt-20 sm:px-10 sm:pb-28 sm:pt-28 lg:px-14 lg:pb-36 lg:pt-36">
+        <section className="mx-auto max-w-[1000px] px-6 pb-4 pt-12 sm:px-10 sm:pb-6 sm:pt-20 lg:px-14 lg:pb-8 lg:pt-28">
           <div className="max-w-[840px]">
             <p className="mb-7 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#F5B942]">
               <span aria-hidden className="h-px w-9 bg-[#F5B942]" />
@@ -114,6 +97,12 @@ export default function Manifesto() {
               <br />
               <span style={{ color: "rgba(248,247,242,0.72)" }}>Manifesto</span>
             </h1>
+            <Link href="/why-onspot/about">
+              <span className="mt-6 inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-white/55 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F5B942]">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                About OnSpot
+              </span>
+            </Link>
           </div>
 
           <div className="mt-20 max-w-[680px] lg:mt-32">
@@ -139,9 +128,9 @@ export default function Manifesto() {
                 style={{
                   color: INK,
                   fontFamily: "'Caveat', cursive",
-                  fontSize: "clamp(2.5rem, 6vw, 5rem)",
+                  fontSize: "clamp(1.35rem, 3vw, 2rem)",
                   fontWeight: 600,
-                  lineHeight: 1,
+                  lineHeight: 1.2,
                   letterSpacing: "-0.02em",
                   margin: 0,
                 }}
@@ -208,9 +197,9 @@ export default function Manifesto() {
                   style={{
                     color: INK,
                     fontFamily: "'Caveat', cursive",
-                    fontSize: "clamp(2.8rem, 7vw, 5.5rem)",
+                    fontSize: "clamp(1.5rem, 3.2vw, 2.25rem)",
                     fontWeight: 600,
-                    lineHeight: 0.95,
+                    lineHeight: 1.15,
                     letterSpacing: "-0.02em",
                     margin: 0,
                   }}
@@ -222,8 +211,8 @@ export default function Manifesto() {
                   style={{
                     color: SOFT,
                     fontFamily: "'Caveat', cursive",
-                    fontSize: "clamp(1.35rem, 2.4vw, 1.8rem)",
-                    lineHeight: 1.1,
+                    fontSize: "clamp(1.1rem, 1.8vw, 1.35rem)",
+                    lineHeight: 1.2,
                     margin: 0,
                   }}
                 >
@@ -235,7 +224,7 @@ export default function Manifesto() {
         </section>
 
         <section className="border-t border-white/10 bg-black/10">
-          <div className="mx-auto flex max-w-[1000px] flex-col gap-5 px-6 py-14 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-20 lg:px-14">
+          <div className="mx-auto flex max-w-[1000px] flex-col gap-5 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-6 lg:px-14">
             <p className="max-w-xl text-sm leading-relaxed text-white/50">
               OnSpot exists to make the way work happens more direct, more visible, and more fair.
             </p>
