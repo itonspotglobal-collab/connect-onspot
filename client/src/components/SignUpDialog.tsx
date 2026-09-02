@@ -33,6 +33,10 @@ interface SignUpDialogProps {
   defaultUserType?: UserType;
   /** Pre-fill the email field. */
   defaultEmail?: string;
+  /** Used by route-based signup pages to return to the account-type chooser. */
+  onChooseAnotherAccountType?: () => void;
+  /** Render the existing signup form as a full route instead of a dark modal. */
+  standalone?: boolean;
 }
 
 export function SignUpDialog({
@@ -43,6 +47,8 @@ export function SignUpDialog({
   returnTo,
   defaultUserType,
   defaultEmail,
+  onChooseAnotherAccountType,
+  standalone = false,
 }: SignUpDialogProps = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
 
@@ -210,6 +216,10 @@ export function SignUpDialog({
   };
 
   const handleBackToUserType = () => {
+    if (onChooseAnotherAccountType) {
+      onChooseAnotherAccountType();
+      return;
+    }
     setCurrentStep("user-type");
     setUserType(null);
   };
@@ -243,11 +253,15 @@ export function SignUpDialog({
       <DialogContent
         className={[
           "p-0 border-0 bg-transparent shadow-none overflow-visible",
-          "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
+          !standalone && "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
           currentStep === "user-type"
             ? "w-[min(680px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
             : "w-[min(520px,calc(100vw-1.5rem))] max-w-none sm:max-w-none",
-        ].join(" ")}
+        ].filter(Boolean).join(" ")}
+        overlayClassName={standalone
+          ? "bg-[linear-gradient(135deg,#FCFDFF_0%,#F6F8FF_20%,#EEF4FF_45%,#E7F0FF_70%,#F8F9FF_100%)]"
+          : undefined}
+        hideClose={standalone}
       >
         {/* Dark card — flex column with capped height + internal scroll */}
         <div

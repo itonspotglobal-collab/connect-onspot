@@ -107,6 +107,8 @@ import TermsAndConditions from "@/pages/TermsAndConditions";
 import RefundPolicy from "@/pages/RefundPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PortalLogin from "@/pages/PortalLogin";
+import PortalSignupPage from "@/pages/PortalSignupPage";
+import { PortalChooser } from "@/components/PortalChooser";
 
 // Scroll to the top of the page whenever the route changes
 import Messages from "@/pages/Messages";
@@ -623,9 +625,15 @@ function AppContent() {
       
       {/* Standalone Login Page — must be before catch-all */}
       <Route path="/login" component={PortalLogin} />
+      <Route path="/login/client" component={PortalLogin} />
+      <Route path="/login/talent" component={PortalLogin} />
       <Route path="/sign-in" component={PortalLogin} />
       {/* Portal login — used by the job-apply flow when an existing email is detected */}
       <Route path="/portal-login" component={PortalLogin} />
+      {/* Route-based signup pages */}
+      <Route path="/signup" component={() => <PortalChooser kind="signup" />} />
+      <Route path="/signup/client" component={PortalSignupPage} />
+      <Route path="/signup/talent" component={PortalSignupPage} />
 
       {/* Catch all */}
       <Route component={() => <PublicRouter />} />

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, ArrowRight, Building, User, ArrowLeft } from "lucide-react";
-import { SignUpDialog } from "@/components/SignUpDialog";
+import { PortalChooser } from "@/components/PortalChooser";
 
 type PageStep = "login" | "setup-password" | "forgot-password";
 
@@ -138,10 +138,16 @@ function CardShell({ children }: { children: React.ReactNode }) {
 
 // ── Main page component ────────────────────────────────────────────────────
 export default function PortalLogin() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { signInToPortal, setupTalentPassword, isLoading } = usePortalLogin();
   const { toast } = useToast();
+  const pathname = location.split("?")[0];
+  const currentSearch = typeof window === "undefined" ? "" : window.location.search;
+  const routePortal: PortalType | null =
+    pathname === "/login/client" ? "client" :
+    pathname === "/login/talent" ? "talent" :
+    null;
 
   // Safely read query params — all reads are wrapped in try/catch so a malformed
   // URL or restricted browser environment never crashes the login page.
@@ -181,6 +187,8 @@ export default function PortalLogin() {
   const [signupOpen, setSignupOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const activePortal = routePortal ?? selectedPortal;
+  const [portalError, setPortalError] = useState("");
 
   // Password setup state
   const [setupPassword, setSetupPassword] = useState("");
@@ -216,13 +224,14 @@ export default function PortalLogin() {
   }, [isAuthenticated, user, applicationToken, returnTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSignIn() {
-    if (!email || !password || !selectedPortal) {
-      toast({ variant: "destructive", title: "Missing fields", description: "Please fill in your email, password, and select a portal." });
+    if (!email || !password || !activePortal) {
+      toast({ variant: "destructive", title: "Missing fields", description: "Please fill in your email and password." });
       return;
     }
+    setPortalError("");
     let result: Awaited<ReturnType<typeof signInToPortal>>;
     try {
-      result = await signInToPortal(selectedPortal, email, password);
+      result = await signInToPortal(activePortal, email, password);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Sign in error", description: err?.message || "An unexpected error occurred. Please try again." });
       return;
@@ -233,6 +242,7 @@ export default function PortalLogin() {
         toast({ title: "Set a password", description: "This profile exists but has no password yet. Create one to continue." });
         return;
       }
+      setPortalError(result.message);
       toast({ variant: "destructive", title: "Sign in failed", description: result.message });
       return;
     }
@@ -275,6 +285,10 @@ export default function PortalLogin() {
     }
 
     navigate(result.redirectTo);
+  }
+
+  if (!activePortal && step === "login") {
+    return <PortalChooser kind="login" />;
   }
 
   async function handleSetupPassword() {
@@ -444,9 +458,18 @@ export default function PortalLogin() {
     <>
       <CardShell>
         <h2 className="text-[1.625rem] font-bold text-[#172554] mb-1" style={{ letterSpacing: "-0.02em" }}>
-          Welcome back
+          {activePortal === "client" ? "Client Login" : "Talent Login"}
         </h2>
-        <p className="text-[#64748B] mb-7 text-sm">Sign in to your OnSpot account.</p>
+        <p className="text-[#64748B] mb-4 text-sm">
+          {activePortal === "client"
+            ? "Sign in to manage your team and talent."
+            : "Sign in to manage your profile and opportunities."}
+        </p>
+        <Link href={`/login${currentSearch}`}>
+          <span className="mb-7 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#6D5EF7] hover:underline">
+            <ArrowLeft className="h-3 w-3" /> Choose another portal
+          </span>
+        </Link>
 
         {/* Email */}
         <div className="space-y-2 mb-4">
@@ -476,74 +499,38 @@ export default function PortalLogin() {
           </div>
         </div>
 
-        {/* Portal Selection */}
-        <div className="mb-6">
-          <p className="text-[#334155] text-sm font-medium mb-3">Choose your portal</p>
-          <div className="grid grid-cols-2 gap-3">
-            {/* Client */}
-            <button type="button" onClick={() => setSelectedPortal("client")}
-              className="relative flex flex-col items-center gap-2 rounded-2xl p-4 text-sm border transition-all duration-200 hover:-translate-y-1"
-              style={selectedPortal === "client"
-                ? { background: "rgba(109,94,247,0.06)", border: "1.5px solid #6D5EF7", boxShadow: "0 4px 16px rgba(109,94,247,0.12)" }
-                : { background: "white", border: "1px solid #E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }
-              }>
-              <Building className="w-6 h-6" style={{ color: "#3B82F6" }} />
-              <span className="text-[#334155] font-semibold text-center text-sm">Client</span>
-              <span className="text-[#64748B] text-xs leading-tight text-center">
-                Find and manage top outsourcing talent.
-              </span>
-              {selectedPortal === "client" && (
-                <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
-                  style={{ background: "#6D5EF7" }}>
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
-            </button>
-
-            {/* Talent */}
-            <button type="button" onClick={() => setSelectedPortal("talent")}
-              className="relative flex flex-col items-center gap-2 rounded-2xl p-4 text-sm border transition-all duration-200 hover:-translate-y-1"
-              style={selectedPortal === "talent"
-                ? { background: "rgba(109,94,247,0.06)", border: "1.5px solid #6D5EF7", boxShadow: "0 4px 16px rgba(109,94,247,0.12)" }
-                : { background: "white", border: "1px solid #E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }
-              }>
-              <User className="w-6 h-6" style={{ color: "#D97706" }} />
-              <span className="text-[#334155] font-semibold text-center text-sm">Talent</span>
-              <span className="text-[#64748B] text-xs leading-tight text-center">
-                Find jobs and manage your career profile.
-              </span>
-              {selectedPortal === "talent" && (
-                <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
-                  style={{ background: "#6D5EF7" }}>
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
-            </button>
-          </div>
-        </div>
-
         {/* Sign In Button */}
         <div className="mb-5">
           <PrimaryButton onClick={handleSignIn} loading={isLoading} loadingText="Signing in…"
-            disabled={!selectedPortal || !email || !password}>
+            disabled={!activePortal || !email || !password}>
             <span>Sign In</span> <ArrowRight className="w-4 h-4" />
           </PrimaryButton>
         </div>
+        {portalError && (
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p>{portalError}</p>
+            {portalError.includes("Client") && activePortal === "talent" && (
+              <Link href={`/login/client${currentSearch}`}>
+                <span className="mt-2 inline-block cursor-pointer font-semibold underline">Go to Client Login</span>
+              </Link>
+            )}
+            {portalError.includes("Talent") && activePortal === "client" && (
+              <Link href={`/login/talent${currentSearch}`}>
+                <span className="mt-2 inline-block cursor-pointer font-semibold underline">Go to Talent Login</span>
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Footer links */}
         <div className="text-center space-y-2">
           <p className="text-[#64748B] text-xs">
             Don&apos;t have an account?{" "}
-            <button type="button"
-              className="text-xs font-medium hover:underline transition-colors duration-200 bg-transparent border-0 p-0 cursor-pointer"
-              style={{ color: BRAND }}
-              onClick={() => setSignupOpen(true)}>
-              Create Account
-            </button>
+             <Link href={`/signup/${activePortal}${currentSearch}`}>
+               <span className="text-xs font-medium hover:underline transition-colors duration-200 cursor-pointer" style={{ color: BRAND }}>
+                 Create Account
+               </span>
+             </Link>
           </p>
           <Link href="/">
             <span className="flex items-center justify-center gap-1 text-xs font-medium transition-colors duration-200 hover:underline cursor-pointer"
@@ -554,9 +541,6 @@ export default function PortalLogin() {
         </div>
       </CardShell>
 
-      <SignUpDialog open={signupOpen} onOpenChange={setSignupOpen}
-        hideTrigger onSignInInstead={() => setSignupOpen(false)}
-        returnTo={returnTo} />
     </>
   );
 }

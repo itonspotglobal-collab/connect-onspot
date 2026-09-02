@@ -1410,14 +1410,14 @@ export function TopNavigation() {
               /* ── Not authenticated — Log In + Sign Up (text link) ── */
               <div className="hidden md:flex flex-row items-center gap-3">
                 <button
-                  onClick={() => { setShowPortal(true); setModalStep("signin"); }}
+                  onClick={() => navigate("/login")}
                   className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white/90 border border-white/25 hover:bg-white/10 hover:border-white/40 hover:text-white transition-all duration-200 whitespace-nowrap"
                   data-testid="nav-login-button"
                 >
                   Log In
                 </button>
                 <button
-                  onClick={() => { setShowPortal(true); setModalStep("signup"); }}
+                  onClick={() => navigate("/signup")}
                   className="text-[13px] font-medium text-white/55 hover:text-white/85 transition-colors duration-200 whitespace-nowrap hover:underline"
                   data-testid="nav-signup-button"
                 >
@@ -1821,14 +1821,14 @@ export function TopNavigation() {
             /* ── Not authenticated — mobile Log In + Sign Up ── */
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowPortal(true); setModalStep("signin"); setIsMobileMenuOpen(false); }}
+                onClick={() => { navigate("/login"); setIsMobileMenuOpen(false); }}
                 className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-bold text-base text-white/90 border border-white/25 hover:bg-white/10 transition-all duration-200"
                 data-testid="mobile-login-button"
               >
                 Log In
               </button>
               <button
-                onClick={() => { setShowPortal(true); setModalStep("signup"); setIsMobileMenuOpen(false); }}
+                onClick={() => { navigate("/signup"); setIsMobileMenuOpen(false); }}
                 className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-medium text-sm text-white/55 hover:text-white/85 transition-all duration-200"
                 data-testid="mobile-signup-button"
               >

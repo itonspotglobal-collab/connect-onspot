@@ -1,0 +1,805 @@
+Please update the OnSpot Login and Sign Up navigation/UI to support dedicated Client and Talent URLs.
+
+IMPORTANT SCOPE / SAFETY RULES
+
+This is primarily a ROUTING + NAVIGATION + UI improvement.
+
+DO NOT audit or refactor unrelated parts of the project.
+DO NOT redesign the backend authentication architecture.
+DO NOT create another authentication system.
+DO NOT duplicate the existing Client or Talent login/signup logic.
+DO NOT replace working API endpoints.
+DO NOT change database schemas.
+DO NOT break the existing AuthContext, Talent auth/session handling, password setup, forgot-password behavior, redirects, or profile creation logic.
+DO NOT modify unrelated frontend or backend functionality.
+
+Reuse the CURRENT WORKING login and signup functions/components/services.
+
+Before making changes, inspect only the files directly involved in:
+- authentication UI
+- login/signup routing
+- existing Client/Talent authentication handlers
+- homepage navigation buttons
+
+Do not perform a broad project audit.
+
+==================================================
+GOAL
+==================================================
+
+We want separate, shareable authentication URLs for Client and Talent users so that invite links clearly identify which portal the person is accessing.
+
+Desired URLs:
+
+LOGIN
+/login
+/login/client
+/login/talent
+
+SIGNUP
+/signup
+/signup/client
+/signup/talent
+
+These are NOT separate authentication systems.
+
+They are separate UI/routes around the SAME existing authentication functionality.
+
+==================================================
+1. /login SHOULD BECOME A PORTAL CHOOSER
+==================================================
+
+When a logged-out user clicks the homepage "Log In" button:
+
+Redirect them to:
+
+/login
+
+The /login page should NOT initially show email/password fields.
+
+Instead show a clean OnSpot role-selection page.
+
+Example:
+
+OnSpot
+WORK WITHOUT LIMITS
+
+Welcome back
+Choose how you want to access OnSpot.
+
+[ Client ]
+Hire and manage outsourcing talent.
+
+[ Talent ]
+Find jobs and manage your career profile.
+
+Back to Home
+
+Selecting Client:
+→ /login/client
+
+Selecting Talent:
+→ /login/talent
+
+Do not ask users to select Client/Talent again after reaching the role-specific page.
+
+==================================================
+2. CLIENT LOGIN PAGE
+==================================================
+
+Route:
+
+/login/client
+
+This page should use the EXISTING WORKING Client login functionality.
+
+UI example:
+
+OnSpot
+WORK WITHOUT LIMITS
+
+Client Login
+
+Welcome back.
+Sign in to manage your team and talent.
+
+Email Address
+[                    ]
+
+Password             Forgot password?
+[                    ]
+
+[ Sign In ]
+
+Don't have a Client account?
+Create Client Account
+
+← Choose another portal
+← Back to Home
+
+Behavior:
+
+- Reuse the current Client login handler.
+- Reuse AuthContext/current general authentication.
+- Reuse the current API endpoint.
+- Preserve validation.
+- Preserve session persistence.
+- Preserve loading/error states.
+- Preserve Client redirect behavior.
+
+Successful Client login should continue redirecting to the CURRENT working Client destination, currently expected to be:
+
+/client-profile
+
+Do not rewrite Client authentication.
+
+==================================================
+3. TALENT LOGIN PAGE
+==================================================
+
+Route:
+
+/login/talent
+
+Use the EXISTING WORKING Talent login functionality.
+
+UI example:
+
+OnSpot
+WORK WITHOUT LIMITS
+
+Talent Login
+
+Welcome back.
+Sign in to manage your profile and opportunities.
+
+Email Address
+[                    ]
+
+Password             Forgot password?
+[                    ]
+
+[ Sign In ]
+
+Don't have a Talent account?
+Create Talent Account
+
+← Choose another portal
+← Back to Home
+
+IMPORTANT:
+
+Keep the current Talent authentication behavior exactly intact.
+
+If Talent authentication currently uses:
+
+POST /api/talent-auth/login
+
+keep using it.
+
+Continue using the existing Talent auth/session implementation including things such as:
+
+- saveTalentAuth()
+- candidateId
+- token
+- talent_profile_token
+- TalentAuthState
+- existing Talent profile redirect
+- no-password/password-setup flow
+
+Do NOT replace Talent login with Client/general users authentication.
+
+Successful Talent login should continue opening that Talent user's CURRENT existing profile route.
+
+Do not create duplicate candidate records.
+
+==================================================
+4. /signup SHOULD ALSO BECOME A PORTAL CHOOSER
+==================================================
+
+Homepage "Sign Up" should redirect to:
+
+/signup
+
+The /signup page initially shows only:
+
+Create your OnSpot account
+Choose how you'll use OnSpot.
+
+[ Client ]
+Hire talent
+
+[ Talent ]
+Find work
+
+Selecting Client:
+→ /signup/client
+
+Selecting Talent:
+→ /signup/talent
+
+==================================================
+5. CLIENT SIGNUP PAGE
+==================================================
+
+Route:
+
+/signup/client
+
+Reuse the EXISTING Client account creation flow.
+
+Do NOT duplicate signup logic.
+
+The form should contain the same fields and validation currently used by Client signup.
+
+Example heading:
+
+Create Client Account
+
+Join OnSpot and start building your team.
+
+First Name
+Last Name
+Email Address
+Password
+Confirm Password
+
+[ Create Client Account ]
+
+Already have a Client account?
+Sign In
+
+← Choose another account type
+← Back to Home
+
+Links:
+
+"Sign In"
+→ /login/client
+
+"Choose another account type"
+→ /signup
+
+Preserve all existing:
+- validation
+- password rules
+- API calls
+- account creation behavior
+- auto-login behavior if currently implemented
+- Client profile creation
+- redirects
+- error messages
+
+==================================================
+6. TALENT SIGNUP PAGE
+==================================================
+
+Route:
+
+/signup/talent
+
+Reuse the EXISTING Talent account creation logic.
+
+Example heading:
+
+Create Talent Account
+
+Join OnSpot and find your next opportunity.
+
+First Name
+Last Name
+Email Address
+Password
+Confirm Password
+
+[ Create Talent Account ]
+
+Already have a Talent account?
+Sign In
+
+← Choose another account type
+← Back to Home
+
+Links:
+
+"Sign In"
+→ /login/talent
+
+"Choose another account type"
+→ /signup
+
+IMPORTANT:
+
+Talent signup has existing specialized behavior elsewhere in the system.
+
+Preserve it.
+
+Do not duplicate:
+- candidates
+- users
+- talent profile data
+- resume data
+- profile creation
+- password setup
+- authentication tokens
+
+Reuse the same working Talent signup implementation currently used by the system.
+
+==================================================
+7. REUSE COMPONENTS — DO NOT COPY LOGIN/SIGNUP LOGIC
+==================================================
+
+This is critical.
+
+Do NOT create four independent copies of the authentication logic.
+
+Preferred architecture:
+
+Shared UI/form components, for example:
+
+PortalLoginForm
+PortalSignupForm
+
+or reuse/refactor the existing forms if appropriate.
+
+Possible props:
+
+<PortalLoginForm portal="client" />
+<PortalLoginForm portal="talent" />
+
+<PortalSignupForm portal="client" />
+<PortalSignupForm portal="talent" />
+
+The portal-specific route determines the role.
+
+The actual authentication operation must still call the CURRENT shared/current login or signup functions.
+
+If there is already a shared authentication hook/service, reuse it.
+
+If shared logic already exists, do not replace it.
+
+==================================================
+8. ROUTES
+==================================================
+
+Update the frontend router carefully.
+
+Required routes:
+
+/login
+/login/client
+/login/talent
+
+/signup
+/signup/client
+/signup/talent
+
+Ensure these routes are registered BEFORE any broad "/" or catch-all route that could intercept them.
+
+Do not remove working authenticated routes.
+
+Do not rename existing Client/Talent dashboard/profile routes.
+
+==================================================
+9. LEGACY /login BEHAVIOR
+==================================================
+
+The current /login page contains:
+
+Email
+Password
+Choose your portal
+Client / Talent
+
+Replace ONLY its initial presentation.
+
+New behavior:
+
+/login
+→ portal chooser
+
+Then:
+
+/login/client
+→ Client credentials
+
+/login/talent
+→ Talent credentials
+
+We no longer need the Client/Talent selector inside the credentials form because the URL already identifies the portal.
+
+==================================================
+10. LEGACY SIGNUP MODAL / FORM
+==================================================
+
+The existing signup flow currently lets the user choose Client or Talent in the same form/modal.
+
+Do not delete its working account-creation functions.
+
+Extract/reuse the underlying functionality so that:
+
+/signup/client
+
+automatically behaves as Client signup
+
+and:
+
+/signup/talent
+
+automatically behaves as Talent signup.
+
+The role should come from the route rather than making the user select it again.
+
+==================================================
+11. HOMEPAGE NAVIGATION
+==================================================
+
+Homepage:
+
+Log In
+→ /login
+
+Sign Up
+→ /signup
+
+Do not immediately send users to Client or Talent because users entering from the public homepage still need to choose.
+
+However, external invitation links can now be shared directly.
+
+Examples:
+
+CLIENT LOGIN
+https://onspotglobal.com/login/client
+
+TALENT LOGIN
+https://onspotglobal.com/login/talent
+
+CLIENT SIGNUP
+https://onspotglobal.com/signup/client
+
+TALENT SIGNUP
+https://onspotglobal.com/signup/talent
+
+This is one of the main reasons for this change.
+
+==================================================
+12. CROSS-LINKS MUST REMAIN ROLE-SPECIFIC
+==================================================
+
+On:
+
+/login/client
+
+"Create Account"
+must go to:
+
+/signup/client
+
+
+On:
+
+/login/talent
+
+"Create Account"
+must go to:
+
+/signup/talent
+
+
+On:
+
+/signup/client
+
+"Sign In"
+must go to:
+
+/login/client
+
+
+On:
+
+/signup/talent
+
+"Sign In"
+must go to:
+
+/login/talent
+
+Never send them back to the generic route unless they explicitly click "Choose another portal/account type."
+
+==================================================
+13. WRONG ACCOUNT TYPE
+==================================================
+
+Keep existing role validation.
+
+If someone uses:
+
+/login/client
+
+with a Talent account, do not silently authenticate them into the wrong portal.
+
+Show the existing appropriate wrong-account message or a friendly equivalent such as:
+
+"This account belongs to the Talent Portal. Please use Talent Login."
+
+Provide:
+
+[ Go to Talent Login ]
+
+→ /login/talent
+
+Likewise, if practical and supported by the existing authentication response, Client accounts entered into Talent Login should direct users toward:
+
+/login/client
+
+Do not implement new risky backend account-detection logic just for this UI.
+
+Use information already provided by existing authentication responses.
+
+==================================================
+14. FORGOT PASSWORD
+==================================================
+
+Preserve the existing portal-aware forgot-password behavior.
+
+On:
+
+/login/client
+→ Client password reset flow
+
+On:
+
+/login/talent
+→ Talent password reset flow
+
+Do not merge them into one backend flow if the current implementation uses different account stores/endpoints.
+
+==================================================
+15. EXISTING TALENT NO-PASSWORD FLOW
+==================================================
+
+The system already supports candidates that may exist without a password.
+
+Do not remove this.
+
+When Talent login returns the current "no_password" condition:
+
+Continue showing the existing password setup flow.
+
+After successful password setup:
+- preserve Talent authentication state
+- do not create another candidate
+- redirect to their existing Talent profile
+
+==================================================
+16. AUTHENTICATED USERS
+==================================================
+
+Preserve current authenticated-session behavior.
+
+Do not introduce redirect loops.
+
+If the application currently redirects already-authenticated users from login/signup pages to their profile/dashboard, retain that behavior where appropriate.
+
+Client:
+→ current Client profile/dashboard
+
+Talent:
+→ their current Talent profile
+
+Admin:
+→ current Admin dashboard
+
+Do not change authenticated destination URLs unless required by existing code.
+
+==================================================
+17. UI DESIGN
+==================================================
+
+Use the visual direction of the current standalone /login page rather than the old popup.
+
+Keep:
+
+- OnSpot logo centered
+- WORK WITHOUT LIMITS subtitle
+- light subtle gradient/background
+- white rounded card
+- soft shadow
+- purple/blue OnSpot accents
+- responsive mobile layout
+- accessible field labels
+- password visibility icon
+- clean typography
+- clear back navigation
+
+For role-specific pages, make the portal identity obvious.
+
+Example:
+
+CLIENT LOGIN
+
+Optionally show the Client/building icon.
+
+TALENT LOGIN
+
+Optionally show the Talent/person icon.
+
+Do not show both portal cards on role-specific credential pages.
+
+==================================================
+18. DO NOT BREAK THESE EXISTING FLOWS
+==================================================
+
+Regression-test at minimum:
+
+CLIENT
+
+Existing Client:
+Homepage → Login → Client → credentials → Client Profile
+
+Direct:
+ /login/client
+→ credentials
+→ Client Profile
+
+New Client:
+Homepage → Sign Up → Client
+→ create account
+→ existing Client post-signup destination
+
+Direct:
+ /signup/client
+→ same behavior
+
+
+TALENT
+
+Existing Talent:
+Homepage → Login → Talent
+→ credentials
+→ existing Talent Profile
+
+Direct:
+ /login/talent
+→ existing Talent Profile
+
+New Talent:
+Homepage → Sign Up → Talent
+→ existing Talent creation flow
+→ existing post-signup destination
+
+Direct:
+ /signup/talent
+→ same behavior
+
+
+TALENT WITHOUT PASSWORD
+
+/login/talent
+→ existing no-password detection
+→ password setup
+→ existing Talent profile
+
+
+FORGOT PASSWORD
+
+Client forgot password still works.
+
+Talent forgot password still works.
+
+
+SESSION
+
+Refresh after Client login still works.
+
+Refresh after Talent login still works.
+
+==================================================
+19. BACKEND
+==================================================
+
+Do not modify server authentication unless absolutely necessary for routing compatibility.
+
+This feature should primarily be frontend routing/UI reuse.
+
+Do not:
+- create new login endpoints
+- create new signup endpoints
+- change password hashing
+- change JWT structure
+- change authentication tables
+- migrate database records
+- alter candidate/user relationships
+
+Existing APIs are the source of truth.
+
+==================================================
+20. IMPLEMENTATION APPROACH
+==================================================
+
+Make the smallest safe change.
+
+Prefer:
+
+existing auth logic
+        ↓
+shared login/signup form logic
+        ↓
+portal-specific routes
+
+NOT:
+
+Client login implementation
+Talent login implementation
+modal login implementation
+standalone login implementation
+
+all independently copied.
+
+==================================================
+21. ACCEPTANCE CRITERIA
+==================================================
+
+The work is complete when:
+
+1. /login displays Client/Talent selection only.
+
+2. Client selection opens:
+   /login/client
+
+3. Talent selection opens:
+   /login/talent
+
+4. /login/client contains no Talent selector.
+
+5. /login/talent contains no Client selector.
+
+6. Client authentication behaves exactly like the current working Client login.
+
+7. Talent authentication behaves exactly like the current working Talent login.
+
+8. /signup displays Client/Talent selection.
+
+9. Client selection opens:
+   /signup/client
+
+10. Talent selection opens:
+    /signup/talent
+
+11. Client signup retains the current working Client account creation flow.
+
+12. Talent signup retains the current working Talent account creation flow.
+
+13. No duplicate authentication APIs are added.
+
+14. No duplicate candidate/user records are created.
+
+15. Direct shareable URLs work after browser refresh:
+    /login/client
+    /login/talent
+    /signup/client
+    /signup/talent
+
+16. Role-specific Login ↔ Signup links remain role-specific.
+
+17. Homepage Log In → /login.
+
+18. Homepage Sign Up → /signup.
+
+19. Existing Client/Talent sessions, redirects, forgot-password, Talent password setup, AuthContext, and token persistence continue working.
+
+20. No unrelated frontend/backend behavior is changed.
+
+==================================================
+FINAL INSTRUCTION
+==================================================
+
+Implement only this scoped routing/navigation/UI improvement.
+
+Do not perform a general code cleanup.
+Do not audit unrelated modules.
+Do not refactor working backend functionality.
+Do not replace the authentication architecture.
+
+Reuse what already works and change only what is required to support clean, shareable Client and Talent authentication URLs.
