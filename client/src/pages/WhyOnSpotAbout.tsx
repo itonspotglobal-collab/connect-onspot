@@ -746,6 +746,13 @@ export default function WhyOnSpotAbout() {
               Find work
               <ArrowUpRight size={15} />
             </Link>
+            <Link
+              to="/manifesto"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.82)", background: "rgba(255,255,255,0.12)", padding: "13px 26px", borderRadius: 8, textDecoration: "none", border: "1px solid rgba(255,255,255,0.15)" }}
+            >
+              Read our manifesto
+              <ArrowUpRight size={15} />
+            </Link>
           </div>
         </div>
 

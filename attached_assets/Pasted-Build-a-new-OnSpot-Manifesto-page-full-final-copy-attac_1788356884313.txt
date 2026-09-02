@@ -1,0 +1,45 @@
+Build a new "OnSpot Manifesto" page — full, final copy attached below,
+verbatim, no edits.
+
+CONTENT (use exactly as written):
+
+[Full manifesto text — paste the complete text provided]
+
+DESIGN DIRECTION:
+- This page should feel like a personal letter, not corporate marketing
+  copy — editorial, intimate, emotionally weighted. Consistent with the
+  brand's dark-navy "high-impact moment" treatment already used
+  elsewhere (the Hero, CTA sections) — propose whether dark or light
+  background best fits the tone; dark navy with generous whitespace and
+  large Bricolage Grotesque display type per paragraph is the likely fit,
+  but make the call and show it.
+- "Hand-written by Nur Laminero" treatment: use a refined script/
+  handwriting-style webfont SELECTIVELY, not for the entire body text
+  (full-script-font body copy at this length would hurt readability).
+  Apply it to: a few key emphasis lines (e.g. "We don't accept that.",
+  the closing "Work Without Limits.") and a sign-off line at the very
+  end: "— Nur Laminero, Co-Founder & CEO" in that same script style.
+  Propose 2-3 actual font candidates (e.g. from Google Fonts) for
+  review — don't just pick one silently.
+- NOTE: a real, actual signature image is NOT being provided in this
+  request — if one is added later, it'll come as a real uploaded asset.
+  For now, the sign-off is styled TEXT in a script font, not a graphic
+  signature.
+- Generous pacing — let paragraphs breathe, don't cram this into a dense
+  block. This is a page meant to be read slowly.
+- Gold accent used sparingly if at all, consistent with the existing
+  "gold has one job" discipline elsewhere on the site — don't overuse it
+  here just because the copy is emotionally charged.
+
+PLACEMENT — this page needs to be discoverable from three places:
+1. Add "Manifesto" to the shared Footer component's link set.
+2. Add a link/CTA on the About page (/why-onspot/about).
+3. Add a link/CTA on the homepage, positioned directly after the Hero
+   section.
+
+AUDIT FIRST: confirm no existing manifesto route/page already exists
+before building, and propose the actual URL path (e.g. /manifesto).
+
+Report back with a real screenshot of the built page, the font
+candidates for the handwritten treatment, and confirmation all three
+placement links are live, before this is considered done.

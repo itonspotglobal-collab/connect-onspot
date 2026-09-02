@@ -38,6 +38,7 @@ const STATIC_ROUTES: SitemapEntry[] = [
   // Why OnSpot section
   { loc: "/why-onspot",                    changefreq: "monthly", priority: "0.8" },
   { loc: "/why-onspot/about",              changefreq: "monthly", priority: "0.7" },
+  { loc: "/manifesto",                    changefreq: "monthly", priority: "0.8" },
   { loc: "/why-onspot/case-studies",       changefreq: "monthly", priority: "0.7" },
   { loc: "/why-onspot/reviews",            changefreq: "monthly", priority: "0.7" },
   { loc: "/why-onspot/experience",         changefreq: "monthly", priority: "0.7" },

@@ -8,7 +8,7 @@ interface FooterProps {
    * "dark-gradient" keeps the footer transparent inside a shared dark
    * gradient, while "adaptive" follows the light/dark page surface.
    */
-  variant?: "dark-gradient" | "light" | "indigo" | "adaptive";
+  variant?: "dark-gradient" | "light" | "indigo" | "dark" | "adaptive";
   /**
    * When true, renders a subtle top border to visually separate the footer
    * from the section above without breaking the shared background.
@@ -49,6 +49,7 @@ const VARIANT_STYLES = {
 
 const NAV_LINKS = [
   { href: "/why-onspot/about",    label: "About" },
+  { href: "/manifesto",           label: "Manifesto" },
   { href: "/amazing",             label: "Stories" },
   { href: "/insights",            label: "Insights" },
   { href: "/how-it-works",        label: "How It Works" },

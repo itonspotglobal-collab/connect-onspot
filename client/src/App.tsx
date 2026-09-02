@@ -27,6 +27,7 @@ import WhyOnSpotReviews from "@/pages/WhyOnSpotReviews";
 import WhyOnSpotExperience from "@/pages/WhyOnSpotExperience";
 import WhyOnSpotIntegratorSystem from "@/pages/WhyOnSpotIntegratorSystem";
 import WhyOnSpotValueCalculator from "@/pages/WhyOnSpotValueCalculator";
+import Manifesto from "@/pages/Manifesto";
 import Amazing from "@/pages/Amazing";
 import GetHired from "@/pages/GetHired";
 import TalentPortal from "@/pages/TalentPortal";
@@ -203,6 +204,7 @@ function PublicRouter() {
   const [location] = useLocation();
   const hideTopNav =
     location === "/why-onspot/about" ||
+    location === "/manifesto" ||
     location === "/insights" ||
     location.startsWith("/insights/");
 
@@ -238,6 +240,7 @@ function PublicRouter() {
           <Route path="/get-hired" component={GetHired} />
           <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/why-onspot/about" component={WhyOnSpotAbout} />
+          <Route path="/manifesto" component={Manifesto} />
           <Route path="/why-onspot/case-studies" component={WhyOnSpotCaseStudies} />
           <Route path="/why-onspot/reviews" component={WhyOnSpotReviews} />
           <Route path="/why-onspot/experience" component={WhyOnSpotExperience} />
@@ -553,6 +556,7 @@ function AppContent() {
       
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
+      <Route path="/manifesto" component={PublicRouter} />
       <Route path="/hire-talent" component={ClientHireTalentRoute} />
       <Route path="/talent-pool" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />

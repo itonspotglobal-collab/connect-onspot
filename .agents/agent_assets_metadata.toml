@@ -90,6 +90,7 @@ uri = "file://screenshots/verified-footer-home.png"
 type = "image"
 title = "Homepage footer"
 description = "Real live preview capture showing the transparent footer continuing the homepage dark gradient."
+logical_id = "c12d44ca-9f1d-4ce0-8c10-eb937b0ab894"
 
 [[outputs]]
 id = "J8Uhlhu5bqz9h1jCALqzZ"
@@ -97,6 +98,7 @@ uri = "file://screenshots/verified-footer-privacy.png"
 type = "image"
 title = "Privacy Policy footer"
 description = "Real live preview capture showing the shared light footer continuing the legal page's white ending."
+logical_id = "50071831-5234-4573-b959-dbe404687d7a"
 
 [[outputs]]
 id = "1t-oH3V3EeBpiwjaXrMm6"
@@ -104,6 +106,7 @@ uri = "file://screenshots/verified-footer-refund.png"
 type = "image"
 title = "Refund Policy footer"
 description = "Real live preview capture showing the shared light footer continuing the legal page's white ending."
+logical_id = "a90b2dcb-1066-4cbb-873b-50cb113e9724"
 
 [[outputs]]
 id = "-6U7ghaKm7mNgrBpN9vMy"
@@ -111,6 +114,7 @@ uri = "file://screenshots/verified-footer-terms.png"
 type = "image"
 title = "Terms of Service footer"
 description = "Real live preview capture showing the shared light footer continuing the legal page's white ending."
+logical_id = "d028bf1d-c985-4323-ab59-bebe463f98c0"
 
 [[outputs]]
 id = "O_zUDVYHOdCbukGgABRUC"
@@ -118,6 +122,7 @@ uri = "file://screenshots/verified-footer-about.png"
 type = "image"
 title = "About footer"
 description = "Real live preview capture showing the shared indigo footer continuing the About page's #474EAD CTA."
+logical_id = "71507c1b-b963-4605-8f78-cacba3df2683"
 
 [[outputs]]
 id = "4FhasI8lX_EYKWHNA4_im"
@@ -125,6 +130,7 @@ uri = "file://screenshots/verified-footer-amazing.png"
 type = "image"
 title = "Amazing footer"
 description = "Real live preview capture showing the old rich footer removed and the shared light footer continuing the People Behind the Platform section."
+logical_id = "19a24f1f-9f71-4b4a-8edf-c79d2b48bf54"
 
 [[outputs]]
 id = "djIBMGVj9yzFJvF3W3iF6"
@@ -132,6 +138,7 @@ uri = "file://screenshots/verified-footer-job-light.png"
 type = "image"
 title = "Job detail light footer"
 description = "Real live browser capture of the adaptive job-detail footer in light mode with a white background."
+logical_id = "64cb652c-e6d1-4902-83bf-45a745754f1d"
 
 [[outputs]]
 id = "nbBKi_uzFo-zkxL_tFl0U"
@@ -139,6 +146,7 @@ uri = "file://screenshots/verified-footer-job-dark.png"
 type = "image"
 title = "Job detail dark footer"
 description = "Real live browser capture of the adaptive job-detail footer in dark mode with the computed #060816 background."
+logical_id = "b920554c-0ac9-4890-aef4-1aed646a71fb"
 
 [[outputs]]
 id = "7eLvGnXm_Z7OoWlppLsqh"
@@ -146,6 +154,7 @@ uri = "file://screenshots/footer-fix-home.png"
 type = "image"
 title = "Footer fix — Homepage"
 description = "Live homepage footer with muted lavender links and divider."
+logical_id = "448d9938-1d7c-4c9b-95de-a109bbd8cc93"
 
 [[outputs]]
 id = "X8_kK2A4XDVNm6YomKfNc"
@@ -153,6 +162,7 @@ uri = "file://screenshots/footer-fix-privacy.png"
 type = "image"
 title = "Footer fix — Privacy Policy"
 description = "Live Privacy Policy footer with muted slate links and divider."
+logical_id = "21b49203-f64a-4134-bc8b-dfcfd9b5c39d"
 
 [[outputs]]
 id = "A3Z6XV7f0ctDeYj9EZStm"
@@ -160,6 +170,7 @@ uri = "file://screenshots/footer-fix-refund.png"
 type = "image"
 title = "Footer fix — Refund Policy"
 description = "Live Refund Policy footer with muted slate links and divider."
+logical_id = "444cac05-c43f-4cd1-bd86-3e8e1e041895"
 
 [[outputs]]
 id = "pM6P5rgoG-QOLiYB8MaYO"
@@ -167,6 +178,7 @@ uri = "file://screenshots/footer-fix-terms.png"
 type = "image"
 title = "Footer fix — Terms"
 description = "Live Terms footer with muted slate links and divider."
+logical_id = "d785383a-e550-42e4-b05f-873ec958f096"
 
 [[outputs]]
 id = "ZujB5rLXN2GCmliT4Adxs"
@@ -174,6 +186,7 @@ uri = "file://screenshots/footer-fix-about.png"
 type = "image"
 title = "Footer fix — About"
 description = "Live About footer with muted lavender links and divider on indigo."
+logical_id = "d20a60ca-fc83-4b24-a787-a503fe5505c3"
 
 [[outputs]]
 id = "xCH6oe1HA_RPGVwTl0HNP"
@@ -181,6 +194,7 @@ uri = "file://screenshots/footer-fix-amazing.png"
 type = "image"
 title = "Footer fix — Amazing"
 description = "Live Amazing footer with muted slate links and divider."
+logical_id = "6a96a44b-21b6-4828-874a-9877bc49dd53"
 
 [[outputs]]
 id = "lsXmDjYmZa0gtcdMiMBmI"
@@ -188,6 +202,7 @@ uri = "file://screenshots/footer-fix-job-light.png"
 type = "image"
 title = "Footer fix — Job detail light"
 description = "Live job-detail footer in light mode with muted slate links and divider."
+logical_id = "bb3b8166-d017-452c-bf04-e3513b21208c"
 
 [[outputs]]
 id = "3DefvW8DE_nEmQlvVBW59"
@@ -195,6 +210,7 @@ uri = "file://screenshots/footer-fix-job-dark.png"
 type = "image"
 title = "Footer fix — Job detail dark"
 description = "Live job-detail footer in dark mode with muted lavender links and divider."
+logical_id = "7d03d7c7-765e-4c3e-a014-ad11b9c59f98"
 
 [[outputs]]
 id = "EoGyOwGK0FDu9qEvNcJ1O"
@@ -202,6 +218,7 @@ uri = "file://screenshots/verified-about-no-redundant-cta-divider.png"
 type = "image"
 title = "About page — redundant CTA divider removed"
 description = "Live browser capture showing the About CTA without its inner bottom rule and the shared footer divider retained at the footer boundary."
+logical_id = "72139f37-c0dc-4574-a034-f74984a6fd64"
 
 [[outputs]]
 id = "keAhFNqeANzyoNjy7bz3S"
@@ -209,6 +226,7 @@ uri = "file://screenshots/verified-about-hero-desktop.png"
 type = "image"
 title = "About hero — desktop viewport"
 description = "Live browser capture of the About hero at 1440×900, filling the full viewport before the next section."
+logical_id = "7d734baf-b4cf-484b-be8b-84f0f0a14b52"
 
 [[outputs]]
 id = "N4VFjDP_unocOo1T2GDuQ"
@@ -216,6 +234,7 @@ uri = "file://screenshots/verified-about-hero-mobile.png"
 type = "image"
 title = "About hero — mobile viewport"
 description = "Live browser capture of the About hero at 390×844, filling the full viewport before the next section."
+logical_id = "b28a2a59-0534-46fa-b888-c2f2d8341e18"
 
 [[outputs]]
 id = "Ozl4a4VRQeGZFSj22O1D2"
@@ -223,6 +242,7 @@ uri = "file://screenshots/verified-about-mobile-navigation-open.png"
 type = "image"
 title = "About page — responsive mobile navigation"
 description = "Live browser capture at 390px showing the responsive About navigation panel open without overflow."
+logical_id = "46bc27d6-a767-4ea5-90e5-be53a2527fde"
 
 [[outputs]]
 id = "zfxhqluFz86LPNn8uaA3Z"
@@ -230,6 +250,7 @@ uri = "file://screenshots/verified-home-hero-390x700-all-slides.jpg"
 type = "image"
 title = "Homepage mobile hero — 390 × 700"
 description = "Direct mobile-browser captures of slides 1–5 at the shortest requested viewport."
+logical_id = "4720f489-37b8-487d-88ef-c5f57a2481f7"
 
 [[outputs]]
 id = "CrFp2-iN0wq1yBVm-tQ0j"
@@ -237,6 +258,7 @@ uri = "file://screenshots/verified-home-hero-390x768-all-slides.jpg"
 type = "image"
 title = "Homepage mobile hero — 390 × 768"
 description = "Direct mobile-browser captures of slides 1–5 at the standard phone viewport."
+logical_id = "23b1ee2b-f0f0-4adf-a87e-14824661f363"
 
 [[outputs]]
 id = "JXFSG0hM6yoEVa4IzUYUL"
@@ -244,6 +266,7 @@ uri = "file://screenshots/verified-home-hero-390x844-all-slides.jpg"
 type = "image"
 title = "Homepage mobile hero — 390 × 844"
 description = "Direct mobile-browser captures of slides 1–5 at the tall phone viewport."
+logical_id = "83c4cde5-c3a0-4a57-8c94-2ac3a1b90757"
 
 [[outputs]]
 id = "tzSeNuajM9FYFz5Dh5cQS"
@@ -251,6 +274,7 @@ uri = "file://screenshots/verified-home-hero-375x844-all-slides.jpg"
 type = "image"
 title = "Homepage mobile hero — 375 × 844"
 description = "Narrow-width browser check showing all five slides without horizontal overflow."
+logical_id = "e13ff42c-18dc-4d25-82af-7ccaf364a97e"
 
 [[outputs]]
 id = "WAkCvzknrATeuZl-UbNd1"
@@ -258,6 +282,7 @@ uri = "file://screenshots/verified-tablet-768x844-all-slides.jpg"
 type = "image"
 title = "Homepage hero — tablet 768 × 844"
 description = "Direct browser captures of all five slides after the tablet containment fix."
+logical_id = "3be4b536-36bd-4dfd-be3b-31f2cda077db"
 
 [[outputs]]
 id = "upEUDGkeVVdWvfNl7zmom"
@@ -265,6 +290,7 @@ uri = "file://screenshots/verified-tablet-1024x844-all-slides.jpg"
 type = "image"
 title = "Homepage hero — tablet 1024 × 844"
 description = "Direct browser captures of all five slides at the desktop handoff width."
+logical_id = "a0d1bdfe-ec1d-4488-8e2a-f44a8b8d17b4"
 
 [[outputs]]
 id = "alYEZo8P2cg4g8hkLgf7h"
@@ -272,6 +298,7 @@ uri = "file://screenshots/final-mobile-390x844-hero-slide-3.png"
 type = "image"
 title = "Monthly-rate hero — mobile 390 × 844"
 description = "Direct browser capture showing Avg. monthly rate and $2,400/month."
+logical_id = "f05bb751-a3a8-4a3a-9ece-e4218a21fe8d"
 
 [[outputs]]
 id = "Nfy-7e_-zgIs7z6nHjGGB"
@@ -279,6 +306,7 @@ uri = "file://screenshots/final-tablet-768x844-hero-slide-3.png"
 type = "image"
 title = "Monthly-rate hero — tablet 768 × 844"
 description = "Direct browser capture showing the full monthly stat without phone-screen clipping."
+logical_id = "229d487f-1ad8-4702-b551-0fc39fcba3d1"
 
 [[outputs]]
 id = "MDEMMlFRR9sjnXJ45-8MT"
@@ -286,6 +314,7 @@ uri = "file://screenshots/final-tablet-1024x844-hero-slide-3.png"
 type = "image"
 title = "Monthly-rate hero — tablet 1024 × 844"
 description = "Direct browser capture showing the full monthly stat at the desktop handoff."
+logical_id = "6cac12a1-3030-4894-89f7-005543c19ee7"
 
 [[outputs]]
 id = "HS5SDIJLs6z0S5AIb_Iuu"
@@ -293,6 +322,7 @@ uri = "file://screenshots/final-desktop-1440x900-hero-slide-3.png"
 type = "image"
 title = "Monthly-rate hero — desktop 1440 × 900"
 description = "Direct browser capture showing Avg. monthly rate and $2,400/month."
+logical_id = "655d9fe0-6eaf-4bc0-aeca-c5496f74962a"
 
 [[outputs]]
 id = "jCxjkarz1hTfgelU0SByA"
@@ -300,6 +330,7 @@ uri = "file://screenshots/mobile-aligned-mobile-390x844-all-slides.jpg"
 type = "image"
 title = "Mobile hero alignment — 390 × 844, all five slides"
 description = "Direct browser captures showing each compact card left-aligned with the slide copy and expanded toward the right edge."
+logical_id = "27dc6894-a953-4968-891b-a342b7542a61"
 
 [[outputs]]
 id = "UNLSI7JkJr4OkHIK2ZW_U"
@@ -307,6 +338,7 @@ uri = "file://screenshots/mobile-aligned-mobile-375x844-all-slides.jpg"
 type = "image"
 title = "Mobile hero alignment — 375 × 844, all five slides"
 description = "Direct browser captures showing the same left-edge alignment and wider card treatment at the narrower mobile width."
+logical_id = "99083752-55a8-4876-9a48-d33468d4686f"
 
 [[outputs]]
 id = "Uf_c3R5EuWMgcQkwf4DK0"
@@ -314,6 +346,7 @@ uri = "file://screenshots/mobile-inset-390x844-all-slides.jpg"
 type = "image"
 title = "Mobile card inset fix — 390 × 844, all five slides"
 description = "Direct browser captures showing the shared 24px copy edge and 18px right margin."
+logical_id = "3f7e7edd-f930-48ea-bf49-037418534cf6"
 
 [[outputs]]
 id = "chbv1gKGd_XZN122c3Xdd"
@@ -321,6 +354,7 @@ uri = "file://screenshots/mobile-inset-375x844-all-slides.jpg"
 type = "image"
 title = "Mobile card inset fix — 375 × 844, all five slides"
 description = "Direct browser captures showing the same corrected mobile card inset at the narrower width."
+logical_id = "fe94f1d1-7db1-434a-a5b5-6c44d33d1991"
 
 [[outputs]]
 id = "64W4nrf4Qv22hhz9irhw_"
@@ -328,3 +362,18 @@ uri = "file://screenshots/odie-g-live-search.png"
 type = "image"
 title = "Authenticated Odie G. search check"
 description = "Live /hire-talent UI after Task #334 merged. The visible result rows do not include Odie G."
+logical_id = "ef96b516-91db-4e51-b7d4-300db42cf4dc"
+
+[[outputs]]
+id = "xlBErPvpefLMnl_Q-A35h"
+uri = "file://screenshots/manifesto-desktop.jpg"
+type = "image"
+title = "OnSpot Manifesto — Desktop Preview"
+description = "Real screenshot of the new /manifesto page in the running OnSpot app."
+logical_id = "5fdfe3c6-cd46-4249-b31a-cc7d0612f268"
+content_hash = "sha256:ec8b1941a3972565fb465226da844e32c4424dabb44789ddd6eec929435d5675"
+size = 45883
+mtime_ms = 1788357041113
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/5fdfe3c6-cd46-4249-b31a-cc7d0612f268/fd43131e-509f-4f18-b045-63e635297ff3"
+storage_version_token = "1788357170305564"
+content_type = "image/jpeg"
