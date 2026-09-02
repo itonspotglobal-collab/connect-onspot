@@ -377,3 +377,17 @@ mtime_ms = 1788357041113
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/5fdfe3c6-cd46-4249-b31a-cc7d0612f268/fd43131e-509f-4f18-b045-63e635297ff3"
 storage_version_token = "1788357170305564"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "zhSso4RrD12Ao1eHup_nI"
+uri = "file://screenshots/manifesto-logo-eyebrow.jpg"
+type = "image"
+title = "Manifesto Header — Updated Eyebrow and Logo"
+description = "Real screenshot of /manifesto showing the selected “Why We Built OnSpot” eyebrow and the actual OnSpot wordmark asset in the top-left navigation."
+logical_id = "a375b68a-79c9-42f5-86b9-22b45d5ca8e9"
+content_hash = "sha256:b47aa3e4d4af32a5fcda8be98bae84e2b21f96c606a1ab0d1492542fd4cfbba0"
+size = 44737
+mtime_ms = 1788358160184
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/a375b68a-79c9-42f5-86b9-22b45d5ca8e9/c8597607-b864-4eab-88da-3288f8d1804c"
+storage_version_token = "1788358177929635"
+content_type = "image/jpeg"

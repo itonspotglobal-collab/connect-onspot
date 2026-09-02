@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { Footer } from "@/components/Footer";
+import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 const INK = "#F8F7F2";
 const MUTED = "rgba(248,247,242,0.68)";
@@ -76,10 +77,12 @@ export default function Manifesto() {
       }}
     >
       <header className="mx-auto flex w-full max-w-[1180px] items-center justify-between px-6 py-6 sm:px-10 lg:px-14">
-        <Link href="/">
-          <span className="cursor-pointer text-xl font-bold tracking-[-0.04em] text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F5B942]">
-            OnSpot
-          </span>
+        <Link href="/" className="flex shrink-0 items-center">
+          <img
+            src={onspotLogo}
+            alt="OnSpot"
+            className="block h-[56px] w-auto object-contain sm:h-[64px]"
+          />
         </Link>
         <Link href="/why-onspot/about">
           <span className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-white/15 px-4 text-xs font-semibold text-white/70 transition-colors hover:border-white/35 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F5B942]">
@@ -94,7 +97,7 @@ export default function Manifesto() {
           <div className="max-w-[840px]">
             <p className="mb-7 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#F5B942]">
               <span aria-hidden className="h-px w-9 bg-[#F5B942]" />
-              The OnSpot Manifesto
+              Why We Built OnSpot
             </p>
             <h1
               className="max-w-[800px] text-white"
