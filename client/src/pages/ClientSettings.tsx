@@ -150,10 +150,16 @@ export default function ClientSettings() {
     staleTime: 30_000,
   });
 
-  const { data: clientProfile, isLoading: profileLoading } = useQuery<ClientProfileData>({
+  const {
+    data: clientProfile,
+    isLoading: profileLoading,
+    isError: profileIsError,
+    refetch: refetchProfile,
+  } = useQuery<ClientProfileData>({
     queryKey: ["/api/client-profile/me"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/client-profile/me");
+      if (!res.ok) throw new Error(`Failed to load company profile (${res.status})`);
       return res.json();
     },
   });
@@ -286,6 +292,10 @@ export default function ClientSettings() {
   };
 
   const startEditProfile = () => {
+    // Guard: never open the form when the query failed — the form would
+    // be initialised from empty/null state and a Save would overwrite
+    // the user's real data with blanks.
+    if (profileIsError) return;
     setProfileForm({
       companyName: clientProfile?.companyName ?? "",
       contactPerson: clientProfile?.contactPerson ?? "",
@@ -464,13 +474,34 @@ export default function ClientSettings() {
           <div className="flex items-start justify-between mb-5">
             <SectionHeader icon={Building2} title="Company Profile" subtitle="Your business details used in hiring" />
             {!editingProfile && (
-              <Button variant="outline" size="sm" onClick={startEditProfile} className="shrink-0 mt-0.5">
-                <Pencil className="w-3.5 h-3.5 mr-1.5" />Edit
-              </Button>
+              profileIsError ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 mt-0.5 text-amber-600 border-amber-300 hover:bg-amber-50"
+                  onClick={() => refetchProfile()}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />Retry
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={startEditProfile} className="shrink-0 mt-0.5" disabled={profileLoading}>
+                  <Pencil className="w-3.5 h-3.5 mr-1.5" />Edit
+                </Button>
+              )
             )}
           </div>
 
-          {profileLoading ? (
+          {profileIsError ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/10 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Could not load company profile</p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                  Your profile data could not be fetched. Click <strong>Retry</strong> to try again before editing — saving without loaded data would overwrite your details.
+                </p>
+              </div>
+            </div>
+          ) : profileLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-8 w-full" />)}
             </div>
