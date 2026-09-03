@@ -529,7 +529,10 @@ function PendingApprovalCard({
   const hasDuplicates = duplicates.length > 0;
 
   return (
-    <div className={`relative rounded-2xl border bg-white dark:bg-[#0f172a]/60 transition-shadow hover:shadow-md ${hasDuplicates ? "border-amber-300 dark:border-amber-700/50" : "border-slate-200/70 dark:border-white/[0.08]"}`}>
+    <div
+      data-testid={`pending-job-${job.id}`}
+      className={`relative rounded-2xl border bg-white dark:bg-[#0f172a]/60 transition-shadow hover:shadow-md ${hasDuplicates ? "border-amber-300 dark:border-amber-700/50" : "border-slate-200/70 dark:border-white/[0.08]"}`}
+    >
       {/* Amber left strip */}
       <div className="absolute left-0 top-4 bottom-4 w-1 rounded-full bg-amber-400" />
 

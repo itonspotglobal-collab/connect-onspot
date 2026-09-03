@@ -178,7 +178,10 @@ export function ClientEmailComposer({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next && !isSending) onClose(); }}>
-      <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
+      <DialogContent
+        data-testid="client-email-composer"
+        className="max-h-[92vh] max-w-4xl overflow-y-auto"
+      >
         <DialogHeader>
           <DialogTitle>
             {decision === "approved"
@@ -199,10 +202,10 @@ export function ClientEmailComposer({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-          <TabsList>
-            <TabsTrigger value="compose"><Mail className="mr-1.5 h-4 w-4" />Compose</TabsTrigger>
-            <TabsTrigger value="preview"><Eye className="mr-1.5 h-4 w-4" />Preview</TabsTrigger>
-            <TabsTrigger value="history"><Clock className="mr-1.5 h-4 w-4" />History</TabsTrigger>
+          <TabsList data-testid="client-email-tabs">
+            <TabsTrigger data-testid="client-email-tab-compose" value="compose"><Mail className="mr-1.5 h-4 w-4" />Compose</TabsTrigger>
+            <TabsTrigger data-testid="client-email-tab-preview" value="preview"><Eye className="mr-1.5 h-4 w-4" />Preview</TabsTrigger>
+            <TabsTrigger data-testid="client-email-tab-history" value="history"><Clock className="mr-1.5 h-4 w-4" />History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="compose" className="space-y-4 pt-3">
@@ -237,7 +240,7 @@ export function ClientEmailComposer({
             </div>
             <div className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-end">
               <div className="flex-1 space-y-1.5"><Label>Test recipient</Label><Input type="email" value={testRecipient} onChange={(event) => setTestRecipient(event.target.value)} placeholder="you@onspotglobal.com" /></div>
-              <Button variant="outline" disabled={!testRecipient || !canSend || testMutation.isPending} onClick={() => testMutation.mutate()}>
+              <Button data-testid="client-email-send-test" variant="outline" disabled={!testRecipient || !canSend || testMutation.isPending} onClick={() => testMutation.mutate()}>
                 {testMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}Send Test
               </Button>
             </div>
@@ -269,8 +272,9 @@ export function ClientEmailComposer({
         </Tabs>
 
         <div className="flex justify-end gap-2 border-t pt-4">
-          <Button variant="outline" disabled={isSending} onClick={onClose}>Cancel</Button>
+          <Button data-testid="client-email-cancel" variant="outline" disabled={isSending} onClick={onClose}>Cancel</Button>
           <Button
+            data-testid="client-email-confirm"
             className={decision === "approved" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
             disabled={!canSend || isSending}
             onClick={() => onConfirm({ templateId, subject, bodyHtml, senderEmail, rejectionReason })}
