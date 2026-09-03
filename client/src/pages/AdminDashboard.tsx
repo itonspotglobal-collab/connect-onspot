@@ -502,6 +502,10 @@ export default function AdminDashboard() {
                 <Mail className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Email Templates
               </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/email-deliveries')} data-testid="button-open-email-delivery-audit">
+                <Mail className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Email Delivery Audit
+              </Button>
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/flagged-messages')}>
                 <Flag className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Flagged Messages

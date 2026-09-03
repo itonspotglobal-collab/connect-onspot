@@ -115,6 +115,7 @@ import { PortalChooser } from "@/components/PortalChooser";
 import Messages from "@/pages/Messages";
 import Billing from "@/pages/client/Billing";
 import Payouts from "@/pages/talent/Payouts";
+import AdminEmailDeliveries from "@/pages/AdminEmailDeliveries";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
@@ -287,6 +288,7 @@ function PublicRouter() {
           <Route path="/admin/email-templates" component={() => <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/create" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/:id/edit" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
+          <Route path="/admin/email-deliveries" component={() => <AdminProtectedRoute><AdminEmailDeliveries /></AdminProtectedRoute>} />
           <Route path="/admin/image-uploader" component={() => <AdminProtectedRoute><AdminImageUploader /></AdminProtectedRoute>} />
           <Route path="/admin/inquiries" component={() => <AdminProtectedRoute><AdminInquiries /></AdminProtectedRoute>} />
           <Route path="/admin/scaffold-jobs" component={() => <AdminProtectedRoute><AdminScaffoldJobs /></AdminProtectedRoute>} />

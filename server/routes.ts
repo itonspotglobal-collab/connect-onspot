@@ -2855,6 +2855,9 @@ export async function registerRoutes(
     await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_event_key  ON email_notification_deliveries(event_key)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_created_at ON email_notification_deliveries(created_at)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_related ON email_notification_deliveries(related_type, related_id, created_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_event_type ON email_notification_deliveries(event_type)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_status ON email_notification_deliveries(status)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_deliveries_recipient_email ON email_notification_deliveries(recipient_email)`);
     await query(`
       CREATE TABLE IF NOT EXISTS message_email_cooldowns (
         id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -22036,6 +22039,90 @@ export async function registerRoutes(
   });
 
   // ── Email Templates — CRUD + publish/archive/duplicate ──────────────────────
+
+  // GET /api/admin/email-deliveries — paginated delivery audit ledger.
+  // This deliberately returns delivery metadata only; email content is not
+  // stored in this ledger and should not be reconstructed for an audit view.
+  app.get("/api/admin/email-deliveries", authenticateAdminFlexible, requireAdmin, async (req: any, res: Response) => {
+    try {
+      const pageValue = Number(req.query.page ?? 1);
+      const limitValue = Number(req.query.limit ?? req.query.pageSize ?? 25);
+      const page = Number.isFinite(pageValue) ? Math.max(1, Math.floor(pageValue)) : 1;
+      const limit = Number.isFinite(limitValue) ? Math.min(100, Math.max(1, Math.floor(limitValue))) : 25;
+      const offset = (page - 1) * limit;
+
+      const eventType = String(req.query.eventType ?? req.query.event_type ?? "").trim();
+      const status = String(req.query.status ?? "").trim().toLowerCase();
+      const recipient = String(req.query.recipient ?? req.query.recipientEmail ?? "").trim();
+      const dateFrom = String(req.query.dateFrom ?? req.query.from ?? "").trim();
+      const dateTo = String(req.query.dateTo ?? req.query.to ?? "").trim();
+
+      const validStatuses = new Set(["processing", "pending", "sent", "failed", "skipped"]);
+      if (status && !validStatuses.has(status)) {
+        return res.status(422).json({
+          error: "status must be one of processing, pending, sent, failed, or skipped",
+        });
+      }
+
+      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+      const isValidDate = (value: string) => {
+        if (!datePattern.test(value)) return false;
+        const parsed = new Date(`${value}T00:00:00Z`);
+        return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+      };
+      if (dateFrom && !isValidDate(dateFrom)) {
+        return res.status(422).json({ error: "dateFrom must be a valid date in YYYY-MM-DD format" });
+      }
+      if (dateTo && !isValidDate(dateTo)) {
+        return res.status(422).json({ error: "dateTo must be a valid date in YYYY-MM-DD format" });
+      }
+      if (dateFrom && dateTo && dateFrom > dateTo) {
+        return res.status(422).json({ error: "dateFrom must not be after dateTo" });
+      }
+
+      const conditions = ["1 = 1"];
+      const filterParams: string[] = [];
+      const addParam = (value: string) => {
+        filterParams.push(value);
+        return `$${filterParams.length}`;
+      };
+
+      if (eventType) conditions.push(`event_type = ${addParam(eventType)}`);
+      if (status) conditions.push(`status = ${addParam(status)}`);
+      if (recipient) conditions.push(`recipient_email ILIKE ${addParam(`%${recipient}%`)}`);
+      if (dateFrom) conditions.push(`COALESCE(attempted_at, created_at) >= ${addParam(dateFrom)}::date`);
+      if (dateTo) {
+        conditions.push(`COALESCE(attempted_at, created_at) < (${addParam(dateTo)}::date + INTERVAL '1 day')`);
+      }
+
+      const whereClause = conditions.join(" AND ");
+      const [countResult, rowsResult] = await Promise.all([
+        query(`SELECT COUNT(*)::int AS total FROM email_notification_deliveries WHERE ${whereClause}`, filterParams),
+        query(
+          `SELECT id, event_key, event_type, recipient_email, recipient_user_id,
+                  sender_email, template_category, status, error,
+                  attempted_at, sent_at, created_at
+             FROM email_notification_deliveries
+            WHERE ${whereClause}
+            ORDER BY COALESCE(attempted_at, created_at) DESC, created_at DESC, id DESC
+            LIMIT $${filterParams.length + 1} OFFSET $${filterParams.length + 2}`,
+          [...filterParams, String(limit), String(offset)],
+        ),
+      ]);
+
+      const total = Number(countResult.rows[0]?.total ?? 0);
+      return res.json({
+        page,
+        limit,
+        total,
+        pages: Math.max(1, Math.ceil(total / limit)),
+        items: rowsResult.rows,
+      });
+    } catch (err: any) {
+      console.error("GET /api/admin/email-deliveries error:", err);
+      return res.status(500).json({ error: "Unable to load email delivery ledger" });
+    }
+  });
 
   // GET /api/admin/email-templates — list all (non-archived by default)
   app.get("/api/admin/email-templates", authenticateJWT, requireAnyRole, async (req: any, res: Response) => {

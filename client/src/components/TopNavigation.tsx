@@ -376,6 +376,7 @@ export function TopNavigation() {
       { label: "Find Work",         route: "/admin/find-work",          icon: Briefcase },
       { label: "Job Applications",  route: "/admin/job-applications",   icon: Users },
       { label: "Email Templates",   route: "/admin/email-templates",    icon: Mail },
+      { label: "Email Delivery Audit", route: "/admin/email-deliveries", icon: Mail },
       { label: "Insights",          route: "/admin/insights",           icon: Eye },
       { label: "Flagged Messages",  route: "/admin/flagged-messages",   icon: Flag },
       { label: "Settings",          route: "/settings",                 icon: Settings },
