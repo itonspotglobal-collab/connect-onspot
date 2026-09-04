@@ -1,0 +1,603 @@
+Implement Phase 1 of live data for the existing OnSpot Client → Management → Team dashboard.
+
+Repository:
+itonspotglobal-collab/connect-onspot
+
+CONTEXT
+
+The Team dashboard UI already exists / is being implemented under the client Team page.
+
+We now want to replace the MOCK TEAM MEMBER DATA with real data from the EXISTING OnSpot hiring flow.
+
+This phase is specifically about:
+
+1. Real hired talent / employee roster
+2. Real hiring/job/contract-derived information where already available
+3. Real “latest activity” ONLY when it can be derived safely from existing system records
+4. Weekly Hours remains a placeholder
+5. Timesheets remain a placeholder
+
+Do NOT implement the timesheet system yet.
+
+IMPORTANT SAFETY / SCOPE RULES
+
+- Do NOT perform a broad repository audit.
+- Do NOT refactor unrelated systems.
+- Do NOT redesign the hiring pipeline.
+- Do NOT create a competing employee/hiring workflow.
+- Do NOT modify existing hiring status invariants.
+- Do NOT weaken authorization.
+- Do NOT change messaging privacy/masking rules.
+- Do NOT create WebSockets, SSE, presence infrastructure, or realtime tracking in this phase.
+- Do NOT create fake online/offline activity.
+- Do NOT create fake weekly hours.
+- Do NOT create billing/time-tracking calculations.
+- Do NOT modify unrelated client pages.
+- Make the smallest safe implementation required.
+
+FIRST: INSPECT ONLY THE DIRECTLY RELEVANT EXISTING FLOW
+
+Inspect the existing code responsible for:
+
+- Client Team page
+- job_submissions
+- hiring pipeline statuses
+- offer acceptance
+- contract creation/signing
+- talent/client relationships
+- jobs associated with the hired talent
+
+Determine the existing authoritative condition that means:
+
+“This talent is now part of this client's team.”
+
+The repository already has an established hiring pipeline.
+
+Do NOT invent a new definition of “hired”.
+
+Reuse the existing authoritative status/contract state.
+
+The shared submission status system includes the existing hiring workflow, including the `hired` state.
+
+There is also an established formal pipeline containing statuses such as:
+- offer_extended
+- offer_accepted
+- contract_sent
+- other existing formal hiring statuses
+
+Respect those existing rules.
+
+==================================================
+1. LIVE TEAM ROSTER
+==================================================
+
+Replace the Team page's hardcoded employee array with data loaded from the backend.
+
+Create a focused authenticated client endpoint if an appropriate existing endpoint does not already exist.
+
+Preferred conceptual endpoint:
+
+GET /api/client/team
+
+The endpoint should return ONLY team members belonging to the currently authenticated client / organization.
+
+Do not accept an arbitrary client ID from the browser as authorization.
+
+Resolve the client identity from the authenticated session using the application's existing auth conventions.
+
+Each returned team member should be backed by the EXISTING hiring relationship.
+
+Conceptual response:
+
+{
+  teamMembers: [
+    {
+      id,
+      talentId,
+      submissionId,
+      jobId,
+
+      name,
+      initials,
+
+      role,
+      team,
+      projectOrJobTitle,
+
+      hireDate,
+
+      contractStatus,
+      contractEndDate,
+
+      latestActivity: {
+        type,
+        label,
+        occurredAt
+      },
+
+      rating: null,
+
+      weeklyHours: null,
+      weeklyTargetHours: null,
+
+      status: null
+    }
+  ]
+}
+
+This is conceptual only.
+
+Follow the existing codebase response conventions.
+
+Do NOT expose sensitive fields that the client should not receive.
+
+==================================================
+2. DETERMINE WHO APPEARS ON TEAM PAGE
+==================================================
+
+Use the existing hiring pipeline as the source of truth.
+
+A talent should appear on the Team page only when they have reached the existing state that represents a successful hire / active employment relationship.
+
+Do NOT simply include:
+- applicants
+- shortlisted talent
+- interview candidates
+- offer_extended candidates
+
+unless the existing system explicitly considers them hired.
+
+Investigate the existing formal hiring workflow and use its authoritative final state.
+
+If the repository uses `job_submissions.status = 'hired'` as the canonical completed-hire state, use that.
+
+If the current contract flow establishes a stricter authoritative condition, preserve that rule instead.
+
+Do not alter the pipeline to make the Team page easier.
+
+READ the existing state.
+
+==================================================
+3. ORGANIZATION / CLIENT ISOLATION
+==================================================
+
+This is critical.
+
+Client A must NEVER see Client B's hired talent.
+
+The query must be scoped using the authenticated client's existing client/org relationship.
+
+Do not trust:
+
+?clientId=
+organizationId supplied by the browser
+talent IDs supplied by the browser
+
+for authorization.
+
+Use the server-side authenticated user/client context.
+
+If organizations are already part of the client model, respect the currently selected/authorized organization according to existing application behavior.
+
+Do not redesign organization switching in this task.
+
+==================================================
+4. REAL MEMBER INFORMATION
+==================================================
+
+Populate whatever can safely come from existing records.
+
+Examples:
+
+Name:
+Use the existing permitted/display name associated with the hired talent.
+
+Role:
+Prefer the role/job title from the actual job/hiring relationship.
+
+Project/job:
+Show the associated job title or existing project context if available.
+
+Hire date:
+Use the actual completion/hired/contract timestamp that most accurately represents the existing hiring flow.
+
+Contract information:
+If an existing active hiring contract contains an end date/status, return it.
+
+This can drive UI such as:
+
+“Contract ends in 12 days”
+
+but calculate/show it only when the underlying contract data actually exists.
+
+Do not invent contract dates.
+
+==================================================
+5. LATEST ACTIVITY — PHASE 1
+==================================================
+
+We want the Team page to have a “Latest Activity” field.
+
+However, DO NOT implement employee monitoring or presence tracking yet.
+
+For this phase, Latest Activity means:
+
+“The most recent relevant existing system event associated with this employee/client relationship.”
+
+Use only data the application already records.
+
+Potential examples, if the corresponding data exists:
+
+- Hired
+- Offer accepted
+- Contract sent
+- Contract signed
+- Contract activated
+- Application/status changed
+- another existing hiring lifecycle event
+
+Choose the latest valid event timestamp.
+
+Return something like:
+
+latestActivity: {
+  type: "hired",
+  label: "Hired",
+  occurredAt: "..."
+}
+
+The frontend can render:
+
+Hired · Sep 3
+
+or
+
+Contract signed · 2 days ago
+
+depending on existing UI helpers.
+
+IMPORTANT:
+
+Do NOT render:
+- Active now
+- Idle
+- Offline
+- Last seen
+- Online
+
+unless the repository already has real presence/activity telemetry.
+
+A hiring/status timestamp is NOT evidence that someone is online.
+
+==================================================
+6. EMPLOYEE STATUS INDICATOR
+==================================================
+
+The current design has green/amber/gray dots.
+
+Do NOT map these to fake online/away/offline states.
+
+For this phase, either:
+
+OPTION A — hide the presence dot
+
+or
+
+OPTION B — use an employment/status interpretation such as:
+
+Active contract
+Contract ending soon
+Inactive
+
+ONLY if this can be reliably derived from existing contract records.
+
+If the UI keeps a dot, the accompanying visible text must make clear what the dot represents.
+
+Do not imply realtime presence.
+
+==================================================
+7. WEEKLY HOURS — PLACEHOLDER
+==================================================
+
+Do NOT build timesheets in this task.
+
+There is currently no confirmed existing weekly-hours/time-tracking source to use.
+
+Therefore:
+
+weeklyHours = null
+
+The UI should show a clean placeholder such as:
+
+Weekly Hours
+Not available yet
+
+or
+
+— / — h
+
+Prefer a polished empty state rather than fabricated values.
+
+The Monday–Sunday weekly activity bars should either:
+
+- display an empty/disabled state
+OR
+- be hidden until timesheet data exists.
+
+Do NOT populate fake bars.
+
+Add a small optional note:
+
+“Available once timesheets are enabled.”
+
+Keep it subtle.
+
+==================================================
+8. VIEW TIMESHEET — PLACEHOLDER
+==================================================
+
+The “View timesheet” button remains visible.
+
+Do not create a timesheet route yet unless one already exists.
+
+For now:
+
+- disable the button with appropriate styling
+OR
+- allow click and show the project's standard toast:
+  “Timesheets coming soon.”
+
+Do not navigate to a fake page.
+
+Make the integration point easy to replace when the Timesheets phase starts.
+
+==================================================
+9. MESSAGE BUTTON
+==================================================
+
+Preserve the existing messaging architecture.
+
+If the existing hiring relationship already allows a client and hired talent to communicate through the established messaging system, reuse that exact flow.
+
+Do NOT create a second messaging model.
+
+Do NOT weaken:
+- authorization
+- accepted-invitation rules
+- client/talent privacy rules
+- contact masking
+
+If safe reuse is not straightforward, leave Message as the existing behavior or as an integration point rather than changing messaging business rules during this task.
+
+==================================================
+10. FRONTEND QUERY
+==================================================
+
+Use the project's existing query/data-fetching conventions.
+
+For example, if the application uses TanStack Query, follow the existing pattern.
+
+Conceptually:
+
+useQuery({
+  queryKey: ['/api/client/team'],
+  ...
+})
+
+Do not introduce a new state-management library.
+
+The Team page should support:
+
+Loading state
+Empty state
+Error state
+Loaded state
+
+==================================================
+11. EMPTY TEAM STATE
+==================================================
+
+If the client has no hired talent, show a proper empty state.
+
+Example:
+
+“No team members yet”
+
+“Talent you hire through OnSpot will appear here.”
+
+Optionally provide a button/link to the existing Find Talent experience.
+
+Reuse the existing route.
+
+Do NOT add demo employees when the API returns zero results.
+
+==================================================
+12. AUTOMATIC UPDATES AFTER HIRING
+==================================================
+
+The Team roster should derive directly from the current persisted hiring state.
+
+That means:
+
+When the existing hiring flow successfully moves Talent X into the authoritative hired state for Client A,
+
+the next Team query automatically includes Talent X.
+
+Do NOT create a second “add employee to team” action.
+
+Do NOT duplicate the hire into another table simply to make this page work unless the existing architecture explicitly requires it.
+
+Hiring is the source of truth.
+
+For this phase, standard query refetching is enough.
+
+Examples:
+- refresh when Team page opens
+- normal query invalidation/refetch
+- refetch on window focus if already standard in the app
+
+No WebSockets/SSE required.
+
+Later we can add realtime subscriptions if needed.
+
+==================================================
+13. TEAM SUMMARY
+==================================================
+
+Make the “Team members” summary card real.
+
+It should equal the number of returned hired team members.
+
+For now:
+
+Team members:
+REAL
+
+Hours logged:
+PLACEHOLDER
+
+Spend this week:
+Keep placeholder/static only if this section has not yet been connected to billing/payroll data.
+
+Needs attention:
+Only make real if there is a clearly existing condition such as contract ending soon.
+
+Do not manufacture metrics.
+
+Prefer:
+
+—
+Coming with timesheets
+
+over fake numbers.
+
+==================================================
+14. CONTRACT ENDING SOON
+==================================================
+
+If existing contract data has an end date:
+
+Calculate whether the contract ends within an appropriate existing/current UI threshold.
+
+If no threshold exists, use a small local presentation constant for the Team dashboard only, such as 14 days.
+
+Do NOT change contract business logic.
+
+This is only a dashboard warning.
+
+Return or derive:
+
+contractEndDate
+daysUntilContractEnd
+
+Then display:
+
+“Contract ends in 12 days”
+
+If the contract has no end date, render nothing.
+
+==================================================
+15. MOCK DATA REMOVAL
+==================================================
+
+Remove the current sample people:
+
+Maria Cruz
+Rafael Santos
+Anna Torres
+
+from runtime rendering.
+
+They may remain only in story/test fixtures if genuinely useful.
+
+Production Team UI must display only backend results.
+
+No fallback fake team members.
+
+==================================================
+16. TESTING
+==================================================
+
+Add focused tests where consistent with the repository.
+
+At minimum verify:
+
+A. Client with a hired talent:
+GET /api/client/team
+returns that talent.
+
+B. Client with an applicant who is not hired:
+does NOT return that talent.
+
+C. Client A cannot see Client B's hired talent.
+
+D. No hired talent:
+returns an empty list, not mock employees.
+
+E. Missing weekly hours:
+returns null / frontend renders placeholder.
+
+F. Contract ending date:
+renders warning only when actual data supports it.
+
+Do not create a large new test framework.
+
+Use the project's existing testing approach.
+
+==================================================
+17. DO NOT IMPLEMENT YET
+==================================================
+
+Explicitly OUT OF SCOPE:
+
+- Timesheet database
+- clock in / clock out
+- employee time entries
+- weekly-hour aggregation
+- screenshots/activity monitoring
+- keyboard/mouse monitoring
+- presence tracking
+- online/away/offline telemetry
+- payroll calculations
+- realtime sockets
+- productivity scores
+- attendance rules
+
+Those will be separate phases.
+
+==================================================
+18. ACCEPTANCE CRITERIA
+==================================================
+
+This phase is complete when:
+
+- Team page no longer renders hardcoded employees.
+- Hired talent automatically appears based on existing hiring data.
+- Non-hired applicants do not appear.
+- A client only sees its own hired talent.
+- Employee role/job data comes from existing records.
+- Contract warning comes from real contract data when available.
+- Latest Activity reflects a real existing hiring/system event.
+- No fake Active Now / Idle / Offline values remain.
+- Weekly Hours clearly shows a placeholder.
+- Weekly activity chart is empty/disabled or hidden.
+- View Timesheet is a placeholder.
+- No timesheet backend was created.
+- No realtime infrastructure was added.
+- Existing hiring flow remains unchanged.
+- Existing messaging rules remain unchanged.
+- Existing unrelated features remain unchanged.
+
+WHEN FINISHED
+
+Report ONLY:
+
+1. Files changed
+2. Existing hiring state used to define a Team member
+3. Endpoint used/created
+4. Which Team fields are now real
+5. Which fields remain placeholders
+6. Focused tests/build/typecheck results
+7. Any genuine blocker discovered
+
+Do not include a broad codebase audit or unrelated recommendations.

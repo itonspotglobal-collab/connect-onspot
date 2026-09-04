@@ -15638,6 +15638,86 @@ export async function registerRoutes(
     }
   });
 
+  // GET /api/client/team — active roster derived exclusively from fully signed
+  // formal-pipeline hiring contracts owned by the authenticated client.
+  app.get("/api/client/team", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    try {
+      const clientId = (req as AuthenticatedRequest).user?.id;
+      if (!clientId) return res.status(401).json({ error: "Unauthorized" });
+
+      // DISTINCT ON makes legacy duplicate contract rows deterministic while
+      // preserving one roster entry per hired submission. The later signature
+      // is the actual fully-signed/hired event.
+      const result = await query(
+        `SELECT DISTINCT ON (js.id)
+            js.id AS submission_id,
+            js.talent_id,
+            js.job_id,
+            j.title AS job_title,
+            COALESCE(
+              NULLIF(c.display_name, ''),
+              NULLIF(c.full_name, ''),
+              NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''),
+              'Talent'
+            ) AS display_name,
+            hc.status AS contract_status,
+            GREATEST(hc.talent_signed_at, hc.onspot_signed_at) AS fully_signed_at
+           FROM job_submissions js
+           JOIN hiring_contracts hc ON hc.submission_id = js.id
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN candidates c ON c.user_id = js.talent_id
+           LEFT JOIN users u ON u.id = js.talent_id
+          WHERE js.client_id = $1
+            AND js.${FORMAL_PIPELINE_PREDICATE}
+            AND js.status = 'hired'
+            AND hc.status = 'signed'
+            AND hc.talent_signed_at IS NOT NULL
+            AND hc.onspot_signed_at IS NOT NULL
+          ORDER BY js.id, GREATEST(hc.talent_signed_at, hc.onspot_signed_at) DESC, hc.id DESC`,
+        [clientId],
+      );
+
+      const teamMembers = result.rows.map((row: any) => {
+        const displayName = row.display_name;
+        const initials = displayName
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((part: string) => part[0].toUpperCase())
+          .join("");
+        const hiredAt = row.fully_signed_at;
+
+        return {
+          id: row.submission_id,
+          submissionId: row.submission_id,
+          talentId: row.talent_id,
+          jobId: row.job_id,
+          name: displayName,
+          initials,
+          role: row.job_title,
+          team: null,
+          projectOrJobTitle: row.job_title,
+          hireDate: hiredAt,
+          contractStatus: row.contract_status,
+          contractEndDate: null,
+          daysUntilContractEnd: null,
+          latestActivity: { type: "hired", label: "Hired", occurredAt: hiredAt },
+          rating: null,
+          weeklyHours: null,
+          weeklyTargetHours: null,
+          weeklyActivity: null,
+          status: "Active contract",
+        };
+      });
+
+      return res.json({ teamMembers });
+    } catch (err: any) {
+      console.error("GET /api/client/team error:", err);
+      return res.status(500).json({ error: "Failed to load team roster" });
+    }
+  });
+
   // GET /api/client/jobs/:jobId — owner-aware single-job fetch.
   // Returns the job regardless of status/approval as long as the authenticated client
   // owns it and it is not a scaffold. Used by the View button on the client dashboard
