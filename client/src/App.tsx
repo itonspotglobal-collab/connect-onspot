@@ -90,6 +90,7 @@ import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
+import ClientTeamDashboard from "@/pages/ClientTeamDashboard";
 import TalentPayouts from "@/pages/TalentPayouts";
 import OrganizationCreate from "@/pages/OrganizationCreate";
 import OrganizationDetail from "@/pages/OrganizationDetail";
@@ -373,7 +374,7 @@ function ClientRouter() {
           <Route path="/talent" component={TalentSearch} />
           <Route path="/projects" component={() => <div className="p-6">Projects Module - Coming Soon</div>} />
           <Route path="/performance" component={() => <div className="p-6">Performance Module - Coming Soon</div>} />
-          <Route path="/clients" component={() => <div className="p-6">Client Management Module - Coming Soon</div>} />
+          <Route path="/clients" component={ClientTeamDashboard} />
           <Route path="/roi" component={() => <div className="p-6">ROI Analytics Module - Coming Soon</div>} />
           <Route path="/insights" component={Insights} />
           <Route path="/insights/:slug" component={InsightPost} />
