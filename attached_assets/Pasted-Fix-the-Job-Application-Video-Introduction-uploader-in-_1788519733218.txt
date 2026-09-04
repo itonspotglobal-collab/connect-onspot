@@ -1,0 +1,631 @@
+Fix the Job Application Video Introduction uploader in the existing OnSpot Connect codebase.
+
+IMPORTANT: This task is specifically about the video uploader inside the JOB APPLICATION FLOW at:
+
+client/src/pages/JobApplyPage.tsx
+
+and the backend endpoint:
+
+POST /api/jobs/:jobId/apply
+
+Do NOT confuse this with the candidate Profile Settings / Talent Profile video uploader at:
+
+POST /api/candidates/:id/video
+
+That is a separate feature.
+
+## Current expected frontend behavior
+
+JobApplyPage.tsx already supports:
+
+* jobs where `requiresVideoIntro === true`
+* selecting/uploading a new video
+* reusing an existing Talent Profile video
+* MP4
+* MOV / QuickTime
+* WebM
+* maximum file size of 200 MB
+
+For a NEW application video, the frontend sends:
+
+```ts
+formData.append("video", videoFile);
+```
+
+For an existing profile video, it sends:
+
+```ts
+formData.append("useProfileVideo", "true");
+```
+
+The request goes to:
+
+```text
+POST /api/jobs/:jobId/apply
+```
+
+using multipart/form-data.
+
+The current client validation is already approximately:
+
+```ts
+const allowedTypes = [
+  "video/mp4",
+  "video/quicktime",
+  "video/webm"
+];
+```
+
+and max size:
+
+```text
+200 MB
+```
+
+Do not remove this functionality.
+
+---
+
+# FIRST: TRACE THE BUG BEFORE CHANGING CODE
+
+Inspect the entire video-upload path end-to-end:
+
+```text
+JobApplyPage.tsx
+    ↓
+FormData field "video"
+    ↓
+POST /api/jobs/:jobId/apply
+    ↓
+multer / multipart middleware
+    ↓
+server-side video validation
+    ↓
+object storage
+    ↓
+job_submissions.video_introduction_url
+job_submissions.video_introduction_file_name
+    ↓
+application detail APIs
+    ↓
+AdminJobApplications.tsx
+```
+
+Determine exactly where the video is failing.
+
+Do not blindly rewrite the uploader.
+
+---
+
+# 1. CHECK THE APPLY ROUTE'S MULTER CONFIGURATION
+
+Find the actual implementation of:
+
+```text
+POST /api/jobs/:jobId/apply
+```
+
+Confirm its multer middleware accepts BOTH application attachment fields:
+
+```text
+resume
+video
+```
+
+For example, if it currently uses:
+
+```ts
+upload.single("resume")
+```
+
+then the `video` field will never be parsed correctly.
+
+Use the appropriate multi-field configuration such as:
+
+```ts
+upload.fields([
+  { name: "resume", maxCount: 1 },
+  { name: "video", maxCount: 1 },
+])
+```
+
+or the project's equivalent.
+
+Then correctly retrieve:
+
+```ts
+const resumeFile = req.files?.resume?.[0];
+const videoFile = req.files?.video?.[0];
+```
+
+Do not assume `req.file` if the endpoint handles multiple attachment types.
+
+---
+
+# 2. VERIFY VIDEO VALIDATION
+
+The backend must independently validate application videos.
+
+Allow at minimum:
+
+```text
+video/mp4
+video/quicktime
+video/webm
+```
+
+Also support the project's existing accepted video MIME types when appropriate.
+
+Maximum size:
+
+```text
+200 MB
+```
+
+Return a clear HTTP 400 error for unsupported files, e.g.:
+
+```json
+{
+  "error": "invalid_video_type",
+  "message": "Please upload an MP4, MOV, or WebM video."
+}
+```
+
+For oversized videos:
+
+```json
+{
+  "error": "video_too_large",
+  "message": "Video must be 200 MB or smaller."
+}
+```
+
+Do not return a generic 500 for user validation errors.
+
+---
+
+# 3. CHECK GLOBAL MULTER / REQUEST SIZE LIMITS
+
+This is especially important.
+
+The UI permits videos up to 200 MB, but check whether multer, Express, proxy configuration, body limits, or Replit deployment settings have a smaller limit.
+
+Search for things such as:
+
+```ts
+multer({
+  limits: {
+    fileSize: ...
+  }
+})
+```
+
+and:
+
+```ts
+express.json({ limit: ... })
+express.urlencoded({ limit: ... })
+```
+
+Do not incorrectly use JSON body limits to handle multipart uploads.
+
+If multer has a limit below 200 MB, make the application-video upload compatible with the documented 200 MB limit.
+
+Avoid unnecessarily raising limits globally if the larger limit is only required for application videos.
+
+Handle:
+
+```text
+LIMIT_FILE_SIZE
+```
+
+cleanly and return a useful response instead of an opaque 500.
+
+---
+
+# 4. VERIFY APPLICATION VIDEO STORAGE
+
+Newly uploaded application videos should be saved using the existing private object-storage system.
+
+The repository already expects application video objects using a path concept such as:
+
+```text
+/objects/application-videos/<generated-id>
+```
+
+Follow the SAME storage/security architecture already used for application resumes and other private objects.
+
+Do NOT introduce:
+
+* filesystem-only storage
+* public static URLs
+* base64 video storage in PostgreSQL
+* a second unrelated storage provider
+
+After upload succeeds, obtain the stored URL/path and original filename.
+
+Example:
+
+```ts
+videoIntroductionUrl
+videoIntroductionFileName
+```
+
+---
+
+# 5. VERIFY DATABASE PERSISTENCE
+
+The current `job_submissions` schema contains:
+
+```ts
+videoIntroductionUrl: text("video_introduction_url"),
+videoIntroductionFileName: text("video_introduction_file_name"),
+```
+
+Verify the real deployed database also contains:
+
+```text
+video_introduction_url
+video_introduction_file_name
+```
+
+IMPORTANT:
+
+An older migration created `job_submissions` WITHOUT these video columns.
+
+Therefore, inspect migrations/startup migrations and determine whether existing databases are guaranteed to receive these columns.
+
+If not, add an IDEMPOTENT migration:
+
+```sql
+ALTER TABLE job_submissions
+ADD COLUMN IF NOT EXISTS video_introduction_url text;
+
+ALTER TABLE job_submissions
+ADD COLUMN IF NOT EXISTS video_introduction_file_name text;
+```
+
+Do not modify historical migrations in a way that only fixes fresh databases while leaving existing deployments broken.
+
+The fix must work for existing production databases too.
+
+---
+
+# 6. SAVE NEW APPLICATION VIDEO TO THE SUBMISSION
+
+When `video` is uploaded successfully, make sure the newly created `job_submissions` row receives:
+
+```ts
+videoIntroductionUrl: storedVideoUrl,
+videoIntroductionFileName: videoFile.originalname,
+```
+
+Confirm the ORM insert/update actually includes these fields.
+
+Do not upload the video successfully and then forget to persist its URL.
+
+---
+
+# 7. FIX `useProfileVideo=true`
+
+The existing system supports:
+
+```text
+useProfileVideo=true
+```
+
+for authenticated Talent users.
+
+Do not break this.
+
+When this flag is provided and no new `video` file is uploaded:
+
+1. Authenticate the Talent correctly.
+2. Resolve their candidate/profile.
+3. Find their existing video introduction.
+4. Reuse its existing private object URL.
+5. Store that URL/name on the job submission.
+
+Check BOTH relevant existing sources if the application architecture already supports them:
+
+```text
+candidates.video_intro_url
+candidates.video_intro_file_name
+```
+
+and/or:
+
+```text
+documents
+type = 'video_intro'
+```
+
+Do not duplicate the physical video object unnecessarily.
+
+If the job requires a video but neither a new video nor a profile video exists, return HTTP 400 with a clear error.
+
+---
+
+# 8. REQUIRED-VIDEO VALIDATION MUST BE SERVER-SIDE TOO
+
+The client already prevents proceeding when:
+
+```ts
+requiresVideoIntro === true
+```
+
+and no video exists.
+
+The backend must enforce this independently.
+
+For a job where:
+
+```text
+requires_video_intro = true
+```
+
+require ONE of:
+
+```text
+new uploaded video
+OR
+valid useProfileVideo=true video
+```
+
+Otherwise reject the submission.
+
+For jobs where:
+
+```text
+requires_video_intro = false
+```
+
+video must remain optional.
+
+Do NOT accidentally make video mandatory for every application.
+
+---
+
+# 9. CLEAN UP FAILED UPLOADS
+
+Avoid orphaned objects.
+
+If:
+
+1. video uploads to object storage
+2. but application/database creation fails
+
+then delete the newly uploaded application-video object when safe.
+
+Likewise, if resume + video are uploaded and submission creation subsequently fails, clean up newly created application attachments according to the project's existing storage rollback pattern.
+
+Do not delete a reused Talent Profile video.
+
+---
+
+# 10. FIX FRONTEND ERROR HANDLING
+
+In `JobApplyPage.tsx`, the application submission currently has special handling for errors such as:
+
+```text
+cv_upload_failed
+```
+
+Add equivalent useful handling for video errors.
+
+For example:
+
+```text
+video_upload_failed
+invalid_video_type
+video_too_large
+```
+
+The user should remain on or be returned to the Video step and see the actual error beside the video uploader.
+
+Do not only show:
+
+```text
+Submission failed
+```
+
+when the actual problem was the video upload.
+
+---
+
+# 11. VERIFY THE FILE INPUT
+
+Check the video file input/drop zone in JobApplyPage.tsx.
+
+Make sure it accepts:
+
+```html
+accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+```
+
+or the project's equivalent.
+
+Make sure selecting the SAME file again after removing/failed upload works by resetting the input value where necessary.
+
+Check both:
+
+* click-to-upload
+* drag-and-drop
+
+Do not change the existing UI design unnecessarily.
+
+---
+
+# 12. CHECK PRIVATE OBJECT ACCESS
+
+Application videos are private.
+
+Do not assume:
+
+```ts
+videoIntroductionUrl
+```
+
+is permanently publicly accessible.
+
+Verify that Admin Job Applications uses the existing authenticated/private object URL resolution mechanism.
+
+A successfully uploaded video must be playable/viewable by an authorized Admin reviewing the application.
+
+Do not solve this by making the object public.
+
+---
+
+# 13. ADD REGRESSION TESTS
+
+Add backend tests covering at minimum:
+
+### Test A
+
+Job requiring video + valid MP4 upload
+
+Expected:
+
+```text
+201
+submission created
+videoIntroductionUrl persisted
+videoIntroductionFileName persisted
+```
+
+### Test B
+
+Job requiring video + WebM upload
+
+Expected success.
+
+### Test C
+
+Job requiring video + no video
+
+Expected:
+
+```text
+400
+```
+
+### Test D
+
+Job NOT requiring video + no video
+
+Expected success.
+
+### Test E
+
+Authenticated Talent + `useProfileVideo=true`
+
+Expected:
+
+```text
+existing video reused
+submission created
+no duplicate physical upload
+```
+
+### Test F
+
+Unsupported video MIME
+
+Expected:
+
+```text
+400
+```
+
+### Test G
+
+Video over 200 MB / multer LIMIT_FILE_SIZE
+
+Expected clear controlled 4xx response, not 500.
+
+### Test H
+
+Application creation failure after newly uploaded video
+
+Expected newly created application video object to be cleaned up.
+
+---
+
+# 14. TEST THE ACTUAL BROWSER FLOW
+
+After implementing the fix, manually verify:
+
+```text
+Talent signs in
+→ opens a job requiring Video Introduction
+→ /jobs/:jobId/apply
+→ reaches Video step
+→ uploads MP4/MOV/WebM
+→ file shows as ready
+→ continues to Confirm
+→ submits
+→ application succeeds
+→ Admin opens Job Applications
+→ opens application
+→ Video Introduction appears
+→ authorized video playback works
+```
+
+Also test:
+
+```text
+Talent already has profile video
+→ Use existing video
+→ submit
+→ existing video is attached to application
+```
+
+And:
+
+```text
+job does not require video
+→ no Video step
+→ application still submits normally
+```
+
+---
+
+# 15. DO NOT REGRESS THESE FEATURES
+
+Do not break:
+
+* application resume behavior
+* application question answers
+* 1-click apply
+* Talent Portal JWT authentication
+* legacy JWT authentication
+* duplicate application handling
+* application continuation/signup flow
+* Talent Profile video upload
+* Profile Settings video recording
+* private object ACL/security
+* Admin Job Applications
+* application notifications
+
+Do not redesign unrelated application pages.
+
+---
+
+# DELIVERABLE
+
+After fixing it, give me:
+
+1. Root cause found
+2. Files changed
+3. Exact backend upload path
+4. Exact DB columns used
+5. Whether a DB migration was required
+6. Whether multer/file-size limits were involved
+7. How `useProfileVideo=true` works after the fix
+8. Tests added and their results
+9. Confirmation that a newly uploaded application video can be viewed from Admin Job Applications
+10. Any deployment/restart/migration step required
+
+Do not stop after identifying the issue.
+
+Implement the fix, test it, and verify the complete job-application video-upload flow end-to-end.

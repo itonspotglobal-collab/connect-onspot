@@ -22,6 +22,15 @@ If the client sends `useProfileResume=true` without a `resume` file:
 
 **Why:** Authenticated talent users already have a resume in their profile; forcing them to re-upload is poor UX and wastes storage.
 
+## Application video ownership and rollback
+- `useProfileVideo=true` must resolve media from the identity signed into the JWT: candidate tokens bind to `candidateId`, while legacy Talent JWTs bind to `users.id`. Never select profile media using the application form's contact email.
+- A required-video job is valid only after a new upload or owned profile video resolves to a real private object path. The boolean reuse flag alone is never sufficient.
+- Newly uploaded application attachments are request-owned until the submission persists and must be deleted on later validation or database failure. Reused profile media is never deleted.
+
+**Why:** Contact details are editable application data, not proof of profile ownership; treating them as ownership can attach another Talent's private video. Failed submissions must not leave private-object orphans.
+
+**How to apply:** Keep application videos under the private application-video namespace, persist their URL and original name on the submission, and expose playback only through an authenticated application-review proxy.
+
 ## Frontend gate screen
 Unauthenticated users (no `talent_profile_token`, no legacy JWT, not a non-talent role) see a gate card with:
 - "Create Talent Account & Apply" → `/talent/signup?returnTo=…`

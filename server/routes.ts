@@ -189,6 +189,29 @@ export function validateEngagementType(
   };
 }
 
+/** Maps multipart attachment limit errors to stable apply-form API responses. */
+export function applicationUploadErrorResponse(err: { code?: string; field?: string } | undefined) {
+  if (err?.code !== "LIMIT_FILE_SIZE") return null;
+  if (err.field === "video") {
+    return {
+      status: 413,
+      body: { error: "video_too_large", message: "Video must be 200 MB or smaller." },
+    };
+  }
+  if (err.field === "resume") {
+    return {
+      status: 413,
+      body: { error: "cv_too_large", message: "CV file too large — maximum size is 10 MB." },
+    };
+  }
+  return null;
+}
+
+/** MIME policy for newly-uploaded job-application video introductions. */
+export function isAcceptedApplicationVideoMime(mimeType: string): boolean {
+  return ["video/mp4", "video/quicktime", "video/webm"].includes(mimeType);
+}
+
 const JOB_COMPENSATION_DISPLAY_TYPES = ["range", "starting_from", "negotiable"] as const;
 const JOB_SKILL_EXPERIENCE_VALUES = ["any", "1", "2", "3", "5"] as const;
 
@@ -1358,6 +1381,25 @@ export async function registerRoutes(
       fileSize: 200 * 1024 * 1024, // 200 MB — accommodates video introduction uploads
     },
   });
+  // Keep the larger multipart allowance local to job applications and translate
+  // Multer's otherwise unhandled LIMIT_FILE_SIZE error into an API error the
+  // application wizard can display.
+  const applicationUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 200 * 1024 * 1024 },
+  });
+  const parseApplicationAttachments = (req: Request, res: Response, next: NextFunction) => {
+    applicationUpload.fields([
+      { name: "resume", maxCount: 1 },
+      { name: "video", maxCount: 1 },
+    ])(req, res, (err: any) => {
+      const uploadError = applicationUploadErrorResponse(err);
+      if (uploadError) {
+        return res.status(uploadError.status).json(uploadError.body);
+      }
+      return next(err);
+    });
+  };
 
   // Dedicated Multer instance for profile photo uploads — enforces 5 MB at middleware level
   // so oversized payloads are rejected before any handler logic runs.
@@ -17871,8 +17913,19 @@ export async function registerRoutes(
   // unauthenticated applicants (continuation token → signup/login flow).
   // CORE RULE: the application is ALWAYS saved first. Email uniqueness is only
   // enforced at account-creation time, not at application time.
-  app.post("/api/jobs/:jobId/apply", applyLimiter, upload.fields([{ name: "resume", maxCount: 1 }, { name: "video", maxCount: 1 }]), async (req: Request, res: Response) => {
+  app.post("/api/jobs/:jobId/apply", applyLimiter, parseApplicationAttachments, async (req: Request, res: Response) => {
+    const newlyUploadedObjectFiles: Array<{ delete: (options?: any) => Promise<any> }> = [];
+    let submissionPersisted = false;
+    const cleanupNewUploads = async () => {
+      await Promise.allSettled(newlyUploadedObjectFiles.map((file) => file.delete({ ignoreNotFound: true })));
+    };
     try {
+      // Only these objects are owned by this request. Profile media is never
+      // placed here, so rollback cannot delete a reused profile video/resume.
+      const failAfterUpload = async (status: number, body: Record<string, any>) => {
+        await cleanupNewUploads();
+        return res.status(status).json(body);
+      };
       const { jobId } = req.params;
       const job = await storage.getJob(jobId);
       if (!job) return res.status(404).json({ error: "Job not found" });
@@ -17888,6 +17941,7 @@ export async function registerRoutes(
       // ── Early auth check (needed before CV validation to support useProfileResume) ──
       const useProfileResume = req.body.useProfileResume === "true";
       let earlyAuthedUser: { id: string; email: string; role: string } | null = null;
+      let authenticatedCandidateId: string | null = null;
       try {
         const authHeader = req.headers.authorization;
         if (authHeader?.startsWith("Bearer ")) {
@@ -17899,11 +17953,27 @@ export async function registerRoutes(
             if (decoded?.userId) {
               // Legacy JWT — look up by user ID
               const ur = await query(`SELECT id, email, role FROM users WHERE id = $1`, [decoded.userId]);
-              if (ur.rows.length > 0) earlyAuthedUser = ur.rows[0];
+              if (ur.rows.length > 0 && ur.rows[0].role === decoded.role) earlyAuthedUser = ur.rows[0];
             } else if (decoded?.type === "candidate" && decoded?.candidateId && decoded?.email) {
-              // Talent Portal JWT — look up user by the candidate's email
-              const ur = await query(`SELECT id, email, role FROM users WHERE LOWER(email) = $1 LIMIT 1`, [decoded.email.toLowerCase()]);
-              if (ur.rows.length > 0) earlyAuthedUser = ur.rows[0];
+              // Candidate portal identity is the signed candidate id. Never
+              // select a profile from the application form's contact email.
+              const ur = await query(
+                `SELECT c.id AS candidate_id, u.id, u.email, u.role
+                   FROM candidates c
+                   JOIN users u ON u.id = c.user_id
+                  WHERE c.id = $1
+                 UNION ALL
+                 SELECT c.id AS candidate_id, u.id, u.email, u.role
+                   FROM candidates c
+                   JOIN users u ON lower(u.email) = lower($2)
+                  WHERE c.id = $1 AND c.user_id IS NULL
+                 LIMIT 1`,
+                [decoded.candidateId, decoded.email],
+              );
+              if (ur.rows.length > 0) {
+                authenticatedCandidateId = ur.rows[0].candidate_id;
+                if (ur.rows[0].role === "talent") earlyAuthedUser = ur.rows[0];
+              }
             }
           }
         }
@@ -17931,15 +18001,23 @@ export async function registerRoutes(
       const requiresVideoIntro = !!(job as any).requiresVideoIntro;
       const useProfileVideo = req.body.useProfileVideo === "true";
       if (requiresVideoIntro && !videoFile && !useProfileVideo) {
-        return res.status(400).json({ error: "A video introduction is required for this position. Please upload an MP4, MOV, or WebM file." });
+        return res.status(400).json({
+          error: "video_required",
+          message: "A video introduction is required for this position. Please upload an MP4, MOV, or WebM file.",
+        });
       }
       if (videoFile) {
-        const allowedVideoMimes = ["video/mp4", "video/quicktime", "video/webm"];
-        if (!allowedVideoMimes.includes(videoFile.mimetype)) {
-          return res.status(400).json({ error: "Invalid video format. Only MP4, MOV, and WebM files are allowed." });
+        if (!isAcceptedApplicationVideoMime(videoFile.mimetype)) {
+          return res.status(400).json({
+            error: "invalid_video_type",
+            message: "Please upload an MP4, MOV, or WebM video.",
+          });
         }
         if (videoFile.size > 200 * 1024 * 1024) {
-          return res.status(400).json({ error: "Video file too large — maximum size is 200 MB." });
+          return res.status(400).json({
+            error: "video_too_large",
+            message: "Video must be 200 MB or smaller.",
+          });
         }
       }
 
@@ -17957,6 +18035,7 @@ export async function registerRoutes(
           const objectName = parts.slice(1).join("/");
           const bucket = objectStorageClient.bucket(bucketName);
           const objectFile = bucket.file(objectName);
+          newlyUploadedObjectFiles.push(objectFile);
           await objectFile.save(cvFile.buffer, {
             metadata: { contentType: cvFile.mimetype, metadata: { originalName: cvFile.originalname } },
           });
@@ -17971,7 +18050,7 @@ export async function registerRoutes(
           cvResumeFileName = cvFile.originalname;
         } catch (uploadErr: any) {
           console.error("CV upload to object storage failed:", uploadErr.message);
-          return res.status(500).json({
+          return failAfterUpload(500, {
             error: "cv_upload_failed",
             message: "CV upload failed — please try a different file or check your connection.",
           });
@@ -17992,6 +18071,7 @@ export async function registerRoutes(
           const objectName = parts.slice(1).join("/");
           const bucket = objectStorageClient.bucket(bucketName);
           const objectVideoFile = bucket.file(objectName);
+          newlyUploadedObjectFiles.push(objectVideoFile);
           await objectVideoFile.save(videoFile.buffer, {
             metadata: { contentType: videoFile.mimetype, metadata: { originalName: videoFile.originalname } },
           });
@@ -18003,7 +18083,7 @@ export async function registerRoutes(
           videoIntroFileName = videoFile.originalname;
         } catch (uploadErr: any) {
           console.error("Video upload to object storage failed:", uploadErr.message);
-          return res.status(500).json({
+          return failAfterUpload(500, {
             error: "video_upload_failed",
             message: "Video upload failed — please try a different file or check your connection.",
           });
@@ -18011,10 +18091,10 @@ export async function registerRoutes(
       }
 
       const { firstName, lastName, email, phone, coverLetter } = req.body;
-      if (!firstName?.trim()) return res.status(400).json({ error: "First name is required" });
-      if (!lastName?.trim()) return res.status(400).json({ error: "Last name is required" });
-      if (!email?.trim()) return res.status(400).json({ error: "Email is required" });
-      if (!phone?.trim()) return res.status(400).json({ error: "Phone is required" });
+      if (!firstName?.trim()) return failAfterUpload(400, { error: "First name is required" });
+      if (!lastName?.trim()) return failAfterUpload(400, { error: "Last name is required" });
+      if (!email?.trim()) return failAfterUpload(400, { error: "Email is required" });
+      if (!phone?.trim()) return failAfterUpload(400, { error: "Phone is required" });
 
       const parseOptionalApplicationAmount = (value: unknown, field: string, minimum: number, maximum: number) => {
         if (value === undefined || value === null || String(value).trim() === "") return null;
@@ -18030,11 +18110,11 @@ export async function registerRoutes(
         proposedRate = parseOptionalApplicationAmount(req.body.proposedRate, "proposedRate", 1, 1000);
         proposedBudget = parseOptionalApplicationAmount(req.body.proposedBudget, "proposedBudget", 10, 100000);
       } catch (amountError: any) {
-        return res.status(amountError.status ?? 400).json({ error: amountError.message });
+        return failAfterUpload(amountError.status ?? 400, { error: amountError.message });
       }
       const estimatedDuration = req.body.estimatedDuration?.trim() || null;
       if (estimatedDuration && estimatedDuration.length > 200) {
-        return res.status(400).json({ error: "estimatedDuration must be 200 characters or fewer" });
+        return failAfterUpload(400, { error: "estimatedDuration must be 200 characters or fewer" });
       }
 
       const normalizedEmail = email.trim().toLowerCase();
@@ -18045,7 +18125,7 @@ export async function registerRoutes(
       // ── Profile-resume reuse: resolve existing resume URL from candidate's profile ──
       if (useProfileResume && !cvResumeUrl) {
         if (!authedUser || authedUser.role !== "talent") {
-          return res.status(400).json({ error: "CV / Resume is required. Please upload a resume file." });
+          return failAfterUpload(400, { error: "CV / Resume is required. Please upload a resume file." });
         }
         // Try candidates table first (resume_url column)
         const candRow = await query(
@@ -18067,24 +18147,43 @@ export async function registerRoutes(
           }
         }
         if (!cvResumeUrl) {
-          return res.status(400).json({ error: "No resume found on your Talent profile. Please upload a resume file." });
+          return failAfterUpload(400, { error: "No resume found on your Talent profile. Please upload a resume file." });
         }
       }
 
-      // ── Profile-video reuse: resolve existing video intro URL ─────────────────
-      if (useProfileVideo && !videoIntroUrl && authedUser) {
-        // Prefer candidates.video_intro_url (the new source of truth)
-        const candVidRow = await query(
-          `SELECT video_intro_url, video_intro_file_name FROM candidates WHERE lower(email) = lower($1) LIMIT 1`,
-          [normalizedEmail],
-        );
+      // ── Profile-video reuse: resolve only the authenticated Talent's media ───
+      if (useProfileVideo && !videoIntroUrl) {
+        if (!authedUser || authedUser.role !== "talent") {
+          return failAfterUpload(400, {
+            error: "profile_video_unavailable",
+            message: "Sign in to your Talent account to use a profile video.",
+          });
+        }
+        const candVidRow = authenticatedCandidateId
+          ? await query(
+              `SELECT id, video_intro_url, video_intro_file_name
+                 FROM candidates WHERE id = $1 LIMIT 1`,
+              [authenticatedCandidateId],
+            )
+          : await query(
+              `SELECT id, video_intro_url, video_intro_file_name
+                 FROM candidates
+                WHERE user_id = $1
+                   OR (user_id IS NULL AND lower(email) = lower($2))
+                ORDER BY CASE WHEN user_id = $1 THEN 0 ELSE 1 END
+                LIMIT 1`,
+              [authedUser.id, authedUser.email],
+            );
         if (candVidRow.rows[0]?.video_intro_url) {
           videoIntroUrl = candVidRow.rows[0].video_intro_url;
           videoIntroFileName = candVidRow.rows[0].video_intro_file_name || null;
         } else {
-          // Fallback: legacy documents table
+          // Documents are keyed to users.id, which is itself resolved from the
+          // verified JWT rather than the submitted application contact email.
           const vidRow = await query(
-            `SELECT file_url, file_name FROM documents WHERE user_id = $1 AND type = 'video_intro' ORDER BY created_at DESC LIMIT 1`,
+            `SELECT file_url, file_name FROM documents
+              WHERE user_id = $1 AND type = 'video_intro'
+              ORDER BY created_at DESC LIMIT 1`,
             [authedUser.id],
           );
           if (vidRow.rows.length > 0) {
@@ -18092,13 +18191,25 @@ export async function registerRoutes(
             videoIntroFileName = vidRow.rows[0].file_name || null;
           }
         }
+        if (!videoIntroUrl) {
+          return failAfterUpload(400, {
+            error: "profile_video_unavailable",
+            message: "No video introduction was found on your Talent profile. Please upload a video.",
+          });
+        }
+      }
+      if (requiresVideoIntro && !videoIntroUrl) {
+        return failAfterUpload(400, {
+          error: "video_required",
+          message: "A video introduction is required for this position. Please upload an MP4, MOV, or WebM file.",
+        });
       }
 
       // ── Authenticated user fast-path ──────────────────────────────────────────
       if (authedUser) {
         // Reject non-talent roles (client, admin, etc.) — identity guard, not email check
         if (authedUser.role !== "talent") {
-          return res.status(403).json({
+          return failAfterUpload(403, {
             error: "role_mismatch",
             message: "You are signed in with a non-Talent account. Sign out or use a Talent account to apply.",
           });
@@ -18136,17 +18247,17 @@ export async function registerRoutes(
             for (const q of jobQuestionsForAuth) {
               const ans = aMap.get(q.id) ?? "";
               if (q.required && !ans) {
-                return res.status(400).json({ error: "missing_required_answers", message: `An answer is required for: "${q.label}"` });
+                return failAfterUpload(400, { error: "missing_required_answers", message: `An answer is required for: "${q.label}"` });
               }
               if (ans) {
                 if (q.type === "yes_no" && !["Yes", "No"].includes(ans)) {
-                  return res.status(400).json({ error: "invalid_answer", message: `Answer must be Yes or No for: "${q.label}"` });
+                  return failAfterUpload(400, { error: "invalid_answer", message: `Answer must be Yes or No for: "${q.label}"` });
                 }
                 if (q.type === "single_select" && Array.isArray(q.options) && !q.options.includes(ans)) {
-                  return res.status(400).json({ error: "invalid_answer", message: `Invalid option selected for: "${q.label}"` });
+                  return failAfterUpload(400, { error: "invalid_answer", message: `Invalid option selected for: "${q.label}"` });
                 }
                 if (q.type === "number" && isNaN(Number(ans))) {
-                  return res.status(400).json({ error: "invalid_answer", message: `Answer must be a number for: "${q.label}"` });
+                  return failAfterUpload(400, { error: "invalid_answer", message: `Answer must be a number for: "${q.label}"` });
                 }
               }
               norm.push({ questionId: q.id, question: q.label, answer: ans });
@@ -18184,6 +18295,7 @@ export async function registerRoutes(
             estimatedDuration,
           ],
         );
+        submissionPersisted = true;
 
         // Non-blocking: seed the CV onto the linked candidate profile if they don't have one yet
         if (cvResumeUrl) {
@@ -18276,17 +18388,17 @@ export async function registerRoutes(
           for (const q of jobQuestionsUnauth) {
             const ans = aMap2.get(q.id) ?? "";
             if (q.required && !ans) {
-              return res.status(400).json({ error: "missing_required_answers", message: `An answer is required for: "${q.label}"` });
+              return failAfterUpload(400, { error: "missing_required_answers", message: `An answer is required for: "${q.label}"` });
             }
             if (ans) {
               if (q.type === "yes_no" && !["Yes", "No"].includes(ans)) {
-                return res.status(400).json({ error: "invalid_answer", message: `Answer must be Yes or No for: "${q.label}"` });
+                return failAfterUpload(400, { error: "invalid_answer", message: `Answer must be Yes or No for: "${q.label}"` });
               }
               if (q.type === "single_select" && Array.isArray(q.options) && !q.options.includes(ans)) {
-                return res.status(400).json({ error: "invalid_answer", message: `Invalid option selected for: "${q.label}"` });
+                return failAfterUpload(400, { error: "invalid_answer", message: `Invalid option selected for: "${q.label}"` });
               }
               if (q.type === "number" && isNaN(Number(ans))) {
-                return res.status(400).json({ error: "invalid_answer", message: `Answer must be a number for: "${q.label}"` });
+                return failAfterUpload(400, { error: "invalid_answer", message: `Answer must be a number for: "${q.label}"` });
               }
             }
             norm2.push({ questionId: q.id, question: q.label, answer: ans });
@@ -18326,6 +18438,7 @@ export async function registerRoutes(
         ],
       );
       const submissionId = insertResult.rows[0].id;
+      submissionPersisted = true;
 
       // Non-blocking: fire application-received email — must not affect response
       fireAutoApplicationEmail(submissionId);
@@ -18371,6 +18484,7 @@ export async function registerRoutes(
 
       return res.status(201).json(responseBody);
     } catch (err: any) {
+      if (!submissionPersisted) await cleanupNewUploads();
       console.error("POST /api/jobs/:jobId/apply error:", err);
       return res.status(500).json({ error: err.message });
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -208,6 +208,7 @@ export default function JobApplyPage() {
   const [videoState, setVideoState] = useState<"idle" | "validating" | "ready">("idle");
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isVideoDragOver, setIsVideoDragOver] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // ── Prior application check ───────────────────────────────────────────────
   const [priorApplication, setPriorApplication] = useState<{ appliedAt: string } | null>(null);
@@ -422,7 +423,11 @@ export default function JobApplyPage() {
     setVideoError(null);
     setTimeout(() => {
       const allowedTypes = ["video/mp4", "video/quicktime", "video/webm"];
-      if (!allowedTypes.includes(file.type)) {
+      const allowedExtensions = [".mp4", ".mov", ".webm"];
+      const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+      // Some browsers do not populate File.type for an otherwise valid video,
+      // so keep the validation aligned with the MIME types and extensions in accept.
+      if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
         setVideoState("idle");
         setVideoError("Please upload an MP4, MOV, or WebM video file");
         return;
@@ -436,6 +441,22 @@ export default function JobApplyPage() {
       setVideoState("ready");
       setUseExistingVideo(false);
     }, 300);
+  };
+
+  const resetVideoInput = () => {
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
+
+  const returnToVideoWithServerError = (message: string) => {
+    // Remove the rejected selection so the uploader is immediately usable again.
+    // Resetting the native input also permits selecting that same file after a
+    // failed submission or after it has been removed.
+    setVideoFile(null);
+    setVideoState("idle");
+    setUseExistingVideo(false);
+    setVideoError(message);
+    resetVideoInput();
+    setWizardStep("resume");
   };
 
   const setField = (k: keyof typeof form, v: string) => {
@@ -627,6 +648,30 @@ export default function JobApplyPage() {
         if (err.error === "cv_upload_failed") {
           setCvError("CV upload failed — please try a different file or check your connection.");
           setWizardStep("resume");
+          return;
+        }
+        const errorCode = typeof err.error === "string" ? err.error.toLowerCase() : "";
+        const serverMessage = typeof err.message === "string" ? err.message : "";
+        const isVideoError =
+          [
+            "video_upload_failed",
+            "invalid_video_type",
+            "video_too_large",
+            "missing_profile_video",
+            "invalid_profile_video",
+            "profile_video_not_found",
+            "profile_video_invalid",
+            "missing_video",
+            "missing_video_intro",
+            "video_required",
+          ].includes(errorCode) ||
+          (errorCode.includes("profile") && errorCode.includes("video")) ||
+          (res.status === 400 && /\bvideo\b/i.test(serverMessage || errorCode) &&
+            /\b(required|missing|invalid|upload|large|size)\b/i.test(serverMessage || errorCode));
+        if (isVideoError) {
+          returnToVideoWithServerError(
+            serverMessage || err.error || "Your video could not be accepted. Please try again.",
+          );
           return;
         }
         throw new Error(err.message || err.error || "Submission failed");
@@ -1031,7 +1076,13 @@ export default function JobApplyPage() {
             </div>
             <button
               type="button"
-              onClick={() => { setVideoFile(null); setVideoState("idle"); setVideoError(null); if (existingVideoDoc) setUseExistingVideo(true); }}
+              onClick={() => {
+                setVideoFile(null);
+                setVideoState("idle");
+                setVideoError(null);
+                resetVideoInput();
+                if (existingVideoDoc) setUseExistingVideo(true);
+              }}
               className="shrink-0 text-xs font-medium text-slate-400 hover:text-red-500 flex items-center gap-1"
             >
               <X className="h-3.5 w-3.5" /> Remove
@@ -1062,9 +1113,14 @@ export default function JobApplyPage() {
             )}
             <input
               type="file"
-              accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
+              ref={videoInputRef}
+              accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
               className="hidden"
-              onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; e.target.value = ""; processVideoFile(file); }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) processVideoFile(file);
+              }}
             />
           </label>
         )}
