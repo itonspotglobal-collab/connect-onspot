@@ -1,0 +1,405 @@
+Implement the Organization Team Dashboard inside the existing OnSpot application.
+
+Repository:
+itonspotglobal-collab/connect-onspot
+
+IMPORTANT CONSTRAINTS:
+- DO NOT perform a broad audit of the application.
+- DO NOT refactor unrelated code.
+- DO NOT redesign or replace existing working features.
+- DO NOT change authentication, routing, layouts, messaging logic, talent search, interviews, projects, contracts, payments, billing, ROI Analytics, Client Profile, Settings, or any unrelated module unless a tiny integration change is strictly necessary for this Team page.
+- Preserve all existing functionality.
+- Make the smallest safe set of changes required.
+- Before editing a file, inspect only the directly relevant files needed to understand the current client Team route/layout.
+- Do not delete existing components or APIs.
+- Do not introduce database migrations or realtime infrastructure yet.
+- This first version may use well-structured mock/static presentation data. We will connect it to realtime/backend data later.
+
+GOAL
+
+Replace the current placeholder content shown on the client-side “Team” page:
+
+“Client Management Module - Coming Soon”
+
+with a polished Organization Team Dashboard based on the provided HTML reference design.
+
+The page is accessed from:
+
+Client sidebar → Management → Team
+
+Keep the existing OnSpot client layout:
+- existing top navigation
+- existing left sidebar
+- existing organization selector/header
+- existing notifications
+- existing Vanessa/chat launcher
+- existing responsive behavior
+
+DO NOT recreate the whole app shell from the HTML reference. The HTML is a VISUAL AND CONTENT REFERENCE for the Team page body only. Integrate the dashboard naturally into the existing ClientLayout and existing design system.
+
+REFERENCE DESIGN
+
+Use the attached file:
+onspot-team-dashboard.html
+
+Match its information architecture and general visual direction.
+
+The reference includes:
+
+1. PAGE HEADER
+
+Title:
+“My Team”
+
+Subtitle:
+“Overview of your remote employees and their activity”
+
+Include compact status pills such as:
+- “4 active now”
+- “6 team members”
+- “1 contract ending soon”
+
+Use the existing OnSpot typography/colors where available.
+
+The page should feel native to the current application rather than like a separate standalone website.
+
+2. “THIS WEEK AT A GLANCE”
+
+Create four responsive summary cards:
+
+- Team members — 6
+- Hours logged — 214h
+- Spend this week — $5,340
+- Needs attention — 2
+
+Requirements:
+- four columns on desktop where space allows
+- responsive stacking/grid on smaller widths
+- clear hierarchy between value and label
+- “Needs attention” should have a subtle warning treatment
+
+3. “TEAM MEMBERS”
+
+Create a reusable TeamMemberCard component.
+
+For the initial UI, populate at least these three sample members:
+
+Maria Cruz
+Senior Graphic Designer · Branding Team
+Status: online
+Project: Q3 Rebrand
+Timezone: GMT+8
+Hours: 36 / 40h
+Rating: 4.9 / 5
+Activity: Active now
+
+Rafael Santos
+Backend Developer · Platform Team
+Status: away
+Project: API Migration
+Timezone: GMT+8
+Hours: 18 / 40h
+Rating: 4.7 / 5
+Activity: Idle · 24 min
+Warning badge: Contract ends in 12 days
+
+Anna Torres
+Customer Support Specialist
+Status: offline
+Project: Tier-1 Support
+Timezone: GMT+8
+Hours: 40 / 40h
+Rating: 5.0 / 5
+Activity: Offline · 3h ago
+
+Each member card should include:
+
+- avatar/initials
+- online / away / offline indicator
+- employee name
+- role
+- team if available
+- timezone/local-time metadata
+- project badge
+- contract warning badge when applicable
+- latest activity state
+- rating
+- weekly logged hours
+- progress bar toward target hours
+- Monday–Sunday mini activity strip/chart
+- “View timesheet” button
+- “Message” button
+
+The weekly strip does NOT need a charting library. Keep it lightweight with CSS/React elements similar to the reference HTML.
+
+Use semantic, reusable data-driven rendering rather than copy/pasting an entire card three times.
+
+For example, keep sample data in an array and map over it.
+
+4. MEMBER ACTIONS
+
+“View timesheet”
+- For now, make the UI ready for navigation.
+- If there is already an appropriate timesheet destination in the existing project, use it.
+- Otherwise do not invent or build a new major timesheet system.
+- It may remain disabled, non-destructive, or use a safe placeholder interaction such as a toast indicating the feature will be connected later.
+
+“Message”
+- IMPORTANT: preserve the existing messaging architecture.
+- Do NOT create a competing messaging implementation.
+- If an existing safe client-to-team-member messaging route/function can be reused without changing business rules, wire into it.
+- Otherwise leave the button UI-ready and clearly mark the integration point in code.
+- Do not weaken any existing messaging authorization, invitation, masking, contact-info, or privacy rules.
+
+5. “RETURN ON INVESTMENT”
+
+Below the team member section, add the ROI presentation from the reference.
+
+Hero card:
+
+Label:
+“Total saved with onSpot talent”
+
+Value:
+$38,420
+
+Subtext:
+“Since your first hire, Feb 2026”
+
+Secondary values:
+- ≈ 2.4 local hires — Equivalent headcount value
+- $2,860 / mo — Average monthly savings
+
+Comparison section:
+
+Your spend:
+$5,340
+
+Local hire:
+$14,100
+
+Display these as horizontal comparison bars.
+
+Then show per-employee ROI cards:
+
+Maria Cruz
+$28/hr vs. $65/hr local market rate
+$14,820 saved to date
+
+Rafael Santos
+$34/hr vs. $78/hr local market rate
+$11,960 saved to date
+
+Anna Torres
+$16/hr vs. $34/hr local market rate
+$11,640 saved to date
+
+Add the explanatory note:
+
+“Savings are estimated by comparing each hire's onSpot rate to the average local market rate for the same role and seniority, based on aggregated industry benchmarks.”
+
+For now these values are PRESENTATION DATA ONLY.
+
+Do not create new financial calculations, billing logic, database tables, or backend financial assumptions in this task.
+
+6. COMPONENT STRUCTURE
+
+Keep this implementation maintainable.
+
+Prefer a structure similar to:
+
+Team page
+  ├── TeamHeader
+  ├── TeamSummary
+  ├── TeamMemberList
+  │    └── TeamMemberCard
+  └── TeamROI
+
+You do NOT have to create a separate file for every tiny component if that would be excessive. Follow the project’s existing component conventions.
+
+Use TypeScript types/interfaces for the team member data.
+
+Suggested conceptual model:
+
+type TeamMember = {
+  id: string;
+  name: string;
+  initials: string;
+  role: string;
+  team?: string;
+  status: "online" | "away" | "offline";
+  activityLabel: string;
+  timezone: string;
+  localTime?: string;
+  project?: string;
+  contractWarning?: string;
+  rating?: number;
+  hoursLogged: number;
+  weeklyTargetHours: number;
+  weeklyActivity: number[];
+};
+
+Keep sample data isolated enough that it can later be replaced with API/query data without rewriting the UI.
+
+7. FUTURE REALTIME READINESS
+
+Do NOT implement realtime now.
+
+However, structure the page so these values can later come from queries/API data:
+
+- active team member count
+- total team members
+- hours logged
+- weekly spend
+- needs-attention count
+- online status
+- latest activity
+- hours progress
+- daily activity
+- projects
+- contract expiry
+- rating
+- ROI metrics
+
+Avoid scattering hardcoded values throughout JSX.
+
+Put mock dashboard data together in one clear place so we can replace it later with backend results.
+
+8. STYLING
+
+Use the app’s existing styling system, Tailwind classes, design components, cards, buttons, badges, icons, and spacing conventions wherever possible.
+
+Do not copy the standalone HTML’s global:
+body
+header
+.app
+or floating chat styles into the project.
+
+The reference HTML uses:
+- indigo / violet / blue OnSpot accents
+- soft gray page background
+- rounded cards
+- subtle borders
+- green online indicators
+- amber attention indicators
+- neutral offline indicators
+- compact progress bars
+- responsive card layouts
+
+Reproduce that visual feel WITHIN the current application theme.
+
+Do not override global CSS.
+
+Do not add Google Fonts if the existing application already manages typography.
+
+Use the icon library already installed in the project instead of raw SVG copies where practical.
+
+9. RESPONSIVENESS
+
+The dashboard must work cleanly within the existing client content area.
+
+Desktop:
+- summary metrics can display in 4 columns
+- team cards use available horizontal space efficiently
+- metadata and member status should remain readable
+
+Tablet/mobile:
+- metric cards wrap
+- member headers may stack where needed
+- action buttons remain accessible
+- no horizontal page overflow
+- ROI cards remain readable
+- weekly activity strip remains inside card bounds
+
+10. ACCESSIBILITY
+
+Maintain sensible:
+- button elements instead of clickable divs
+- labels/text contrast
+- keyboard interaction
+- status indicators that are not communicated by color alone
+- responsive typography
+
+11. ROUTING / INTEGRATION
+
+Locate the existing route/page responsible for:
+
+/clients
+
+or the current Team sidebar destination shown in ClientLayout.
+
+The screenshot currently shows the Team sidebar item selected while the main content says:
+
+“Client Management Module - Coming Soon”
+
+Replace ONLY that Team placeholder with this dashboard.
+
+If the same /clients route serves multiple purposes, determine the smallest routing/component adjustment necessary so the Team sidebar destination displays the new Team dashboard without affecting other client routes.
+
+Do not reorganize the application's router.
+
+12. DO NOT DO THE FOLLOWING
+
+Do not:
+- run a full repository audit
+- restructure ClientLayout
+- redesign the sidebar
+- change the top navigation
+- change the organization selector
+- modify authentication
+- modify role permissions
+- change unrelated API endpoints
+- touch admin pages unnecessarily
+- create a new messaging system
+- change existing privacy/masking rules
+- create realtime WebSocket/SSE infrastructure
+- create billing calculations
+- create database migrations
+- alter existing financial records
+- add a large dependency for tiny visualizations
+- remove existing functionality
+- rewrite unrelated files
+- create speculative backend APIs
+
+13. IMPLEMENTATION APPROACH
+
+Proceed in this order:
+
+1. Inspect the existing Team/client route component and ClientLayout only as much as required.
+2. Identify the exact placeholder component currently rendering “Client Management Module - Coming Soon”.
+3. Implement the Team dashboard page there or create a focused TeamDashboard page/component and route to it.
+4. Reuse existing UI components/design system.
+5. Create clean mock Team dashboard data.
+6. Build summary cards.
+7. Build reusable member cards.
+8. Build ROI section.
+9. Make the layout responsive.
+10. Verify that the Team sidebar still navigates correctly.
+11. Verify nearby client pages still render unchanged.
+12. Run the existing project typecheck/build/test command that is normally used by this repository, but do not start unrelated cleanup.
+
+14. ACCEPTANCE CRITERIA
+
+The task is complete when:
+
+- Clicking “Team” under Management opens the new Team dashboard.
+- “Client Management Module - Coming Soon” is no longer shown on the Team page.
+- Existing client sidebar/header remains intact.
+- The dashboard visually follows onspot-team-dashboard.html.
+- Weekly summary cards are present.
+- Team member cards are present.
+- Member status, hours, weekly activity, project and contract warning UI are present.
+- ROI section is present.
+- Layout is responsive.
+- Components/data are structured for later API/realtime integration.
+- Existing unrelated features behave exactly as before.
+- No database migration was introduced.
+- No realtime implementation was introduced.
+- No unrelated refactor was performed.
+
+When finished, give me a concise implementation summary containing ONLY:
+- files changed
+- what was implemented
+- any buttons intentionally left as future integration points
+- result of the build/typecheck
+- no broad audit report and no unrelated recommendations
