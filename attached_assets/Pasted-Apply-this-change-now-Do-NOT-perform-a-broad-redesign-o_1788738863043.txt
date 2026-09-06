@@ -1,0 +1,402 @@
+Apply this change now.
+
+Do NOT perform a broad redesign or unrelated refactor.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+The current Role Invitation acceptance behavior on the Talent side redirects the Talent to Messages.
+
+We want to change only that navigation behavior and make the Interview section the required next step in the hiring process.
+
+# CURRENT FLOW
+
+Talent opens:
+
+`/my-applications`
+
+Talent sees:
+
+`Role Invitations`
+
+Talent clicks:
+
+`Accept`
+
+Current behavior:
+
+Role Invitation accepted
+→ existing status/database updates occur
+→ existing acceptance/system message is created
+→ Talent is redirected to Messages
+
+This redirect is no longer desired.
+
+# NEW FLOW
+
+Talent opens:
+
+`/my-applications`
+
+Talent sees:
+
+`Role Invitations`
+
+Talent clicks:
+
+`Accept`
+
+New behavior:
+
+Role Invitation accepted
+→ preserve all existing backend acceptance behavior
+→ preserve existing notification behavior
+→ preserve existing system message/message-thread creation
+→ DO NOT redirect to Messages
+→ remain on `/my-applications`
+→ refresh/reload the relevant application/interview state
+→ Role Invitation updates/disappears according to current accepted-state behavior
+→ associated Interview section becomes visible/actionable
+→ Talent proceeds with the Interview as the next required hiring step
+
+# IMPORTANT
+
+Do NOT remove the Messages system entry.
+
+The existing accepted-role message such as:
+
+`Invitation accepted — [Job]. You can now coordinate next steps, such as scheduling an interview.`
+
+may remain in Messages for history/audit/context.
+
+The only change is:
+
+Do not automatically navigate the Talent to Messages after acceptance.
+
+# REQUIRED DESTINATION
+
+After successful acceptance, the Talent must remain on:
+
+`/my-applications`
+
+Do not navigate to:
+
+* `/messages`
+* Client Profile
+* dashboard
+* job page
+* interview calendar
+* another application route
+
+# INTERVIEW AS NEXT STEP
+
+After Role Invitation acceptance, if there is an associated interview proposal:
+
+the Interview section should immediately become visible/actionable on the same My Applications page.
+
+Expected sequence:
+
+Before acceptance:
+
+Role Invitations
+→ visible
+
+Related Interview
+→ hidden
+
+After acceptance:
+
+Role Invitation
+→ accepted/removed from pending section according to existing behavior
+
+Related Interview
+→ visible
+
+Talent can then:
+
+* accept proposed interview time
+* decline according to existing interview rules
+* suggest another time
+
+Do not create a new interview record.
+
+Use the existing interview record created with the invitation.
+
+# REQUIRED HIRING FLOW
+
+For Client-invited Talent:
+
+Role Invitation acceptance is the gate.
+
+Then:
+
+Role Invitation accepted
+→ Interview becomes available
+→ Talent must complete/confirm interview scheduling
+→ existing hiring pipeline continues
+
+Do not skip directly from invitation acceptance to later hiring stages.
+
+Do not automatically confirm the interview just because the Talent accepted the Role Invitation.
+
+Role acceptance and interview acceptance are separate actions.
+
+# FRONTEND IMPLEMENTATION
+
+Find the exact success handler for the Talent Role Invitation:
+
+`Accept`
+
+There is likely navigation similar to:
+
+```ts
+navigate("/messages")
+```
+
+or an equivalent redirect.
+
+Remove only that post-success navigation.
+
+Replace it with the existing query/cache refresh required to update:
+
+* applications
+* invitations
+* interviews
+
+Conceptually:
+
+```ts
+await acceptInvitation(...);
+
+invalidate/refetch:
+- talent applications
+- talent interviews
+- role invitations
+
+stay on current page
+```
+
+Use the existing React Query/query-client patterns in the repository.
+
+Do not use `window.location.reload()` unless the current architecture genuinely requires it.
+
+Prefer a scoped query invalidation/refetch.
+
+# SCROLL / UX
+
+After successful acceptance, keep the Talent on My Applications.
+
+Optional but preferred if simple and safe:
+
+scroll/focus to the newly available Interview section.
+
+For example:
+
+`Invitation accepted. Please review your interview schedule below.`
+
+This can be a toast.
+
+Do not introduce complex scrolling logic if it risks layout regressions.
+
+A success toast is sufficient for V1.
+
+Suggested toast:
+
+Title:
+`Invitation accepted`
+
+Message:
+`Please review and confirm your interview schedule below.`
+
+# MESSAGES
+
+Preserve the existing Messages thread and system message.
+
+Do not delete:
+
+* Client/Talent conversation
+* existing system messages
+* previous accepted invitation messages
+* messaging permissions
+* unread logic
+
+The Talent can still manually open Messages later.
+
+# CLIENT SIDE
+
+Do not change the Client-side acceptance notification work from the previous implementation.
+
+Client should still receive:
+
+`Talent accepted your invitation`
+
+and the existing popup/modal behavior.
+
+Do not change that flow.
+
+# INTERVIEW NOTIFICATIONS
+
+Do not change the current Talent reschedule / Client notification behavior.
+
+If Talent suggests another time after acceptance:
+
+Client notification should continue working.
+
+# TALENT INTERVIEW VISIBILITY
+
+Preserve the latest rule:
+
+For Client Role Invitations:
+
+Before role acceptance:
+→ related Interview hidden
+
+After role acceptance:
+→ related Interview visible
+
+This task must not undo that behavior.
+
+# DIRECT TALENT APPLICATIONS
+
+Do not apply this rule incorrectly to Talent who independently applied to a job and already have an interview workflow.
+
+This change is specifically for:
+
+Client Role Invitation → Talent Accept
+
+Do not break interviews for:
+
+* direct Talent applications
+* Admin-scheduled interviews
+* existing accepted applications
+* historical applications
+
+# BACKEND
+
+Do not modify the backend acceptance transaction unless absolutely necessary.
+
+Existing acceptance should continue to:
+
+* update invitation/application/submission status
+* preserve pipeline logic
+* create existing messages/system events
+* create notifications
+* preserve job/Talent/Client linkage
+
+This task should primarily be a frontend navigation/query-refresh change.
+
+# DO NOT CHANGE
+
+Do not modify or break:
+
+* Role Invitation API
+* invitation status semantics
+* interview tables
+* interview proposals
+* interview timezone logic
+* Client notifications
+* Talent notifications
+* Messages functionality
+* Client/Talent message threads
+* application statuses
+* pipeline transitions
+* job ownership
+* invitation email
+* Admin workflow
+* Client scheduling
+* interview rescheduling
+* interview confirmation
+
+Do not remove working code unrelated to the redirect.
+
+# TESTS
+
+Add/update focused tests:
+
+1. Talent receives Client Role Invitation.
+2. Talent sees Role Invitation on `/my-applications`.
+3. Associated Interview is hidden before acceptance.
+4. Talent clicks Accept.
+5. Acceptance request succeeds.
+6. Talent remains on `/my-applications`.
+7. Browser does NOT navigate to `/messages`.
+8. Existing acceptance status persists.
+9. Existing system message is still created.
+10. Existing Client notification is still created.
+11. Role Invitation updates according to accepted state.
+12. Associated Interview becomes visible.
+13. Talent can accept proposed interview time.
+14. Talent can suggest another time.
+15. Existing Client reschedule notification still works.
+16. Direct Talent application interview flow remains unchanged.
+17. Messages page still shows the acceptance system message.
+18. Existing messaging works normally.
+19. `npx tsc --noEmit` passes.
+20. `git diff --check` passes.
+
+# MANUAL VERIFICATION
+
+Use a Client test account and Talent test account.
+
+1. Client invites Talent to a role.
+2. Include a proposed interview time.
+3. Log in as Talent.
+4. Open:
+
+`/my-applications`
+
+5. Verify:
+
+   * Role Invitation visible
+   * related Interview hidden
+
+6. Click:
+
+`Accept`
+
+7. Verify:
+
+   * acceptance succeeds
+   * URL remains `/my-applications`
+   * no redirect to Messages
+   * success toast appears if implemented
+   * Interview section appears
+
+8. Confirm the proposed Interview time.
+
+9. Separately open Messages manually.
+
+10. Verify the existing:
+
+`Invitation accepted — [Job]`
+
+system message is still present.
+
+11. Log in as Client.
+
+12. Verify existing Talent acceptance notification still appears.
+
+# COMPLETION REPORT
+
+Report:
+
+1. Exact file changed.
+2. Exact redirect/navigation removed.
+3. Query/cache refresh added after acceptance.
+4. Success UX/toast added, if any.
+5. Confirmation Talent stays on `/my-applications`.
+6. Confirmation Interview becomes visible after acceptance.
+7. Confirmation Messages system message is still created.
+8. Confirmation Client acceptance notification still works.
+9. Confirmation interview reschedule flow still works.
+10. Tests/results.
+11. Manual verification results.
+12. Confirmation no existing messaging feature was removed.
+13. Confirmation no existing interview workflow was altered except the intended visibility/navigation behavior.
+
+Apply this as a narrowly scoped Talent Role Invitation acceptance-flow change.
+
+Do not redirect to Messages after acceptance.
+
+The intended hiring sequence is:
+
+`Role Invitation Accepted → Interview Required → Continue Hiring Process`

@@ -1272,7 +1272,8 @@ interface TalentInvitation {
 
 function InvitationsSection({ refetchApplications }: { refetchApplications: () => void }) {
   const auth = loadTalentAuth();
-  const [, navigate] = useLocation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: invitations = [], refetch: refetchInvitations, isLoading } = useQuery<TalentInvitation[]>({
     queryKey: ["talent-invitations"],
@@ -1303,12 +1304,19 @@ function InvitationsSection({ refetchApplications }: { refetchApplications: () =
       }
       return res.json();
     },
-    onSuccess: (data) => {
-      refetchInvitations();
+    onSuccess: async (_data, variables) => {
+      await Promise.all([
+        refetchInvitations(),
+        queryClient.invalidateQueries({ queryKey: ["talent-applications"] }),
+        queryClient.invalidateQueries({ queryKey: ["talent-interviews"] }),
+      ]);
       refetchApplications(); // accepted invite becomes a regular application
-      // On acceptance, a message thread with the client is opened — take the talent there
-      if (data?.threadId) {
-        navigate(`/messages/${data.threadId}`);
+
+      if (variables.action === "accept") {
+        toast({
+          title: "Invitation accepted",
+          description: "Please review and confirm your interview schedule below.",
+        });
       }
     },
   });

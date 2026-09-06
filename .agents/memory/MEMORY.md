@@ -43,3 +43,4 @@
 - [Email companion service](email-companion-service.md) — non-blocking companion emails for job approval, new applications, interview reschedule/cancel, and unread messages; delivery ledger + cooldown tables in Migration 0013.
 - [Job posting drafts](job-posting-drafts.md) — unfinished Admin/Client postings reuse jobs rows with status=draft; drafts stay private and submit in place.
 - [Client event notification details](client-event-notification-details.md) — event alerts are idempotent, but clicks resolve current authorized state only after mark-read succeeds.
+- [Client invitation next step](client-invitation-next-step.md) — accepting a Client role invitation stays on My Applications so the existing Interview becomes the immediate next action.
