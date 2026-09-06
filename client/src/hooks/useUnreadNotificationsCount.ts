@@ -1,34 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { notificationTypesForRole } from "@/lib/notificationRouting";
 
 interface NotificationRow {
   id: string;
   type: string;
   isRead: boolean;
-}
-
-export const TALENT_NOTIFICATION_TYPES = [
-  "offer_received",
-  "job_invitation",
-  "job_application_status_changed",
-  "new_message",
-] as const;
-
-export const CLIENT_NOTIFICATION_TYPES = [
-  "offer_accepted",
-  "offer_declined",
-  "offer_expired",
-  "job_approved",
-  "job_pending",
-  "job_rejected",
-  "job_application_received",
-  "client_application_status_changed",
-  "new_message",
-] as const;
-
-export function notificationTypesForRole(isTalent: boolean): readonly string[] {
-  return isTalent ? TALENT_NOTIFICATION_TYPES : CLIENT_NOTIFICATION_TYPES;
 }
 
 function getBearerToken(): string | null {

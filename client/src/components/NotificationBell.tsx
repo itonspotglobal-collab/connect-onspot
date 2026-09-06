@@ -12,15 +12,19 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, PackageOpen, CheckCircle, XCircle, Clock, FileText, ClipboardList, Loader2, MessageSquare } from "lucide-react";
+import { Bell, PackageOpen, CheckCircle, XCircle, Clock, FileText, ClipboardList, Loader2, MessageSquare, CalendarClock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { ClientNotificationUpdateDialog } from "@/components/ClientNotificationUpdateDialog";
+import { useToast } from "@/hooks/use-toast";
 import {
-  notificationTypesForRole,
   useUnreadNotificationsCount,
 } from "@/hooks/useUnreadNotificationsCount";
 import {
   applicationsFooterRouteForRole,
+  clientNotificationModalKind,
+  notificationTypesForRole,
+  type ClientNotificationModalKind,
   notificationRouteForRole,
 } from "@/lib/notificationRouting";
 
@@ -137,6 +141,20 @@ const TYPE_CONFIG: Record<
     label: "New Application",
     route: "/client-profile",
   },
+  talent_invitation_accepted: {
+    icon: CheckCircle,
+    color: "#059669",
+    bg: "#D1FAE5",
+    label: "Invitation Accepted",
+    route: "/client-profile",
+  },
+  interview_reschedule_proposed: {
+    icon: CalendarClock,
+    color: "#D97706",
+    bg: "#FEF3C7",
+    label: "New Interview Time",
+    route: "/client/interviews",
+  },
   job_application_status_changed: {
     icon: ClipboardList,
     color: "#7C3AED",
@@ -166,6 +184,7 @@ export function NotificationBell() {
   const [, navigate] = useLocation();
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { toast } = useToast();
   const talentAuth = loadTalentAuth();
 
   // Talent-portal sessions are identified by talentAuth (candidate JWT).
@@ -182,6 +201,10 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notificationModal, setNotificationModal] = useState<{
+    kind: ClientNotificationModalKind;
+    notificationId: string;
+  } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -240,7 +263,7 @@ export function NotificationBell() {
   async function handleClickNotification(n: NotificationRow) {
     setOpen(false);
 
-    // Mark as read (fire-and-forget; don't block navigation).
+    // Mark as read before opening details or navigating.
     if (!n.isRead) {
       const token = getBearerToken();
       const headers: Record<string, string> = {};
@@ -252,16 +275,34 @@ export function NotificationBell() {
         ? `/api/talent/notifications/${n.id}/read`
         : `/api/notifications/${n.id}/read`;
 
-      fetch(markReadUrl, { method: "PATCH", headers })
-        .then(() => {
-          // Invalidate the badge count so it refreshes.
-          qc.invalidateQueries({ queryKey: ["unread-notifications"] });
-          // Optimistically mark read in local state.
-          setNotifications((prev) =>
-            prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x))
-          );
-        })
-        .catch(() => {/* ignore */});
+      try {
+        const response = await fetch(markReadUrl, { method: "PATCH", headers });
+        if (!response.ok) {
+          throw new Error(`Unable to mark notification read (${response.status})`);
+        }
+        await qc.invalidateQueries({ queryKey: ["unread-notifications"] });
+        setNotifications((prev) =>
+          prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x))
+        );
+      } catch {
+        toast({
+          title: "Could not open notification",
+          description: "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const modalKind = clientNotificationModalKind(
+      n.type,
+      user?.role,
+      n.relatedType,
+      n.relatedId,
+    );
+    if (modalKind) {
+      setNotificationModal({ kind: modalKind, notificationId: n.id });
+      return;
     }
 
     const cfg = TYPE_CONFIG[n.type];
@@ -388,6 +429,12 @@ export function NotificationBell() {
           )}
         </div>
       )}
+      <ClientNotificationUpdateDialog
+        open={notificationModal !== null}
+        kind={notificationModal?.kind ?? "invitation_acceptance"}
+        notificationId={notificationModal?.notificationId ?? null}
+        onClose={() => setNotificationModal(null)}
+      />
     </div>
   );
 }

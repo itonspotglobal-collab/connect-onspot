@@ -344,11 +344,13 @@ describe("POST /api/talent/invitations/:id/respond — candidate-JWT route-level
   it("(g) cross-tenant denial: candidate A cannot respond to candidate B's invitation", async () => {
     // Get two distinct linked talent pairs
     const r = await query(
-      `SELECT c.id AS "candidateId", c.user_id AS "userId"
-       FROM candidates c
-       JOIN users u ON u.id = c.user_id
-       WHERE c.user_id IS NOT NULL AND u.role = 'talent'
-       LIMIT 2`,
+      `SELECT DISTINCT ON (c.user_id)
+              c.id AS "candidateId", c.user_id AS "userId"
+         FROM candidates c
+         JOIN users u ON u.id = c.user_id
+        WHERE c.user_id IS NOT NULL AND u.role = 'talent'
+        ORDER BY c.user_id, c.created_at DESC
+        LIMIT 2`,
     );
     if (r.rows.length < 2) return; // skip if fewer than 2 talent in DB
 

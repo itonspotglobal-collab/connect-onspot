@@ -17317,9 +17317,20 @@ export async function registerRoutes(
         }
         const { client_id: clientId, job_id: jobId } = updated.rows[0];
         const jobRow = jobId
-          ? await txClient.query(`SELECT title FROM jobs WHERE id = $1`, [jobId])
+          ? await txClient.query(
+              `SELECT j.title,
+                      COALESCE(
+                        NULLIF(BTRIM(CONCAT(u.first_name, ' ', u.last_name)), ''),
+                        'Talent'
+                      ) AS talent_name
+                 FROM jobs j
+                 LEFT JOIN users u ON u.id = $2
+                WHERE j.id = $1`,
+              [jobId, userId],
+            )
           : { rows: [] as any[] };
         const jobTitle = jobRow.rows[0]?.title ?? null;
+        const talentName = jobRow.rows[0]?.talent_name ?? "Talent";
         if (!clientId || clientId === userId) {
           throw new Error("Invitation has no valid inviting client");
         }
@@ -17373,6 +17384,19 @@ export async function registerRoutes(
           `INSERT INTO messages (thread_id, sender_id, content, message_type, flagged_for_review)
            VALUES ($1, $2, $3, 'system', $4)`,
           [threadId, userId, systemMsg, sanitizedJobTitle?.flaggedForReview ?? false],
+        );
+        await txClient.query(
+          `INSERT INTO notifications
+             (user_id, type, title, message, related_id, related_type, event_key)
+           VALUES ($1, 'talent_invitation_accepted', 'Talent accepted your invitation',
+                   $2, $3, 'job_submission', $4)
+           ON CONFLICT DO NOTHING`,
+          [
+            clientId,
+            `${talentName} accepted your invitation for ${jobTitle ?? "your role"}.`,
+            id,
+            `talent-invitation-accepted:${id}`,
+          ],
         );
         await txClient.query("COMMIT");
       } catch (threadErr: any) {
@@ -17434,6 +17458,10 @@ export async function registerRoutes(
            LEFT JOIN interview_proposals ip ON ip.interview_id = i.id
           WHERE js.talent_id = $1
             AND i.status IN ('proposed', 'rescheduled', 'confirmed', 'cancelled')
+            AND NOT (
+              js.status = 'invited'
+              AND (js.workflow_type = 'client_invitation' OR js.initiated_by = 'client')
+            )
           GROUP BY i.id, js.status, js.id, j.title, j.company
           ORDER BY i.created_at DESC`,
         [userId],
@@ -17624,12 +17652,29 @@ export async function registerRoutes(
             WHERE id = $3`,
           [JSON.stringify(normalized), nextCount, interview.id],
         );
-        await txClient.query(
+        const counterProposal = await txClient.query(
           `INSERT INTO interview_proposals
              (interview_id, proposer_id, proposer_role, action, proposed_times)
-           VALUES ($1, $2, 'talent', 'counter', $3)`,
+            VALUES ($1, $2, 'talent', 'counter', $3)
+            RETURNING id`,
           [interview.id, userId, JSON.stringify(normalized)],
         );
+        if (interview.client_id) {
+          await txClient.query(
+            `INSERT INTO notifications
+               (user_id, type, title, message, related_id, related_type, event_key)
+             VALUES ($1, 'interview_reschedule_proposed',
+                     'Talent proposed a new interview time',
+                     $2, $3, 'interview', $4)
+             ON CONFLICT DO NOTHING`,
+            [
+              interview.client_id,
+              `A talent proposed a new interview time for ${interview.job_title}.`,
+              String(interview.id),
+              `interview-proposal:${counterProposal.rows[0].id}`,
+            ],
+          );
+        }
       } else {
         await txClient.query(
           `UPDATE interviews
@@ -17700,7 +17745,7 @@ export async function registerRoutes(
       }
 
       const exchangeCount = Number(updated.rows[0]?.proposal_exchange_count ?? 0);
-      if (interview.client_id) {
+      if (interview.client_id && action !== "counter") {
         storage.createNotification({
           userId: interview.client_id,
           type: action === "accept" ? "interview_confirmed" : "interview_response",
@@ -19896,6 +19941,136 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("GET /api/client/interviews error:", err);
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/client/notification-details/:notificationId — current, owned
+  // invitation/interview state for the two Client notification modal types.
+  app.get("/api/client/notification-details/:notificationId", authenticateJWT, async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user?.id;
+      const role = (req as any).user?.role;
+      if (!userId) return res.status(401).json({ error: "Unauthorized" });
+      if (role !== "client") return res.status(403).json({ error: "Client access required" });
+
+      const notificationResult = await query(
+        `SELECT id, type, related_id, related_type
+           FROM notifications
+          WHERE id = $1 AND user_id = $2
+            AND type IN ('talent_invitation_accepted', 'interview_reschedule_proposed')`,
+        [req.params.notificationId, userId],
+      );
+      if (!notificationResult.rows.length) {
+        return res.status(404).json({ error: "Notification update not found" });
+      }
+      const notification = notificationResult.rows[0];
+
+      let submissionId: string;
+      let requestedInterviewId: string | null = null;
+      if (
+        notification.type === "talent_invitation_accepted"
+        && notification.related_type === "job_submission"
+      ) {
+        submissionId = notification.related_id;
+      } else if (
+        notification.type === "interview_reschedule_proposed"
+        && notification.related_type === "interview"
+      ) {
+        requestedInterviewId = notification.related_id;
+        const ownedInterview = await query(
+          `SELECT i.submission_id
+             FROM interviews i
+             JOIN job_submissions js ON js.id = i.submission_id
+            WHERE i.id = $1 AND js.client_id = $2`,
+          [requestedInterviewId, userId],
+        );
+        if (!ownedInterview.rows.length) {
+          return res.status(404).json({ error: "Notification update not found" });
+        }
+        submissionId = ownedInterview.rows[0].submission_id;
+      } else {
+        return res.status(404).json({ error: "Notification update not found" });
+      }
+
+      const submissionResult = await query(
+        `SELECT js.id, js.status, js.workflow_type, js.initiated_by,
+                j.title AS job_title,
+                COALESCE(
+                  NULLIF(c.full_name, ''),
+                  NULLIF(BTRIM(CONCAT(u.first_name, ' ', u.last_name)), ''),
+                  'Talent'
+                ) AS talent_name
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN users u ON u.id = js.talent_id
+           LEFT JOIN LATERAL (
+             SELECT full_name
+               FROM candidates
+              WHERE user_id = js.talent_id
+              ORDER BY created_at DESC
+              LIMIT 1
+           ) c ON true
+          WHERE js.id = $1 AND js.client_id = $2`,
+        [submissionId, userId],
+      );
+      if (!submissionResult.rows.length) {
+        return res.status(404).json({ error: "Notification update not found" });
+      }
+      const submission = submissionResult.rows[0];
+
+      const interviewResult = requestedInterviewId
+        ? await query(`SELECT * FROM interviews WHERE id = $1 AND submission_id = $2`, [requestedInterviewId, submissionId])
+        : await query(
+            `SELECT * FROM interviews
+              WHERE submission_id = $1
+              ORDER BY created_at DESC
+              LIMIT 1`,
+            [submissionId],
+          );
+      const interview = interviewResult.rows[0] ?? null;
+      const proposals = interview
+        ? (
+            await query(
+              `SELECT id, proposer_role, action, proposed_times,
+                      selected_time, selected_time_zone, created_at
+                 FROM interview_proposals
+                WHERE interview_id = $1
+                ORDER BY created_at ASC`,
+              [interview.id],
+            )
+          ).rows
+        : [];
+
+      return res.json({
+        notificationType: notification.type,
+        submissionId: submission.id,
+        talentName: submission.talent_name,
+        jobTitle: submission.job_title,
+        invitationStatus: submission.status === "invited" ? "Pending" : "Accepted",
+        interview: interview
+          ? {
+              id: interview.id,
+              status: interview.status,
+              currentProposalOwner: interview.current_proposal_owner,
+              proposedTimes: interview.proposed_times ?? [],
+              confirmedTime: interview.confirmed_time,
+              confirmedTimeZone: interview.confirmed_time_zone ?? "UTC",
+              durationMinutes: interview.duration_minutes ?? null,
+              proposals: proposals.map((proposal: any) => ({
+                id: proposal.id,
+                proposerRole: proposal.proposer_role,
+                action: proposal.action,
+                proposedTimes: proposal.proposed_times ?? [],
+                selectedTime: proposal.selected_time,
+                selectedTimeZone: proposal.selected_time_zone,
+                createdAt: proposal.created_at,
+              })),
+            }
+          : null,
+      });
+    } catch (err: any) {
+      console.error("GET /api/client/notification-details/:notificationId error:", err);
+      return res.status(500).json({ error: "Failed to load notification details" });
     }
   });
 

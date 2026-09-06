@@ -1,0 +1,758 @@
+AUDIT FIRST, THEN APPLY THE CHANGES IN THE SAME TASK.
+
+Do not stop after the audit unless you discover a real blocking architectural issue.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+The existing invitation, interview, messaging, notification, email, application, and scheduling flows are already working in many places.
+
+Do NOT redesign or replace them.
+
+Do NOT break any existing working notifications.
+
+# TEST SCENARIO
+
+Current scenario:
+
+1. Client invites Talent to a role.
+2. Client also proposes an interview time.
+3. Talent sees:
+
+   * Role Invitation
+   * Interview proposal
+4. Talent accepts the Role Invitation.
+5. Talent may accept the proposed interview time or suggest another time.
+
+Current problems:
+
+CLIENT SIDE
+
+1. Client receives NO notification when Talent accepts the Role Invitation.
+2. There is no detailed popup/modal when Client clicks that acceptance notification.
+3. Client receives NO notification when Talent proposes/reschedules the interview.
+4. Client needs one clear popup/modal showing:
+
+   * Talent accepted the Role Invitation
+   * current interview schedule/status
+   * latest proposed/confirmed time
+
+TALENT SIDE
+
+5. The Interview section is currently visible before the Talent has accepted the Role Invitation.
+
+The Interview section should only become visible/actionable AFTER the Talent accepts the Role Invitation.
+
+# PHASE 1 — AUDIT EXISTING FLOW
+
+Before changing code, inspect and report the exact current implementation for:
+
+## Role Invitation
+
+Find:
+
+* Role Invitation UI in Talent Applications
+* Accept action
+* Decline action
+* API endpoint used
+* submission/application status change
+* message/thread side effects
+* notification side effects
+* email side effects if any
+
+Trace:
+
+Talent clicks Accept
+→ API
+→ DB update
+→ application/submission/invitation status
+→ Client notification, if any
+→ message creation
+→ interview behavior
+
+Identify why the Client notification is currently missing.
+
+## Interview Proposal / Reschedule
+
+Find:
+
+* existing interview proposal model
+* Talent interview response endpoint
+* Talent "Suggest another time" action
+* `interview_proposals`
+* interview status transition
+* Client notification creation
+* email side effects
+
+Trace:
+
+Talent suggests another time
+→ API
+→ proposal row
+→ interview status
+→ Client notification
+
+Identify why the Client is not receiving the notification.
+
+## Talent Interview Visibility
+
+Find the code responsible for rendering:
+
+`Interviews`
+
+inside Talent Applications.
+
+Determine:
+
+* which interview records are currently returned
+* whether the UI renders them merely because an interview row exists
+* how Role Invitation acceptance is represented
+* which submission/invitation status means the Talent has accepted the role
+
+Report the safest condition for hiding the Interview section until Role Invitation acceptance.
+
+## Notification Click Handling
+
+Inspect:
+
+* notification dropdown
+* role-aware notification routing
+* existing popup/modal patterns
+* notification relatedId / relatedType
+* existing application/interview details modal if reusable
+
+Do not create a new notification architecture.
+
+# PHASE 2 — IMPLEMENT AFTER AUDIT
+
+After the audit, implement the following.
+
+# A. CLIENT NOTIFICATION — TALENT ACCEPTED ROLE INVITATION
+
+When Talent successfully accepts a Client Role Invitation:
+
+Create a Client notification.
+
+Suggested notification type:
+
+Use an existing canonical invitation notification type if one already exists.
+
+If none exists, add a focused type such as:
+
+`talent_invitation_accepted`
+
+Do not use notification title text as the only event identity.
+
+Recipient:
+
+The Client who owns the job/invitation.
+
+Resolve through the existing relationship:
+
+invitation/submission
+→ job
+→ jobs.client_id
+→ Client user
+
+Do not infer Client by company name.
+
+Suggested title:
+
+`Talent accepted your invitation`
+
+Suggested message:
+
+`{{talent_name}} accepted your invitation for {{job_title}}.`
+
+If there is already an interview proposal associated with that invitation, it is fine for the notification metadata to include the interview ID/submission ID so the popup can load current schedule information.
+
+Use the existing notification event-key/idempotency mechanism.
+
+Conceptual event key:
+
+`talent-invitation-accepted:{submissionId}`
+
+or use the existing canonical event-key pattern.
+
+Exactly one acceptance notification per actual acceptance transition.
+
+Repeated API retries must not duplicate it.
+
+# B. CLIENT NOTIFICATION — TALENT RESCHEDULED / PROPOSED ANOTHER INTERVIEW TIME
+
+When Talent uses:
+
+`Suggest another time`
+
+or otherwise creates a Talent counter-proposal/reschedule:
+
+Create a Client notification.
+
+Use existing interview proposal history.
+
+Suggested notification type:
+
+Reuse an existing interview-rescheduled / proposal notification type if available.
+
+Otherwise add a focused canonical type such as:
+
+`interview_reschedule_proposed`
+
+Suggested title:
+
+`Talent proposed a new interview time`
+
+Suggested message:
+
+`{{talent_name}} proposed a new interview time for {{job_title}}.`
+
+Notification metadata should contain enough trusted identifiers to load:
+
+* interviewId
+* submissionId
+* jobId if already available
+
+Do NOT embed the entire schedule as authoritative notification text if the popup can load the current interview record.
+
+Use event-key/idempotency.
+
+Each genuinely new proposal may generate one notification.
+
+Do not suppress later legitimate counter-proposals merely because an earlier one already notified the Client.
+
+The event key should identify the proposal, for example conceptually:
+
+`interview-proposal:{proposalId}`
+
+# C. CLIENT POPUP / MODAL FOR THESE NOTIFICATIONS
+
+When Client clicks either:
+
+`Talent accepted your invitation`
+
+or
+
+`Talent proposed a new interview time`
+
+do NOT simply route to a generic page.
+
+Open a focused details popup/modal.
+
+Reuse an existing interview/application details dialog if there is one that can safely show this information.
+
+Do not build a second interview workflow inside the notification dropdown.
+
+Suggested modal:
+
+Title:
+
+`Invitation & Interview Update`
+
+Show:
+
+Talent
+`{{talent_name}}`
+
+Job
+`{{job_title}}`
+
+Invitation Status
+`Accepted`
+
+Interview Status
+Examples:
+
+* Awaiting response
+* New time proposed
+* Confirmed
+* Cancelled
+
+Current / Latest Interview Time
+
+If confirmed:
+
+`Sep 7, 2026 · 8:00 AM · Asia/Singapore`
+
+If latest Talent counter-proposal exists:
+
+`Talent proposed: Sep 7, 2026 · 8:00 AM · Asia/Singapore`
+
+If Client's original proposal is still pending:
+
+`Awaiting Talent response`
+
+Show timezone explicitly.
+
+Actions may include only existing safe actions, such as:
+
+* `View Application`
+* `View Interview`
+* `Review Proposed Time`
+
+Do not duplicate Accept/Confirm actions in this popup unless the existing Client interview component can be reused safely inside it.
+
+Preferred V1:
+
+Popup is informational + links to the existing workflow.
+
+# D. NOTIFICATION CLICK BEHAVIOR
+
+For these two Client notification types:
+
+Click
+→ mark notification read
+→ close/retain notification dropdown according to current behavior
+→ open the popup/modal
+
+Do not route Client to:
+
+* `/dashboard`
+* random profile pages
+* Admin routes
+* Talent routes
+
+If the existing notification system only supports navigation, extend it minimally to support:
+
+`notification action = modal`
+
+for these known types.
+
+Do not globally change all notifications to modal behavior.
+
+Existing routing for all other notifications must remain unchanged.
+
+# E. POPUP DATA SOURCE
+
+Do not trust stale notification text as the source of truth.
+
+When popup opens, load current data using existing APIs if possible:
+
+* submission/invitation
+* interview
+* proposal history
+
+The popup should reflect the latest schedule even if another proposal occurred after the original notification.
+
+Use related IDs from the notification.
+
+Do not expose unrelated submissions/interviews.
+
+Client authorization must be enforced server-side.
+
+# F. TALENT INTERVIEW SECTION VISIBILITY
+
+Current problem:
+
+Talent sees:
+
+`Interviews`
+
+before accepting:
+
+`Role Invitations`
+
+Change this.
+
+For Client-originated Role Invitations with an associated interview proposal:
+
+Before Role Invitation acceptance:
+
+Show:
+
+`Role Invitations`
+
+Do NOT show the related Interview card/section yet.
+
+After Talent accepts the Role Invitation:
+
+Show the related Interview proposal.
+
+This sequencing is required.
+
+Conceptual:
+
+invitation status = invited/pending
+→ Role Invitation visible
+→ Interview hidden
+
+Talent accepts invitation
+→ invitation/submission status transitions using existing logic
+→ Role Invitation no longer pending / becomes accepted
+→ Interview becomes visible/actionable
+
+Do NOT delete the interview row.
+
+Do NOT defer creating the interview record if the current invite flow already creates it safely.
+
+This should be a visibility/actionability rule, not a destructive data migration.
+
+# G. IMPORTANT — USE THE CORRECT ACCEPTED STATE
+
+Audit the existing invitation/submission status.
+
+Do not invent a new acceptance state if one already exists.
+
+Use the canonical existing field that proves the Role Invitation has been accepted.
+
+Possible examples might include:
+
+* invitation status
+* submission status
+* accepted timestamp
+* application status
+
+Use the real repo state.
+
+Do NOT determine acceptance from:
+
+* message text
+* presence of an interview
+* notification existence
+* frontend local state
+
+# H. DIRECT TALENT APPLICATIONS MUST NOT BREAK
+
+This sequencing rule is specifically for Client Role Invitations.
+
+Do not accidentally hide interviews for other valid Talent application flows where there is no separate Role Invitation acceptance step.
+
+Audit whether interviews can originate from:
+
+* Talent-applied job
+* Client invitation
+* Admin scheduling
+
+Apply the hide-until-accepted condition only where the submission actually has a pending Client Role Invitation that must be accepted first.
+
+Do not globally hide all interviews unless status != some arbitrary value.
+
+# I. ROLE INVITATION ACCEPTANCE EXISTING MESSAGE
+
+The screenshots show an existing system message like:
+
+`Invitation accepted — [Job]. You can now coordinate next steps, such as scheduling an interview.`
+
+Preserve this existing messaging behavior.
+
+Do not remove it.
+
+If multiple acceptance messages are currently duplicated due to an existing bug, report it separately; do not broaden this task unless the cause directly conflicts with notification implementation.
+
+# J. INTERVIEW RESCHEDULE EXISTING MECHANISM
+
+Reuse:
+
+* `interviews`
+* `interview_proposals`
+* current_proposal_owner
+* existing Talent respond endpoint
+* existing timezone helpers
+
+Do not create:
+
+* another interview row
+* another reschedule table
+* another scheduling subsystem
+
+Talent counter-proposal remains an immutable proposal-history entry.
+
+# K. TIMEZONE
+
+Reuse existing interview formatting.
+
+Do not rewrite timezone logic.
+
+Popup must clearly show timezone.
+
+Example:
+
+`Sep 7, 2026 · 8:00 AM · Asia/Singapore`
+
+Use the existing formatter/helper where possible.
+
+# L. EMAILS
+
+Do not make email the main scope of this task.
+
+If the existing notification companion email system already automatically sends email for these canonical notification events, preserve it.
+
+If no email exists, report that after implementation but do not build a second broad email project inside this fix unless it is already trivial through the existing companion service.
+
+Primary scope:
+
+* in-app Client notifications
+* popup
+* Talent interview visibility
+
+# M. EXISTING NOTIFICATIONS — STRICT NON-REGRESSION
+
+Do NOT break existing working notifications such as:
+
+* job approved
+* job rejected
+* job unapproved
+* new application received
+* Client updated application
+* interview confirmed
+* chat/message notifications
+* application status
+* Admin notifications
+* Talent notifications
+
+Do not change their destination/popup behavior.
+
+Do not change the global notification schema unless genuinely required.
+
+# N. NOTIFICATION UNREAD COUNT
+
+New notifications must behave like existing notifications:
+
+* bell count increments
+* unread dot/badge appears
+* clicking marks read
+* count decrements/refetches
+* no duplicate count caused by retries
+
+# O. POPUP OPENING FROM READ NOTIFICATIONS
+
+Even after notification is read, clicking it again from notification history should still be able to open the details popup if current UI permits clicking read notifications.
+
+Read status should not destroy the related IDs.
+
+# P. CLIENT POPUP CONTENT — REQUIRED
+
+For invitation accepted:
+
+Show at minimum:
+
+`Talent accepted your invitation`
+
+Talent:
+`{{talent_name}}`
+
+Role:
+`{{job_title}}`
+
+Invitation:
+`Accepted`
+
+Interview:
+
+If interview proposal exists:
+
+* current status
+* latest proposed/confirmed schedule
+* timezone
+
+If no interview proposal:
+`No interview scheduled yet`
+
+For interview reschedule:
+
+Show:
+
+`Interview schedule update`
+
+Talent:
+`{{talent_name}}`
+
+Role:
+`{{job_title}}`
+
+Previous schedule if safely available from proposal history
+
+New proposed schedule:
+`{{latest_proposed_time}}`
+
+Timezone
+
+Status:
+`Awaiting your response`
+
+Do not display internal notes.
+
+# Q. CLIENT AUTHORIZATION
+
+Client may only open popup data for:
+
+* their own jobs
+* their own submissions
+* their own interviews
+
+Do not rely only on frontend IDs.
+
+Server endpoint must verify Client ownership.
+
+# R. OPTIONAL FOCUSED DETAILS ENDPOINT
+
+If no existing endpoint can efficiently provide popup data, add one narrow endpoint.
+
+Example conceptually:
+
+`GET /api/client/invitation-updates/:submissionId`
+
+or:
+
+`GET /api/client/interviews/:interviewId/summary`
+
+Return only the data required for the popup.
+
+Do not replace existing interview APIs.
+
+Do not change existing response contracts merely to support the popup if an additive endpoint is safer.
+
+# S. TESTS — ROLE INVITATION ACCEPTANCE
+
+Add coverage:
+
+1. Client invites Talent.
+2. Invitation notification to Talent still works.
+3. Talent sees Role Invitation.
+4. Associated Interview is hidden before Role Invitation acceptance.
+5. Talent accepts Role Invitation.
+6. Existing invitation status transition still works.
+7. Existing system message is still created.
+8. Client receives exactly one:
+   `Talent accepted your invitation`
+   notification.
+9. Correct Client receives it.
+10. Another Client does not receive it.
+11. Notification bell count increases.
+12. Clicking notification opens popup.
+13. Popup shows correct Talent.
+14. Popup shows correct job.
+15. Popup shows `Accepted`.
+16. If interview exists, popup shows current interview status/time.
+17. Notification becomes read.
+18. After acceptance, Talent Interview section becomes visible.
+19. Existing Talent invitation UI still works.
+20. Declining invitation does not incorrectly expose Interview.
+
+# T. TESTS — RESCHEDULE
+
+21. After invitation acceptance, Interview is visible.
+22. Talent chooses `Suggest another time`.
+23. Existing proposal row is created.
+24. Existing interview state remains valid.
+25. Client receives exactly one reschedule/proposal notification.
+26. Notification points to the correct interview/submission.
+27. Clicking opens popup.
+28. Popup shows latest proposed time.
+29. Timezone displays correctly.
+30. Old schedule/history remains preserved.
+31. Client's existing accept/counter workflow still works.
+32. Repeated request does not create duplicate notification for the same proposal.
+33. A genuinely later proposal does create a new notification.
+
+# U. TESTS — OTHER FLOWS
+
+34. Talent-applied interviews that do not require Role Invitation acceptance still behave as before.
+35. Existing Client interview scheduling still works.
+36. Existing Admin scheduling still works.
+37. Existing interview confirmed notifications still work.
+38. Existing notification routing still works.
+39. Existing Client message notifications still work.
+40. Existing Talent notifications still work.
+41. Existing email companion behavior is unchanged.
+42. `npx tsc --noEmit` passes.
+43. `git diff --check` passes.
+
+# V. MANUAL TEST
+
+Use two test accounts:
+
+Client:
+existing test Client
+
+Talent:
+existing test Talent
+
+## Invitation Acceptance
+
+1. Client creates/uses an approved open job.
+2. Client invites Talent.
+3. Include a proposed interview time.
+4. Log in as Talent.
+5. Open My Applications.
+6. Verify:
+
+   * Role Invitation is visible.
+   * Interview section for that invitation is NOT visible yet.
+7. Accept Role Invitation.
+8. Verify:
+
+   * existing acceptance flow succeeds.
+   * Interview section now appears.
+9. Log in as Client.
+10. Verify notification appears:
+
+`Talent accepted your invitation`
+
+11. Click it.
+12. Verify popup opens.
+13. Verify:
+
+* Talent name
+* job title
+* invitation accepted
+* interview status
+* current/latest schedule
+* timezone
+
+## Interview Reschedule
+
+14. Log back in as Talent.
+15. Use Suggest Another Time.
+16. Submit a valid new time.
+17. Log in as Client.
+18. Verify notification appears:
+
+`Talent proposed a new interview time`
+
+19. Click it.
+20. Verify popup opens.
+21. Verify new proposed schedule is shown.
+22. Verify Client can proceed using the existing interview workflow.
+
+# W. COMPLETION REPORT
+
+After audit + implementation, report:
+
+## Audit findings
+
+1. Exact Talent Role Invitation Accept component/function.
+2. Exact API endpoint.
+3. Exact acceptance DB/status transition.
+4. Why Client acceptance notification was missing.
+5. Exact Talent interview rendering condition before change.
+6. Exact reschedule endpoint.
+7. Why Client reschedule notification was missing.
+8. Existing notification click mechanism.
+9. Existing modal/detail component reused, if any.
+
+## Implementation
+
+10. Notification types added/reused.
+11. Event keys.
+12. Client recipient resolution.
+13. Popup component added/reused.
+14. Popup data source/API.
+15. Talent interview visibility condition.
+16. Confirmation interview row was NOT deleted/recreated.
+17. Confirmation proposal history remains unchanged.
+18. Files changed.
+19. Tests/results.
+20. Manual results.
+21. Confirmation existing working notifications were not altered.
+22. Confirmation existing Client interview workflow was not altered.
+23. Confirmation existing Talent invitation flow was not altered.
+24. Confirmation existing Admin scheduling was not altered.
+
+AUDIT FIRST, THEN APPLY THE CHANGES.
+
+Do not stop after the audit unless there is a genuine blocker.
+
+Do not perform unrelated refactors.
+
+The guiding behavior is:
+
+`Role Invitation must be accepted first → Interview becomes available → Client is notified of acceptance → Client is notified of any Talent interview schedule change → clicking those notifications shows a concise invitation/interview update popup.`

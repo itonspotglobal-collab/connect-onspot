@@ -1,3 +1,28 @@
+export const TALENT_NOTIFICATION_TYPES = [
+  "offer_received",
+  "job_invitation",
+  "job_application_status_changed",
+  "new_message",
+] as const;
+
+export const CLIENT_NOTIFICATION_TYPES = [
+  "offer_accepted",
+  "offer_declined",
+  "offer_expired",
+  "job_approved",
+  "job_pending",
+  "job_rejected",
+  "job_application_received",
+  "talent_invitation_accepted",
+  "interview_reschedule_proposed",
+  "client_application_status_changed",
+  "new_message",
+] as const;
+
+export function notificationTypesForRole(isTalent: boolean): readonly string[] {
+  return isTalent ? TALENT_NOTIFICATION_TYPES : CLIENT_NOTIFICATION_TYPES;
+}
+
 export function notificationRouteForRole(
   type: string,
   role: string | null | undefined,
@@ -25,4 +50,51 @@ export function applicationsFooterRouteForRole(
 ): string {
   if (isTalent) return "/my-applications";
   return role === "admin" ? "/admin/job-applications" : "/client-profile";
+}
+
+export type ClientNotificationModalKind =
+  | "invitation_acceptance"
+  | "interview_reschedule";
+
+interface InterviewScheduleSlot {
+  start: string;
+  timezone?: string | null;
+}
+
+interface InterviewScheduleProposal {
+  proposerRole: string;
+  proposedTimes: InterviewScheduleSlot[];
+}
+
+export function currentInterviewSchedule(interview: {
+  proposedTimes: InterviewScheduleSlot[];
+  proposals: InterviewScheduleProposal[];
+}) {
+  const latestProposal = interview.proposals.at(-1) ?? null;
+  const previousProposal = interview.proposals.at(-2) ?? null;
+  return {
+    current: interview.proposedTimes[0] ?? latestProposal?.proposedTimes?.[0] ?? null,
+    previous: previousProposal?.proposedTimes?.[0] ?? null,
+    prefix: latestProposal?.proposerRole === "talent"
+      ? "Talent proposed"
+      : latestProposal?.proposerRole === "client"
+        ? "Client proposed"
+        : "Proposed",
+  };
+}
+
+export function clientNotificationModalKind(
+  type: string,
+  role: string | null | undefined,
+  relatedType: string | null,
+  relatedId: string | null,
+): ClientNotificationModalKind | null {
+  if (role !== "client" || !relatedId) return null;
+  if (type === "talent_invitation_accepted" && relatedType === "job_submission") {
+    return "invitation_acceptance";
+  }
+  if (type === "interview_reschedule_proposed" && relatedType === "interview") {
+    return "interview_reschedule";
+  }
+  return null;
 }
