@@ -16,6 +16,10 @@ import { TimezoneSelect } from "@/components/TimezoneSelect";
 import { useToast } from "@/hooks/use-toast";
 import { convertLocalDateTimeToUtc, formatInterviewTime } from "@/lib/formatInterviewTime";
 import { getClientInterviewDisplayState } from "@/lib/clientInterviewState";
+import {
+  InterviewDetailsDialog,
+  type InterviewDetails,
+} from "@/components/InterviewDetailsDialog";
 
 interface InterviewRow {
   id: string;
@@ -34,6 +38,7 @@ interface InterviewRow {
   // joined fields
   job_title?: string;
   job_company?: string;
+  talent_full_name?: string;
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
@@ -61,11 +66,25 @@ function InterviewCard({
     ? formatInterviewTime(interview.confirmed_time, interview.confirmed_time_zone ?? "UTC")
     : null;
   const [counterOpen, setCounterOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [counterDateTime, setCounterDateTime] = useState("");
   const [counterTimezone, setCounterTimezone] = useState(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
   );
   const latestSlots = Array.isArray(interview.proposed_times) ? interview.proposed_times : [];
+  const isConfirmed = state === "confirmed";
+  const details: InterviewDetails = {
+    jobTitle: interview.job_title ?? "Position",
+    participantLabel: "Talent",
+    participantName: interview.talent_full_name ?? null,
+    interviewType: interview.interview_type,
+    roundNumber: interview.round_number,
+    status: badge.label,
+    confirmedTime: interview.confirmed_time,
+    confirmedTimeZone: interview.confirmed_time_zone,
+    durationMinutes: interview.duration_minutes,
+    meetingLink: interview.meeting_link,
+  };
 
   const submitCounter = async () => {
     try {
@@ -87,7 +106,26 @@ function InterviewCard({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.02]">
+    <>
+    <div
+      className={[
+        "rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.02]",
+        isConfirmed
+          ? "cursor-pointer transition hover:border-[#474ead]/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#474ead] focus-visible:ring-offset-2"
+          : "",
+      ].join(" ")}
+      role={isConfirmed ? "button" : undefined}
+      tabIndex={isConfirmed ? 0 : undefined}
+      aria-haspopup={isConfirmed ? "dialog" : undefined}
+      aria-label={isConfirmed ? `View interview details for ${details.jobTitle}` : undefined}
+      onClick={isConfirmed ? () => setDetailsOpen(true) : undefined}
+      onKeyDown={isConfirmed ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          setDetailsOpen(true);
+        }
+      } : undefined}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="font-semibold text-slate-900 dark:text-slate-100">
@@ -161,6 +199,7 @@ function InterviewCard({
             href={interview.meeting_link}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
             className="inline-flex items-center gap-1.5 rounded-md border border-[#474ead]/30 bg-[#474ead]/5 px-3 py-1.5 text-xs font-medium text-[#474ead] hover:bg-[#474ead]/10 transition"
           >
             <Video className="h-3.5 w-3.5" />
@@ -206,6 +245,12 @@ function InterviewCard({
         </DialogContent>
       </Dialog>
     </div>
+    <InterviewDetailsDialog
+      open={detailsOpen}
+      onOpenChange={setDetailsOpen}
+      interview={details}
+    />
+    </>
   );
 }
 
@@ -227,6 +272,8 @@ export default function ClientInterviews() {
     queryKey: ["/api/client/interviews"],
     queryFn: () => fetchClientInterviews(token),
     enabled: !!user,
+    refetchOnWindowFocus: "always",
+    refetchInterval: 15_000,
   });
   const [busyInterviewId, setBusyInterviewId] = useState<string | null>(null);
 

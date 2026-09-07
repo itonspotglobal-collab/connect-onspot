@@ -20,7 +20,12 @@ describe("getClientInterviewDisplayState", () => {
     expect(getClientInterviewDisplayState({
       status: "confirmed",
       confirmed_time: "2030-09-07T00:00:00.000Z",
-      current_proposal_owner: null,
+      current_proposal_owner: "client",
+    })).toBe("confirmed");
+    expect(getClientInterviewDisplayState({
+      status: "proposed",
+      confirmed_time: "2030-09-07T00:00:00.000Z",
+      current_proposal_owner: "talent",
     })).toBe("confirmed");
     expect(getClientInterviewDisplayState({ status: "completed" })).toBe("completed");
     expect(getClientInterviewDisplayState({ status: "cancelled" })).toBe("cancelled");

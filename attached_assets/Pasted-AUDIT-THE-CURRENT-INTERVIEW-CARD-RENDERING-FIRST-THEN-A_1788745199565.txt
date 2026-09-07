@@ -1,0 +1,496 @@
+AUDIT THE CURRENT INTERVIEW CARD RENDERING FIRST, THEN APPLY THE CHANGES IN THE SAME TASK.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+Do NOT redesign the interview system.
+
+The interview negotiation now works:
+
+- Client can propose/counter-propose.
+- Talent can propose/counter-propose.
+- Either side can accept the other's latest proposal.
+- Talent side correctly shows the interview as Confirmed after agreement.
+- Notifications now work in both directions.
+
+The remaining issues are:
+
+1. Client `My Interviews` still shows stale `Awaiting Talent / Waiting for talent to confirm a time` even after the interview is confirmed.
+2. Interview cards should be clickable on BOTH Client and Talent sides.
+3. Clicking a confirmed interview should open a detail modal/popup containing the interview details and meeting link.
+
+# PHASE 1 — AUDIT
+
+Before editing, inspect:
+
+- client/src/pages/ClientInterviews.tsx
+- Talent My Applications interview card rendering
+- any shared InterviewWorkflowUi / interview card component
+- interview API response shape
+- confirmed_time
+- confirmed_time_zone
+- duration_minutes
+- meeting_link
+- interview_type
+- round_number
+- status
+- current_proposal_owner
+- query invalidation/refetch after confirmation
+- notification-confirmation flow
+
+Report:
+
+1. Why Talent shows Confirmed correctly.
+2. Why Client still shows Awaiting Talent.
+3. Which query/client cache the Client Interviews page uses.
+4. Whether the Client page is using stale derived state instead of `status === confirmed`.
+5. Which existing modal/dialog can be reused for details.
+
+Then implement.
+
+# A. FIX CLIENT CONFIRMED STATE
+
+After either side accepts the other's latest proposed time:
+
+Client My Interviews must show the confirmed state immediately or after query refetch.
+
+Do NOT leave:
+
+`Awaiting Talent`
+
+or:
+
+`Waiting for talent to confirm a time`
+
+once the backend interview record is:
+
+`status = confirmed`
+
+or the existing canonical confirmed state.
+
+Client display logic should prioritize confirmed status.
+
+Conceptual priority:
+
+if status === confirmed:
+    show Confirmed
+
+else if negotiation pending and current_proposal_owner === client:
+    show Awaiting Talent
+
+else if negotiation pending and current_proposal_owner === talent:
+    show Action Required
+
+Do not derive "Awaiting Talent" from stale proposal ownership when status is already confirmed.
+
+# B. QUERY INVALIDATION / REFRESH
+
+When a Client or Talent accepts a proposal and confirmation succeeds:
+
+invalidate/refetch the relevant interview queries.
+
+At minimum:
+
+Client:
+- client interview list
+- client interview detail/summary
+- notification-related interview summary if cached
+
+Talent:
+- talent interviews
+- Talent My Applications interview data
+
+Use existing React Query/query-client patterns.
+
+Do not use full page reload unless necessary.
+
+# C. CLIENT CONFIRMED CARD
+
+Once confirmed, Client card should show:
+
+Job title
+
+Company/Client context as currently shown
+
+Round:
+`Round 1 · Initial Interview`
+
+Badge:
+`Confirmed`
+
+Confirmed schedule:
+`Sep 8, 2026 · 9:30 PM · Asia/Singapore`
+
+Meeting link indicator/action if present.
+
+Do NOT show negotiation actions once confirmed.
+
+Do NOT show:
+- Accept Time
+- Suggest Another Time
+- Awaiting Talent
+
+unless the interview returns to reschedule negotiation through the existing reschedule flow.
+
+# D. TALENT CONFIRMED CARD
+
+Preserve the already working Talent confirmed state.
+
+Do not change its logic unnecessarily.
+
+Make the card clickable.
+
+Talent card should continue showing:
+
+- job title
+- round
+- interview type
+- confirmed date/time
+- timezone
+- meeting link
+
+# E. MAKE INTERVIEW CARDS CLICKABLE — BOTH SIDES
+
+Make confirmed interview cards clickable on:
+
+1. Client `My Interviews`
+2. Talent `My Applications` Interview section
+
+Use accessible interaction.
+
+Preferred:
+
+- card behaves like a button/open-details target
+- visible hover/focus state
+- keyboard Enter/Space support where appropriate
+- nested Join Meeting link must still work independently
+
+Do not make the entire card an `<a>` if it creates nested interactive-element problems.
+
+Use a button-like container or explicit `View details` affordance if safer.
+
+# F. INTERVIEW DETAIL MODAL
+
+Clicking the card should open a modal/dialog.
+
+Suggested title:
+
+`Interview Details`
+
+Show:
+
+Job
+`Testing Job Kime`
+
+Interview Type
+`Initial Interview`
+
+Round
+`Round 1`
+
+Status
+`Confirmed`
+
+Date
+`Sep 8, 2026`
+
+Time
+`9:30 PM`
+
+Timezone
+`Asia/Singapore`
+
+Duration
+`30 minutes`
+or actual stored duration
+
+Meeting
+If meeting_link exists:
+
+[Join Meeting]
+
+If none:
+
+`Meeting link not available yet`
+
+Optional if already safely available:
+- company/client name
+- Talent name on Client side
+- notes intended for that participant
+
+Do NOT show:
+- internal Admin notes
+- confidential internal notes
+- private proposal metadata
+- unrelated application data
+
+# G. MEETING LINK
+
+For confirmed interviews:
+
+Display meeting link in modal as a clear CTA:
+
+`Join Meeting`
+
+The button should open:
+
+`meeting_link`
+
+in a new tab with safe attributes.
+
+Validate existing URL behavior.
+
+Do not alter the stored meeting link.
+
+Do not regenerate Teams links.
+
+# H. CLIENT SIDE DETAILS
+
+When Client clicks the confirmed interview:
+
+show:
+
+- Talent name
+- Job title
+- Interview type
+- Round
+- Confirmed date/time
+- Timezone
+- Duration
+- Meeting link
+- status
+
+If rescheduling is later re-entered through existing flow, modal may reflect current state, but do not build new reschedule controls inside this modal unless an existing reusable component already provides them.
+
+V1 modal is primarily details/view.
+
+# I. TALENT SIDE DETAILS
+
+When Talent clicks the confirmed interview:
+
+show:
+
+- Client/company
+- Job title
+- Interview type
+- Round
+- Confirmed date/time
+- Timezone
+- Duration
+- Meeting link
+- status
+
+Do not expose Client private/internal data.
+
+# J. USE CURRENT DATA, NOT STALE CARD SNAPSHOT
+
+When opening modal, prefer using current interview data from:
+
+- the existing query result
+or
+- a focused detail fetch if needed
+
+Do not rely on old notification text.
+
+If the interview has been updated/rescheduled since the page initially loaded, refetch if the current architecture supports it safely.
+
+# K. NEGOTIATION CARDS
+
+Pending negotiation cards can also be clickable if easy and safe, but the required scope is confirmed interviews.
+
+If making pending cards clickable:
+
+show current proposal state only.
+
+Do not duplicate Accept/Counter actions inside the modal unless already safely reusable.
+
+Do not expand scope unnecessarily.
+
+# L. NOTIFICATION CONFIRMATION STATE
+
+The existing:
+
+`Interview confirmed`
+
+notification should remain unchanged.
+
+Clicking it may continue to use the current behavior.
+
+If it already opens a details popup, consider reusing the same Interview Details modal component.
+
+Prefer one shared modal if practical.
+
+Do not create different detail UIs for notification click vs card click unless necessary.
+
+# M. CLIENT STATUS PRIORITY
+
+Important bugfix rule:
+
+Confirmed status must override proposal-owner display.
+
+Example:
+
+status = confirmed
+current_proposal_owner = client
+
+UI:
+`Confirmed`
+
+NOT:
+`Awaiting Talent`
+
+Do not use proposal ownership after confirmation to determine primary status label.
+
+# N. PAST / CANCELLED
+
+Preserve existing past/cancelled behavior.
+
+Do not move confirmed upcoming interviews into Past unless their time is actually past according to existing logic.
+
+Cancelled:
+show Cancelled.
+
+Completed:
+show Completed.
+
+Do not break tab counts.
+
+# O. TIMEZONE
+
+Reuse existing formatting helpers.
+
+Do not rewrite timezone logic.
+
+Both Client and Talent should refer to the same confirmed instant.
+
+# P. ACCESSIBILITY
+
+Modal must include:
+
+- DialogTitle
+- DialogDescription if required by current component
+- accessible close button
+- keyboard focus management
+
+Avoid the previous Dialog warnings.
+
+Clickable cards need visible keyboard focus.
+
+# Q. DO NOT CHANGE
+
+Do not modify or break:
+
+- invitation flow
+- Role Invitation acceptance
+- interview negotiation
+- proposal history
+- current_proposal_owner logic
+- confirmation backend
+- notifications
+- email notifications
+- Messages
+- Client scheduling
+- Admin scheduling
+- meeting-link storage
+- Teams integration
+- application pipeline
+- job approval
+- Talent application cards
+
+Do not refactor unrelated files.
+
+# R. TESTS
+
+Add focused coverage:
+
+1. Client proposes time.
+2. Talent counter-proposes.
+3. Client accepts.
+4. Backend interview status becomes confirmed.
+5. Client Interviews query refetches.
+6. Client card displays `Confirmed`.
+7. Client card no longer shows `Awaiting Talent`.
+8. Client card no longer says `Waiting for talent to confirm a time`.
+9. Client confirmed time matches backend.
+10. Client meeting link is shown.
+
+11. Talent confirmed card remains correct.
+12. Talent card is clickable.
+13. Client card is clickable.
+14. Clicking Client card opens details modal.
+15. Clicking Talent card opens details modal.
+16. Client modal shows correct Talent/job/time/timezone/status.
+17. Talent modal shows correct Client/job/time/timezone/status.
+18. Join Meeting opens correct meeting_link.
+19. No meeting link shows safe fallback text.
+20. Modal does not expose internal notes.
+21. Notification confirmation still works.
+22. Existing reschedule flow still works.
+23. Existing cancellation flow still works.
+24. Past/cancelled tabs still work.
+25. Existing timezone tests pass.
+26. `npx tsc --noEmit` passes.
+27. `git diff --check` passes.
+
+# S. MANUAL TEST
+
+Use current Client and Talent test accounts.
+
+1. Complete a reschedule negotiation.
+2. Talent accepts Client's latest time.
+3. Log in as Client.
+4. Open My Interviews.
+5. Verify:
+   - card shows `Confirmed`
+   - no `Awaiting Talent`
+   - confirmed date/time visible
+   - meeting link visible if present
+
+6. Click Client interview card.
+7. Verify modal opens.
+8. Verify:
+   - Talent
+   - job
+   - round
+   - interview type
+   - confirmed date
+   - confirmed time
+   - timezone
+   - duration
+   - Join Meeting
+
+9. Log in as Talent.
+10. Open My Applications.
+11. Click confirmed interview card.
+12. Verify same confirmed time.
+13. Verify meeting link works.
+14. Verify modal is keyboard accessible.
+
+# T. COMPLETION REPORT
+
+After audit + implementation, report:
+
+1. Root cause of Client stale Awaiting Talent state.
+2. Client status-priority logic before/after.
+3. Query invalidations/refetches added.
+4. Shared/new Interview Details modal.
+5. Files changed.
+6. Client clickable-card behavior.
+7. Talent clickable-card behavior.
+8. Meeting-link behavior.
+9. Accessibility changes.
+10. Tests/results.
+11. Manual Client verification.
+12. Manual Talent verification.
+13. Confirmation negotiation logic was not changed.
+14. Confirmation notifications were not changed.
+15. Confirmation meeting-link storage was not changed.
+
+AUDIT FIRST, THEN APPLY THE CHANGES.
+
+The required final behavior is:
+
+Confirmed interview
+→ both Client and Talent show `Confirmed`
+→ both cards are clickable
+→ clicking opens Interview Details
+→ meeting link is available from the details.

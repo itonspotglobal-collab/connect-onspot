@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { InterviewDetailsDialog } from "@/components/InterviewDetailsDialog";
 import { useMatchedJobs, MatchedJobsList } from "@/components/MatchedJobs";
 import {
   useTalentApplications, TalentApplication, ApplicationAnswer, getTalentAppsLastViewedKey,
@@ -1094,6 +1095,7 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [counterTimes, setCounterTimes] = useState<Record<string, string>>({});
   const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
+  const [selectedInterview, setSelectedInterview] = useState<TalentInterview | null>(null);
   const { data: interviews = [], isLoading, refetch } = useQuery<TalentInterview[]>({
     queryKey: ["talent-interviews"],
     queryFn: async () => {
@@ -1105,6 +1107,7 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
       return res.json();
     },
     staleTime: 30_000,
+    refetchOnWindowFocus: "always",
   });
   const respond = async (interview: TalentInterview, action: "accept" | "decline" | "counter", selectedTime?: string) => {
     setRespondingId(interview.id);
@@ -1155,7 +1158,26 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
               ? "border-emerald-200 bg-emerald-50/70 text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-900/20 dark:text-emerald-300"
               : "border-indigo-200 bg-white/70 text-indigo-700 dark:bg-slate-800 dark:text-indigo-300";
           return (
-            <div key={interview.id} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-800/40 dark:bg-indigo-950/20">
+            <div
+              key={interview.id}
+              className={[
+                "rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-800/40 dark:bg-indigo-950/20",
+                interview.status === "confirmed"
+                  ? "cursor-pointer transition hover:border-indigo-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                  : "",
+              ].join(" ")}
+              role={interview.status === "confirmed" ? "button" : undefined}
+              tabIndex={interview.status === "confirmed" ? 0 : undefined}
+              aria-haspopup={interview.status === "confirmed" ? "dialog" : undefined}
+              aria-label={interview.status === "confirmed" ? `View interview details for ${interview.job.title}` : undefined}
+              onClick={interview.status === "confirmed" ? () => setSelectedInterview(interview) : undefined}
+              onKeyDown={interview.status === "confirmed" ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setSelectedInterview(interview);
+                }
+              } : undefined}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">{interview.job.title}</p>
@@ -1180,6 +1202,7 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
                       href={interview.meetingLink}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={(event) => event.stopPropagation()}
                     >
                       <ExternalLink className="h-3 w-3" /> Join meeting
                     </a>
@@ -1251,6 +1274,24 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
           </div>
         ))}
       </div>
+      <InterviewDetailsDialog
+        open={selectedInterview !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedInterview(null);
+        }}
+        interview={selectedInterview ? {
+          jobTitle: selectedInterview.job.title,
+          participantLabel: "Client",
+          participantName: selectedInterview.job.company || null,
+          interviewType: selectedInterview.interviewType,
+          roundNumber: selectedInterview.roundNumber,
+          status: selectedInterview.status,
+          confirmedTime: selectedInterview.confirmedTime,
+          confirmedTimeZone: selectedInterview.confirmedTimeZone ?? null,
+          durationMinutes: selectedInterview.durationMinutes,
+          meetingLink: selectedInterview.meetingLink,
+        } : null}
+      />
     </div>
   );
 }
