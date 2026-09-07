@@ -7057,15 +7057,20 @@ export async function registerRoutes(
    * Only non-terminal applications (not hired/rejected/withdrawn) can be withdrawn.
    */
   app.patch("/api/talent/applications/:id/withdraw", authenticateJWT, async (req: any, res) => {
+    const dbClient = await getClient();
     try {
       const user = req.user as { id?: string; email?: string; role?: string } | undefined;
-      if (!user?.id || user.role !== "talent") return res.status(403).json({ error: "Talent access required" });
+      if (!user?.id || user.role !== "talent") {
+        return res.status(403).json({ error: "Talent access required" });
+      }
       const applicationId = req.params.id;
       const linkedUserId = user.id;
       const candidateEmail = user.email ?? "";
 
-      // Fetch the application, verifying ownership
-      const appRow = await query(
+      await dbClient.query("BEGIN");
+      // Serialize withdrawal with contract creation/final signing so neither
+      // transition can overwrite the other's terminal state.
+      const appRow = await dbClient.query(
         `SELECT id, status FROM job_submissions
          WHERE id = $1
            AND (
@@ -7073,36 +7078,74 @@ export async function registerRoutes(
              OR
              (talent_id IS NULL AND lower(email) = lower($3))
            )
-         LIMIT 1`,
+          LIMIT 1
+          FOR UPDATE`,
         [applicationId, linkedUserId, candidateEmail],
       );
 
       if (!appRow.rows.length) {
+        await dbClient.query("ROLLBACK");
         return res.status(404).json({ error: "Application not found" });
       }
 
       const currentStatus = appRow.rows[0].status as string;
       const TERMINAL = new Set(["hired", "rejected", "withdrawn"]);
       if (TERMINAL.has(currentStatus)) {
+        await dbClient.query("ROLLBACK");
         return res.status(409).json({
           error: "Cannot withdraw",
           message: `This application is already in a terminal state (${currentStatus}).`,
         });
       }
 
-      // Perform the withdrawal
-      const updated = await query(
-        `UPDATE job_submissions SET status = 'withdrawn', updated_at = NOW()
-         WHERE id = $1
-         RETURNING id, status, updated_at AS "updatedAt"`,
+      const activeContract = await dbClient.query(
+        `SELECT id FROM hiring_contracts
+          WHERE submission_id = $1
+            AND status NOT IN ('void', 'voided')
+          LIMIT 1`,
         [applicationId],
       );
+      if (activeContract.rows.length > 0) {
+        await dbClient.query("ROLLBACK");
+        return res.status(409).json({
+          error: "active_contract_exists",
+          message: "An application with an active hiring contract cannot be withdrawn.",
+        });
+      }
 
-       console.log(`✅ Talent ${linkedUserId} withdrew application ${applicationId}`);
+      const updated = await dbClient.query(
+        `UPDATE job_submissions SET status = 'withdrawn', updated_at = NOW()
+         WHERE id = $1 AND status = $2
+         RETURNING id, status, updated_at AS "updatedAt"`,
+        [applicationId, currentStatus],
+      );
+      if (!updated.rows.length) {
+        await dbClient.query("ROLLBACK");
+        return res.status(409).json({
+          error: "application_status_changed",
+          message: "This application changed while the withdrawal was being processed.",
+        });
+      }
+      await dbClient.query(
+        `INSERT INTO job_application_status_history
+           (application_id, previous_status, new_status, note, changed_by)
+         VALUES ($1, $2, 'withdrawn', 'Application withdrawn by Talent', $3)`,
+        [applicationId, currentStatus, linkedUserId],
+      );
+      await dbClient.query("COMMIT");
+
+      console.log(`✅ Talent ${linkedUserId} withdrew application ${applicationId}`);
       return res.json(updated.rows[0]);
     } catch (error: any) {
+      try {
+        await dbClient.query("ROLLBACK");
+      } catch {
+        // Connection-level failure; original error remains authoritative.
+      }
       console.error("PATCH /api/talent/applications/:id/withdraw error:", error);
       return res.status(500).json({ error: "Failed to withdraw application" });
+    } finally {
+      dbClient.release();
     }
   });
 

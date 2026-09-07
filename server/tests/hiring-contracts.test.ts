@@ -87,10 +87,18 @@ let jobId: string;
 let submissionId: string;   // main happy-path submission
 let submissionId2: string;  // void-rollback submission
 let submissionId3: string;  // non-accepted-offer guard submission
+let submissionId4: string;  // withdrawn-after-contract guard submission
+let submissionId5: string;  // stale withdrawn-state guard submission
+let submissionId6: string;  // withdrawn-before-contract guard submission
+let submissionId7: string;  // rejected-before-contract guard submission
   let legacySubmissionId: string;
 let offerId: string;        // 'sent' → accepted via talent endpoint
 let sentOfferId: string;    // stays 'sent' (guard test)
 let offerId2: string;       // second accepted offer (void test)
+let offerId4: string;       // withdrawn-after-contract guard offer
+let offerId5: string;       // stale withdrawn-state guard offer
+let offerId6: string;       // withdrawn-before-contract guard offer
+let offerId7: string;       // rejected-before-contract guard offer
 
 const adminTok = tok(ADMIN_ID, "admin");
 const talentTok = jwt.sign(
@@ -99,6 +107,7 @@ const talentTok = jwt.sign(
   { expiresIn: "1h" },
 );
 const clientTok = tok(CLIENT_ID, "client");
+const talentUserTok = tok(TALENT_ID, "talent");
 
 async function createFixtures() {
   for (const [id, role] of [[ADMIN_ID, "admin"], [CLIENT_ID, "client"], [TALENT_ID, "talent"]] as const) {
@@ -134,6 +143,10 @@ async function createFixtures() {
   submissionId = await makeSubmission();
   submissionId2 = await makeSubmission();
   submissionId3 = await makeSubmission();
+  submissionId4 = await makeSubmission();
+  submissionId5 = await makeSubmission();
+  submissionId6 = await makeSubmission();
+  submissionId7 = await makeSubmission();
   legacySubmissionId = await makeSubmission("invited");
   await query(
     `INSERT INTO interviews
@@ -153,10 +166,17 @@ async function createFixtures() {
   offerId = await makeOffer(submissionId, "sent");
   sentOfferId = await makeOffer(submissionId3, "sent");
   offerId2 = await makeOffer(submissionId2, "sent");
+  offerId4 = await makeOffer(submissionId4, "sent");
+  offerId5 = await makeOffer(submissionId5, "sent");
+  offerId6 = await makeOffer(submissionId6, "sent");
+  offerId7 = await makeOffer(submissionId7, "sent");
 }
 
 async function destroyFixtures() {
-  const fixtureSubmissionIds = [submissionId, submissionId2, submissionId3].filter(
+  const fixtureSubmissionIds = [
+    submissionId, submissionId2, submissionId3, submissionId4,
+    submissionId5, submissionId6, submissionId7,
+  ].filter(
     (id): id is string => Boolean(id),
   );
   if (jobId) {
@@ -476,6 +496,249 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.ok(r.json.talent_signed_at);
     assert.equal(r.json.status, "signed");
     assert.equal(await submissionStatus(submissionId), "hired");
+
+    const history = await query(
+      `SELECT id FROM job_application_status_history
+        WHERE application_id = $1 AND new_status = 'hired'`,
+      [submissionId],
+    );
+    assert.equal(history.rows.length, 1);
+
+    const notifications = await query(
+      `SELECT user_id, type, title FROM notifications
+        WHERE related_id = $1
+          AND type IN ('job_application_status_changed', 'talent_hired')
+        ORDER BY type`,
+      [submissionId],
+    );
+    assert.deepEqual(
+      notifications.rows.map((row: any) => [row.user_id, row.type, row.title]),
+      [
+        [TALENT_ID, "job_application_status_changed", "Congratulations — you've been hired"],
+        [CLIENT_ID, "talent_hired", "Talent hired"],
+      ],
+    );
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const delivery = await query(
+        `SELECT id FROM email_notification_deliveries
+          WHERE event_key = $1`,
+        [`talent-hired-email:${submissionId}`],
+      );
+      if (delivery.rows.length > 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    const deliveries = await query(
+      `SELECT template_category FROM email_notification_deliveries
+        WHERE event_key = $1`,
+      [`talent-hired-email:${submissionId}`],
+    );
+    assert.equal(deliveries.rows.length, 1);
+    assert.equal(deliveries.rows[0].template_category, "hired");
+    assert.equal(await submissionStatus(submissionId), "hired", "email delivery must not roll back Hired");
+  });
+
+  it("(g0) retrying the final signature cannot duplicate Hired side effects", async () => {
+    const retry = await request(
+      srv,
+      "PATCH",
+      `/api/talent/hiring-contracts/${contractId}/sign`,
+      talentTok,
+      {},
+    );
+    assert.equal(retry.status, 409, JSON.stringify(retry.json));
+    assert.equal(retry.json.error, "contract_signed");
+
+    const counts = await query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM job_application_status_history
+           WHERE application_id = $1 AND new_status = 'hired') AS history_count,
+         (SELECT COUNT(*)::int FROM notifications
+           WHERE related_id = $1
+             AND type IN ('job_application_status_changed', 'talent_hired')) AS notification_count,
+         (SELECT COUNT(*)::int FROM email_notification_deliveries
+           WHERE event_key = $2) AS email_count`,
+      [submissionId, `talent-hired-email:${submissionId}`],
+    );
+    assert.equal(counts.rows[0].history_count, 1);
+    assert.equal(counts.rows[0].notification_count, 2);
+    assert.equal(counts.rows[0].email_count, 1);
+  });
+
+  it("(g01) concurrent withdrawal cannot overwrite a completed Hired transition", async () => {
+    const accepted = await request(
+      srv,
+      "PATCH",
+      `/api/talent/offers/${offerId4}/respond`,
+      talentTok,
+      { action: "accept" },
+    );
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
+
+    const created = await request(
+      srv,
+      "POST",
+      "/api/admin/hiring-contracts",
+      adminTok,
+      { offerId: offerId4 },
+    );
+    assert.equal(created.status, 201, JSON.stringify(created.json));
+
+    const onspotSigned = await request(
+      srv,
+      "PATCH",
+      `/api/admin/hiring-contracts/${created.json.id}/sign`,
+      adminTok,
+      { signerType: "onspot" },
+    );
+    assert.equal(onspotSigned.status, 200, JSON.stringify(onspotSigned.json));
+
+    const [finalSignature, withdrawn] = await Promise.all([
+      request(
+        srv,
+        "PATCH",
+        `/api/talent/hiring-contracts/${created.json.id}/sign`,
+        talentTok,
+        {},
+      ),
+      request(
+        srv,
+        "PATCH",
+        `/api/talent/applications/${submissionId4}/withdraw`,
+        talentUserTok,
+        {},
+      ),
+    ]);
+    assert.equal(finalSignature.status, 200, JSON.stringify(finalSignature.json));
+    assert.equal(withdrawn.status, 409, JSON.stringify(withdrawn.json));
+    assert.equal(withdrawn.json.error, "active_contract_exists");
+    assert.equal(await submissionStatus(submissionId4), "hired");
+  });
+
+  it("(g02) stale withdrawn data cannot be promoted to Hired", async () => {
+    const accepted = await request(
+      srv,
+      "PATCH",
+      `/api/talent/offers/${offerId5}/respond`,
+      talentTok,
+      { action: "accept" },
+    );
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
+    const created = await request(
+      srv,
+      "POST",
+      "/api/admin/hiring-contracts",
+      adminTok,
+      { offerId: offerId5 },
+    );
+    assert.equal(created.status, 201, JSON.stringify(created.json));
+    const onspotSigned = await request(
+      srv,
+      "PATCH",
+      `/api/admin/hiring-contracts/${created.json.id}/sign`,
+      adminTok,
+      { signerType: "onspot" },
+    );
+    assert.equal(onspotSigned.status, 200, JSON.stringify(onspotSigned.json));
+
+    await query(
+      `UPDATE job_submissions SET status = 'withdrawn' WHERE id = $1`,
+      [submissionId5],
+    );
+    const finalSignature = await request(
+      srv,
+      "PATCH",
+      `/api/talent/hiring-contracts/${created.json.id}/sign`,
+      talentTok,
+      {},
+    );
+    assert.equal(finalSignature.status, 409, JSON.stringify(finalSignature.json));
+    assert.equal(finalSignature.json.error, "submission_not_hireable");
+    assert.equal(finalSignature.json.currentStatus, "withdrawn");
+    assert.equal(await submissionStatus(submissionId5), "withdrawn");
+
+    const sideEffects = await query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM job_application_status_history
+           WHERE application_id = $1 AND new_status = 'hired') AS history_count,
+         (SELECT COUNT(*)::int FROM notifications
+           WHERE related_id = $1
+             AND type IN ('job_application_status_changed', 'talent_hired')) AS notification_count,
+         (SELECT COUNT(*)::int FROM email_notification_deliveries
+           WHERE event_key = $2) AS email_count,
+         (SELECT COUNT(*)::int FROM security_deposits
+           WHERE hiring_contract_id = $3) AS deposit_count`,
+      [submissionId5, `talent-hired-email:${submissionId5}`, created.json.id],
+    );
+    assert.equal(sideEffects.rows[0].history_count, 0);
+    assert.equal(sideEffects.rows[0].notification_count, 0);
+    assert.equal(sideEffects.rows[0].email_count, 0);
+    assert.equal(sideEffects.rows[0].deposit_count, 0);
+
+    const contract = await query(
+      `SELECT status, talent_signed_at FROM hiring_contracts WHERE id = $1`,
+      [created.json.id],
+    );
+    assert.equal(contract.rows[0].status, "sent");
+    assert.equal(contract.rows[0].talent_signed_at, null);
+  });
+
+  it("(g03) withdrawn or rejected accepted-offer submissions cannot be resurrected by contract creation", async () => {
+    for (const [subId, testOfferId, terminalStatus] of [
+      [submissionId6, offerId6, "withdrawn"],
+      [submissionId7, offerId7, "rejected"],
+    ] as const) {
+      const accepted = await request(
+        srv,
+        "PATCH",
+        `/api/talent/offers/${testOfferId}/respond`,
+        talentTok,
+        { action: "accept" },
+      );
+      assert.equal(accepted.status, 200, JSON.stringify(accepted.json));
+
+      if (terminalStatus === "withdrawn") {
+        const withdrawn = await request(
+          srv,
+          "PATCH",
+          `/api/talent/applications/${subId}/withdraw`,
+          talentUserTok,
+          {},
+        );
+        assert.equal(withdrawn.status, 200, JSON.stringify(withdrawn.json));
+      } else {
+        await query(`UPDATE job_submissions SET status = 'rejected' WHERE id = $1`, [subId]);
+      }
+      assert.equal(await submissionStatus(subId), terminalStatus);
+
+      const create = await request(
+        srv,
+        "POST",
+        "/api/admin/hiring-contracts",
+        adminTok,
+        { offerId: testOfferId },
+      );
+      assert.equal(create.status, 409, JSON.stringify(create.json));
+      assert.equal(create.json.error, "submission_not_contractable");
+      assert.equal(create.json.currentStatus, terminalStatus);
+      assert.equal(await submissionStatus(subId), terminalStatus);
+
+      const sideEffects = await query(
+        `SELECT
+           (SELECT COUNT(*)::int FROM hiring_contracts WHERE submission_id = $1) AS contract_count,
+           (SELECT COUNT(*)::int FROM job_application_status_history
+             WHERE application_id = $1 AND new_status IN ('contract_sent', 'hired')) AS history_count,
+           (SELECT COUNT(*)::int FROM notifications
+             WHERE related_id = $1 AND type IN ('job_application_status_changed', 'talent_hired')) AS notification_count,
+           (SELECT COUNT(*)::int FROM email_notification_deliveries
+             WHERE event_key = $2) AS email_count`,
+        [subId, `talent-hired-email:${subId}`],
+      );
+      assert.equal(sideEffects.rows[0].contract_count, 0);
+      assert.equal(sideEffects.rows[0].history_count, 0);
+      assert.equal(sideEffects.rows[0].notification_count, 0);
+      assert.equal(sideEffects.rows[0].email_count, 0);
+    }
   });
 
   it("(g1) a signed contract cannot be edited", async () => {

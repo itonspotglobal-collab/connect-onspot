@@ -49,7 +49,12 @@ function StatusBadge({ status }: { status: string }) {
 function StatusTimeline({ status }: { status: string }) {
   const isTerminal = getStatusMeta(status).isTerminal;
   // Find current step index in the normal pipeline
-  const pipelineStatus = status === "new" ? "submitted" : status === "reviewed" ? "under_review" : status;
+  const pipelineStatus =
+    status === "new" ? "submitted"
+    : status === "reviewed" ? "under_review"
+    : status === "interview" ? "interviewing"
+    : status === "offered" ? "offer_extended"
+    : status;
   const currentIdx = STATUS_PIPELINE.indexOf(pipelineStatus as any);
   const isRejected = status === "rejected" || status === "withdrawn";
 
@@ -475,9 +480,14 @@ type FilterKey = "all" | "active" | "interview" | "completed";
 function filterApplications(apps: TalentApplication[], filter: FilterKey) {
   switch (filter) {
     case "active":
-      return apps.filter((a) => ACTIVE_STATUSES.has(a.applicationStatus) && a.applicationStatus !== "interview");
+      return apps.filter((a) =>
+        ACTIVE_STATUSES.has(a.applicationStatus)
+        && !["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent"].includes(a.applicationStatus)
+      );
     case "interview":
-      return apps.filter((a) => a.applicationStatus === "interview" || a.applicationStatus === "offered");
+      return apps.filter((a) =>
+        ["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent"].includes(a.applicationStatus)
+      );
     case "completed":
       return apps.filter((a) => COMPLETED_STATUSES.has(a.applicationStatus));
     default:
@@ -1513,11 +1523,13 @@ export default function TalentApplications() {
   const totalCount       = apps.length;
   const underReviewCount = apps.filter((a) => a.applicationStatus === "under_review" || a.applicationStatus === "reviewed").length;
   const shortlistedCount = apps.filter((a) => a.applicationStatus === "shortlisted").length;
-  const interviewCount   = apps.filter((a) => a.applicationStatus === "interview" || a.applicationStatus === "offered").length;
+  const interviewCount   = apps.filter((a) =>
+    ["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent"].includes(a.applicationStatus)
+  ).length;
 
   const filterTabs: { key: FilterKey; label: string; count: number }[] = [
     { key: "all",       label: "All",       count: apps.length },
-    { key: "active",    label: "Active",    count: apps.filter((a) => ACTIVE_STATUSES.has(a.applicationStatus) && a.applicationStatus !== "interview").length },
+    { key: "active",    label: "Active",    count: filterApplications(apps, "active").length },
     { key: "interview", label: "Interview", count: interviewCount },
     { key: "completed", label: "Completed", count: apps.filter((a) => COMPLETED_STATUSES.has(a.applicationStatus)).length },
   ];

@@ -184,6 +184,13 @@ const TYPE_CONFIG: Record<
     label: "Client Application Update",
     route: "/admin/job-applications",
   },
+  talent_hired: {
+    icon: CheckCircle,
+    color: "#059669",
+    bg: "#D1FAE5",
+    label: "Talent Hired",
+    route: "/client-profile",
+  },
   new_message: {
     icon: MessageSquare,
     color: "#4D55C7",

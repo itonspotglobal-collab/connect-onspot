@@ -611,6 +611,97 @@ export async function sendClientNewApplicationEmail(
   }
 }
 
+export interface TalentHiredEmailOptions {
+  submissionId: string;
+  talentUserId?: string | null;
+  recipientEmail: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  applicantName?: string | null;
+  jobId?: string | null;
+  jobTitle?: string | null;
+  companyName?: string | null;
+}
+
+/** Sends the existing default Hired/Welcome template after the committed hire transition. */
+export async function sendTalentHiredEmail(opts: TalentHiredEmailOptions): Promise<void> {
+  const eventKey = `talent-hired-email:${opts.submissionId}`;
+  const senderEmail = CLIENT_SENDER;
+  try {
+    const templateResult = await query(
+      `SELECT id, subject, body_html
+         FROM applicant_email_templates
+        WHERE category = 'hired'
+          AND is_published = true
+          AND is_archived = false
+        ORDER BY is_default DESC, created_at ASC
+        LIMIT 1`,
+    );
+    const template = templateResult.rows[0];
+    if (!template) {
+      console.warn(`[emailCompanionService] no published Hired template for ${opts.submissionId}`);
+      return;
+    }
+
+    const rendered = renderApplicantEmail(
+      { subject: template.subject, bodyHtml: template.body_html },
+      buildEmailContext({
+        firstName: opts.firstName,
+        lastName: opts.lastName,
+        applicantName: opts.applicantName,
+        email: opts.recipientEmail,
+        jobTitle: opts.jobTitle,
+        jobCompany: opts.companyName,
+        status: "hired",
+        previousStatus: "contract_sent",
+        newStatus: "hired",
+        applicationId: opts.submissionId,
+        jobPostingId: opts.jobId,
+      }),
+    );
+    if (rendered.unresolvedKeys.length > 0) {
+      console.error(
+        `[emailCompanionService] Hired template has unresolved variables: ${rendered.unresolvedKeys.join(", ")}`,
+      );
+      return;
+    }
+
+    const claimed = await claimEmailDelivery({
+      eventKey,
+      eventType: "talent_hired",
+      recipientEmail: opts.recipientEmail,
+      recipientUserId: opts.talentUserId ?? null,
+      senderEmail,
+      templateCategory: "hired",
+      relatedType: "job_submission",
+      relatedId: opts.submissionId,
+      templateId: template.id,
+      subject: rendered.subject,
+      bodyHtml: rendered.bodyHtml,
+    });
+    if (!claimed) return;
+
+    if (!isEmailServiceConfigured()) {
+      const error = "Microsoft Graph email is not configured.";
+      await markEmailDeliveryResult({ eventKey, status: "failed", error });
+      return;
+    }
+    const result = await sendApplicantEmail({
+      to: opts.recipientEmail,
+      subject: rendered.subject,
+      bodyHtml: rendered.bodyHtml,
+      senderEmail,
+    });
+    await markEmailDeliveryResult({
+      eventKey,
+      status: result.success ? "sent" : "failed",
+      error: result.error,
+    });
+  } catch (error: any) {
+    console.error("[emailCompanionService] sendTalentHiredEmail (non-fatal):", error?.message);
+  }
+}
+
 // ── Chat Unread Email ──────────────────────────────────────────────────────────
 
 export interface UnreadMessageEmailOptions {

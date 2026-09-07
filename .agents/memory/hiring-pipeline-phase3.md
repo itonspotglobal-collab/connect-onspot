@@ -16,6 +16,12 @@ description: hiring_contracts endpoints — admin create/sign/void, talent view;
 ## Status flow
 
 ```
+
+Contract creation must validate both the persisted offer and the locked submission: the offer is accepted and the submission is still exactly `offer_accepted`. Final signing requires the locked submission to still be `contract_sent`. Withdrawal locks the same row and is unavailable once an active contract exists.
+
+**Why:** An accepted offer can outlive a later submission withdrawal/rejection. Checking only the offer can resurrect a terminal application, while an unlocked withdrawal can race a final signature and overwrite `hired`.
+
+**How to apply:** Any future contract, withdrawal, or terminal hiring transition must lock `job_submissions` and validate its current canonical status in the same transaction; never infer eligibility from the offer alone.
   offer_accepted → [POST contract] → contract_sent → [talent sign] → contract_sent
   → [admin OnSpot countersign] → signed → submission: hired
   → [PATCH void] → voided (only when status='sent', not after signed)

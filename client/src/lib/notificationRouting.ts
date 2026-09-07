@@ -19,6 +19,7 @@ export const CLIENT_NOTIFICATION_TYPES = [
   "interview_reschedule_proposed",
   "interview_confirmed",
   "client_application_status_changed",
+  "talent_hired",
   "new_message",
 ] as const;
 

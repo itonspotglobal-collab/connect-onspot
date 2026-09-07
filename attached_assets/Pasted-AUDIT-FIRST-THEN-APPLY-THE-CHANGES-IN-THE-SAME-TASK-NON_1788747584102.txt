@@ -1,0 +1,542 @@
+AUDIT FIRST, THEN APPLY THE CHANGES IN THE SAME TASK.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+Do NOT simply add `Hired` blindly to the application-status dropdown.
+
+We need to connect the existing accepted-offer flow to the final Hired state safely across Admin, Client, and Talent.
+
+# CURRENT PROBLEM
+
+In Admin → Job Applications → Change Application Status:
+
+the available choices currently include things like:
+
+- Submitted
+- Under Review
+- Shortlisted
+- Rejected
+
+But `Hired` is not available.
+
+We already tested an existing offer workflow:
+
+Admin/Client sent a test offer
+→ Talent accepted the offer
+
+At this point, the application should become eligible to be moved to:
+
+`Hired`
+
+# DESIRED BUSINESS FLOW
+
+The intended pipeline should be:
+
+Application
+→ Under Review
+→ Shortlisted
+→ Interviewing
+→ Offer Extended
+→ Offer Accepted
+→ Hired
+
+Do NOT allow arbitrary hiring before the offer has been accepted unless the existing business rules explicitly allow it.
+
+# PHASE 1 — AUDIT
+
+Before changing code, inspect:
+
+1. Canonical application/submission status enum.
+2. Existing `hired` status support in database/schema.
+3. Existing offer statuses.
+4. Offer accepted transition.
+5. Existing pipeline guard/transition service.
+6. Admin Application Status dialog.
+7. Client application/status UI.
+8. Talent My Applications UI.
+9. Admin counters/cards showing Hired.
+10. Existing notifications for offer accepted / hired.
+11. Existing email templates for Hired / Welcome.
+12. Existing contract logic.
+13. Existing project/employment creation logic, if any.
+14. Existing tests around `hired`.
+
+Report:
+
+- whether `hired` already exists in schema
+- whether it is currently blocked only in the Admin dropdown
+- whether a formal transition guard exists
+- exact prerequisite state required before `hired`
+
+Then implement.
+
+# IMPORTANT — USE EXISTING CANONICAL STATUS
+
+If `hired` already exists in the canonical status enum, reuse it.
+
+Do NOT create:
+
+- hired_candidate
+- employee
+- placed
+- hired_final
+
+or another duplicate status.
+
+If existing UI already counts `Hired`, preserve that same value.
+
+# ADMIN STATUS DROPDOWN
+
+Add `Hired` to the Admin status-change choices only when the application is eligible.
+
+Preferred behavior:
+
+If offer has been accepted:
+→ show `Hired`
+
+If offer is not accepted:
+→ do not show `Hired`
+or disable it with a clear reason.
+
+Example disabled helper:
+
+`Hired becomes available after the Talent accepts the offer.`
+
+Do not let frontend availability be the only guard.
+
+# SERVER-SIDE HIRE VALIDATION
+
+When Admin requests status:
+
+`hired`
+
+backend must verify:
+
+1. Admin is authorized.
+2. Submission/application exists.
+3. Current pipeline state is eligible.
+4. A valid offer exists for this submission.
+5. Offer status is accepted.
+6. Offer belongs to the same submission/job/Talent.
+7. Application is not withdrawn/rejected/cancelled.
+8. Existing required contract conditions are respected if current business rules require them.
+
+Do not trust the UI.
+
+# OFFER ACCEPTED PREREQUISITE
+
+Use the actual existing offer status.
+
+Conceptually:
+
+offer.status === "accepted"
+
+or whatever the canonical value is.
+
+Do NOT infer acceptance from:
+
+- notification text
+- email sent
+- message history
+- button state
+- frontend cache
+
+Use the persisted offer record.
+
+# CONTRACT REQUIREMENT — AUDIT CAREFULLY
+
+Determine whether the existing system expects:
+
+Offer Accepted
+→ Contract
+→ Hired
+
+or:
+
+Offer Accepted
+→ Hired
+→ Contract/Project
+
+Do not invent a new order.
+
+If the current business logic already requires a signed contract before `hired`, preserve that.
+
+If no such requirement exists, do not add one.
+
+Report the actual existing rule.
+
+# HIRE TRANSITION
+
+When eligible Admin changes application to `Hired`:
+
+1. Persist status using the existing centralized pipeline transition logic.
+2. Do not directly update status in random route code if a guard/service exists.
+3. Record any existing audit/status history.
+4. Preserve offer record.
+5. Preserve interview history.
+6. Preserve proposal history.
+7. Preserve contract records.
+8. Create existing/new Hired notification events.
+9. Trigger existing Hired/Welcome email if already supported.
+10. Refresh Admin/Client/Talent views.
+
+# ADMIN SIDE
+
+After Hired:
+
+Admin Job Applications should show:
+
+Status:
+`Hired`
+
+The existing Hired summary card should increment correctly.
+
+Remove the application from active review buckets according to existing filter semantics.
+
+Do not delete the row.
+
+Do not remove history.
+
+# CLIENT SIDE
+
+The Client who owns the job should see the application/Talent as:
+
+`Hired`
+
+in the relevant application/job management UI.
+
+If Client has an existing notification system for application status updates, create/reuse:
+
+`Talent hired`
+
+or the existing canonical Hired notification.
+
+Suggested message:
+
+`{{talent_name}} has been marked as hired for {{job_title}}.`
+
+Do not expose Admin-only information.
+
+If an existing project/employment workflow begins after Hired, preserve or trigger it only according to existing logic.
+
+# TALENT SIDE
+
+Talent My Applications should update to:
+
+`Hired`
+
+or the existing user-facing equivalent.
+
+The application should move to the proper Completed/Hired area according to existing UI behavior.
+
+Do not remove:
+
+- View Job
+- View Submission
+- Timeline
+- contract/offer records
+unless existing Hired UI intentionally changes those.
+
+Talent should receive a Hired/Welcome notification if the current notification system supports it.
+
+# TALENT EMAIL
+
+Audit existing email templates.
+
+The repo likely already has:
+
+- Welcome to the Team
+- Hired
+or equivalent.
+
+Reuse the existing template.
+
+Do not create duplicate Hired templates unnecessarily.
+
+If email is already wired to canonical status changes, make sure `hired` uses it.
+
+Email failure must not roll back Hired status.
+
+# CLIENT EMAIL
+
+If the existing companion email system sends Client status emails for major application updates, add/reuse a Client-facing Hired event.
+
+Example:
+
+Subject:
+`{{talent_name}} has been hired for {{job_title}}`
+
+Do not create a new email architecture.
+
+If Client emails for Hired are not part of existing current notification scope, report it rather than broadening the task unnecessarily.
+
+# NOTIFICATIONS
+
+Expected minimum:
+
+Talent:
+`Congratulations — you've been hired`
+
+Client:
+`Talent hired for {{job_title}}`
+
+Admin:
+No extra self-notification required unless current notification design already creates one.
+
+Use existing event-key/idempotency logic.
+
+Do not duplicate notifications on retries.
+
+# STATUS HISTORY / TIMELINE
+
+If application timeline/status history exists, add the Hired transition through the same system.
+
+Timeline should show:
+
+Offer Accepted
+→ Hired
+
+with correct timestamp.
+
+Do not create duplicate history systems.
+
+# PIPELINE GUARDS
+
+Preserve all existing guards.
+
+Do not allow:
+
+Rejected
+→ Hired
+
+Withdrawn
+→ Hired
+
+Cancelled
+→ Hired
+
+unless there is an explicit existing recovery/reopen path first.
+
+Do not bypass formal transition ownership.
+
+# MULTIPLE OFFERS
+
+If multiple offer records can exist:
+
+use the latest/current valid accepted offer associated with the submission.
+
+Do not use an accepted offer from another job/submission.
+
+# HIRED COUNTERS
+
+Verify existing Admin summary card:
+
+`HIRED`
+
+updates correctly.
+
+If Client/Talent dashboards have Hired counts, verify them too.
+
+Do not hardcode counts.
+
+Use existing server data.
+
+# JOB CAPACITY / OPENING STATE
+
+Audit whether hiring should automatically:
+
+- close the job
+- decrement remaining openings
+- leave it open
+
+Do NOT change job status automatically unless the existing business rules already define that.
+
+A Talent being hired should not unexpectedly close a multi-hire role.
+
+Report existing behavior.
+
+# PROJECT / EMPLOYMENT CREATION
+
+Audit whether Hired currently triggers:
+
+- project creation
+- placement/employment record
+- billing setup
+- contract activation
+
+If existing code already has such a trigger, ensure the Hired transition uses it.
+
+Do not invent new records if not already part of the product.
+
+# ADMIN STATUS MODAL
+
+Keep the existing UI.
+
+Only extend safely.
+
+Expected:
+
+Current status:
+`Offer Accepted`
+or existing equivalent
+
+New status:
+dropdown contains:
+`Hired`
+
+Then:
+
+`Continue to Email`
+
+if the existing Admin application-status email composer applies.
+
+Do not remove the current email step.
+
+# APPLICANTEMAILCOMPOSER
+
+If changing status to Hired currently opens ApplicantEmailComposer:
+
+reuse it.
+
+Preload existing Hired/Welcome template.
+
+Do not change ApplicantEmailComposer architecture.
+
+# DUPLICATE PROTECTION
+
+Repeated:
+
+`Mark Hired`
+
+must not:
+
+- create duplicate history
+- duplicate notifications
+- duplicate email
+- duplicate employment/project records
+
+Use existing idempotency/transition checks.
+
+# ERROR BEHAVIOR
+
+If Admin attempts Hired without accepted offer:
+
+Return a structured error such as:
+
+`offer_not_accepted`
+
+Message:
+
+`The Talent must accept the offer before this application can be marked as hired.`
+
+Do not return a generic 500.
+
+# DO NOT CHANGE
+
+Do not modify or break:
+
+- offer creation
+- offer acceptance
+- interviews
+- interview rescheduling
+- Client/Talent notifications
+- application email composer
+- job approval
+- job posting
+- messaging
+- contracts
+- organization
+- Admin scheduling
+- role invitation
+- My Applications
+- existing application statuses
+
+No broad refactor.
+
+# TESTS
+
+Add focused coverage:
+
+1. Submitted application cannot become Hired.
+2. Under Review cannot become Hired.
+3. Shortlisted cannot become Hired without accepted offer.
+4. Interviewing cannot become Hired without accepted offer.
+5. Offer Extended but not accepted cannot become Hired.
+6. Accepted offer makes Hired available.
+7. Admin dropdown shows Hired when eligible.
+8. Backend allows Hired after accepted offer.
+9. Backend rejects Hired without accepted offer.
+10. Correct accepted offer must belong to same submission.
+11. Withdrawn cannot become Hired.
+12. Rejected cannot become Hired.
+13. Hired status persists.
+14. Admin Hired count increments.
+15. Client sees Hired.
+16. Talent sees Hired.
+17. Application timeline records Hired.
+18. Talent Hired notification is created.
+19. Client Hired notification is created if current design supports it.
+20. Hired email uses existing template.
+21. Email failure does not roll back Hired.
+22. Duplicate Hired request does not duplicate side effects.
+23. Existing offer acceptance remains unchanged.
+24. Existing contract logic remains unchanged.
+25. Existing interview logic remains unchanged.
+26. `npx tsc --noEmit` passes.
+27. `git diff --check` passes.
+
+# MANUAL TEST
+
+Use the current test job and test Talent.
+
+1. Send Offer.
+2. Talent accepts Offer.
+3. Log in as Admin.
+4. Open Job Applications.
+5. Click Status.
+6. Verify `Hired` is now available.
+7. Select Hired.
+8. Continue through existing email step if applicable.
+9. Confirm status change.
+10. Verify Admin row shows Hired.
+11. Verify Hired summary count updates.
+12. Log in as Client.
+13. Verify application/Talent shows Hired.
+14. Verify Client notification if configured.
+15. Log in as Talent.
+16. Verify My Applications shows Hired.
+17. Verify Talent notification.
+18. Verify any existing Hired/Welcome email.
+19. Verify offer remains Accepted in history.
+20. Verify interview history remains intact.
+
+# COMPLETION REPORT
+
+After audit + implementation, report:
+
+1. Canonical Hired status found.
+2. Existing offer accepted status.
+3. Exact prerequisite for Hired.
+4. Whether contract completion is required.
+5. Admin dropdown change.
+6. Server-side guard change.
+7. Pipeline transition logic used.
+8. Admin behavior.
+9. Client behavior.
+10. Talent behavior.
+11. Notifications.
+12. Emails.
+13. Timeline/history behavior.
+14. Project/employment side effects if existing.
+15. Job status/capacity behavior.
+16. Files changed.
+17. Tests/results.
+18. Manual end-to-end hire test.
+19. Confirmation offer/interview/contract flows were not broken.
+20. Confirmation no duplicate Hired side effects were introduced.
+
+AUDIT FIRST, THEN APPLY THE CHANGES.
+
+The required rule is:
+
+`Accepted Offer → eligible to Mark Hired → Hired state synchronizes across Admin, Client, and Talent.`

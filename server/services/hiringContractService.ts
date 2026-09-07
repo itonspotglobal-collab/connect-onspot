@@ -23,6 +23,12 @@ import { getClient } from "../db.ts";
 import type { PoolClient } from "pg";
 import { loadAdminFormalSubmission } from "./formalPipelineGuard.js";
 import { computeDepositAmount } from "../lib/billing.js";
+import { query } from "../db.js";
+import {
+  notifyClientOfTalentHired,
+  notifyTalentOfApplicationStatusChange,
+} from "./applicationNotificationService.js";
+import { sendTalentHiredEmail } from "./emailCompanionService.js";
 
 export class ContractError extends Error {
   status: number;
@@ -133,6 +139,18 @@ export async function createHiringContract(params: {
       });
     }
     const previousStatus: string = subGuard.row.status;
+    if (previousStatus !== "offer_accepted") {
+      throw new ContractError(409, {
+        error: "submission_not_contractable",
+        message:
+          previousStatus === "withdrawn"
+            ? "A withdrawn application cannot proceed to contract."
+            : previousStatus === "rejected"
+              ? "A rejected application cannot proceed to contract."
+              : `A hiring contract requires an accepted-offer application (current status: '${previousStatus}').`,
+        currentStatus: previousStatus,
+      });
+    }
 
     let insert;
     try {
@@ -154,18 +172,16 @@ export async function createHiringContract(params: {
       throw err;
     }
 
-    if (previousStatus !== "contract_sent") {
-      await client.query(
-        `UPDATE job_submissions SET status = 'contract_sent', updated_at = NOW() WHERE id = $1`,
-        [submissionId],
-      );
-      await client.query(
-        `INSERT INTO job_application_status_history
-           (application_id, previous_status, new_status, note, changed_by)
-         VALUES ($1, $2, 'contract_sent', $3, $4)`,
-        [submissionId, previousStatus, `Hiring contract sent (signing entity: ${signingEntity})`, adminId ?? null],
-      );
-    }
+    await client.query(
+      `UPDATE job_submissions SET status = 'contract_sent', updated_at = NOW() WHERE id = $1`,
+      [submissionId],
+    );
+    await client.query(
+      `INSERT INTO job_application_status_history
+         (application_id, previous_status, new_status, note, changed_by)
+       VALUES ($1, $2, 'contract_sent', $3, $4)`,
+      [submissionId, previousStatus, `Hiring contract sent (signing entity: ${signingEntity})`, adminId ?? null],
+    );
     return insert.rows[0];
   });
 }
@@ -198,7 +214,8 @@ export async function updateHiringContract(
     actorRole,
     adminId,
   } = updates;
-  return withTransaction(async (client) => {
+  const result = await withTransaction(async (client) => {
+    let hiredTransition: { submissionId: string; previousStatus: string } | null = null;
     const contractResult = await client.query(
       `SELECT * FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
       [contractId],
@@ -271,18 +288,30 @@ export async function updateHiringContract(
         [contract.submission_id],
       );
       const previousStatus: string | undefined = sub.rows[0]?.status;
-      if (previousStatus && previousStatus !== "hired") {
-        await client.query(
-          `UPDATE job_submissions SET status = 'hired', updated_at = NOW() WHERE id = $1`,
-          [contract.submission_id],
-        );
-        await client.query(
-          `INSERT INTO job_application_status_history
-             (application_id, previous_status, new_status, note, changed_by)
-           VALUES ($1, $2, 'hired', 'Hiring contract fully signed by OnSpot and talent', $3)`,
-          [contract.submission_id, previousStatus, adminId ?? null],
-        );
+      if (previousStatus !== "contract_sent") {
+        throw new ContractError(409, {
+          error: "submission_not_hireable",
+          message:
+            previousStatus === "withdrawn"
+              ? "A withdrawn application cannot be marked as hired."
+              : `This application cannot be marked as hired from status '${previousStatus ?? "unknown"}'.`,
+          currentStatus: previousStatus ?? null,
+        });
       }
+      await client.query(
+        `UPDATE job_submissions SET status = 'hired', updated_at = NOW() WHERE id = $1`,
+        [contract.submission_id],
+      );
+      hiredTransition = {
+        submissionId: contract.submission_id,
+        previousStatus,
+      };
+      await client.query(
+        `INSERT INTO job_application_status_history
+           (application_id, previous_status, new_status, note, changed_by)
+         VALUES ($1, $2, 'hired', 'Hiring contract fully signed by OnSpot and talent', $3)`,
+        [contract.submission_id, previousStatus, adminId ?? null],
+      );
 
       // Contract activation starts the deposit lifecycle. Keep this in the
       // same transaction as the signing transition so an active contract
@@ -305,8 +334,66 @@ export async function updateHiringContract(
         );
       }
     }
-    return updated.rows[0];
+    return { contract: updated.rows[0], hiredTransition };
   });
+
+  if (result.hiredTransition) {
+    const { submissionId, previousStatus } = result.hiredTransition;
+    try {
+      const contextResult = await query(
+        `SELECT js.talent_id, js.client_id, js.email, js.first_name, js.last_name,
+                js.applicant_name, js.job_id, j.title AS job_title, j.company AS company_name,
+                c.id AS candidate_id
+           FROM job_submissions js
+           JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN candidates c ON c.user_id = js.talent_id
+          WHERE js.id = $1
+          LIMIT 1`,
+        [submissionId],
+      );
+      const context = contextResult.rows[0];
+      if (context) {
+        const talentName =
+          [context.first_name, context.last_name].filter(Boolean).join(" ")
+          || context.applicant_name
+          || "The Talent";
+        await Promise.all([
+          notifyTalentOfApplicationStatusChange({
+            submissionId,
+            talentUserId: context.talent_id,
+            candidateId: context.candidate_id,
+            applicantEmail: context.email,
+            jobTitle: context.job_title,
+            companyName: context.company_name,
+            previousStatus,
+            newStatus: "hired",
+            eventKey: `application-status:${submissionId}:${previousStatus}:hired`,
+          }),
+          notifyClientOfTalentHired({
+            submissionId,
+            clientUserId: context.client_id,
+            talentName,
+            jobTitle: context.job_title,
+          }),
+        ]);
+        void sendTalentHiredEmail({
+          submissionId,
+          talentUserId: context.talent_id,
+          recipientEmail: context.email,
+          firstName: context.first_name,
+          lastName: context.last_name,
+          applicantName: context.applicant_name,
+          jobId: context.job_id,
+          jobTitle: context.job_title,
+          companyName: context.company_name,
+        });
+      }
+    } catch (error) {
+      console.error(`[hiring-contract] committed Hired side effects failed for ${submissionId}:`, error);
+    }
+  }
+
+  return result.contract;
 }
 
 /**

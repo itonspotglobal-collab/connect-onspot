@@ -29,6 +29,13 @@ type AdminClientStatusNotificationInput = {
   newStatus: string;
 };
 
+type ClientTalentHiredNotificationInput = {
+  submissionId: string;
+  clientUserId: string | null | undefined;
+  talentName: string | null | undefined;
+  jobTitle: string | null | undefined;
+};
+
 /**
  * Persists the Client-facing notification emitted after a new job submission is
  * saved. job_submissions.client_id is a direct users.id foreign key, so there is
@@ -166,6 +173,11 @@ function applicationStatusNotificationCopy(
         title: "Offer Declined",
         message: `The offer status for your application to ${target} has been updated to declined.`,
       };
+    case "hired":
+      return {
+        title: "Congratulations — you've been hired",
+        message: `Your application for ${target} has been marked as hired.`,
+      };
     case "rejected":
       return {
         title: "Application Update",
@@ -176,6 +188,30 @@ function applicationStatusNotificationCopy(
         title: "Application Status Updated",
         message: `Your application for ${target} is now ${submissionStatusLabel(newStatus).toLowerCase()}.`,
       };
+  }
+}
+
+export async function notifyClientOfTalentHired({
+  submissionId,
+  clientUserId,
+  talentName,
+  jobTitle,
+}: ClientTalentHiredNotificationInput): Promise<void> {
+  if (!clientUserId) return;
+  const message = `${talentName || "The Talent"} has been marked as hired for ${jobTitle || "your job"}.`;
+  try {
+    await query(
+      `INSERT INTO notifications
+         (user_id, type, title, message, related_id, related_type, event_key)
+       VALUES ($1, 'talent_hired', 'Talent hired', $2, $3, 'job_submission', $4)
+       ON CONFLICT (event_key) WHERE event_key IS NOT NULL DO NOTHING`,
+      [clientUserId, message, submissionId, `client-talent-hired:${submissionId}`],
+    );
+  } catch (error) {
+    console.error(
+      `[application-status] failed to create Client hired notification for ${submissionId}:`,
+      error,
+    );
   }
 }
 

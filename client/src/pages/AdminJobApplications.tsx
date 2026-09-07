@@ -986,6 +986,9 @@ function StatusDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Change Application Status</DialogTitle>
+          <DialogDescription>
+            Select the next review status. Contract and Hired stages are controlled by the signed-contract workflow.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div>
@@ -1002,8 +1005,22 @@ function StatusDialog({
                 {GENERIC_ADMIN_EMAIL_STATUSES.filter(s => s !== currentStatus).map(s => (
                   <SelectItem key={s} value={s}>{STATUS_CFG[s]?.label ?? s}</SelectItem>
                 ))}
+                {currentStatus !== "hired" && (
+                  <SelectItem value="hired" disabled>
+                    Hired
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
+            {currentStatus !== "hired" && (
+              <p className="text-xs text-slate-500">
+                {currentStatus === "offer_accepted"
+                  ? "Next, create the hiring contract. Hired is set automatically after OnSpot and the Talent both sign it."
+                  : currentStatus === "contract_sent"
+                    ? "Hired is set automatically after OnSpot and the Talent both sign the contract."
+                    : "Hired becomes available through the contract workflow after the Talent accepts an offer."}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="status-note">Internal note (optional)</Label>
