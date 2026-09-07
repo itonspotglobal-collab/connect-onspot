@@ -9,11 +9,17 @@ import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle, Video, Loader2 } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatInterviewTime } from "@/lib/formatInterviewTime";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { TimezoneSelect } from "@/components/TimezoneSelect";
+import { useToast } from "@/hooks/use-toast";
+import { convertLocalDateTimeToUtc, formatInterviewTime } from "@/lib/formatInterviewTime";
+import { getClientInterviewDisplayState } from "@/lib/clientInterviewState";
 
 interface InterviewRow {
-  id: number;
-  submission_id: number;
+  id: string;
+  submission_id: string;
   round_number: number;
   interview_type: string;
   status: string;
@@ -23,6 +29,7 @@ interface InterviewRow {
   proposed_times: any[];
   candidate_notes: string | null;
   meeting_link: string | null;
+  current_proposal_owner: string | null;
   created_at: string;
   // joined fields
   job_title?: string;
@@ -30,18 +37,54 @@ interface InterviewRow {
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
-  proposed:   { label: "Awaiting response", color: "bg-yellow-100 text-yellow-800" },
+  awaiting_talent: { label: "Awaiting Talent", color: "bg-yellow-100 text-yellow-800" },
+  action_required: { label: "Action Required", color: "bg-orange-100 text-orange-800" },
   confirmed:  { label: "Confirmed",         color: "bg-green-100 text-green-800" },
   rescheduled:{ label: "Rescheduled",       color: "bg-blue-100 text-blue-800" },
   cancelled:  { label: "Cancelled",         color: "bg-red-100 text-red-800" },
   completed:  { label: "Completed",         color: "bg-slate-100 text-slate-700" },
 };
 
-function InterviewCard({ interview }: { interview: InterviewRow }) {
-  const badge = STATUS_BADGE[interview.status] ?? { label: interview.status, color: "bg-slate-100 text-slate-700" };
+function InterviewCard({
+  interview,
+  busy,
+  onUpdate,
+}: {
+  interview: InterviewRow;
+  busy: boolean;
+  onUpdate: (interviewId: string, payload: Record<string, unknown>) => Promise<boolean>;
+}) {
+  const { toast } = useToast();
+  const state = getClientInterviewDisplayState(interview);
+  const badge = STATUS_BADGE[state] ?? { label: interview.status, color: "bg-slate-100 text-slate-700" };
   const confirmedTime = interview.confirmed_time
     ? formatInterviewTime(interview.confirmed_time, interview.confirmed_time_zone ?? "UTC")
     : null;
+  const [counterOpen, setCounterOpen] = useState(false);
+  const [counterDateTime, setCounterDateTime] = useState("");
+  const [counterTimezone, setCounterTimezone] = useState(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+  );
+  const latestSlots = Array.isArray(interview.proposed_times) ? interview.proposed_times : [];
+
+  const submitCounter = async () => {
+    try {
+      const start = convertLocalDateTimeToUtc(counterDateTime, counterTimezone);
+      const updated = await onUpdate(interview.id, {
+        proposedTimes: [{ start, timezone: counterTimezone }],
+      });
+      if (updated) {
+        setCounterOpen(false);
+        setCounterDateTime("");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Choose a valid interview time",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.02]">
@@ -68,14 +111,51 @@ function InterviewCard({ interview }: { interview: InterviewRow }) {
         </div>
       )}
 
-      {!confirmedTime && interview.status === "proposed" && (
+      {!confirmedTime && state === "awaiting_talent" && (
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
           <AlertCircle className="h-4 w-4 shrink-0 text-yellow-500" />
           <span>Waiting for talent to confirm a time</span>
         </div>
       )}
 
-      {interview.meeting_link && (
+      {!confirmedTime && state === "action_required" && (
+        <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50/70 p-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-orange-900">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>Talent proposed a new interview time</span>
+          </div>
+          <div className="mt-2 space-y-2">
+            {latestSlots.map((slot) => (
+              <div key={slot.start} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white px-3 py-2">
+                <span className="text-sm font-semibold text-slate-800">
+                  {formatInterviewTime(slot.start, slot.timezone ?? "UTC")}
+                </span>
+                <Button
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => onUpdate(interview.id, {
+                    status: "confirmed",
+                    confirmedTime: slot.start,
+                  })}
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Accept Time"}
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button
+            className="mt-3"
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => setCounterOpen(true)}
+          >
+            Suggest Another Time
+          </Button>
+        </div>
+      )}
+
+      {interview.meeting_link && state === "confirmed" && (
         <div className="mt-2">
           <a
             href={interview.meeting_link}
@@ -92,6 +172,39 @@ function InterviewCard({ interview }: { interview: InterviewRow }) {
       {interview.candidate_notes && (
         <p className="mt-2 text-xs text-slate-500 line-clamp-2">{interview.candidate_notes}</p>
       )}
+
+      <Dialog open={counterOpen} onOpenChange={setCounterOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Suggest another time</DialogTitle>
+            <DialogDescription>
+              Talent will need to explicitly accept this new time before the interview is confirmed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor={`counter-time-${interview.id}`}>Date and time</Label>
+              <Input
+                id={`counter-time-${interview.id}`}
+                type="datetime-local"
+                value={counterDateTime}
+                onChange={(event) => setCounterDateTime(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Timezone</Label>
+              <TimezoneSelect value={counterTimezone} onChange={setCounterTimezone} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCounterOpen(false)}>Cancel</Button>
+            <Button disabled={!counterDateTime || busy} onClick={submitCounter}>
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Send New Time
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -106,14 +219,56 @@ async function fetchClientInterviews(token: string | null): Promise<InterviewRow
 
 export default function ClientInterviews() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const token = typeof window !== "undefined" ? localStorage.getItem("onspot_jwt_token") : null;
   const [tab, setTab] = useState("upcoming");
 
-  const { data, isLoading, isError } = useQuery<InterviewRow[]>({
+  const { data, isLoading, isError, refetch } = useQuery<InterviewRow[]>({
     queryKey: ["/api/client/interviews"],
     queryFn: () => fetchClientInterviews(token),
     enabled: !!user,
   });
+  const [busyInterviewId, setBusyInterviewId] = useState<string | null>(null);
+
+  const updateInterview = async (interviewId: string, payload: Record<string, unknown>) => {
+    setBusyInterviewId(interviewId);
+    try {
+      const response = await fetch(`/api/client/interviews/${interviewId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (body.error === "interview_proposal_stale") {
+          await refetch();
+          throw new Error("The interview proposal changed. Please review the latest proposed time.");
+        }
+        throw new Error(body.message || body.error || "Could not update the interview");
+      }
+      await refetch();
+      toast({
+        title: payload.status === "confirmed" ? "Interview confirmed" : "New time proposed",
+        description: payload.status === "confirmed"
+          ? "The agreed interview time is now confirmed."
+          : "Talent has been asked to review your new proposed time.",
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Could not update interview",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setBusyInterviewId(null);
+    }
+  };
 
   const now = new Date();
 
@@ -184,7 +339,14 @@ export default function ClientInterviews() {
                     const tb = b.confirmed_time ? new Date(b.confirmed_time).getTime() : Number.MAX_SAFE_INTEGER;
                     return ta - tb;
                   })
-                  .map((iv) => <InterviewCard key={iv.id} interview={iv} />)}
+                  .map((iv) => (
+                    <InterviewCard
+                      key={iv.id}
+                      interview={iv}
+                      busy={busyInterviewId === iv.id}
+                      onUpdate={updateInterview}
+                    />
+                  ))}
               </div>
             )}
           </TabsContent>
@@ -204,7 +366,14 @@ export default function ClientInterviews() {
                     const tb = b.confirmed_time ? new Date(b.confirmed_time).getTime() : 0;
                     return tb - ta;
                   })
-                  .map((iv) => <InterviewCard key={iv.id} interview={iv} />)}
+                  .map((iv) => (
+                    <InterviewCard
+                      key={iv.id}
+                      interview={iv}
+                      busy={busyInterviewId === iv.id}
+                      onUpdate={updateInterview}
+                    />
+                  ))}
               </div>
             )}
           </TabsContent>

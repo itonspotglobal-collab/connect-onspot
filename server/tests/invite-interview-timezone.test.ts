@@ -459,36 +459,70 @@ describe("invitation and interview timezone production smoke path", () => {
       FIRST_COUNTER_TIME,
     );
 
-    const repeatedCounter = await request(
-      server,
-      "PATCH",
-      `/api/talent/interviews/${invitation.json.interview.id}/respond`,
-      candidateToken,
-      {
-        action: "counter",
-        proposedTimes: [{ start: FIRST_COUNTER_TIME, timezone: INTERVIEW_TIMEZONE }],
-      },
-    );
-    assert.equal(repeatedCounter.status, 409);
-    const firstCounterNotificationCount = await query(
-      `SELECT COUNT(*)::int AS count FROM notifications WHERE event_key = $1`,
-      [firstCounterEventKey],
-    );
-    assert.equal(firstCounterNotificationCount.rows[0].count, 1);
-
-    const clientReplies = await request(
+    const staleClientAcceptance = await request(
       server,
       "PATCH",
       `/api/client/interviews/${invitation.json.interview.id}`,
       clientToken,
-      { proposedTimes: [{ start: INTERVIEW_TIME, timezone: INTERVIEW_TIMEZONE }] },
+      {
+        status: "confirmed",
+        confirmedTime: INTERVIEW_TIME,
+      },
     );
-    assert.equal(clientReplies.status, 200, JSON.stringify(clientReplies.json));
+    assert.equal(staleClientAcceptance.status, 400);
+
+    const clientAcceptsTalentTime = await request(
+      server,
+      "PATCH",
+      `/api/client/interviews/${invitation.json.interview.id}`,
+      clientToken,
+      {
+        status: "confirmed",
+        confirmedTime: FIRST_COUNTER_TIME,
+      },
+    );
+    assert.equal(clientAcceptsTalentTime.status, 200, JSON.stringify(clientAcceptsTalentTime.json));
+    assert.equal(clientAcceptsTalentTime.json.status, "confirmed");
+    assert.equal(new Date(clientAcceptsTalentTime.json.confirmed_time).toISOString(), FIRST_COUNTER_TIME);
+    assert.equal(clientAcceptsTalentTime.json.confirmed_time_zone, INTERVIEW_TIMEZONE);
+
+    const talentConfirmationNotification = await query(
+      `SELECT COUNT(*)::int AS count
+         FROM notifications
+        WHERE user_id = $1 AND type = 'interview_confirmed' AND related_id = $2`,
+      [TALENT_ID, invitation.json.interview.id],
+    );
+    assert.equal(talentConfirmationNotification.rows[0].count, 1);
+
+    const repeatedClientAcceptance = await request(
+      server,
+      "PATCH",
+      `/api/client/interviews/${invitation.json.interview.id}`,
+      clientToken,
+      { status: "confirmed", confirmedTime: FIRST_COUNTER_TIME },
+    );
+    assert.equal(repeatedClientAcceptance.status, 409);
+
+    const secondInterview = await request(
+      server,
+      "POST",
+      "/api/client/interviews",
+      clientToken,
+      {
+        submissionId: invitation.json.id,
+        interviewType: "technical",
+        proposedTimes: [{ start: INTERVIEW_TIME, timezone: INTERVIEW_TIMEZONE }],
+        durationMinutes: 60,
+        meetingLink: MEETING_LINK,
+      },
+    );
+    assert.equal(secondInterview.status, 201, JSON.stringify(secondInterview.json));
+    const secondInterviewId = secondInterview.json.id;
 
     const secondCounter = await request(
       server,
       "PATCH",
-      `/api/talent/interviews/${invitation.json.interview.id}/respond`,
+      `/api/talent/interviews/${secondInterviewId}/respond`,
       candidateToken,
       {
         action: "counter",
@@ -501,23 +535,53 @@ describe("invitation and interview timezone production smoke path", () => {
          FROM notifications
         WHERE user_id = $1 AND type = 'interview_reschedule_proposed'
           AND related_id = $2`,
-      [CLIENT_ID, invitation.json.interview.id],
+      [CLIENT_ID, secondInterviewId],
     );
-    assert.equal(counterNotificationCount.rows[0].count, 2, "each genuine Talent counter-proposal must notify once");
+    assert.equal(counterNotificationCount.rows[0].count, 1);
 
     const clientRepliesAgain = await request(
       server,
       "PATCH",
-      `/api/client/interviews/${invitation.json.interview.id}`,
+      `/api/client/interviews/${secondInterviewId}`,
       clientToken,
       { proposedTimes: [{ start: INTERVIEW_TIME, timezone: INTERVIEW_TIMEZONE }] },
     );
     assert.equal(clientRepliesAgain.status, 200, JSON.stringify(clientRepliesAgain.json));
+    assert.equal(clientRepliesAgain.json.current_proposal_owner, "talent");
+    assert.equal(clientRepliesAgain.json.status, "proposed");
+
+    const clientCounterNotification = await query(
+      `SELECT COUNT(*)::int AS count
+         FROM notifications
+        WHERE user_id = $1 AND type = 'interview_rescheduled' AND related_id = $2`,
+      [TALENT_ID, secondInterviewId],
+    );
+    assert.equal(clientCounterNotification.rows[0].count, 1);
+
+    const proposalHistory = await query(
+      `SELECT proposer_role, action, proposed_times
+         FROM interview_proposals
+        WHERE interview_id = $1
+        ORDER BY created_at ASC`,
+      [secondInterviewId],
+    );
+    assert.ok(
+      proposalHistory.rows.some((proposal: any) =>
+        proposal.proposer_role === "talent"
+        && proposal.action === "counter"
+        && proposal.proposed_times[0].start === SECOND_COUNTER_TIME),
+      "Talent proposal B must remain in immutable history after Client proposal C",
+    );
+
+    const interviewCountBeforeFinalAcceptance = await query(
+      `SELECT COUNT(*)::int AS count FROM interviews WHERE submission_id = $1`,
+      [invitation.json.id],
+    );
 
     const confirmed = await request(
       server,
       "PATCH",
-      `/api/talent/interviews/${invitation.json.interview.id}/respond`,
+      `/api/talent/interviews/${secondInterviewId}/respond`,
       candidateToken,
       { action: "accept", selectedTime: INTERVIEW_TIME },
     );
@@ -527,8 +591,9 @@ describe("invitation and interview timezone production smoke path", () => {
     const confirmedTalentInterviews = await request(server, "GET", "/api/talent/interviews", candidateToken);
     assert.equal(confirmedTalentInterviews.status, 200, JSON.stringify(confirmedTalentInterviews.json));
     const confirmedTalentInterview = confirmedTalentInterviews.json.find(
-      (row: { id: string }) => row.id === invitation.json.interview.id,
+      (row: { id: string }) => row.id === secondInterviewId,
     );
+    assert.equal(new Date(confirmedTalentInterview.confirmedTime).toISOString(), INTERVIEW_TIME);
     assert.equal(confirmedTalentInterview.confirmedTimeZone, INTERVIEW_TIMEZONE);
 
     const clientInterviews = await request(
@@ -538,7 +603,21 @@ describe("invitation and interview timezone production smoke path", () => {
       clientToken,
     );
     assert.equal(clientInterviews.status, 200, JSON.stringify(clientInterviews.json));
-    assert.equal(clientInterviews.json[0].confirmed_time_zone, INTERVIEW_TIMEZONE);
+    const confirmedClientInterview = clientInterviews.json.find(
+      (row: { id: string }) => row.id === secondInterviewId,
+    );
+    assert.equal(new Date(confirmedClientInterview.confirmed_time).toISOString(), INTERVIEW_TIME);
+    assert.equal(confirmedClientInterview.confirmed_time_zone, INTERVIEW_TIMEZONE);
+
+    const interviewCountAfterFinalAcceptance = await query(
+      `SELECT COUNT(*)::int AS count FROM interviews WHERE submission_id = $1`,
+      [invitation.json.id],
+    );
+    assert.equal(
+      interviewCountAfterFinalAcceptance.rows[0].count,
+      interviewCountBeforeFinalAcceptance.rows[0].count,
+      "accepting a proposal must not create an extra interview row",
+    );
 
     const formatted = formatInterviewTime(INTERVIEW_TIME, INTERVIEW_TIMEZONE);
     assert.match(formatted, new RegExp(`\\(${INTERVIEW_TIMEZONE}\\)$`));

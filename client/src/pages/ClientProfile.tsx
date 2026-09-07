@@ -183,6 +183,7 @@ function ViewSubmissionModal({
   });
   const [meetingLinkDraft, setMeetingLinkDraft] = useState("");
   const [interviewBusy, setInterviewBusy] = useState(false);
+  const currentInterview = interviewRows.find((row: any) => row.id === submission.interviewId);
   const respondToInterview = async (payload: Record<string, unknown>) => {
     const interviewId = submission.interviewId;
     if (!interviewId) return;
@@ -296,18 +297,27 @@ function ViewSubmissionModal({
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Initial interview</p>
                 <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold capitalize text-indigo-700 dark:bg-slate-800 dark:text-indigo-300">
-                  {submission.interviewStatus ?? "proposed"}
+                   {currentInterview?.status ?? submission.interviewStatus ?? "proposed"}
                 </span>
               </div>
-              {submission.confirmedTime ? (
-                <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">Confirmed: {formatInterviewTime(submission.confirmedTime, submission.confirmedTimeZone ?? "UTC")}</p>
+              {(currentInterview?.confirmed_time ?? submission.confirmedTime) ? (
+                <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                  Confirmed: {formatInterviewTime(
+                    currentInterview?.confirmed_time ?? submission.confirmedTime!,
+                    currentInterview?.confirmed_time_zone ?? submission.confirmedTimeZone ?? "UTC",
+                  )}
+                </p>
+              ) : (currentInterview?.current_proposal_owner ?? submission.currentProposalOwner) === "client" ? (
+                <p className="mt-2 text-xs font-medium text-orange-700 dark:text-orange-300">
+                  Talent proposed a new interview time. Your response is required.
+                </p>
               ) : (
                 <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
                   Waiting for the talent to choose a time. {submission.proposalExchangeCount ? `${submission.proposalExchangeCount} time exchange${submission.proposalExchangeCount === 1 ? "" : "s"} so far.` : ""}
                 </p>
               )}
               {(() => {
-                const interview = interviewRows.find((row: any) => row.id === submission.interviewId);
+                const interview = currentInterview;
                 const canRespond = interview && ["proposed", "rescheduled"].includes(interview.status) && interview.current_proposal_owner === "client";
                 if (!interview || !canRespond) return null;
                 return (
@@ -324,13 +334,13 @@ function ViewSubmissionModal({
                   </div>
                 );
               })()}
-              {submission.interviewStatus === "confirmed" && (
+              {(currentInterview?.status ?? submission.interviewStatus) === "confirmed" && (
                 <div className="mt-3 flex gap-2">
                   <Input aria-label="Meeting link" value={meetingLinkDraft || submission.meetingLink || ""} onChange={(event) => setMeetingLinkDraft(event.target.value)} placeholder="Add a meeting link" className="h-9 text-xs" />
                   <Button size="sm" variant="outline" className="h-9 text-xs" disabled={interviewBusy || !meetingLinkDraft} onClick={() => respondToInterview({ meetingLink: meetingLinkDraft })}>Save link</Button>
                 </div>
               )}
-              {submission.meetingLink && submission.interviewStatus === "confirmed" && (
+              {submission.meetingLink && (currentInterview?.status ?? submission.interviewStatus) === "confirmed" && (
                 <a href={submission.meetingLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"><ExternalLink className="h-3 w-3" /> Open meeting link</a>
               )}
               {submission.interviewNudge && <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">Several time proposals have been exchanged. Consider the talent’s suggested availability.</p>}

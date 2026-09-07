@@ -1,0 +1,581 @@
+AUDIT FIRST, THEN APPLY THE FIX IN THE SAME TASK.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+Do not redesign the interview system.
+
+Reuse the existing:
+
+- interviews
+- interview_proposals
+- Client interview APIs
+- Talent interview response APIs
+- timezone helpers
+- notification system
+- email companion behavior
+- Client Interviews page
+- Talent My Applications Interview section
+
+CURRENT PROBLEM
+
+Talent can successfully propose/reschedule an interview time.
+
+The Client correctly receives:
+
+`Talent proposed a new interview time`
+
+However, on the Client:
+
+`My Interviews`
+
+page, the interview still displays:
+
+`Awaiting response`
+
+and:
+
+`Waiting for talent to confirm a time`
+
+This is stale/incorrect because the Talent has already responded and is now waiting on the Client.
+
+We also need explicit agreement from BOTH sides before a rescheduled interview becomes confirmed.
+
+# DESIRED NEGOTIATION MODEL
+
+The interview scheduling/rescheduling flow must have clear ownership of the pending response.
+
+Example:
+
+Client proposes 7:00 AM
+→ awaiting Talent
+
+Talent proposes 8:00 AM instead
+→ awaiting Client
+
+Client accepts 8:00 AM
+→ confirmed at 8:00 AM
+
+OR:
+
+Client proposes 9:00 AM instead
+→ awaiting Talent again
+
+Talent accepts 9:00 AM
+→ confirmed at 9:00 AM
+
+Do NOT auto-confirm a counter-proposal.
+
+Both parties must agree on the exact same time.
+
+# PHASE 1 — AUDIT
+
+Before editing, trace the current implementation for:
+
+1. `interviews.status`
+2. `current_proposal_owner`
+3. `interview_proposals`
+4. `proposed_times`
+5. `confirmed_time`
+6. `confirmed_time_zone`
+7. Talent `Suggest another time`
+8. Client interview listing
+9. Client response/confirm endpoint
+10. Talent response endpoint
+11. Client My Interviews status rendering
+12. notifications for proposal/reschedule
+13. email side effects
+
+Determine why the Client page still renders:
+
+`Waiting for talent to confirm a time`
+
+after Talent has created a counter-proposal.
+
+Report the exact root cause, then implement.
+
+# USE EXISTING PROPOSAL OWNERSHIP
+
+The repo already has:
+
+`current_proposal_owner`
+
+Use it as the source of truth if that is its current intended purpose.
+
+Expected semantics:
+
+If Client made latest proposal:
+
+`current_proposal_owner = client`
+
+Talent is expected to respond.
+
+If Talent made latest proposal:
+
+`current_proposal_owner = talent`
+
+Client is expected to respond.
+
+Do not create another duplicate field like:
+
+`awaiting_response_from`
+
+unless the audit proves current_proposal_owner cannot represent this safely.
+
+# CLIENT STATUS DISPLAY
+
+Update Client Interviews display based on actual negotiation state.
+
+When latest proposal came from Client:
+
+Show:
+
+Status badge:
+`Awaiting Talent`
+
+Message:
+`Waiting for talent to confirm a time`
+
+When latest proposal came from Talent:
+
+Show:
+
+Status badge:
+`Action required`
+
+or:
+
+`New time proposed`
+
+Message:
+`Talent proposed a new interview time`
+
+Display the latest Talent-proposed time prominently.
+
+Example:
+
+`Sep 7, 2026 · 8:00 AM · Asia/Singapore`
+
+Actions:
+
+`Accept Time`
+
+`Suggest Another Time`
+
+Optionally:
+
+`Decline`
+
+only if existing interview rules already support this safely.
+
+Do NOT keep showing:
+
+`Waiting for talent to confirm a time`
+
+when the Talent has already counter-proposed.
+
+# CLIENT ACCEPTS TALENT TIME
+
+When Client clicks:
+
+`Accept Time`
+
+the backend must:
+
+1. verify Client owns the relevant job/submission
+2. verify interview is still awaiting Client response
+3. verify selected proposal is the current/latest valid Talent proposal
+4. set:
+   - confirmed_time
+   - confirmed_time_zone
+   - duration if applicable
+5. set status to existing canonical confirmed status
+6. preserve proposal history
+7. create existing confirmation notification(s)
+8. create existing confirmation email side effects if already wired
+9. prevent stale/double acceptance
+
+Do not create a new interview row.
+
+# CLIENT COUNTER-PROPOSES
+
+If Client does not accept Talent's proposed time:
+
+Client clicks:
+
+`Suggest Another Time`
+
+Client selects another valid future date/time.
+
+Then:
+
+1. append immutable `interview_proposals` row
+2. mark Client as latest proposal owner
+3. keep interview in negotiation/rescheduled state
+4. Talent becomes the party expected to respond
+5. Talent receives existing/new notification
+6. Talent sees the new proposal in My Applications
+
+Do not confirm automatically.
+
+# TALENT SIDE AFTER CLIENT COUNTER-PROPOSAL
+
+Talent should see:
+
+`Client proposed a new interview time`
+
+or existing equivalent.
+
+Actions:
+
+`Accept`
+
+`Suggest another time`
+
+`Decline`
+
+Use existing Talent interview UI.
+
+When Talent accepts:
+
+→ exact Client-proposed time becomes confirmed.
+
+# BOTH-SIDES AGREEMENT RULE
+
+An interview is only `confirmed` when:
+
+Party A proposes exact time X
+→ Party B explicitly accepts exact time X.
+
+A proposal alone is NEVER confirmation.
+
+A counter-proposal invalidates the previous pending proposal for acceptance purposes, while preserving it in immutable history.
+
+Do not delete old proposals.
+
+# STALE RESPONSE PROTECTION
+
+Very important.
+
+Example:
+
+Talent proposes 8 AM.
+Client opens the page.
+Talent somehow creates a later 9 AM proposal before Client submits Accept.
+
+Client must not be able to accidentally accept stale 8 AM if 9 AM is now the canonical latest proposal.
+
+Use proposal ID/version/current state validation.
+
+If stale:
+
+return a clear conflict response such as:
+
+`interview_proposal_stale`
+
+UI:
+
+`The interview proposal changed. Please review the latest proposed time.`
+
+Then refresh interview data.
+
+# CLIENT MY INTERVIEWS PAGE
+
+For negotiation states, show meaningful state rather than one generic awaiting label.
+
+Recommended display states:
+
+- `Awaiting Talent`
+- `Action Required`
+- `Confirmed`
+- `Completed`
+- `Cancelled`
+
+If existing interview statuses are:
+
+- proposed
+- rescheduled
+- confirmed
+- completed
+- cancelled
+
+do NOT create new database statuses just for UI labels.
+
+Derive UI label from:
+
+status + current_proposal_owner + confirmed_time
+
+Example:
+
+status = proposed/rescheduled
+current_proposal_owner = client
+→ UI `Awaiting Talent`
+
+status = proposed/rescheduled
+current_proposal_owner = talent
+→ UI `Action Required`
+
+status = confirmed
+→ UI `Confirmed`
+
+# CLIENT INTERVIEW CARD
+
+When Talent has proposed another time, card should show something like:
+
+Testing Job Kime · OnSpot
+
+Round 1 · Initial Interview
+
+[Action Required]
+
+Talent proposed a new time:
+
+Sep 7, 2026 · 8:00 AM
+Asia/Singapore
+
+[Accept Time]
+[Suggest Another Time]
+
+Do not display Join Meeting as the primary action while the schedule is still unconfirmed.
+
+Meeting link may remain stored, but only make it prominent once interview is confirmed.
+
+# CONFIRMED DISPLAY
+
+After either side accepts the other's latest proposal:
+
+Client:
+
+Status:
+`Confirmed`
+
+Show:
+confirmed date/time
+timezone
+duration
+meeting link
+
+Talent:
+
+Status:
+`Confirmed`
+
+Show the exact same instant in the appropriate timezone formatting.
+
+Both sides must refer to the same stored confirmed instant.
+
+# NOTIFICATIONS
+
+Preserve the working notification:
+
+`Talent proposed a new interview time`
+
+When Client accepts Talent proposal:
+
+Talent should receive an appropriate existing/new notification:
+
+`Interview time confirmed`
+
+When Client counter-proposes:
+
+Talent should receive:
+
+`Client proposed a new interview time`
+
+When Talent accepts Client proposal:
+
+Client should receive:
+
+`Interview time confirmed`
+
+Use existing notification infrastructure and event-key idempotency.
+
+Do not duplicate existing notifications.
+
+# EMAIL
+
+Do not redesign email in this task.
+
+If interview companion emails already exist for:
+
+- rescheduled
+- confirmed
+
+make sure they follow the same state transition.
+
+Email failure must not roll back the interview agreement.
+
+# TIMEZONE
+
+Reuse existing:
+
+server/lib/interviewTime.ts
+
+client/src/lib/formatInterviewTime.ts
+
+Do not rewrite timezone handling.
+
+Proposal and confirmed times must preserve exact UTC instant + agreed/source timezone.
+
+# TALENT MY APPLICATIONS
+
+Preserve the current rule:
+
+Role Invitation must be accepted before Interview appears.
+
+Do not undo it.
+
+Once Interview appears, the same negotiation model applies:
+
+- Client proposal → Talent responds
+- Talent counter-proposal → Client responds
+- Client counter-proposal → Talent responds
+- explicit acceptance → confirmed
+
+# CLIENT NOTIFICATION POPUP
+
+Preserve the recently implemented Client popup.
+
+When Talent proposes another time, the popup should display the latest proposal accurately.
+
+If Client accepts through another page, reopening the old notification should show current state:
+
+`Confirmed`
+
+rather than stale:
+
+`Awaiting response`
+
+Use current interview data as source of truth, not notification text.
+
+# CONCURRENCY
+
+Protect:
+
+- double Accept clicks
+- stale proposals
+- Client and Talent responding simultaneously
+- retries
+
+Do not allow both parties to overwrite each other's latest proposal.
+
+Use existing transaction/locking patterns.
+
+# DO NOT CHANGE
+
+Do not modify or break:
+
+- Role Invitation acceptance
+- Role Invitation visibility
+- Messages
+- invitation accepted system messages
+- Client acceptance notification
+- Talent invitation notification
+- existing job application flow
+- Admin scheduling
+- job approval
+- ClientEmailComposer
+- ApplicantEmailComposer
+- Graph integration
+- meeting links
+- existing interview rounds
+- interview outcome handling
+- pipeline guards
+
+# TESTS
+
+Add focused coverage:
+
+1. Client proposes time A.
+2. Client UI shows `Awaiting Talent`.
+3. Talent counter-proposes time B.
+4. Client notification is created.
+5. Client UI now shows `Action Required`.
+6. Client UI no longer says `Waiting for talent`.
+7. Latest proposed time B is displayed.
+8. Client accepts B.
+9. Interview becomes confirmed at B.
+10. Talent receives confirmation notification.
+11. Both sides display same confirmed instant.
+
+12. Client proposes A.
+13. Talent proposes B.
+14. Client counter-proposes C.
+15. Talent now sees C.
+16. Client shows `Awaiting Talent`.
+17. Talent accepts C.
+18. Interview becomes confirmed at C.
+19. Client receives confirmation notification.
+
+20. Proposal B remains in history after C.
+21. No extra interview row created.
+22. Stale proposal acceptance is rejected.
+23. Double Accept does not duplicate confirmation.
+24. Concurrent Client/Talent response does not corrupt state.
+25. Cancelled interview cannot be confirmed.
+26. Completed interview cannot be renegotiated unless current rules explicitly allow it.
+27. Existing timezone tests pass.
+28. Existing invitation tests pass.
+29. Existing Client notification popup tests pass.
+30. Existing Admin interview tests pass.
+31. `npx tsc --noEmit` passes.
+32. `git diff --check` passes.
+
+# MANUAL TEST
+
+Use current test Client and Talent.
+
+1. Client proposes 7:00 AM.
+2. Talent accepts Role Invitation.
+3. Talent sees Interview.
+4. Talent proposes 8:00 AM.
+5. Log in as Client.
+6. Verify notification:
+   `Talent proposed a new interview time`
+7. Open My Interviews.
+8. Verify it DOES NOT say:
+   `Waiting for talent to confirm a time`
+9. Verify it says:
+   `Action Required`
+10. Verify 8:00 AM proposal is displayed.
+11. Click Accept Time.
+12. Verify status becomes Confirmed.
+13. Log in as Talent.
+14. Verify Talent sees Confirmed 8:00 AM.
+
+Then repeat:
+
+15. Talent proposes another test time.
+16. Client clicks Suggest Another Time.
+17. Client proposes new time C.
+18. Talent sees C as pending.
+19. Talent accepts C.
+20. Both sides show Confirmed at C.
+
+# COMPLETION REPORT
+
+After audit + implementation report:
+
+1. Root cause of stale `Awaiting response`.
+2. Exact role of current_proposal_owner.
+3. Existing statuses retained.
+4. Client UI state mapping.
+5. Talent UI state mapping.
+6. Client Accept Time endpoint/action.
+7. Client counter-proposal action.
+8. Stale proposal protection.
+9. Notification changes.
+10. Email behavior.
+11. Files changed.
+12. Tests/results.
+13. Manual agreement-flow test.
+14. Confirmation old proposal history is preserved.
+15. Confirmation no duplicate interview records were created.
+16. Confirmation existing working invitation/notification features were not altered.
+
+AUDIT FIRST, THEN APPLY THE CHANGES.
+
+The required negotiation rule is:
+
+`One party proposes → the other party must explicitly accept that exact time → only then is the interview confirmed.`
+
+A counter-proposal always transfers the required response to the other party.

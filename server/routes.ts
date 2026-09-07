@@ -17607,12 +17607,27 @@ export async function registerRoutes(
              WHERE id = $3`,
           [canonicalSelectedTime, selectedTimeZone, interview.id],
         );
-        await txClient.query(
+        const talentAcceptanceProposal = await txClient.query(
           `INSERT INTO interview_proposals
              (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
-           VALUES ($1, $2, 'talent', 'accepted', $3, $4, $5)`,
+           VALUES ($1, $2, 'talent', 'accepted', $3, $4, $5)
+           RETURNING id`,
           [interview.id, userId, JSON.stringify(interview.proposed_times ?? []), canonicalSelectedTime, selectedTimeZone],
         );
+        if (interview.client_id) {
+          await txClient.query(
+            `INSERT INTO notifications
+               (user_id, type, title, message, related_id, related_type, event_key)
+             VALUES ($1, 'interview_confirmed', 'Interview confirmed',
+                     'A talent confirmed an interview time.', $2, 'interview', $3)
+             ON CONFLICT DO NOTHING`,
+            [
+              interview.client_id,
+              String(interview.id),
+              `interview-confirmed:${talentAcceptanceProposal.rows[0].id}`,
+            ],
+          );
+        }
         if (interview.submission_status !== "interviewing") {
           await txClient.query(
             `UPDATE job_submissions SET status = 'interviewing', updated_at = NOW() WHERE id = $1`,
@@ -17745,16 +17760,12 @@ export async function registerRoutes(
       }
 
       const exchangeCount = Number(updated.rows[0]?.proposal_exchange_count ?? 0);
-      if (interview.client_id && action !== "counter") {
+      if (interview.client_id && action === "decline") {
         storage.createNotification({
           userId: interview.client_id,
-          type: action === "accept" ? "interview_confirmed" : "interview_response",
-          title: action === "accept" ? "Interview confirmed" : "Interview proposal updated",
-          message: action === "decline"
-            ? "A talent declined the interview invitation."
-            : action === "counter"
-              ? "A talent proposed different interview times."
-              : "A talent confirmed an interview time.",
+          type: "interview_response",
+          title: "Interview proposal updated",
+          message: "A talent declined the interview invitation.",
           relatedId: String(interview.id),
           relatedType: "interview",
         }).catch((notifyErr: any) => console.error("Interview notification failed:", notifyErr));
@@ -20091,9 +20102,11 @@ export async function registerRoutes(
         // Lock the interview before checking ownership/turn so two responses
         // cannot confirm or counter the same proposal at once.
         const interviewResult = await txClient.query(
-          `SELECT i.*, js.client_id, js.talent_id, js.status AS submission_status, js.id AS js_id
+          `SELECT i.*, js.client_id, js.talent_id, js.status AS submission_status, js.id AS js_id,
+                  j.title AS job_title
            FROM interviews i
            JOIN job_submissions js ON js.id = i.submission_id
+           JOIN jobs j ON j.id = js.job_id
            WHERE i.id = $1 AND js.client_id = $2
              AND js.${FORMAL_PIPELINE_PREDICATE}
            FOR UPDATE OF i`,
@@ -20136,7 +20149,10 @@ export async function registerRoutes(
           }
           if (interview.current_proposal_owner !== "client") {
             await txClient.query("ROLLBACK");
-            return res.status(409).json({ error: "It is not the client's turn to confirm this interview proposal" });
+           return res.status(409).json({
+             error: "interview_proposal_stale",
+             message: "The interview proposal changed. Please review the latest proposed time.",
+           });
           }
           const confirmedTimestamp = parseInterviewTimestamp(confirmedTime);
           const selectedSlot = Array.isArray(interview.proposed_times)
@@ -20258,7 +20274,10 @@ export async function registerRoutes(
         if (interview.current_proposal_owner !== "client") {
           await txClient.query("ROLLBACK");
           transactionClosed = true;
-          return res.status(409).json({ error: "It is not the client's turn to propose new interview times" });
+           return res.status(409).json({
+             error: "interview_proposal_stale",
+             message: "The interview proposal changed. Please review the latest proposed time.",
+           });
         }
         const normalizedTimes = normalizeInterviewTimes(proposedTimes);
         if (!normalizedTimes) {
@@ -20297,20 +20316,52 @@ export async function registerRoutes(
              WHERE id = $2`,
            [nextCount, id],
          );
-          await txClient.query(
+          const clientCounterProposal = await txClient.query(
            `INSERT INTO interview_proposals
               (interview_id, proposer_id, proposer_role, action, proposed_times)
-            VALUES ($1, $2, 'client', 'counter', $3)`,
+             VALUES ($1, $2, 'client', 'counter', $3)
+             RETURNING id`,
             [id, userId, JSON.stringify(proposalTimesForHistory ?? interview.proposed_times ?? [])],
          );
+          if (interview.talent_id) {
+            await txClient.query(
+              `INSERT INTO notifications
+                 (user_id, type, title, message, related_id, related_type, event_key)
+               VALUES ($1, 'interview_rescheduled', 'Client proposed a new interview time',
+                       $2, $3, 'interview', $4)
+               ON CONFLICT DO NOTHING`,
+              [
+                interview.talent_id,
+                `A client proposed a new interview time for "${interview.job_title ?? "the position"}". Please review and respond.`,
+                String(id),
+                `interview-proposal:${clientCounterProposal.rows[0].id}`,
+              ],
+            );
+          }
        }
        if (status === "confirmed") {
-          await txClient.query(
+          const clientAcceptanceProposal = await txClient.query(
            `INSERT INTO interview_proposals
              (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
-           VALUES ($1, $2, 'client', 'accepted', $3, $4, $5)`,
+            VALUES ($1, $2, 'client', 'accepted', $3, $4, $5)
+            RETURNING id`,
            [id, userId, JSON.stringify(interview.proposed_times ?? []), confirmedTimeForHistory, confirmedTimeZoneForHistory],
          );
+          if (interview.talent_id) {
+            await txClient.query(
+              `INSERT INTO notifications
+                 (user_id, type, title, message, related_id, related_type, event_key)
+               VALUES ($1, 'interview_confirmed', 'Interview confirmed',
+                       $2, $3, 'interview', $4)
+               ON CONFLICT DO NOTHING`,
+              [
+                interview.talent_id,
+                `Your interview for "${interview.job_title ?? "the position"}" has been confirmed.`,
+                String(id),
+                `interview-confirmed:${clientAcceptanceProposal.rows[0].id}`,
+              ],
+            );
+          }
          if (interview.submission_status !== "interviewing") {
            await txClient.query(
              `UPDATE job_submissions SET status = 'interviewing', updated_at = NOW() WHERE id = $1`,
@@ -20341,24 +20392,18 @@ export async function registerRoutes(
        const talentUserId = subRow.rows[0]?.talent_id;
        const jobTitle = subRow.rows[0]?.job_title ?? "the position";
 
-       if (status === "confirmed" && talentUserId) {
-         storage.createNotification({
-           userId: talentUserId,
-           type: "interview_confirmed",
-           title: "Interview confirmed",
-           message: `Your interview for "${jobTitle}" has been confirmed.`,
-           relatedId: String(id),
-           relatedType: "interview",
-         }).catch((e: any) => console.error("interview_confirmed notification failed:", e));
-       } else if (status === "rescheduled" && talentUserId) {
-         storage.createNotification({
-           userId: talentUserId,
-           type: "interview_rescheduled",
-           title: "Interview rescheduled",
-           message: `New interview times have been proposed for "${jobTitle}". Please review.`,
-           relatedId: String(id),
-           relatedType: "interview",
-         }).catch((e: any) => console.error("interview_rescheduled notification failed:", e));
+        if (status === "confirmed" && talentUserId && confirmedTimeForHistory && confirmedTimeZoneForHistory) {
+          sendInterviewConfirmedEmail({
+            talentUserId,
+            jobTitle,
+            confirmedTime: confirmedTimeForHistory,
+            confirmedTimeZone: confirmedTimeZoneForHistory,
+            durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : (interview.duration_minutes ?? null),
+            meetingLink: finalResult.rows[0]?.meeting_link ?? interview.meeting_link ?? null,
+            interviewType: interview.interview_type ?? undefined,
+            roundNumber: interview.round_number ?? null,
+          }).catch((e: any) => console.error("client accept interview confirmation email failed:", e));
+        } else if ((status === "rescheduled" || proposalTimesForHistory) && talentUserId) {
          // Email: talent gets rescheduled proposal; client initiated so no client email
          sendInterviewRescheduledEmail({
            talentUserId,
