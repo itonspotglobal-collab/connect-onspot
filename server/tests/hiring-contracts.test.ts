@@ -514,7 +514,7 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.deepEqual(
       notifications.rows.map((row: any) => [row.user_id, row.type, row.title]),
       [
-        [TALENT_ID, "job_application_status_changed", "Congratulations — you've been hired"],
+        [TALENT_ID, "job_application_status_changed", "You've been hired"],
         [CLIENT_ID, "talent_hired", "Talent hired"],
       ],
     );
@@ -536,6 +536,44 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.equal(deliveries.rows.length, 1);
     assert.equal(deliveries.rows[0].template_category, "hired");
     assert.equal(await submissionStatus(submissionId), "hired", "email delivery must not roll back Hired");
+  });
+
+  it("(g00) Talent claims the Hired popup exactly once without consuming the bell notification", async () => {
+    const firstClaim = await request(
+      srv,
+      "POST",
+      "/api/talent/notifications/hired-popup/claim",
+      talentTok,
+      {},
+    );
+    assert.equal(firstClaim.status, 200, JSON.stringify(firstClaim.json));
+    assert.equal(firstClaim.json.title, "You've been hired");
+    assert.match(firstClaim.json.message, /HC Test Job/);
+    assert.match(firstClaim.json.message, /OnSpot Global/);
+    assert.equal(firstClaim.json.relatedId, submissionId);
+
+    const secondClaim = await request(
+      srv,
+      "POST",
+      "/api/talent/notifications/hired-popup/claim",
+      talentTok,
+      {},
+    );
+    assert.equal(secondClaim.status, 200, JSON.stringify(secondClaim.json));
+    assert.equal(secondClaim.json, null);
+
+    const notification = await query(
+      `SELECT event_key, is_read, popup_presented_at
+         FROM notifications
+        WHERE related_id = $1
+          AND user_id = $2
+          AND type = 'job_application_status_changed'`,
+      [submissionId, TALENT_ID],
+    );
+    assert.equal(notification.rows.length, 1);
+    assert.equal(notification.rows[0].event_key, `talent-hired:${submissionId}`);
+    assert.equal(notification.rows[0].is_read, false);
+    assert.ok(notification.rows[0].popup_presented_at);
   });
 
   it("(g0) retrying the final signature cannot duplicate Hired side effects", async () => {
@@ -613,6 +651,25 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.equal(withdrawn.status, 409, JSON.stringify(withdrawn.json));
     assert.equal(withdrawn.json.error, "active_contract_exists");
     assert.equal(await submissionStatus(submissionId4), "hired");
+
+    const parallelClaims = await Promise.all([
+      request(srv, "POST", "/api/talent/notifications/hired-popup/claim", talentTok, {}),
+      request(srv, "POST", "/api/talent/notifications/hired-popup/claim", talentTok, {}),
+    ]);
+    assert.ok(parallelClaims.every((claim) => claim.status === 200));
+    const presented = parallelClaims.filter((claim) => claim.json !== null);
+    assert.equal(presented.length, 1, "concurrent Talent tabs must claim exactly one popup");
+    assert.equal(presented[0].json.relatedId, submissionId4);
+
+    const bellNotification = await query(
+      `SELECT is_read, popup_presented_at
+         FROM notifications
+        WHERE event_key = $1`,
+      [`talent-hired:${submissionId4}`],
+    );
+    assert.equal(bellNotification.rows.length, 1);
+    assert.equal(bellNotification.rows[0].is_read, false);
+    assert.ok(bellNotification.rows[0].popup_presented_at);
   });
 
   it("(g02) stale withdrawn data cannot be promoted to Hired", async () => {

@@ -16,6 +16,15 @@ import { Bell, PackageOpen, CheckCircle, XCircle, Clock, FileText, ClipboardList
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { ClientNotificationUpdateDialog } from "@/components/ClientNotificationUpdateDialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   useUnreadNotificationsCount,
@@ -227,8 +236,40 @@ export function NotificationBell() {
     kind: ClientNotificationModalKind;
     notificationId: string;
   } | null>(null);
+  const [hiredPopup, setHiredPopup] = useState<NotificationRow | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isTalent || !isAuthenticated || hiredPopup) return;
+    let cancelled = false;
+    const claimHiredPopup = async () => {
+      const token = getBearerToken();
+      const headers: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+      const url = isTalentPortal
+        ? "/api/talent/notifications/hired-popup/claim"
+        : "/api/notifications/hired-popup/claim";
+      try {
+        const response = await fetch(url, { method: "POST", headers });
+        const notification: NotificationRow | null = response.ok ? await response.json() : null;
+        if (!cancelled && notification) setHiredPopup(notification);
+      } catch {
+        // The persistent bell notification remains available. Popup failures
+        // must never affect authentication, navigation, or the Hired state.
+      }
+    };
+
+    void claimHiredPopup();
+    const intervalId = window.setInterval(claimHiredPopup, 15_000);
+    window.addEventListener("focus", claimHiredPopup);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", claimHiredPopup);
+    };
+  }, [hiredPopup, isAuthenticated, isTalent, isTalentPortal, user?.id]);
 
   // Poll only the persisted Talent notification feed for new Client interview
   // proposals. Session storage prevents the same alert from firing on refresh.
@@ -515,6 +556,32 @@ export function NotificationBell() {
         notificationId={notificationModal?.notificationId ?? null}
         onClose={() => setNotificationModal(null)}
       />
+      <Dialog open={hiredPopup !== null} onOpenChange={(nextOpen) => {
+        if (!nextOpen) setHiredPopup(null);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Congratulations — you're hired!</DialogTitle>
+            <DialogDescription>
+              {hiredPopup?.message}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-slate-600">
+            You can review your application, contract, and next steps in OnSpot.
+          </p>
+          <DialogFooter className="sm:justify-end">
+            <Button variant="outline" onClick={() => setHiredPopup(null)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setHiredPopup(null);
+              navigate("/my-applications");
+            }}>
+              View Details
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

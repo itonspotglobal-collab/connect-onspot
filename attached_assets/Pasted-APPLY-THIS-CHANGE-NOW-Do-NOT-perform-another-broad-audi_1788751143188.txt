@@ -1,0 +1,511 @@
+APPLY THIS CHANGE NOW.
+
+Do NOT perform another broad audit or redesign.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+We want a Talent-facing popup notification whenever the Talent becomes officially Hired.
+
+The Hired state may currently be reached through:
+
+1. Contract workflow
+2. Application/status workflow
+3. Any existing centralized hiring transition
+
+Regardless of which valid path causes the hire, the Talent should receive ONE clear popup notification.
+
+Do not create duplicate popups if multiple connected workflows update during the same hire.
+
+# GOAL
+
+When a Talent becomes officially Hired:
+
+→ preserve the existing Hired state transition
+→ preserve existing application history
+→ preserve contract behavior
+→ preserve existing notifications/emails
+→ create/reuse the Talent Hired notification
+→ show a congratulatory popup to the Talent
+
+Suggested popup:
+
+Title:
+
+`Congratulations — you're hired!`
+
+Message:
+
+`You've been hired for {{job_title}} with {{company_name}}.`
+
+Secondary message:
+
+`You can review your application, contract, and next steps in OnSpot.`
+
+Primary action:
+
+`View Details`
+
+Secondary:
+
+`Close`
+
+# IMPORTANT — ONE CANONICAL HIRE EVENT
+
+Do NOT independently create a popup in:
+
+- contract-signing code
+- Admin status code
+- offer code
+
+if they may all represent the same final hiring event.
+
+Use the canonical transition into:
+
+`hired`
+
+as the source of truth.
+
+Conceptually:
+
+previous application status != hired
+→ application transitions to hired
+→ create Hired event
+→ Talent notification
+→ Talent popup
+
+If the contract workflow causes the application to become hired, use the same event.
+
+If an Admin/status workflow causes it to become hired, use the same event.
+
+Do not create another popup if the application is already hired.
+
+# DUPLICATE PREVENTION
+
+This is critical.
+
+Possible bad flow:
+
+Contract signed
+→ Hired notification
+
+Then application status updater also runs:
+→ Hired notification again
+
+Result:
+two popups
+
+Do NOT allow that.
+
+Use the existing notification event-key/idempotency system.
+
+Suggested conceptual event key:
+
+`talent-hired:{submissionId}`
+
+or the existing canonical equivalent.
+
+One submission may produce only one final Hired notification event.
+
+Repeated API calls, retries, page refreshes, or contract hooks must not create another one.
+
+# EXISTING HIRE NOTIFICATION
+
+Before adding a new notification record, check whether the existing notification system already creates something like:
+
+- `hired`
+- `application_hired`
+- `talent_hired`
+- `welcome_to_team`
+
+If one already exists, REUSE IT.
+
+Do not create a duplicate notification type merely for the popup.
+
+The popup should preferably be driven from the same canonical Hired notification.
+
+# TALENT PERSISTENT NOTIFICATION
+
+Talent should also have a bell notification such as:
+
+Title:
+
+`You've been hired`
+
+Message:
+
+`Congratulations! You've been hired for {{job_title}} at {{company_name}}.`
+
+This notification should remain available in Notification history.
+
+If this already exists, preserve it and use it to trigger the popup.
+
+# POPUP BEHAVIOR
+
+When Talent is logged in and the Hired event arrives:
+
+show the popup.
+
+If Talent was offline when hired:
+
+on their next login/session, if the Hired notification has not yet been presented as a popup, show it once.
+
+Do not require the Talent to be online at the exact moment the Admin/Client changes the status.
+
+# DO NOT SHOW POPUP ON EVERY REFRESH
+
+The popup must not repeatedly appear on:
+
+- page reload
+- query refetch
+- navigating between pages
+- opening Notifications
+- login every time
+
+Track popup presentation safely.
+
+Preferred:
+
+use the notification/event record plus an existing acknowledgement/read/presented mechanism if available.
+
+If notification `read` state is the only existing persistence mechanism, do not abuse it if opening the popup would incorrectly mark the bell notification read before the user interacts with it.
+
+If necessary, add a minimal additive `popupPresented`/event acknowledgement mechanism, but only if no existing mechanism can support one-time display.
+
+Do not use localStorage as the sole source of truth for critical cross-device behavior unless the existing notification architecture already uses it.
+
+# POPUP CONTENT
+
+Suggested UI:
+
+------------------------------------------------
+
+🎉 Congratulations!
+
+You're hired!
+
+You've been hired for:
+
+Testing Job Kime
+
+OnSpot
+
+Your hiring process has moved forward. You can review your application and any available contract or onboarding details below.
+
+[View Details]   [Close]
+
+------------------------------------------------
+
+Use the existing OnSpot Dialog/Modal component.
+
+Do not build an unrelated popup library.
+
+# VIEW DETAILS DESTINATION
+
+For Talent:
+
+`View Details`
+
+should take the Talent to the existing relevant workflow.
+
+Preferred destination:
+
+`/my-applications`
+
+If there is an existing application details/timeline modal that can be opened safely for the specific submission, reuse it.
+
+Do not route Talent to:
+
+- Admin pages
+- Client pages
+- `/dashboard`
+- Messages automatically
+
+Preferred simple behavior:
+
+View Details
+→ `/my-applications`
+
+# HIRED APPLICATION UI
+
+Do NOT rely on the popup alone.
+
+The existing Talent My Applications page should still reflect:
+
+`Hired`
+
+through the actual application status.
+
+The popup is an additional notification UX.
+
+Do not change the application status based on popup interaction.
+
+# CONTRACT-DRIVEN HIRE
+
+If the current contract workflow transitions the application to Hired:
+
+when that transition succeeds:
+
+→ use canonical Hired event
+→ Talent notification
+→ popup
+
+Do not attach the popup to merely:
+
+- contract created
+- contract sent
+- contract viewed
+
+Only when the actual Hired condition is reached.
+
+# STATUS-DRIVEN HIRE
+
+If Admin/Client legitimately transitions an eligible application to Hired:
+
+→ use the SAME canonical Hired event
+→ same Talent notification
+→ same popup
+
+Do not create a second status-specific popup.
+
+# OFFER ACCEPTANCE
+
+Do NOT show:
+
+`You're hired`
+
+merely because an offer was accepted unless the current product rule has been changed so Offer Accepted itself canonically transitions the application to Hired.
+
+The popup must follow the actual persisted Hired state.
+
+Do not infer hiring from:
+
+- Offer Accepted notification
+- email
+- message
+- Client intent
+
+Use canonical application/employment status.
+
+# CLIENT / ADMIN NOTIFICATIONS
+
+Do not change existing Client/Admin notifications as part of this task.
+
+If they already receive:
+
+- Talent hired
+- Offer accepted
+- Contract signed
+
+preserve them.
+
+This task is specifically the Talent Hired popup.
+
+# EMAIL
+
+Do not redesign Hired email behavior.
+
+If the current system already sends:
+
+`Welcome to the Team`
+
+or Hired email:
+
+preserve it.
+
+Popup failure must not affect email.
+
+Email failure must not affect popup or Hired status.
+
+# TEAM MEMBERSHIP
+
+Do not implement or rewrite Team membership in this task.
+
+If Hired already adds the Talent to Client Team, preserve it.
+
+If that feature still needs separate work, do not couple this popup implementation to it.
+
+The popup is triggered by canonical Hired state.
+
+# NOTIFICATION CLICK
+
+If Talent clicks the bell notification:
+
+`You've been hired`
+
+route to:
+
+`/my-applications`
+
+or reuse the existing Hired/application detail behavior.
+
+Mark read using the existing notification mechanics.
+
+Do not introduce special routing that breaks other Talent notifications.
+
+# POPUP CLOSE
+
+If Talent clicks:
+
+`Close`
+
+close the modal.
+
+Do not undo Hired status.
+
+Do not mark application as anything else.
+
+Do not repeatedly reopen the popup in the same or later sessions once it has been presented/acknowledged according to the implementation.
+
+# ACCESSIBILITY
+
+Use existing:
+
+- Dialog
+- DialogTitle
+- DialogDescription
+- proper focus management
+- Close button
+- keyboard Escape
+
+Avoid missing aria-description warnings.
+
+# VANESSA
+
+Do not involve Vanessa AI in this transactional popup.
+
+The wording must be deterministic.
+
+Vanessa should not decide whether the Talent is hired.
+
+# DO NOT CHANGE
+
+Do not modify or break:
+
+- application status transitions
+- offer acceptance
+- contracts
+- interview scheduling
+- interview notifications
+- Role Invitations
+- Messages
+- Client notifications
+- Admin notifications
+- ApplicantEmailComposer
+- ClientEmailComposer
+- email delivery
+- My Applications layout
+- Team page
+- authorization
+- hiring history/timeline
+
+No unrelated refactoring.
+
+# TESTS
+
+Add focused coverage.
+
+1. Non-Hired application does not show popup.
+
+2. Application transitions to Hired.
+3. Talent Hired notification is created.
+
+4. Talent popup appears.
+
+5. Popup contains:
+   - job title
+   - company
+   - hired messaging
+
+6. View Details points to `/my-applications`.
+
+7. Close dismisses popup.
+
+8. Refresh does not repeatedly show the same Hired popup.
+
+9. New login does not repeatedly show already-presented popup.
+
+10. Talent hired through contract workflow receives exactly one popup.
+
+11. Talent hired through valid status workflow receives exactly one popup.
+
+12. Contract + status hooks firing for same submission do NOT create two popups.
+
+13. Repeated Hired API request does not duplicate notification.
+
+14. Hired bell notification remains available.
+
+15. Existing Talent notification count works.
+
+16. Existing Client notifications remain unchanged.
+
+17. Existing Admin notifications remain unchanged.
+
+18. Existing Hired email behavior remains unchanged.
+
+19. Existing Offer Accepted behavior remains unchanged.
+
+20. Existing Contract Signed behavior remains unchanged.
+
+21. `npx tsc --noEmit` passes.
+
+22. `git diff --check` passes.
+
+# MANUAL TEST — STATUS HIRE
+
+1. Use an eligible test Talent.
+2. Transition application to Hired through the currently valid status workflow.
+3. Log in as Talent.
+4. Verify bell notification appears:
+
+`You've been hired`
+
+5. Verify popup appears:
+
+`Congratulations — you're hired!`
+
+6. Verify correct:
+   - job
+   - company
+
+7. Click View Details.
+8. Verify `/my-applications`.
+9. Refresh.
+10. Verify popup does NOT show repeatedly.
+
+# MANUAL TEST — CONTRACT HIRE
+
+If current contract workflow can cause Hired:
+
+1. Complete required contract workflow.
+2. Confirm application becomes Hired.
+3. Log in as Talent.
+4. Verify same Hired popup.
+5. Verify exactly one notification.
+6. Verify no duplicate popup from contract + status side effects.
+
+# COMPLETION REPORT
+
+Report:
+
+1. Canonical Hired event/status used.
+2. Existing Hired notification reused or new type added.
+3. Event key used.
+4. How duplicate contract/status Hired events are prevented.
+5. Popup component/file.
+6. How one-time presentation is persisted.
+7. View Details destination.
+8. Files changed.
+9. Tests/results.
+10. Manual status-hire result.
+11. Manual contract-hire result if available.
+12. Confirmation existing Client/Admin notifications were unchanged.
+13. Confirmation existing Hired email behavior was unchanged.
+14. Confirmation no hiring workflow logic was rewritten.
+
+APPLY THIS CHANGE NOW.
+
+Do not perform a broad audit.
+
+The rule is:
+
+`Canonical Hired transition → one Talent Hired notification → one congratulatory popup, regardless of whether Hired came from contract workflow or status workflow.`

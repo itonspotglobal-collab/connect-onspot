@@ -46,3 +46,4 @@
 - [Client invitation next step](client-invitation-next-step.md) — accepting a Client role invitation stays on My Applications so the existing Interview becomes the immediate next action.
 - [Interview proposal ownership](interview-proposal-ownership.md) — current_proposal_owner names the party whose response is due, despite the field’s misleading name.
 - [Notification role allow-lists](notification-role-allowlists.md) — a persisted notification remains invisible unless its type is enabled for the recipient role’s bell and unread count.
+- [One-time event popups](one-time-event-popups.md) — cross-device transactional popups must atomically claim the canonical notification without consuming its bell read state.

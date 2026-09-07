@@ -1422,6 +1422,14 @@ export async function registerRoutes(
        WHERE type = 'new_message' AND is_read = false`,
     );
     await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS event_key text`);
+    await query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS popup_presented_at timestamp`);
+    await query(
+      `CREATE INDEX IF NOT EXISTS notifications_unpresented_hired_popup_idx
+         ON notifications (user_id, created_at)
+       WHERE type = 'job_application_status_changed'
+         AND popup_presented_at IS NULL
+         AND event_key LIKE 'talent-hired:%'`,
+    );
     await query(
       `CREATE UNIQUE INDEX IF NOT EXISTS notifications_event_key_unique_idx
          ON notifications (event_key)
@@ -11925,6 +11933,58 @@ export async function registerRoutes(
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to get talent notifications" });
+    }
+  });
+
+  const claimTalentHiredPopup = async (userId: string) => {
+    const claimed = await query(
+      `WITH next_popup AS (
+         SELECT id
+           FROM notifications
+          WHERE user_id = $1
+            AND type = 'job_application_status_changed'
+            AND event_key LIKE 'talent-hired:%'
+            AND popup_presented_at IS NULL
+          ORDER BY created_at ASC
+          LIMIT 1
+          FOR UPDATE SKIP LOCKED
+       )
+       UPDATE notifications n
+          SET popup_presented_at = NOW()
+         FROM next_popup
+        WHERE n.id = next_popup.id
+       RETURNING n.id, n.type, n.title, n.message,
+                 n.related_id AS "relatedId", n.related_type AS "relatedType",
+                 n.is_read AS "isRead", n.created_at AS "createdAt",
+                 n.popup_presented_at AS "popupPresentedAt"`,
+      [userId],
+    );
+    return claimed.rows[0] ?? null;
+  };
+
+  // Atomically claims one unpresented Hired popup without marking the persisted
+  // bell notification read. The database acknowledgement prevents repeat
+  // presentation across refreshes, sessions, devices, and concurrent tabs.
+  app.post("/api/talent/notifications/hired-popup/claim", authenticateTalentJWT, async (req: any, res) => {
+    try {
+      const linkedUserId = await resolveTalentPortalNotificationRecipient(req.talentAuth.candidateId);
+      if (!linkedUserId) return res.json(null);
+      return res.json(await claimTalentHiredPopup(linkedUserId));
+    } catch (error) {
+      console.error("POST /api/talent/notifications/hired-popup/claim error:", error);
+      return res.status(500).json({ error: "Failed to claim Hired popup" });
+    }
+  });
+
+  app.post("/api/notifications/hired-popup/claim", authenticateJWT, async (req: any, res) => {
+    try {
+      if (req.user?.role !== "talent") {
+        return res.status(403).json({ error: "Talent access required" });
+      }
+      return res.json(await claimTalentHiredPopup(req.user.id));
+    } catch (error) {
+      console.error("POST /api/notifications/hired-popup/claim error:", error);
+      return res.status(500).json({ error: "Failed to claim Hired popup" });
     }
   });
 

@@ -175,8 +175,8 @@ function applicationStatusNotificationCopy(
       };
     case "hired":
       return {
-        title: "Congratulations — you've been hired",
-        message: `Your application for ${target} has been marked as hired.`,
+        title: "You've been hired",
+        message: `Congratulations! You've been hired for ${target}.`,
       };
     case "rejected":
       return {
@@ -249,7 +249,9 @@ export async function notifyTalentOfApplicationStatusChange({
 
     const { title, message } = applicationStatusNotificationCopy(jobTitle, companyName, newStatus);
     const notificationEventKey =
-      eventKey ?? `application-status:${submissionId}:${previousStatus}:${newStatus}`;
+      newStatus === "hired"
+        ? `talent-hired:${submissionId}`
+        : eventKey ?? `application-status:${submissionId}:${previousStatus}:${newStatus}`;
     const created = await query(
       `INSERT INTO notifications
          (user_id, type, title, message, related_id, related_type, event_key)

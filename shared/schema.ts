@@ -698,6 +698,7 @@ export const notifications = pgTable("notifications", {
   eventKey: text("event_key").unique(), // immutable idempotency key for status events
   messageCount: integer("message_count").notNull().default(1),
   isRead: boolean("is_read").default(false),
+  popupPresentedAt: timestamp("popup_presented_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

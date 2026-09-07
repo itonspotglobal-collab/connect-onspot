@@ -112,6 +112,7 @@ function notificationFromRow(row: any): Notification {
     eventKey: row.event_key ?? null,
     messageCount: Number(row.message_count ?? 1),
     isRead: row.is_read ?? false,
+    popupPresentedAt: row.popup_presented_at ?? null,
     createdAt: row.created_at ?? null,
   };
 }
@@ -1861,6 +1862,7 @@ export class MemStorage implements IStorage {
       eventKey: insertNotification.eventKey ?? null,
       messageCount: 1,
       isRead: false,
+      popupPresentedAt: null,
       createdAt: new Date()
     };
     this.notifications.set(id, notification);
