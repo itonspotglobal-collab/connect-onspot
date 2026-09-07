@@ -551,12 +551,72 @@ describe("invitation and interview timezone production smoke path", () => {
     assert.equal(clientRepliesAgain.json.status, "proposed");
 
     const clientCounterNotification = await query(
-      `SELECT COUNT(*)::int AS count
+      `SELECT id, user_id, type, title, message, related_id, related_type, event_key, is_read
          FROM notifications
         WHERE user_id = $1 AND type = 'interview_rescheduled' AND related_id = $2`,
       [TALENT_ID, secondInterviewId],
     );
-    assert.equal(clientCounterNotification.rows[0].count, 1);
+    assert.equal(clientCounterNotification.rows.length, 1);
+    assert.equal(clientCounterNotification.rows[0].user_id, TALENT_ID);
+    assert.equal(clientCounterNotification.rows[0].title, "Client proposed a new interview time");
+    assert.match(clientCounterNotification.rows[0].message, /Smoke Client proposed a new interview time/);
+    assert.equal(clientCounterNotification.rows[0].related_type, "interview");
+    assert.match(clientCounterNotification.rows[0].event_key, /^interview-proposal:/);
+    assert.equal(clientCounterNotification.rows[0].is_read, false);
+
+    const talentUnreadNotifications = await request(
+      server,
+      "GET",
+      "/api/talent/notifications?unread_only=true",
+      candidateToken,
+    );
+    assert.equal(talentUnreadNotifications.status, 200, JSON.stringify(talentUnreadNotifications.json));
+    assert.ok(
+      talentUnreadNotifications.json.some(
+        (notification: { id: string }) => notification.id === clientCounterNotification.rows[0].id,
+      ),
+      "Talent's canonical notification endpoint must return the Client proposal",
+    );
+
+    const talentMarksProposalRead = await request(
+      server,
+      "PATCH",
+      `/api/talent/notifications/${clientCounterNotification.rows[0].id}/read`,
+      candidateToken,
+    );
+    assert.equal(talentMarksProposalRead.status, 204, JSON.stringify(talentMarksProposalRead.json));
+    const proposalReadState = await query(
+      `SELECT is_read FROM notifications WHERE id = $1`,
+      [clientCounterNotification.rows[0].id],
+    );
+    assert.equal(proposalReadState.rows[0].is_read, true);
+
+    const talentUnreadAfterClick = await request(
+      server,
+      "GET",
+      "/api/talent/notifications?unread_only=true",
+      candidateToken,
+    );
+    assert.ok(
+      !talentUnreadAfterClick.json.some(
+        (notification: { id: string }) => notification.id === clientCounterNotification.rows[0].id,
+      ),
+      "marking the proposal read must remove it from Talent's unread bell count",
+    );
+
+    const repeatedClientCounter = await request(
+      server,
+      "PATCH",
+      `/api/client/interviews/${secondInterviewId}`,
+      clientToken,
+      { proposedTimes: [{ start: INTERVIEW_TIME, timezone: INTERVIEW_TIMEZONE }] },
+    );
+    assert.equal(repeatedClientCounter.status, 409);
+    const clientCounterNotificationCount = await query(
+      `SELECT COUNT(*)::int AS count FROM notifications WHERE event_key = $1`,
+      [clientCounterNotification.rows[0].event_key],
+    );
+    assert.equal(clientCounterNotificationCount.rows[0].count, 1);
 
     const proposalHistory = await query(
       `SELECT proposer_role, action, proposed_times

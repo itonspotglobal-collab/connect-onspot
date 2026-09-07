@@ -24,6 +24,7 @@ import {
   applicationsFooterRouteForRole,
   clientNotificationModalKind,
   notificationTypesForRole,
+  recentTalentInterviewProposalToasts,
   type ClientNotificationModalKind,
   notificationRouteForRole,
 } from "@/lib/notificationRouting";
@@ -155,6 +156,20 @@ const TYPE_CONFIG: Record<
     label: "New Interview Time",
     route: "/client/interviews",
   },
+  interview_rescheduled: {
+    icon: CalendarClock,
+    color: "#D97706",
+    bg: "#FEF3C7",
+    label: "New Interview Time",
+    route: "/my-applications",
+  },
+  interview_confirmed: {
+    icon: CheckCircle,
+    color: "#059669",
+    bg: "#D1FAE5",
+    label: "Interview Confirmed",
+    route: "/my-applications",
+  },
   job_application_status_changed: {
     icon: ClipboardList,
     color: "#7C3AED",
@@ -207,6 +222,64 @@ export function NotificationBell() {
   } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Poll only the persisted Talent notification feed for new Client interview
+  // proposals. Session storage prevents the same alert from firing on refresh.
+  useEffect(() => {
+    if (!isTalent || !isAuthenticated) return;
+
+    let cancelled = false;
+    const seenStorageKey = "onspot_talent_interview_proposal_toasts";
+
+    const pollForInterviewProposal = async () => {
+      const token = getBearerToken();
+      const headers: Record<string, string> = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+      const url = isTalentPortal
+        ? "/api/talent/notifications?unread_only=true"
+        : user?.id
+          ? `/api/users/${user.id}/notifications?unread_only=true`
+          : null;
+      if (!url) return;
+
+      try {
+        const response = await fetch(url, { headers });
+        if (!response.ok || cancelled) return;
+        const data = await response.json() as NotificationRow[];
+        const storedIds = JSON.parse(sessionStorage.getItem(seenStorageKey) ?? "[]");
+        const seenIds = new Set<string>(Array.isArray(storedIds) ? storedIds : []);
+        const candidates = recentTalentInterviewProposalToasts(data, seenIds);
+        if (candidates.length === 0 || cancelled) return;
+
+        for (const candidate of candidates) seenIds.add(candidate.id);
+        sessionStorage.setItem(
+          seenStorageKey,
+          JSON.stringify(Array.from(seenIds).slice(-100)),
+        );
+        await qc.invalidateQueries({ queryKey: ["unread-notifications"] });
+
+        for (const _candidate of candidates) {
+          toast({
+            title: "New interview time proposed",
+            description: "The Client has asked you to review a new proposed time.",
+          });
+        }
+      } catch {
+        // The persisted bell notification remains the source of truth. A
+        // transient poll failure must not interrupt the active Talent session.
+      }
+    };
+
+    void pollForInterviewProposal();
+    const intervalId = window.setInterval(pollForInterviewProposal, 15_000);
+    window.addEventListener("focus", pollForInterviewProposal);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", pollForInterviewProposal);
+    };
+  }, [isAuthenticated, isTalent, isTalentPortal, qc, toast, user?.id]);
 
   // Close on outside click.
   useEffect(() => {

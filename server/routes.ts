@@ -20103,10 +20103,16 @@ export async function registerRoutes(
         // cannot confirm or counter the same proposal at once.
         const interviewResult = await txClient.query(
           `SELECT i.*, js.client_id, js.talent_id, js.status AS submission_status, js.id AS js_id,
-                  j.title AS job_title
+                  j.title AS job_title,
+                  COALESCE(
+                    NULLIF(TRIM(CONCAT(client.first_name, ' ', client.last_name)), ''),
+                    client.email,
+                    'Client'
+                  ) AS client_name
            FROM interviews i
            JOIN job_submissions js ON js.id = i.submission_id
            JOIN jobs j ON j.id = js.job_id
+           LEFT JOIN users client ON client.id = js.client_id
            WHERE i.id = $1 AND js.client_id = $2
              AND js.${FORMAL_PIPELINE_PREDICATE}
            FOR UPDATE OF i`,
@@ -20332,7 +20338,7 @@ export async function registerRoutes(
                ON CONFLICT DO NOTHING`,
               [
                 interview.talent_id,
-                `A client proposed a new interview time for "${interview.job_title ?? "the position"}". Please review and respond.`,
+                 `${interview.client_name ?? "Client"} proposed a new interview time for "${interview.job_title ?? "the position"}". Please review and respond.`,
                 String(id),
                 `interview-proposal:${clientCounterProposal.rows[0].id}`,
               ],

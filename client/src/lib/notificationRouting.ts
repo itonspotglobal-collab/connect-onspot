@@ -2,6 +2,8 @@ export const TALENT_NOTIFICATION_TYPES = [
   "offer_received",
   "job_invitation",
   "job_application_status_changed",
+  "interview_rescheduled",
+  "interview_confirmed",
   "new_message",
 ] as const;
 
@@ -15,6 +17,7 @@ export const CLIENT_NOTIFICATION_TYPES = [
   "job_application_received",
   "talent_invitation_accepted",
   "interview_reschedule_proposed",
+  "interview_confirmed",
   "client_application_status_changed",
   "new_message",
 ] as const;
@@ -28,6 +31,9 @@ export function notificationRouteForRole(
   role: string | null | undefined,
   existingRoute: string | null,
 ): string | null {
+  if (type === "interview_confirmed") {
+    return role === "talent" ? "/my-applications" : "/client/interviews";
+  }
   if (role === "admin") {
     if (type === "job_application_received") return "/admin/job-applications";
     if (
@@ -42,6 +48,32 @@ export function notificationRouteForRole(
     }
   }
   return existingRoute;
+}
+
+interface ToastNotification {
+  id: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export function recentTalentInterviewProposalToasts(
+  notifications: ToastNotification[],
+  seenIds: ReadonlySet<string>,
+  now = Date.now(),
+  maxAgeMs = 5 * 60_000,
+): ToastNotification[] {
+  return notifications.filter((notification) => {
+    if (
+      notification.type !== "interview_rescheduled"
+      || notification.isRead
+      || seenIds.has(notification.id)
+    ) {
+      return false;
+    }
+    const createdAt = new Date(notification.createdAt).getTime();
+    return Number.isFinite(createdAt) && now - createdAt >= 0 && now - createdAt <= maxAgeMs;
+  });
 }
 
 export function applicationsFooterRouteForRole(

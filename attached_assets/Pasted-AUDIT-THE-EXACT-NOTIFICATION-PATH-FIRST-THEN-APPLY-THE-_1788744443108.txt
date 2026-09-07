@@ -1,0 +1,590 @@
+AUDIT THE EXACT NOTIFICATION PATH FIRST, THEN APPLY THE FIX IN THE SAME TASK.
+
+NON-REGRESSION IS THE HIGHEST PRIORITY.
+
+Do NOT redesign the interview scheduling system.
+
+The interview negotiation itself is currently working:
+
+- Talent can propose another interview time.
+- Client receives the notification correctly.
+- Client can counter-propose a new time.
+- Talent My Applications correctly updates and displays the new Client-proposed time.
+
+The missing behavior is:
+
+Talent does NOT receive a notification / alert when the Client proposes or changes the interview time.
+
+Fix only this missing Talent notification behavior.
+
+# CURRENT TEST RESULT
+
+CLIENT SIDE — WORKING
+
+When Talent proposes another interview time:
+
+Client receives:
+
+Bell notification:
+`Talent proposed a new interview time`
+
+and an alert/toast.
+
+This is working.
+
+Do NOT change it.
+
+TALENT SIDE — NOT WORKING
+
+When Client responds by proposing another interview time:
+
+Talent My Applications correctly updates to the new proposed time.
+
+Example:
+
+`Sep 9, 2026, 9:31 PM (Asia/Singapore)`
+
+But Talent receives NO new bell notification about the Client's proposal.
+
+The Talent notification dropdown still only contains older invitation notifications such as:
+
+`You've been invited to apply`
+
+This is incorrect.
+
+# REQUIRED BEHAVIOR
+
+When Client proposes/counter-proposes a new interview time:
+
+Talent must receive BOTH:
+
+1. Persistent in-app bell notification.
+2. Existing-style toast/alert if the Talent is currently active in the application.
+
+Example notification:
+
+Title:
+
+`Client proposed a new interview time`
+
+Message:
+
+`{{client_name}} proposed a new interview time for {{job_title}}.`
+
+Optional if current notification formatting supports it:
+
+`Review the new proposed schedule.`
+
+# REQUIRED ALERT / TOAST
+
+When the Talent is currently logged in and this event occurs, show a toast consistent with the existing Client-side behavior.
+
+Suggested:
+
+Title:
+
+`New interview time proposed`
+
+Message:
+
+`The Client has proposed a new interview time. Please review and respond.`
+
+Do NOT make the toast the only notification.
+
+The bell notification must persist in the database.
+
+# AUDIT FIRST
+
+Trace the exact existing flow when:
+
+Talent proposes another time
+→ Client notification works
+
+Identify:
+
+1. Talent reschedule endpoint.
+2. Notification type generated.
+3. Recipient resolution.
+4. eventKey/idempotency logic.
+5. Client toast behavior.
+6. How the Client side refetches notifications.
+
+Then trace:
+
+Client proposes another time
+→ Talent interview updates
+→ NO notification
+
+Identify exactly where the notification side effect is missing.
+
+Likely flow:
+
+Client PATCH/counter-proposal
+→ proposal row succeeds
+→ interview current_proposal_owner changes
+→ Talent interview query reflects new proposal
+→ Talent notification helper is never called
+
+Report the exact root cause, then fix it.
+
+# USE SYMMETRIC INTERVIEW NOTIFICATION LOGIC
+
+The interview negotiation should behave symmetrically.
+
+## Talent proposes
+
+Recipient:
+Client
+
+Notification:
+
+`Talent proposed a new interview time`
+
+Already working.
+
+## Client proposes
+
+Recipient:
+Talent
+
+Notification:
+
+`Client proposed a new interview time`
+
+This is the missing behavior.
+
+Use the same notification infrastructure.
+
+Do NOT build a second notification system.
+
+# RECIPIENT RESOLUTION
+
+For Client → Talent interview proposal:
+
+Resolve Talent from the interview's existing linked submission.
+
+Conceptually:
+
+interview
+→ submission
+→ candidate/talent
+→ Talent user id
+
+Use the existing canonical relationship.
+
+Do NOT resolve Talent using:
+
+- name
+- email string
+- job title
+- notification text
+
+Use IDs/foreign-key relationships.
+
+# NOTIFICATION TYPE
+
+Reuse an existing canonical type if already available.
+
+If Client/Talent proposals currently share an interview proposal type, reuse it with role-specific content.
+
+Otherwise add a focused type such as conceptually:
+
+`client_interview_time_proposed`
+
+Use the actual project naming conventions.
+
+Do not rely solely on:
+
+`notification.title`
+
+for downstream behavior.
+
+# EVENT KEY / DUPLICATE PROTECTION
+
+Every genuinely new Client proposal should create exactly one Talent notification.
+
+Use the proposal ID in the event key where possible.
+
+Conceptually:
+
+`interview-proposal:{proposalId}:talent`
+
+This means:
+
+Client proposes time A
+→ notification created
+
+Request retries
+→ no duplicate
+
+Client later proposes time B
+→ new proposal ID
+→ new notification
+
+Do not use:
+
+`interviewId`
+
+alone as the idempotency key because that would incorrectly suppress later legitimate proposals.
+
+# CURRENT_PROPOSAL_OWNER
+
+Preserve the existing scheduling behavior.
+
+If Client has made the latest proposal:
+
+`current_proposal_owner = client`
+
+Talent is expected to respond.
+
+Do not change this logic.
+
+The notification should correspond to that state.
+
+# TALENT MY APPLICATIONS
+
+Do NOT change the working schedule display.
+
+The Talent side is already updating correctly.
+
+Preserve:
+
+- Role Invitation acceptance gating
+- Interviews visibility
+- latest proposed time
+- Suggest another time
+- Accept
+- Decline
+- timezone formatting
+- proposal exchange warning
+
+Only add the missing notification/alert.
+
+# TALENT BELL NOTIFICATION
+
+After Client counter-proposes:
+
+Talent bell count should increment.
+
+Notification dropdown should contain:
+
+`Client proposed a new interview time`
+
+Message:
+
+`{{client_name}} proposed a new interview time for {{job_title}}.`
+
+Click behavior should use the existing Talent interview/application notification behavior.
+
+Preferred destination:
+
+`/my-applications`
+
+If the current notification system supports opening/scolling to Interview safely, reuse it.
+
+Do NOT create a new interview page just for this.
+
+# NOTIFICATION CLICK
+
+When Talent clicks:
+
+`Client proposed a new interview time`
+
+Expected:
+
+1. mark notification read
+2. update bell count
+3. navigate/stay on:
+   `/my-applications`
+4. Talent can see the Interview section with the latest Client-proposed time
+
+Do not route to:
+
+- `/messages`
+- dashboard
+- Client pages
+- Admin pages
+
+# TOAST / ALERT
+
+Mirror the existing Client alert implementation safely.
+
+When Client submits a new proposal successfully and the Talent side receives/refetches the event:
+
+show:
+
+`New interview time proposed`
+
+`The Client has asked you to review a new proposed time.`
+
+Do not repeatedly show the same toast on every page refresh.
+
+Use the same dedupe/event behavior as the existing alert system.
+
+# ALSO VERIFY CONFIRMATION NOTIFICATIONS
+
+While fixing this, verify the two-sided agreement flow has matching notifications.
+
+## Client accepts Talent proposal
+
+Talent should receive:
+
+`Interview time confirmed`
+
+## Talent accepts Client proposal
+
+Client should receive:
+
+`Interview time confirmed`
+
+If either is already working, leave it unchanged.
+
+If the Talent confirmation notification is also missing because of the same asymmetry, fix it narrowly through the same interview notification helper.
+
+Do NOT broaden this into unrelated notifications.
+
+# ALSO VERIFY CLIENT COUNTER-PROPOSAL
+
+Expected complete sequence:
+
+Client proposes A
+→ Talent notification:
+  `Client proposed a new interview time`
+
+Talent proposes B
+→ Client notification:
+  `Talent proposed a new interview time`
+
+Client proposes C
+→ Talent notification:
+  `Client proposed a new interview time`
+
+Talent accepts C
+→ Client notification:
+  `Interview time confirmed`
+
+All proposal history remains intact.
+
+# EMAIL
+
+Do not redesign email behavior in this task.
+
+If existing interview companion emails are already wired to the same canonical notification/event service:
+
+ensure the new Client → Talent proposal event can use the existing email companion path where intended.
+
+But do not add a new email architecture.
+
+Primary requirement:
+
+Talent in-app notification + alert.
+
+# EXISTING INVITATION NOTIFICATIONS
+
+Do NOT change:
+
+`You've been invited to apply`
+
+These existing Talent notifications are working.
+
+Do not replace them.
+
+The Talent notification list should simply gain the new interview proposal notification alongside them.
+
+# EXISTING CLIENT NOTIFICATIONS
+
+STRICTLY PRESERVE:
+
+- Talent proposed a new interview time
+- Talent accepted your invitation
+- interview confirmation
+- application notifications
+- job notifications
+- message notifications
+
+Do not alter their content or behavior unless necessary for shared helper reuse.
+
+# EXISTING TALENT NOTIFICATIONS
+
+Do NOT break:
+
+- role invitation
+- application status
+- interview invitation
+- job/application notifications
+- messages
+- offers
+- rejection
+- shortlisted
+- other existing Talent events
+
+# NOTIFICATION SCHEMA
+
+Do not change the notification table schema unless absolutely necessary.
+
+The existing structure already supports this feature.
+
+Use existing:
+
+- userId
+- type
+- title
+- message
+- relatedId
+- relatedType
+- eventKey
+- read state
+
+or the actual equivalent fields.
+
+# TESTS
+
+Add focused tests.
+
+1. Client proposes time A.
+2. Talent receives exactly one notification:
+   `Client proposed a new interview time`.
+
+3. Notification recipient is correct Talent.
+
+4. Another Talent does not receive it.
+
+5. Talent bell unread count increments.
+
+6. Talent My Applications shows time A.
+
+7. Clicking notification routes to `/my-applications`.
+
+8. Clicking marks notification read.
+
+9. Client retries same proposal request.
+10. No duplicate Talent notification.
+
+11. Client creates a genuinely new proposal B.
+12. Talent receives a second legitimate notification.
+
+13. Talent proposes time C.
+14. Existing Client notification still works.
+
+15. Client notification bell remains unchanged.
+
+16. Client accepts Talent proposal.
+17. Talent receives confirmation notification.
+
+18. Talent accepts Client proposal.
+19. Client receives confirmation notification.
+
+20. Existing Role Invitation notification still works.
+
+21. Existing Talent invite acceptance flow remains unchanged.
+
+22. Existing interview proposal history remains unchanged.
+
+23. Existing current_proposal_owner behavior remains unchanged.
+
+24. Existing timezone formatting remains unchanged.
+
+25. Existing Client alert/toast remains unchanged.
+
+26. Talent alert/toast appears for Client proposal.
+
+27. Toast does not repeatedly fire on page refresh.
+
+28. `npx tsc --noEmit` passes.
+
+29. `git diff --check` passes.
+
+# MANUAL TEST
+
+Use current Client and Talent test accounts.
+
+## Client → Talent proposal
+
+1. Client has an interview with Talent.
+2. Client proposes a new time.
+3. Log in as Talent.
+
+Verify:
+
+Bell count increases.
+
+Open notifications.
+
+Expected:
+
+`Client proposed a new interview time`
+
+Message:
+
+`[Client] proposed a new interview time for [Job].`
+
+4. Verify alert/toast appears once.
+
+5. Click notification.
+
+Expected:
+
+`/my-applications`
+
+6. Verify Interview section shows the same newly proposed time.
+
+## Talent → Client proposal
+
+7. Talent suggests another time.
+8. Log in as Client.
+9. Verify existing:
+
+`Talent proposed a new interview time`
+
+still works exactly as before.
+
+## Confirmation
+
+10. Client proposes a final time.
+11. Talent accepts.
+12. Verify Client receives:
+    `Interview time confirmed`
+
+13. Repeat opposite direction:
+    Talent proposes
+    → Client accepts
+    → Talent receives:
+      `Interview time confirmed`
+
+# COMPLETION REPORT
+
+After audit + implementation, report:
+
+1. Root cause of missing Talent notification.
+2. Exact Client counter-proposal endpoint.
+3. Exact notification helper used.
+4. Talent recipient resolution.
+5. Notification type.
+6. Event key/idempotency strategy.
+7. Talent bell behavior.
+8. Talent toast behavior.
+9. Click destination.
+10. Confirmation notification verification.
+11. Exact files changed.
+12. Tests/results.
+13. Manual Client → Talent proposal result.
+14. Manual Talent → Client proposal regression result.
+15. Confirmation existing Client notifications were not changed.
+16. Confirmation existing Talent invitation notifications were not changed.
+17. Confirmation scheduling/proposal logic was not changed.
+18. Confirmation no duplicate notifications were introduced.
+
+AUDIT FIRST, THEN APPLY THE FIX.
+
+Do not stop at the audit unless there is a genuine blocker.
+
+The required notification symmetry is:
+
+Client proposes/counter-proposes
+→ Talent gets notification + alert
+
+Talent proposes/counter-proposes
+→ Client gets notification + alert
+
+Either side accepts the other's latest proposal
+→ other side gets Interview Confirmed notification.

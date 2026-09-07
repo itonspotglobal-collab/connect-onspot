@@ -5,6 +5,7 @@ import {
   clientNotificationModalKind,
   currentInterviewSchedule,
   notificationRouteForRole,
+  recentTalentInterviewProposalToasts,
   TALENT_NOTIFICATION_TYPES,
 } from "@/lib/notificationRouting";
 
@@ -56,6 +57,24 @@ describe("notificationRouteForRole", () => {
     );
   });
 
+  it("shows Client interview proposals and confirmations to Talent", () => {
+    expect(TALENT_NOTIFICATION_TYPES).toContain("interview_rescheduled");
+    expect(TALENT_NOTIFICATION_TYPES).toContain("interview_confirmed");
+    expect(
+      notificationRouteForRole("interview_rescheduled", "talent", "/my-applications"),
+    ).toBe("/my-applications");
+    expect(
+      notificationRouteForRole("interview_confirmed", "talent", "/my-applications"),
+    ).toBe("/my-applications");
+  });
+
+  it("keeps interview confirmation visible and routed for Client", () => {
+    expect(CLIENT_NOTIFICATION_TYPES).toContain("interview_confirmed");
+    expect(
+      notificationRouteForRole("interview_confirmed", "client", "/my-applications"),
+    ).toBe("/client/interviews");
+  });
+
   it("routes the Admin View applications footer to the Admin applications list", () => {
     expect(applicationsFooterRouteForRole("admin", false)).toBe("/admin/job-applications");
   });
@@ -63,6 +82,58 @@ describe("notificationRouteForRole", () => {
   it("preserves Client and Talent footer destinations", () => {
     expect(applicationsFooterRouteForRole("client", false)).toBe("/client-profile");
     expect(applicationsFooterRouteForRole("talent", true)).toBe("/my-applications");
+  });
+});
+
+describe("Talent interview proposal toast deduplication", () => {
+  const now = new Date("2030-09-09T13:31:00.000Z").getTime();
+
+  it("alerts once for a recent unread Client proposal", () => {
+    const notification = {
+      id: "proposal-notification-1",
+      type: "interview_rescheduled",
+      isRead: false,
+      createdAt: "2030-09-09T13:30:00.000Z",
+    };
+    expect(recentTalentInterviewProposalToasts([notification], new Set(), now)).toEqual([
+      notification,
+    ]);
+    expect(
+      recentTalentInterviewProposalToasts(
+        [notification],
+        new Set([notification.id]),
+        now,
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not alert for old, read, or unrelated notifications", () => {
+    expect(
+      recentTalentInterviewProposalToasts(
+        [
+          {
+            id: "old",
+            type: "interview_rescheduled",
+            isRead: false,
+            createdAt: "2030-09-09T12:00:00.000Z",
+          },
+          {
+            id: "read",
+            type: "interview_rescheduled",
+            isRead: true,
+            createdAt: "2030-09-09T13:30:00.000Z",
+          },
+          {
+            id: "invitation",
+            type: "job_invitation",
+            isRead: false,
+            createdAt: "2030-09-09T13:30:00.000Z",
+          },
+        ],
+        new Set(),
+        now,
+      ),
+    ).toEqual([]);
   });
 });
 
