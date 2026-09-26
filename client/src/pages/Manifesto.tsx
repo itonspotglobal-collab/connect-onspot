@@ -26,14 +26,14 @@ function ManifestoParagraph({
 }) {
   return (
     <p
-      className={`manifesto-copy ${className}`}
+      className={`manifesto-copy text-left sm:text-justify ${className}`}
       style={{
         color: MUTED,
         fontFamily: "Inter, sans-serif",
-        fontSize: "clamp(1.15rem, 2vw, 1.52rem)",
-        lineHeight: 1.58,
-        letterSpacing: "-0.012em",
-        margin: 0,
+        fontSize: "clamp(1.0625rem, 1.65vw, 1.3125rem)",
+        lineHeight: 1.7,
+        letterSpacing: "normal",
+        textWrap: "pretty",
       }}
     >
       {children}
@@ -78,8 +78,8 @@ export default function Manifesto() {
         .manifesto-unfurl {
           position: relative;
           isolation: isolate;
-          padding-top: 2.25rem;
-          background: rgba(242, 243, 255, 0.34);
+          padding-top: 1.25rem;
+          background: rgba(242, 243, 255, 0.2);
         }
 
         .manifesto-unfurl::before,
@@ -166,7 +166,7 @@ export default function Manifesto() {
 
         @media (max-width: 640px) {
           .manifesto-unfurl {
-            padding-top: 1.75rem;
+             padding-top: 1rem;
           }
 
           .manifesto-unfurl::before,
@@ -178,9 +178,9 @@ export default function Manifesto() {
         }
       `}</style>
       <main>
-        <section className="mx-auto max-w-[1000px] px-6 pb-4 pt-12 sm:px-10 sm:pb-6 sm:pt-20 lg:px-14 lg:pb-8 lg:pt-28">
+        <section className="mx-auto max-w-[1000px] px-6 pb-16 pt-12 sm:px-10 sm:pb-20 sm:pt-20 lg:px-14 lg:pb-24 lg:pt-24">
           <div className="max-w-[840px]">
-            <p className="mb-7 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#9A6500]">
+            <p className="mb-5 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#9A6500] sm:mb-7">
               <span aria-hidden className="h-px w-9 bg-[#9A6500]" />
               Why We Built OnSpot
             </p>
@@ -188,9 +188,9 @@ export default function Manifesto() {
               className="max-w-[800px] text-[#080B2A]"
               style={{
                 fontFamily: "'Bricolage Grotesque', sans-serif",
-                fontSize: "clamp(3.3rem, 10vw, 8.5rem)",
-                lineHeight: 0.92,
-                letterSpacing: "-0.075em",
+                fontSize: "clamp(3.05rem, 8vw, 7rem)",
+                lineHeight: 1.02,
+                letterSpacing: "-0.025em",
                 fontWeight: 700,
                 margin: 0,
               }}
@@ -200,15 +200,15 @@ export default function Manifesto() {
               <span style={{ color: "rgba(8,11,42,0.64)" }}>Manifesto</span>
             </h1>
             <Link href="/why-onspot/about">
-              <span className="mt-6 inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-[#080B2A]/55 transition-colors hover:text-[#080B2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9A6500]">
+              <span className="mt-4 inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-[#080B2A]/55 transition-colors hover:text-[#080B2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9A6500] sm:mt-5">
                 <ArrowLeft className="h-3.5 w-3.5" />
                 About OnSpot
               </span>
             </Link>
           </div>
 
-          <div className="manifesto-unfurl mt-20 max-w-[680px] lg:mt-32">
-            <article className="space-y-9 sm:space-y-12">
+          <div className="manifesto-unfurl mt-10 max-w-[720px] sm:mt-14 lg:mt-16">
+            <article className="space-y-9 sm:space-y-10">
               <ManifestoParagraph>
                 Somewhere along the way, work got complicated. Not the work itself — the systems built up around it.
               </ManifestoParagraph>
@@ -234,7 +234,6 @@ export default function Manifesto() {
                   fontWeight: 600,
                   lineHeight: 1.2,
                   letterSpacing: "-0.02em",
-                  margin: 0,
                 }}
               >
                 We don't accept that.
@@ -261,7 +260,7 @@ export default function Manifesto() {
                         fontFamily: "Inter, sans-serif",
                         fontSize: "clamp(1.35rem, 2.8vw, 2.1rem)",
                         lineHeight: 1.24,
-                        letterSpacing: "-0.025em",
+                         letterSpacing: "normal",
                       }}
                     >
                       {freedom}
@@ -303,7 +302,6 @@ export default function Manifesto() {
                     fontWeight: 600,
                     lineHeight: 1.15,
                     letterSpacing: "-0.02em",
-                    margin: 0,
                   }}
                 >
                   Work Without Limits.

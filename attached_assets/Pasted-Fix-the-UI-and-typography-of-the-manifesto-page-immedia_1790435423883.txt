@@ -1,0 +1,106 @@
+Fix the UI and typography of the `/manifesto` page immediately.
+
+Please inspect the existing `/manifesto` implementation, especially `pages/Manifesto.tsx` and any shared typography/global CSS affecting it.
+
+CURRENT PROBLEMS:
+1. The letter spacing/kerning across the page looks incorrect.
+2. The large hero title “The OnSpot Manifesto” looks compressed and visually awkward.
+3. Some letters appear to overlap or sit too close together.
+4. The body copy currently looks too left-heavy and does not feel polished.
+5. There is too much empty vertical space between the hero/title area and the beginning of the manifesto content.
+6. The content column and spacing need better visual rhythm.
+7. The page should feel intentional, premium, editorial, modern, and consistent with the OnSpot branding.
+
+PLEASE MAKE THESE CHANGES:
+
+TYPOGRAPHY
+- Remove any excessively negative `letter-spacing`, `tracking-*`, inline letter-spacing, or transform styles from the main heading and body text.
+- Do NOT use large negative tracking such as `-0.075em` on the hero heading.
+- For the large serif/display hero heading, use either:
+  - `letter-spacing: -0.02em` to `-0.035em`, or
+  - Tailwind equivalent such as `tracking-[-0.025em]`.
+- Ensure letters never visually overlap.
+- Preserve the existing display/serif font if it is intentional, but improve readability and kerning.
+- Body text should use normal tracking: `letter-spacing: 0` or `tracking-normal`.
+- Small uppercase eyebrow labels may retain modest positive tracking such as `0.18em–0.25em`.
+
+HERO TITLE
+- Keep:
+  “The OnSpot”
+  “Manifesto”
+- Keep the two-tone treatment if currently intentional:
+  - dark navy for “The OnSpot”
+  - muted slate/gray for “Manifesto”
+- Improve line-height so the two lines feel connected without overlapping.
+- Suggested desktop styles:
+  - font-size: clamp(4rem, 8vw, 7rem)
+  - line-height: 0.88–0.95
+  - letter-spacing: around -0.025em
+- On smaller screens, scale the title smoothly and ensure no clipping or overflow.
+- Do not allow heading text to collide with itself.
+
+BODY CONTENT
+- Justify the main manifesto paragraphs using `text-align: justify`.
+- Add `text-wrap: pretty` or an equivalent where supported.
+- Use a comfortable reading width around `max-width: 680px–760px`.
+- Use a readable body font size around 18–22px desktop and 16–18px mobile.
+- Use line-height around 1.6–1.75.
+- Avoid excessive letter spacing.
+- Keep paragraph spacing consistent.
+- Do not justify very short labels, headings, navigation links, or buttons — only the main long-form body copy.
+
+LAYOUT / SPACING
+- Reduce the excessive blank vertical space between the hero section and first manifesto paragraph.
+- The first paragraph should begin noticeably closer to the hero.
+- Use a consistent spacing system rather than large arbitrary `mt-*` values.
+- Target roughly:
+  - hero bottom spacing: 64–96px desktop
+  - section spacing: 72–120px depending on content
+  - mobile spacing: 40–64px
+- Keep the content aligned to the same visual left edge as the hero where appropriate.
+- Maintain generous whitespace, but remove whitespace that looks accidental.
+- Ensure the decorative horizontal glow/divider does not create a huge dead area.
+
+CONTENT PRESENTATION
+- Give the manifesto an editorial layout.
+- Long-form sections should have strong hierarchy:
+  - eyebrow / section label
+  - heading
+  - body copy
+- Body paragraphs should feel balanced and readable.
+- Avoid making every section extremely wide.
+- Keep visual consistency throughout the entire `/manifesto` page.
+
+RESPONSIVE DESIGN
+Check and fix the page at:
+- mobile ~375px
+- tablet ~768px
+- laptop ~1280px
+- desktop ~1440px+
+
+Make sure:
+- no text overlaps
+- no horizontal scrolling
+- no heading clipping
+- typography scales correctly
+- justified body text does not create extreme gaps on narrow mobile screens
+
+For mobile specifically:
+- if full justification creates awkward spacing, switch body copy to `text-left` below approximately 640px and use `text-justify` from tablet/desktop upward.
+
+IMPORTANT:
+- Do not rewrite the manifesto content.
+- Do not change the page route.
+- Do not remove existing branding.
+- Do not redesign unrelated pages.
+- Reuse the existing design system/colors/fonts where possible.
+- Fix the current implementation rather than adding unnecessary dependencies.
+
+Please inspect all typography styles inherited by `/manifesto`, including global styles and reusable components, because the bad tracking may be inherited rather than defined only in `Manifesto.tsx`.
+
+After making the changes:
+1. Run the app.
+2. Check `/manifesto` visually.
+3. Verify desktop and mobile layouts.
+4. Fix any remaining text overlap, strange kerning, overflow, or excessive whitespace.
+5. Leave the page in a polished production-ready state.
