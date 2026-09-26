@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -171,6 +172,9 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
       return response.json();
     },
     onSuccess: (createdJob: any, submittedPayload: any) => {
+      if (createdJob?.status !== "draft" && submittedPayload?.status !== "draft") {
+        trackEvent("job_post_submitted", { creator: isClientMode ? "client" : "admin", from_draft: false });
+      }
       invalidate();
       toast({ title: "Job posting created — submitted for approval" });
       const persistedClientId = createdJob?.clientId ?? createdJob?.client_id;
@@ -229,6 +233,9 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
       return response.json();
     },
     onSuccess: (updatedJob: any, variables) => {
+      if (isExistingDraft && variables.data?.status !== "draft" && updatedJob?.status !== "draft") {
+        trackEvent("job_post_submitted", { creator: isClientMode ? "client" : "admin", from_draft: true });
+      }
       invalidate();
       toast({ title: "Job posting updated" });
       const isCompletedAdminDraft =

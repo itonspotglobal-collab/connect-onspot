@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
@@ -820,7 +821,8 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
       return body;
     },
     onMutate: ({ id }) => setRespondingId(id),
-    onSuccess: () => {
+    onSuccess: (_response, variables) => {
+      trackEvent("offer_responded", { action: variables.action });
       setRespondingId(null);
       refetchOffers();
       refetchApplications();
@@ -969,6 +971,7 @@ function TalentContractCard({
       return body;
     },
     onSuccess: () => {
+      trackEvent("contract_signed", { signer: "talent" });
       toast({ title: "Signature recorded", description: "OnSpot will countersign before the hire is finalized." });
       queryClient.invalidateQueries({ queryKey: ["talent-hiring-contracts", application.id] });
       queryClient.invalidateQueries({ queryKey: ["talent-applications"] });

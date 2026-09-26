@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -678,6 +679,18 @@ export default function JobApplyPage() {
       }
 
       const data = await res.json();
+      if (data.success && data.applicationId) {
+        trackEvent("application_submitted", {
+          account_state: data.accountAction === "already_authenticated"
+            ? "signed_in"
+            : data.accountAction === "sign_in_required"
+              ? "sign_in_required"
+              : data.accountAction === "account_conflict"
+                ? "account_conflict"
+                : "sign_up_required",
+          repeat_application: data.isRepeatApplication === true,
+        });
+      }
 
       if (data.accountAction === "already_authenticated") {
         // Invalidate talent applications cache so the new submission appears immediately
