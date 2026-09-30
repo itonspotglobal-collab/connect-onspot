@@ -1,0 +1,41 @@
+Before any timesheet/invoice-automation work begins: the timesheet needs
+a real Time In / Time Out mechanism as its actual source of truth, not a
+retroactive manual-hours-entry form. "Talent submits daily entries" means
+the Talent clocks in and clocks out in real time from within the
+platform; the system derives daily/period hours from those captured
+events, which then feed the timesheet review/approval/dispute workflow
+already scoped.
+
+AUDIT FIRST, before this addition: does any Time In/Out mechanism exist
+anywhere in the platform today, even as a stub or partial feature? Report
+findings honestly, same as the prior audit found the Attendance Dashboard
+was sample data - confirm what's real versus what only appears to exist.
+
+DESIGN REQUIREMENTS for the clock mechanism, propose your approach for
+each before implementing:
+1. Basic integrity constraints: a Talent cannot clock in twice without
+   clocking out first, cannot clock out before clocking in, etc.
+2. A missed clock-out (Talent clocked in, never clocked out) is an
+   EXCEPTION requiring resolution - same pattern as "no approved revision
+   = Admin exception, not a zero-hour invoice" - it does not silently
+   resolve itself or get dropped from the period's data.
+3. Clock events are captured as real, unambiguous absolute timestamps
+   (not local-time strings), displayed back to each party in their own
+   relevant timezone - consistent with how the 48-hour deadline handling
+   already separates the canonical clock (America/New_York) from
+   what's displayed.
+4. Confirm whether this is a simple button-press action (Clock In /
+   Clock Out) within the Talent's existing platform session, with no
+   location/device restriction, or propose otherwise with reasoning.
+
+This clock-derived timesheet then feeds the full Client-visibility,
+Talent-submission, OnSpot-approval workflow already confirmed. Everything
+else from the prior scoping stands unchanged: the talent_invoices
+schema, the America/New_York-anchored 48-hour auto-send, the credit_memo
+cascading-forward design, the deposit-coverage check, and the separate
+monthly Client invoice assembly.
+
+Report the audit findings (does any real clock mechanism exist today)
+and your proposed design for all four points above before implementing
+anything. This is the true foundation everything else in this feature
+depends on - worth getting right before building on top of it.
