@@ -47,6 +47,14 @@ The confirmed new model is Talent-to-OnSpot independent-contractor invoicing, no
 
 **How to apply:** Capture absolute, server-side clock instants and resolve missing ends through an audited approval workflow before an invoice can depend on those hours. Draft the invoice after each window from the approved timesheet, notify Talent, then auto-send after 48 hours even if a timesheet dispute is pending. Approved corrections after send use a signed credit memo on the next available draft instead of changing sent financial history. Do not require Client payment before authorizing the new Talent invoice path; document the deposit-backed reason, verify coverage, preserve legacy records, and avoid payroll-adjacent names or comments.
 
+## Parallel engagement modes
+
+Clients must choose between Tracked (clock-derived, approved timesheets with extended-hour/deduction adjustments) and Guaranteed (no clock requirement, agreed flat period amount with no attendance adjustments). Approved leave preserves the guarantee; only substantiated total non-performance/abandonment for the period removes it.
+
+**Why:** In Guaranteed mode, the absence of clock events is intentional and must not be mistaken for missing attendance. A Client allegation alone is not sufficient to withhold a Talent invoice; OnSpot must review it.
+
+**How to apply:** Keep Tracked and Guaranteed generation paths separate. For Guaranteed mode, provide a period-specific Client non-performance claim and OnSpot decision before withholding a period's invoice; never apply Tracked timesheet-hour calculations to a Guaranteed period. Do not infer the mode of legacy contracts without an explicit selection.
+
 
 ## Customer-facing ledger views
 

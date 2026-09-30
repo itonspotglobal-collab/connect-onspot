@@ -1,0 +1,63 @@
+Major addition before the clock-first foundation build proceeds — a
+SECOND, parallel engagement mode exists alongside the tracked one. This
+does not replace anything already approved; it's a distinct path a
+Client chooses between.
+
+TWO ENGAGEMENT MODES, Client-selectable:
+
+1. TRACKED (everything already approved and scoped) - Clock In/Out,
+   timesheet approval, invoice derived from approved attendance,
+   Extended Hours/Deductions apply.
+
+2. GUARANTEED/UNTRACKED (new) - the Talent works flexibly, no Clock In/
+   Out required at all. The invoice for each period is the full agreed
+   rate, always - no Extended Hours or Deductions math applies, since
+   there's no attendance data to compute it from.
+
+CONFIRMED: the guarantee is NOT fully unconditional. Approved leave is
+fine and doesn't reduce pay. But total non-performance or abandonment by
+the Talent is a real exception that voids the guarantee for that period.
+
+REAL DESIGN PROBLEM THIS CREATES: with no clock data at all, there's no
+automated way to detect non-performance in this mode. The only realistic
+signal is the CLIENT noticing and reporting it. Propose a lightweight
+Client-initiated non-performance/abandonment claim mechanism for
+GUARANTEED-mode engagements specifically:
+- Client flags a specific period as non-performance/abandonment, with a
+  reason.
+- OnSpot reviews the claim (similar review-and-judgment pattern already
+  used for timesheet disputes and missed Clock-Out exceptions).
+- If substantiated, that period's invoice is adjusted/withheld rather
+  than auto-generating the full guaranteed amount - propose the exact
+  mechanism (does this block the invoice draft from generating at all
+  until resolved, similar to how a pending timesheet dispute already
+  blocks generation in the tracked mode?).
+- If not substantiated / no claim raised, the period's invoice generates
+  as the full guaranteed amount automatically, same fixed payment dates
+  (25th/5th America/New_York) as the tracked mode.
+
+TWO STRUCTURAL DEFAULTS I'm proposing - confirm or push back if a
+different design fits the codebase better:
+1. This mode is selected at JOB POSTING level (a Client decides how they
+   want to manage this specific role when they post it), not per
+   individual hire under that posting. Confirm this is sensible, or
+   propose contract-level selection instead if that fits better given
+   how job postings and hiring_contracts currently relate.
+2. Once a hiring_contract is signed under one mode, it's LOCKED for the
+   life of that engagement - switching modes requires ending and
+   re-signing a new contract, consistent with this build's non-
+   retroactive principle. Confirm or propose otherwise.
+
+EVERYTHING ELSE UNCHANGED: the entire clock-first foundation, timesheet
+workflow, Client visibility/dispute, OnSpot approval, talent_invoices
+schema, 48-hour auto-send, credit_memo mechanism, and deposit-coverage
+check remain exactly as already approved - all of that applies to the
+TRACKED mode specifically. The GUARANTEED mode is a separate,
+simpler invoice-generation path that coexists alongside it.
+
+Report your audit of how job postings and hiring_contracts currently
+relate (to answer point 1), and your proposed schema/workflow for the
+non-performance claim mechanism, before implementing anything. Do not
+start building either mode until this full picture is confirmed - there
+have been enough revisions to this feature that getting the complete
+model right now matters more than moving fast.
