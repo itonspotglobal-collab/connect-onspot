@@ -14538,6 +14538,327 @@ export async function registerRoutes(
     return result.rows[0] ?? null;
   };
 
+  // Client Team dashboard. The organization membership check and every
+  // engagement/billing join below are intentionally organization-scoped:
+  // organization members can see the work owned by the Client accounts in
+  // their workspace, but not another workspace's work.
+  app.get("/api/client/team-dashboard", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    const userId = (req as any).user?.id;
+    const organizationId = typeof req.query.organizationId === "string"
+      ? req.query.organizationId.trim()
+      : "";
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!organizationId) return res.status(400).json({ error: "organizationId is required" });
+
+    try {
+      const organizationResult = await query(
+        `SELECT o.id, o.name
+           FROM organizations o
+           INNER JOIN organization_members om ON om.organization_id = o.id
+          WHERE o.id = $1 AND om.user_id = $2 AND om.status = 'active'
+          LIMIT 1`,
+        [organizationId, userId],
+      );
+      if (!organizationResult.rows.length) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+
+      const memberResult = await query(
+        `WITH authorized_clients AS (
+           SELECT om.user_id
+             FROM organization_members om
+            WHERE om.organization_id = $1
+              AND om.status = 'active'
+         ),
+         engagements AS (
+           SELECT
+             c.id::text AS engagement_id,
+             'legacy'::text AS source,
+             c.client_id,
+             c.talent_id,
+             c.job_id,
+             COALESCE(NULLIF(c.title, ''), j.title) AS project,
+             j.division AS team,
+             c.contract_type,
+             c.rate::numeric AS rate,
+             'USD'::text AS rate_currency,
+             'hourly'::text AS rate_period,
+             NULL::text AS engagement_type,
+             c.start_date,
+             c.end_date
+             FROM contracts c
+             INNER JOIN jobs j ON j.id = c.job_id
+             INNER JOIN authorized_clients ac ON ac.user_id = c.client_id
+            WHERE c.status = 'active'
+              AND (c.end_date IS NULL OR c.end_date::date >= CURRENT_DATE)
+           UNION ALL
+           SELECT
+             hc.id::text AS engagement_id,
+             'hiring'::text AS source,
+             js.client_id,
+             js.talent_id,
+             js.job_id,
+             j.title AS project,
+             j.division AS team,
+             NULL::text AS contract_type,
+             o.rate::numeric AS rate,
+             o.rate_currency,
+             'period'::text AS rate_period,
+             o.engagement_type,
+             o.proposed_start_date AS start_date,
+             NULL::timestamp AS end_date
+             FROM hiring_contracts hc
+             INNER JOIN offers o ON o.id = hc.offer_id
+             INNER JOIN job_submissions js ON js.id = hc.submission_id
+             INNER JOIN jobs j ON j.id = js.job_id
+             INNER JOIN authorized_clients ac ON ac.user_id = js.client_id
+            WHERE hc.onspot_signed_at IS NOT NULL
+              AND hc.status NOT IN ('void', 'voided')
+              AND js.talent_id IS NOT NULL
+         ),
+         ranked_engagements AS (
+           SELECT
+             e.*,
+             ROW_NUMBER() OVER (
+               PARTITION BY e.talent_id
+               ORDER BY e.start_date DESC NULLS LAST, e.engagement_id DESC
+             ) AS engagement_rank
+             FROM engagements e
+         ),
+         grouped_engagements AS (
+           SELECT
+             talent_id,
+             COUNT(DISTINCT job_id)::int AS project_count,
+             ARRAY_AGG(DISTINCT job_id) AS project_ids,
+             ARRAY_AGG(engagement_id) FILTER (WHERE source = 'legacy') AS legacy_contract_ids,
+             MAX(project) FILTER (WHERE engagement_rank = 1) AS project,
+             MAX(team) FILTER (WHERE engagement_rank = 1) AS team,
+             MAX(rate) FILTER (WHERE engagement_rank = 1) AS rate,
+             MAX(rate_currency) FILTER (WHERE engagement_rank = 1) AS rate_currency,
+             MAX(rate_period) FILTER (WHERE engagement_rank = 1) AS rate_period,
+             MAX(engagement_type) FILTER (WHERE engagement_rank = 1) AS engagement_type,
+             MIN(end_date) FILTER (WHERE end_date IS NOT NULL) AS contract_end_date
+             FROM ranked_engagements
+            GROUP BY talent_id
+         )
+         SELECT
+           ge.talent_id,
+           COALESCE(
+             NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),
+             u.email,
+             'Team member'
+           ) AS name,
+           COALESCE(NULLIF(TRIM(p.title), ''), NULLIF(TRIM(ge.project), ''), 'Team member') AS role,
+           ge.team,
+           ge.project,
+           ge.project_count,
+           ge.project_ids,
+           COALESCE(NULLIF(TRIM(p.availability), ''), 'offline') AS availability,
+           COALESCE(NULLIF(TRIM(p.timezone), ''), 'UTC') AS timezone,
+           NULLIF(p.rating::text, '0') AS rating,
+           ge.rate,
+           ge.rate_currency,
+           ge.rate_period,
+           ge.engagement_type,
+           ge.contract_end_date,
+           latest_activity.start_time AS latest_activity_at,
+           latest_activity.end_time AS latest_activity_end,
+           COALESCE(time_summary.hours_logged, 0)::numeric AS hours_logged,
+           COALESCE(time_summary.weekly_activity, ARRAY[0, 0, 0, 0, 0, 0, 0]::numeric[]) AS weekly_activity,
+           COALESCE(member_spend.spend_by_currency, '[]'::json) AS spend_by_currency
+           FROM grouped_engagements ge
+           INNER JOIN users u ON u.id = ge.talent_id
+           LEFT JOIN profiles p ON p.user_id = ge.talent_id
+           LEFT JOIN LATERAL (
+             SELECT te.start_time, te.end_time
+               FROM time_entries te
+              WHERE te.contract_id = ANY(ge.legacy_contract_ids)
+                AND te.status <> 'rejected'
+              ORDER BY te.start_time DESC
+              LIMIT 1
+           ) latest_activity ON TRUE
+           LEFT JOIN LATERAL (
+             SELECT
+               SUM(day_hours) AS hours_logged,
+               ARRAY_AGG(day_hours ORDER BY day_index) AS weekly_activity
+               FROM (
+                 SELECT
+                   days.day_index,
+                   COALESCE(
+                     SUM(
+                       CASE
+                         WHEN te.duration IS NOT NULL THEN te.duration::numeric / 60
+                         ELSE EXTRACT(EPOCH FROM (COALESCE(te.end_time, NOW()) - te.start_time)) / 3600
+                       END
+                     ),
+                     0
+                   )::numeric AS day_hours
+                   FROM GENERATE_SERIES(0, 6) AS days(day_index)
+                   LEFT JOIN time_entries te
+                     ON te.contract_id = ANY(ge.legacy_contract_ids)
+                    AND te.status <> 'rejected'
+                    AND te.start_time >= DATE_TRUNC('week', CURRENT_DATE) + (days.day_index * INTERVAL '1 day')
+                    AND te.start_time < DATE_TRUNC('week', CURRENT_DATE) + ((days.day_index + 1) * INTERVAL '1 day')
+                  GROUP BY days.day_index
+               ) day_totals
+           ) time_summary ON TRUE
+           LEFT JOIN LATERAL (
+             SELECT COALESCE(
+               JSON_AGG(JSON_BUILD_OBJECT('currency', totals.currency, 'amount', totals.amount)),
+               '[]'::json
+             ) AS spend_by_currency
+               FROM (
+                 SELECT i.currency, SUM(i.amount)::numeric AS amount
+                   FROM invoices i
+                   INNER JOIN invoice_periods ip ON ip.id = i.period_id
+                   INNER JOIN hiring_contracts hc ON hc.id = i.hiring_contract_id
+                   INNER JOIN job_submissions js ON js.id = hc.submission_id
+                  WHERE js.talent_id = ge.talent_id
+                    AND js.client_id IN (SELECT user_id FROM authorized_clients)
+                    AND i.status <> 'void'
+                  GROUP BY i.currency
+                 UNION ALL
+                 SELECT COALESCE(payments.currency, 'USD') AS currency,
+                        SUM(payments.amount)::numeric AS amount
+                   FROM payments
+                   INNER JOIN contracts legacy_contract ON legacy_contract.id = payments.contract_id
+                  WHERE legacy_contract.talent_id = ge.talent_id
+                    AND legacy_contract.client_id IN (SELECT user_id FROM authorized_clients)
+                    AND payments.status NOT IN ('failed', 'cancelled')
+                  GROUP BY COALESCE(payments.currency, 'USD')
+               ) totals
+           ) member_spend ON TRUE
+          ORDER BY name`,
+        [organizationId],
+      );
+
+      const spendResult = await query(
+        `WITH authorized_clients AS (
+           SELECT om.user_id
+             FROM organization_members om
+            WHERE om.organization_id = $1
+              AND om.status = 'active'
+         ),
+         charges AS (
+           SELECT i.currency,
+                  i.amount::numeric AS amount,
+                  COALESCE(ip.period_start::timestamp, i.created_at) AS charge_date
+             FROM invoices i
+             INNER JOIN invoice_periods ip ON ip.id = i.period_id
+             INNER JOIN hiring_contracts hc ON hc.id = i.hiring_contract_id
+             INNER JOIN job_submissions js ON js.id = hc.submission_id
+             INNER JOIN authorized_clients ac ON ac.user_id = js.client_id
+            WHERE i.status <> 'void'
+           UNION ALL
+           SELECT COALESCE(p.currency, 'USD') AS currency,
+                  p.amount::numeric AS amount,
+                  p.created_at AS charge_date
+             FROM payments p
+             INNER JOIN contracts c ON c.id = p.contract_id
+             INNER JOIN authorized_clients ac ON ac.user_id = c.client_id
+            WHERE p.status NOT IN ('failed', 'cancelled')
+         )
+         SELECT currency,
+                SUM(amount)::numeric AS total_spend,
+                SUM(amount) FILTER (
+                  WHERE charge_date >= DATE_TRUNC('week', CURRENT_DATE)
+                    AND charge_date < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '7 days'
+                )::numeric AS this_week_spend
+           FROM charges
+          GROUP BY currency
+          ORDER BY currency`,
+        [organizationId],
+      );
+
+      const toNumber = (value: unknown) => value == null ? 0 : Number(value);
+      const formatSpend = (row: any) => ({
+        currency: row.currency,
+        amount: toNumber(row.amount),
+      });
+      const spendByCurrency = spendResult.rows.map((row: any) => ({
+        currency: row.currency,
+        total: toNumber(row.total_spend),
+        thisWeek: toNumber(row.this_week_spend),
+      }));
+      const members = memberResult.rows.map((row: any) => {
+        const contractEndDate = row.contract_end_date ? new Date(row.contract_end_date) : null;
+        const daysUntilEnd = contractEndDate
+          ? Math.max(0, Math.ceil((contractEndDate.getTime() - Date.now()) / 86_400_000))
+          : null;
+        const weeklyActivity = Array.isArray(row.weekly_activity)
+          ? row.weekly_activity.map(toNumber)
+          : [0, 0, 0, 0, 0, 0, 0];
+        const profileAvailability = String(row.availability || "").toLowerCase();
+        const isActiveTimeEntry = row.latest_activity_at
+          && !row.latest_activity_end
+          && Date.now() - new Date(row.latest_activity_at).getTime() < 30 * 60_000;
+        const status = profileAvailability === "available" || profileAvailability === "online"
+          ? "online"
+          : profileAvailability === "busy" || profileAvailability === "away"
+            ? "away"
+            : isActiveTimeEntry ? "online" : "offline";
+        const memberSpend = Array.isArray(row.spend_by_currency)
+          ? row.spend_by_currency.map((spend: any) => formatSpend(spend))
+          : [];
+        return {
+          id: row.talent_id,
+          name: row.name,
+          initials: row.name
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part: string) => part[0]?.toUpperCase())
+            .join("") || "TM",
+          role: row.role,
+          team: row.team || undefined,
+          status,
+          timezone: row.timezone,
+          latestActivityAt: row.latest_activity_at,
+          project: row.project || "No active project",
+          projectCount: Number(row.project_count || 0),
+          projectIds: Array.isArray(row.project_ids) ? row.project_ids : [],
+          contractWarning: daysUntilEnd != null && daysUntilEnd <= 14
+            ? `Contract ends in ${daysUntilEnd} day${daysUntilEnd === 1 ? "" : "s"}`
+            : undefined,
+          rating: row.rating == null ? null : toNumber(row.rating),
+          hoursLogged: toNumber(row.hours_logged),
+          weeklyTargetHours: row.engagement_type === "Lite" ? 20 : 40,
+          weeklyActivity,
+          rate: row.rate == null ? null : toNumber(row.rate),
+          rateCurrency: row.rate_currency || null,
+          ratePeriod: row.rate_period || null,
+          engagementType: row.engagement_type || null,
+          spendByCurrency: memberSpend,
+        };
+      });
+      const totalHours = members.reduce((sum: number, member: any) => sum + member.hoursLogged, 0);
+      const weeklyCapacity = members.reduce((sum: number, member: any) => sum + member.weeklyTargetHours, 0);
+      const needsAttention = members.filter((member: any) => member.contractWarning).length;
+
+      return res.json({
+        organization: organizationResult.rows[0],
+        summary: {
+          teamMembers: members.length,
+          activeProjects: new Set(memberResult.rows.flatMap((row: any) => row.project_ids || [])).size,
+          hoursLogged: totalHours,
+          weeklyCapacityHours: weeklyCapacity,
+          needsAttention,
+        },
+        members,
+        spendByCurrency,
+        roi: {
+          benchmarkAvailable: false,
+          totalSpendByCurrency: spendByCurrency.map(({ currency, total }) => ({ currency, amount: total })),
+          thisWeekSpendByCurrency: spendByCurrency.map(({ currency, thisWeek }) => ({ currency, amount: thisWeek })),
+          savingsByCurrency: [],
+        },
+      });
+    } catch (err: any) {
+      console.error("GET /api/client/team-dashboard failed:", err);
+      return res.status(500).json({ error: "Failed to load team dashboard" });
+    }
+  });
+
   const requireOrganizationOwner = async (organizationId: string, userId: string) => {
     const membership = await getActiveOrganizationMembership(organizationId, userId);
     return membership?.role === "owner" ? membership : null;
