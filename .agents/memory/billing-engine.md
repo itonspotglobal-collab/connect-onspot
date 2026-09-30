@@ -77,7 +77,7 @@ Do not publish billing and termination until production schema synchronization, 
 
 **Why:** An earlier publish-time schema diff ran before the app's startup migrations could normalize production data; this recurrence could leave financial records unprotected or make the deployment fail at startup.
 
-**How to apply:** Confirm whether the actual live database is Replit-managed or external, use only its authorized migration channel, rehearse on an isolated equivalent database, inspect the remaining publish diff and enabled trigger definitions, and keep publish blocked if any gate is unproven.
+**How to apply:** Confirm whether the actual live database is Replit-managed or external, use only its authorized migration channel, rehearse on an isolated equivalent database, inspect the remaining publish diff and enabled trigger definitions, and keep publish blocked if any gate is unproven. If Replit controls and documentation cannot definitively resolve ownership, seek a direct answer from Replit support; never infer it from the database hostname.
 
 
 ## Customer-facing ledger views
