@@ -31,6 +31,14 @@ description: Durable money, identity, lifecycle, and concurrency rules for billi
 
 **How to apply:** Keep the duplicate check and insert transactional, retain the unique index, and translate a unique-conflict error into a safe conflict response.
 
+## Marketplace custody boundary
+
+The intended future payments architecture is provider-managed marketplace payments: both Client and Talent connect their own provider accounts, while OnSpot never directly holds or moves funds. Keep provider connections vendor-neutral and separate from existing manual invoice and payout references; absence of a connection record means not connected.
+
+**Why:** The provider, not OnSpot, will handle charges, transfers, and KYC/compliance. Legacy vendor-specific user fields and manual reference fields must not become the foundation for this model.
+
+**How to apply:** Future payment integration work should use the billing parties' user identities, preserve existing semi-manual ledger states until a deliberate migration, and never infer that a stored provider reference proves a charge or transfer succeeded.
+
 
 ## Customer-facing ledger views
 

@@ -35,7 +35,7 @@
 - [Vetted badge](vetted-badge.md) — admin-grantable "Vetted" badge on contractor profiles; schema, migrations, endpoints, and three badge surfaces.
 - [Verified tier](verified-tier.md) — full Verified identity tier; 9 DB columns, 9 endpoints, grandfathering, doc-delete-on-decision, Super Admin gate, fake-badge default fixes.
 - [Engagement type rename](engagement-type-rename.md) — 'Half-Day'→'Lite', 'Full-Time'→'Standard'; 4 storage locations, drop-then-rename-then-add constraint pattern, confirmed legal wording.
-- [Billing engine](billing-engine.md) — Phase 1 complete: 5 tables, billing.ts pure functions, security deposit ladder, commission_rate always explicit per-row.
+- [Billing engine](billing-engine.md) — billing invariants, security deposit ladder, and provider-managed marketplace custody boundary.
 - [Legacy model removal](legacy-model-removal.md) — migrate every remaining caller and test the user-visible flow before deleting a legacy API or table.
 - [Job-form visible fields](job-form-visible-fields.md) — shared Admin/Client form changes must not expose or overwrite hidden legacy job fields.
 - [Job approval transition alerts](job-approval-transition-alerts.md) — approval alerts are per-transition events; retries no-op, while later re-entry creates a fresh Client alert.

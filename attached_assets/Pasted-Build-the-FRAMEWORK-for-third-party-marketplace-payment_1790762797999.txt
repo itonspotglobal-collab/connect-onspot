@@ -1,0 +1,56 @@
+Build the FRAMEWORK for third-party marketplace-payments integration —
+schema and structure only, no real API/SDK integration, no specific
+provider wired up yet. This extends the already-built Payments engine
+(invoice_periods, invoices, payouts, security_deposits), it does not
+replace it.
+
+CONFIRMED MODEL: marketplace-payments-platform architecture (the
+Stripe-Connect style model) — OnSpot itself never directly holds or
+moves funds. Both the Client and the Talent need their own "connected
+account" reference with the eventual provider, and the provider handles
+the actual charge (from Client) and transfer (to Talent), plus KYC/
+compliance, not OnSpot.
+
+Design this PROVIDER-AGNOSTIC — column/table names should not assume any
+specific vendor, since the exact provider(s) are already chosen
+internally but not being named or wired in at this stage. This needs to
+support swapping in a real provider later without a schema rewrite.
+
+AUDIT FIRST, report before building:
+1. Confirm current state of users/candidates/clients tables — where
+   would a "connected account" reference naturally live for each side?
+2. Confirm the exact shape of the existing invoices and payouts tables
+   (already built) so new placeholder fields extend them cleanly rather
+   than duplicating anything.
+
+PROPOSED SCHEMA ADDITIONS (adjust based on audit findings):
+
+1. A new payment_provider_accounts table — one row per Client or Talent
+   who has (eventually) connected an account with a payments provider:
+   - id, owner_type ('client' | 'talent'), owner_id
+   - provider_name (nullable text — which provider, once chosen/wired)
+   - external_account_id (nullable text — the provider's own account
+     reference)
+   - status ('not_connected' | 'pending' | 'active' | 'restricted') —
+     defaults to 'not_connected' for everyone today
+   - connected_at, updated_at
+
+2. Extend invoices with:
+   - payment_provider (nullable text)
+   - external_charge_id (nullable text — the provider's charge/payment
+     intent reference, once real charges exist)
+
+3. Extend payouts with:
+   - payment_provider (nullable text)
+   - external_transfer_id (nullable text — the provider's transfer
+     reference, once real transfers exist)
+
+ALL new fields nullable, all unused today — this is pure scaffolding,
+the same pattern already used for the e-signature placeholders on
+hiring_contracts earlier in this build. Do not write any code that calls
+a real payments API, does not import any provider SDK, and does not
+change how invoices/payouts actually get marked paid/disbursed today
+(that stays semi-manual, exactly as already built).
+
+Report the audit findings and the finalized schema proposal before
+implementing.

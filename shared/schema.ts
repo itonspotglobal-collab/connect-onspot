@@ -1743,6 +1743,25 @@ export const invoicePeriods = pgTable("invoice_periods", {
   check("invoice_periods_status_check", sql`${table.status} IN ('draft', 'ready', 'invoiced', 'payout_scheduled', 'closed')`),
 ]);
 
+// Current provider connection for a Client or Talent user; missing row means
+// not_connected. Provider credentials and banking details are never stored here.
+export const paymentProviderAccounts = pgTable("payment_provider_accounts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  ownerType: text("owner_type").notNull(),
+  ownerId: varchar("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  providerName: text("provider_name"),
+  externalAccountId: text("external_account_id"),
+  status: text("status").notNull().default("not_connected"),
+  connectedAt: timestamp("connected_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("payment_provider_accounts_owner_unique").on(table.ownerType, table.ownerId),
+  uniqueIndex("payment_provider_accounts_external_unique").on(table.providerName, table.externalAccountId)
+    .where(sql`${table.providerName} IS NOT NULL AND ${table.externalAccountId} IS NOT NULL`),
+  check("payment_provider_accounts_owner_type_check", sql`${table.ownerType} IN ('client', 'talent')`),
+  check("payment_provider_accounts_status_check", sql`${table.status} IN ('not_connected', 'pending', 'active', 'restricted')`),
+]);
+
 export const invoices = pgTable("invoices", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   periodId: uuid("period_id").references(() => invoicePeriods.id, { onDelete: "restrict" }),
@@ -1754,6 +1773,8 @@ export const invoices = pgTable("invoices", {
   commissionRate: decimal("commission_rate", { precision: 5, scale: 4 }).notNull(),
   paymentMethod: text("payment_method"),
   externalRef: text("external_ref"),
+  paymentProvider: text("payment_provider"),
+  externalChargeId: text("external_charge_id"),
   status: text("status").notNull().default("draft"),
   issuedAt: timestamp("issued_at", { withTimezone: true }),
   dueDate: timestamp("due_date", { withTimezone: true }),
@@ -1782,6 +1803,8 @@ export const payouts = pgTable("payouts", {
   payoutRegion: text("payout_region").references(() => payoutRegionConfigs.regionCode),
   payoutMethod: text("payout_method"),
   externalRef: text("external_ref"),
+  paymentProvider: text("payment_provider"),
+  externalTransferId: text("external_transfer_id"),
   status: text("status").notNull().default("pending"),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   disbursedAt: timestamp("disbursed_at", { withTimezone: true }),
