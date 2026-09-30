@@ -71,6 +71,14 @@ Final termination ends an engagement without requiring another contract. A billi
 
 **How to apply:** Require an explicit approved effective end, settle the inclusive final service period, and preserve sent ledger history. Reverify the actual production database's migration state independently before any publish; route 404s alone are not schema evidence.
 
+## Production billing migration gate
+
+Do not publish billing and termination until production schema synchronization, the ordered custom-SQL migrations, and their ledger have a verified non-colliding sequence. A table/column diff is not evidence that financial immutability functions and triggers are installed. Require a rehearsed recovery plan and explicit approval before production changes.
+
+**Why:** An earlier publish-time schema diff ran before the app's startup migrations could normalize production data; this recurrence could leave financial records unprotected or make the deployment fail at startup.
+
+**How to apply:** Confirm whether the actual live database is Replit-managed or external, use only its authorized migration channel, rehearse on an isolated equivalent database, inspect the remaining publish diff and enabled trigger definitions, and keep publish blocked if any gate is unproven.
+
 
 ## Customer-facing ledger views
 
