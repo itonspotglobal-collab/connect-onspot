@@ -59,7 +59,7 @@ Clients must choose between Tracked (clock-derived, approved timesheets with ext
 
 A substantiated late Guaranteed claim after the Talent invoice is sent creates a separate Client-side credit against the original period's all-in charge, never a Talent credit memo or a change to the sent Talent invoice. If the original Client statement was sent, apply it to the next eligible unsent statement, not to historical sent statements.
 
-**Why:** The guaranteed Talent commitment survives a late Client discovery, while the Client still needs a reviewed remedy. The two financial histories must remain independently auditable.
+**Why:** The guaranteed Talent commitment survives a late Client discovery, while the Client still needs a reviewed remedy. The two financial histories must remain independently auditable. The user explicitly confirmed that Client credits must never alter sent Talent invoices or payouts.
 
 **How to apply:** Keep Client credit applications distinct from Tracked Talent corrections; require an Admin finding, preserve original invoice snapshots, and do not post a credit to a statement older than the finding unless it is the original unsent statement. Signed-contract termination is a separate lifecycle feature, not a silent cutoff invented by the invoice worker.
 
