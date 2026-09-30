@@ -73,9 +73,9 @@ import { SignUpDialog } from "@/components/SignUpDialog";
 const SHOW_AMAZING_NAV = false;
 
 const navigationItems = [
-  { title: "Hire Talent", path: "/hire-talent" },
-  { title: "Find Work", path: "/find-work/jobs" },
-  ...(SHOW_AMAZING_NAV ? [{ title: "Amazing", path: "/amazing" }] : []),
+  { key: "hire-talent", title: "Hire Talent", path: "/hire-talent" },
+  { key: "find-work", title: "Find Work", path: "/find-work/jobs" },
+  ...(SHOW_AMAZING_NAV ? [{ key: "amazing", title: "Amazing", path: "/amazing" }] : []),
 ];
 
 export function TopNavigation() {
@@ -355,40 +355,41 @@ export function TopNavigation() {
   const AccountFallbackIcon = user?.role === "client" ? Building : Shield;
 
   // ── Role-based dropdown items ──────────────────────────────────────────────
-  const getDropdownItems = (): { label: string; route: string; icon: React.ElementType }[] => {
+  const getDropdownItems = (): { key: string; label: string; route: string; icon: React.ElementType }[] => {
     if (user?.role === "client") return [
-      { label: "Client Profile", route: "/client-profile", icon: Building },
-      { label: "Create Organization", route: "/organization/create", icon: Building2 },
+      { key: "client-profile", label: "Client Profile", route: "/client-profile", icon: Building },
+      { key: "create-organization", label: "Create Organization", route: "/organization/create", icon: Building2 },
       {
+        key: "organization-invitations",
         label: organizationInvitations.length
           ? `Organization Invitations (${organizationInvitations.length})`
           : "Organization Invitations",
         route: "/organization-invitations",
         icon: Mail,
       },
-      { label: "Hire Talent",    route: "/hire-talent",    icon: Users },
-      { label: "Messages",       route: "/messages",        icon: MessageSquare },
-      { label: "Settings",       route: "/settings",       icon: Settings },
+      { key: "hire-talent", label: "Hire Talent", route: "/hire-talent", icon: Users },
+      { key: "messages", label: "Messages", route: "/messages", icon: MessageSquare },
+      { key: "settings", label: "Settings", route: "/settings", icon: Settings },
     ];
     if (user?.role === "admin") return [
-      { label: "Admin Dashboard",   route: "/admin/dashboard",          icon: Shield },
-      { label: "Billing Ledger",    route: "/admin/ledger",              icon: DollarSign },
-      { label: "Find Work",         route: "/admin/find-work",          icon: Briefcase },
-      { label: "Job Applications",  route: "/admin/job-applications",   icon: Users },
-      { label: "Email Templates",   route: "/admin/email-templates",    icon: Mail },
-      { label: "Email Delivery Audit", route: "/admin/email-deliveries", icon: Mail },
-      { label: "Insights",          route: "/admin/insights",           icon: Eye },
-      { label: "Flagged Messages",  route: "/admin/flagged-messages",   icon: Flag },
-      { label: "Settings",          route: "/settings",                 icon: Settings },
+      { key: "admin-dashboard", label: "Admin Dashboard", route: "/admin/dashboard", icon: Shield },
+      { key: "billing-ledger", label: "Billing Ledger", route: "/admin/ledger", icon: DollarSign },
+      { key: "find-work", label: "Find Work", route: "/admin/find-work", icon: Briefcase },
+      { key: "job-applications", label: "Job Applications", route: "/admin/job-applications", icon: Users },
+      { key: "email-templates", label: "Email Templates", route: "/admin/email-templates", icon: Mail },
+      { key: "email-delivery-audit", label: "Email Delivery Audit", route: "/admin/email-deliveries", icon: Mail },
+      { key: "insights", label: "Insights", route: "/admin/insights", icon: Eye },
+      { key: "flagged-messages", label: "Flagged Messages", route: "/admin/flagged-messages", icon: Flag },
+      { key: "settings", label: "Settings", route: "/settings", icon: Settings },
     ];
     // TODO: Remove these public admin links before production launch.
     // Temporary: surface admin tools in the nav without requiring a logged-in admin account.
     if (!user) return [
-      { label: "Admin Dashboard",  route: "/admin/dashboard",         icon: Shield },
-      { label: "Find Work",        route: "/admin/find-work",         icon: Briefcase },
-      { label: "Job Applications", route: "/admin/job-applications",  icon: Users },
-      { label: "Email Templates",  route: "/admin/email-templates",   icon: Mail },
-      { label: "Insights",         route: "/admin/insights",          icon: Eye },
+      { key: "admin-dashboard", label: "Admin Dashboard", route: "/admin/dashboard", icon: Shield },
+      { key: "find-work", label: "Find Work", route: "/admin/find-work", icon: Briefcase },
+      { key: "job-applications", label: "Job Applications", route: "/admin/job-applications", icon: Users },
+      { key: "email-templates", label: "Email Templates", route: "/admin/email-templates", icon: Mail },
+      { key: "insights", label: "Insights", route: "/admin/insights", icon: Eye },
     ];
     // talent / default
     // resolvedTalentCandidateId covers both Talent Portal JWT and main JWT (role=talent).
@@ -403,13 +404,13 @@ export function TopNavigation() {
       ? "/settings"
       : "/find-best-matches";
     return [
-      { label: "Talent Profile",       route: talentProfileRoute,   icon: User },
-      { label: "My Applications",      route: "/my-applications",   icon: ClipboardList },
-      { label: "Messages",             route: "/messages",          icon: MessageSquare },
-      { label: "Payout History",       route: "/talent/payouts",    icon: DollarSign },
-      { label: "Finish Profile Setup", route: finishSetupRoute,     icon: CheckCircle2 },
-      { label: "Find Work",            route: "/find-work/jobs",    icon: Briefcase },
-      { label: "Settings",             route: "/settings",          icon: Settings },
+      { key: "talent-profile", label: "Talent Profile", route: talentProfileRoute, icon: User },
+      { key: "my-applications", label: "My Applications", route: "/my-applications", icon: ClipboardList },
+      { key: "messages", label: "Messages", route: "/messages", icon: MessageSquare },
+      { key: "payout-history", label: "Payout History", route: "/talent/payouts", icon: DollarSign },
+      { key: "finish-profile-setup", label: "Finish Profile Setup", route: finishSetupRoute, icon: CheckCircle2 },
+      { key: "find-work", label: "Find Work", route: "/find-work/jobs", icon: Briefcase },
+      { key: "settings", label: "Settings", route: "/settings", icon: Settings },
     ];
   };
 
@@ -734,7 +735,7 @@ export function TopNavigation() {
               
               return (
                 <div 
-                  key={item.title}
+                  key={item.key}
                   ref={(el) => { itemRefs.current[index] = el; }}
                 >
                   {hasMegaMenu ? (
@@ -825,7 +826,7 @@ export function TopNavigation() {
                     <div className="py-3 px-2">
                       {visibleNavItems.slice(visibleItems).map((item) => (
                         <Link
-                          key={item.path}
+                          key={item.key}
                           href={item.path}
                           onClick={() => setMoreMenuOpen(false)}
                           className="more-menu-link block px-4 py-3 text-sm font-semibold text-white rounded-lg"
@@ -1116,8 +1117,8 @@ export function TopNavigation() {
                         </>
                       )}
 
-                      {getDropdownItems().map(({ label, route, icon: Icon }) => (
-                        <RadixDropdown.Item key={route} asChild>
+                      {getDropdownItems().map(({ key, label, route, icon: Icon }) => (
+                        <RadixDropdown.Item key={key} asChild>
                           <button
                             onClick={() => navigate(route)}
                             style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
@@ -1606,7 +1607,7 @@ export function TopNavigation() {
 
               if (hasMegaMenu) {
                 return (
-                  <div key={item.title}>
+                  <div key={item.key}>
                     <button
                       onClick={() => setMobileAccordionOpen(isExpanded ? null : item.title)}
                       className={`w-full py-4 px-0 text-left text-white font-semibold flex items-center justify-between rounded-lg transition-all ${
@@ -1691,7 +1692,7 @@ export function TopNavigation() {
 
               return (
                 <Link
-                  key={item.path}
+                  key={item.key}
                   href={item.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`mobile-menu-link block py-4 text-white font-semibold ${
@@ -1745,9 +1746,9 @@ export function TopNavigation() {
                 </div>
               )}
               {/* Role-based nav items */}
-              {getDropdownItems().map(({ label, route, icon: Icon }) => (
+              {getDropdownItems().map(({ key, label, route, icon: Icon }) => (
                 <button
-                  key={route}
+                  key={key}
                   onClick={() => { navigate(route); setIsMobileMenuOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"
                 >
