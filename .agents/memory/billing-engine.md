@@ -39,6 +39,14 @@ The intended future payments architecture is provider-managed marketplace paymen
 
 **How to apply:** Future payment integration work should use the billing parties' user identities, preserve existing semi-manual ledger states until a deliberate migration, and never infer that a stored provider reference proves a charge or transfer succeeded.
 
+## Independent-contractor invoice cadence
+
+The confirmed new model is Talent-to-OnSpot independent-contractor invoicing, not payroll: calendar-aligned invoice periods run from the 1st–15th (payment date the 25th) and 16th–month-end (payment date the 5th of the following month). OnSpot's separate Client invoice groups the month's eligible Talent invoice periods, with commission bundled into the Client's all-in amount. A Talent claim is reviewed against platform calculations before any payout is authorized.
+
+**Why:** The Client security deposit, not timing of Client invoice payment, is the intended backstop for the Talent payment commitment. A pending deposit does not prove coverage, and a scheduled payout does not prove execution.
+
+**How to apply:** Do not require the Client's monthly invoice to be paid before authorizing an approved Talent claim under the new path. Document the deposit-backed reason at that gate; verify coverage rather than assuming it, preserve legacy ledger history, and avoid payroll-adjacent names or comments.
+
 
 ## Customer-facing ledger views
 

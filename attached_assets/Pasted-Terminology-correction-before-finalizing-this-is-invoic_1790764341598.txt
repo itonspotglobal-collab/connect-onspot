@@ -1,0 +1,39 @@
+Terminology correction before finalizing: this is invoice payment
+between OnSpot and an independent contractor, not payroll. Avoid any
+payroll-adjacent framing in code comments, documentation, or naming
+(e.g., don't call this a "pay cycle" or "semi-monthly payroll") - it's a
+Talent invoice, submitted and paid on a schedule, nothing more.
+
+CONFIRMED PERIOD/PAYMENT-DATE STRUCTURE (calendar-aligned, as already
+agreed):
+- Period 1st-15th of month M -> payment on the 25th of month M
+- Period 16th-end of month M -> payment on the 5th of month M+1
+
+IMPORTANT BUSINESS REASONING, make sure this is reflected in the
+implementation and any documentation: OnSpot can commit to these FIXED
+payment dates regardless of whether the Client has actually paid their
+own monthly invoice yet, because the security deposit taken from the
+Client at contract start is what guarantees the Talent gets paid. This
+is the direct justification for removing the old "Client invoice must
+already be paid before a payout can be scheduled" gate your audit
+flagged as conflicting with the new model - that gate should be removed
+because the deposit, not the Client's payment timing, is what backstops
+Talent payment. Confirm this reasoning is captured clearly in code
+comments/documentation so a future reader understands WHY that
+prerequisite was removed, not just that it was.
+
+Before implementing, propose: is there a submission deadline for the
+Talent to submit their invoice claim in order to make the upcoming fixed
+payment date (e.g., must submit within X days of period end), or can
+they submit anytime and it's picked up at whichever fixed date comes
+next chronologically? Report your recommendation.
+
+Everything else from the prior audit and proposal stands: invoice_periods
+as the calculation unit, the three-value claimed/computed/approved
+tracking, the talent_invoices schema, the nullable
+payouts.talent_invoice_id link, and the monthly Client invoice as the
+sum of that month's two periods.
+
+Report the finalized plan, including the fixed payment-date mechanism,
+the submission-deadline recommendation, and confirmation the deposit-
+backed-guarantee reasoning is documented, before implementing anything.
