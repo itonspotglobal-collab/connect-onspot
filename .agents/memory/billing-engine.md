@@ -41,11 +41,11 @@ The intended future payments architecture is provider-managed marketplace paymen
 
 ## Independent-contractor invoice cadence
 
-The confirmed new model is Talent-to-OnSpot independent-contractor invoicing, not payroll: calendar-aligned invoice periods run from the 1st–15th (payment date the 25th) and 16th–month-end (payment date the 5th of the following month). OnSpot's separate Client invoice groups the month's eligible Talent invoice periods, with commission bundled into the Client's all-in amount. A Talent claim is reviewed against platform calculations before any payout is authorized.
+The confirmed new model is Talent-to-OnSpot independent-contractor invoicing, not payroll: calendar-aligned invoice periods run from the 1st–15th (payment date the 25th) and 16th–month-end (payment date the 5th of the following month), using US Eastern Time as the canonical clock. OnSpot's separate Client invoice groups the month's eligible Talent invoice periods, with commission bundled into the Client's all-in amount. A Talent invoice is mechanically generated from an approved timesheet revision; Talent may edit/dispute the timesheet subject to approval, but never claims or edits the invoice amount.
 
-**Why:** The Client security deposit, not timing of Client invoice payment, is the intended backstop for the Talent payment commitment. A pending deposit does not prove coverage, and a scheduled payout does not prove execution.
+**Why:** The Client security deposit, not timing of Client invoice payment, is the intended backstop for the Talent payment commitment. A pending deposit does not prove coverage, and a scheduled payout does not prove execution. The earlier claimed/computed/approved invoice-amount proposal was superseded; corrections belong in the timesheet.
 
-**How to apply:** Do not require the Client's monthly invoice to be paid before authorizing an approved Talent claim under the new path. Document the deposit-backed reason at that gate; verify coverage rather than assuming it, preserve legacy ledger history, and avoid payroll-adjacent names or comments.
+**How to apply:** Draft the invoice after each window from the approved timesheet, notify Talent, then auto-send after 48 hours even if a timesheet dispute is pending. Approved corrections after send use a signed credit memo on the next available draft instead of changing sent financial history. Do not require Client payment before authorizing the new Talent invoice path; document the deposit-backed reason, verify coverage, preserve legacy records, and avoid payroll-adjacent names or comments.
 
 
 ## Customer-facing ledger views
