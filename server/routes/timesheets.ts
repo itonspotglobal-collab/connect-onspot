@@ -133,7 +133,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       `SELECT hc.id, hc.billing_mode, hc.effective_end_date, j.time_zone FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
        JOIN jobs j ON j.id = js.job_id
-       WHERE hc.status = 'signed' AND ${scopeSql}`,
+       WHERE hc.status IN ('signed', 'terminated') AND ${scopeSql}`,
       scopeArgs,
     );
     await ensurePeriods(contractResult.rows);

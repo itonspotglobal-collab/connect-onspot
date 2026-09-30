@@ -3200,7 +3200,7 @@ export async function registerRoutes(
              JOIN job_submissions js ON js.id = hc.submission_id
              JOIN jobs j ON j.id = js.job_id
              LEFT JOIN users client ON client.id = js.client_id
-            WHERE js.talent_id = $1 AND hc.status = 'signed' AND hc.billing_mode = 'tracked'
+            WHERE js.talent_id = $1 AND hc.status IN ('signed', 'terminated') AND hc.billing_mode = 'tracked'
             ORDER BY hc.created_at DESC`,
           [talentId],
         ),
@@ -3261,7 +3261,7 @@ export async function registerRoutes(
          `SELECT hc.id, hc.effective_end_date
            FROM hiring_contracts hc
            JOIN job_submissions js ON js.id = hc.submission_id
-           WHERE hc.id = $1 AND js.talent_id = $2 AND hc.status = 'signed'
+           WHERE hc.id = $1 AND js.talent_id = $2 AND hc.status IN ('signed', 'terminated')
              AND hc.billing_mode = 'tracked'
              AND (hc.effective_end_date IS NULL
                OR hc.effective_end_date >= (now() AT TIME ZONE 'America/New_York')::date)
@@ -22771,6 +22771,13 @@ export async function registerRoutes(
       }
 
       const result = await withLedgerTransaction(async (client) => {
+        const depositContract = await client.query(
+          `SELECT hiring_contract_id FROM security_deposits WHERE id = $1`, [req.params.id]);
+        if (depositContract.rows[0]) {
+          // Match invoice sending's contract -> deposit lock order.
+          await client.query(`SELECT id FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
+            [depositContract.rows[0].hiring_contract_id]);
+        }
         const existing = await client.query(`SELECT * FROM security_deposits WHERE id = $1 FOR UPDATE`, [req.params.id]);
         if (existing.rows.length === 0) {
           const error = new Error("Security deposit not found");
@@ -22812,6 +22819,37 @@ export async function registerRoutes(
             const error = new Error("terminalReason must be normal_termination or mutual_end when applying a deposit");
             Object.assign(error, { status: 422 });
             throw error;
+          }
+          const termination = await client.query(
+            `SELECT effective_end_date, billing_mode FROM hiring_contracts WHERE id = $1`,
+            [deposit.hiring_contract_id]);
+          if (termination.rows[0]?.effective_end_date) {
+            const settled = await client.query(
+              `SELECT ((now() AT TIME ZONE 'America/New_York')::date > hc.effective_end_date)
+                AND (hc.billing_mode IS NULL OR EXISTS (
+                  SELECT 1 FROM talent_invoices ti
+                  JOIN client_monthly_invoice_lines l ON l.talent_invoice_id = ti.id
+                  JOIN client_monthly_invoices mi ON mi.id = l.client_monthly_invoice_id
+                  WHERE ti.hiring_contract_id = hc.id AND ti.period_start <= hc.effective_end_date
+                    AND ti.period_end >= hc.effective_end_date AND ti.status = 'sent' AND mi.status = 'sent'
+                ) OR EXISTS (
+                  SELECT 1 FROM guaranteed_nonperformance_claims gc
+                  WHERE gc.hiring_contract_id = hc.id AND gc.status = 'approved'
+                    AND gc.period_start <= hc.effective_end_date AND gc.period_end >= hc.effective_end_date
+                ))
+                AND NOT EXISTS (
+                  SELECT 1 FROM talent_invoices ti WHERE ti.hiring_contract_id = hc.id AND ti.status = 'draft'
+                )
+                AND NOT EXISTS (
+                  SELECT 1 FROM payouts p WHERE p.hiring_contract_id = hc.id
+                    AND p.status IN ('pending', 'scheduled', 'failed')
+                ) AS ready
+              FROM hiring_contracts hc WHERE hc.id = $1`, [deposit.hiring_contract_id]);
+            if (!settled.rows[0]?.ready) {
+              const error = new Error("Final period statement and payout obligations must be settled before applying the deposit");
+              Object.assign(error, { status: 409 });
+              throw error;
+            }
           }
           sets.push(`applied_at = NOW()`, `terminal_reason = $${p++}`);
           params.push(terminalReason);

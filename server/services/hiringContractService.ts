@@ -232,10 +232,10 @@ export async function updateHiringContract(
     if (contract.status === "void" || contract.status === "voided") {
       throw new ContractError(409, { error: "contract_void", message: "A voided contract cannot be updated." });
     }
-    if (contract.status === "signed") {
+    if (contract.status === "signed" || contract.status === "terminated") {
       throw new ContractError(409, {
         error: "contract_signed",
-        message: "A fully signed contract is immutable. Void it and issue a new contract to change its terms.",
+        message: "An executed contract is immutable; a terminated contract cannot be amended.",
       });
     }
     if (actorRole === "admin" && (talentSigned === true || talentSignedAt !== undefined)) {
@@ -427,10 +427,10 @@ export async function voidHiringContract(
     if (contract.status === "void" || contract.status === "voided") {
       throw new ContractError(409, { error: "already_void", message: "This contract is already void." });
     }
-    if (contract.status === "signed") {
+    if (contract.status === "signed" || contract.status === "terminated") {
       throw new ContractError(409, {
         error: "contract_signed",
-        message: "A fully signed contract cannot be voided.",
+        message: "An executed contract cannot be voided.",
       });
     }
 

@@ -63,6 +63,13 @@ A substantiated late Guaranteed claim after the Talent invoice is sent creates a
 
 **How to apply:** Keep Client credit applications distinct from Tracked Talent corrections; require an Admin finding, preserve original invoice snapshots, and do not post a credit to a statement older than the finding unless it is the original unsent statement. Signed-contract termination is a separate lifecycle feature, not a silent cutoff invented by the invoice worker.
 
+An approved termination records an immutable effective end date on the signed contract; its inclusive final service date can still be in the future or leave a partial last invoice window. Keep the contract eligible for billing only through that agreed date, not as an immediate cancellation of accrued invoices or payouts. Keep the held deposit until final-period Client statement and Talent payouts are settled; do not rewrite sent records.
+
+**Why:** A status-only stop would lose earned final-period obligations, while continuing all signed-contract automation beyond the agreed end creates unearned charges.
+
+**How to apply:** Check both lifecycle state and effective end date in clock, timesheet, invoice, payout, statement, and deposit paths. Serialize termination approval with invoice drafting on the contract row and require explicit review for clipped Tracked revisions.
+
+
 ## Contract ending and rollout gate
 
 Final termination ends an engagement without requiring another contract. A billing-mode switch must use the same immutable contract-end boundary and then a newly offered and signed contract for the new mode; it must never edit the old signed mode or sent financial records. Do not release the two-mode billing foundation into production without a working formal end path in the same release.

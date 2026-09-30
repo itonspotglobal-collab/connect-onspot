@@ -217,7 +217,7 @@ function AdminInvoicing() {
   const refresh = () => { claimsQuery.refetch(); lateClaimsQuery.refetch(); clientCreditsQuery.refetch(); blockedQuery.refetch(); talentInvoicesQuery.refetch(); };
   return <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
      <PageHeader title="Guaranteed claims & invoicing" description="Review on-time and escalated late claims, inspect separate Talent and Client credit ledgers, and diagnose billing blockers. No payment-provider execution is available here." onRefresh={refresh} loading={claimsQuery.isFetching || lateClaimsQuery.isFetching || clientCreditsQuery.isFetching || blockedQuery.isFetching || talentInvoicesQuery.isFetching} />
-    <h2 className="mb-3 text-xl font-semibold text-slate-900">Guaranteed claim queue</h2>
+    <h2 className="mb-3 mt-8 text-xl font-semibold text-slate-900">Guaranteed claim queue</h2>
     <LoadState loading={claimsQuery.isLoading} error={claimsQuery.error} empty={!claimsQuery.isLoading && !claimsQuery.error && !claimsQuery.data?.claims.length}>
       <div className="space-y-3">{(claimsQuery.data?.claims ?? []).map((item) => <Card key={item.id}><CardContent className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-900">{item.job_title} · {date(item.period_start)} – {date(item.period_end)}</h3><p className="mt-1 text-xs text-slate-500">Contract {item.hiring_contract_id} · Talent {item.talent_id} · Filed {date(item.created_at)}</p></div><span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Open</span></div>

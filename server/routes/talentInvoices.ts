@@ -246,7 +246,7 @@ async function insertInvoiceDraft(contract: any, period: { start: string; end: s
       [contract.id],
     );
     const lockedContract = contractResult.rows[0];
-    if (!lockedContract || lockedContract.status !== "signed"
+    if (!lockedContract || !["signed", "terminated"].includes(lockedContract.status)
       || !["tracked", "guaranteed"].includes(lockedContract.billing_mode)
       || (lockedContract.effective_end_date
         && period.end > dateString(lockedContract.effective_end_date))) {
@@ -419,7 +419,7 @@ async function sendInvoice(invoiceId: string, onlyTalentId?: string) {
       await client.query("ROLLBACK");
       return { notFound: true };
     }
-    if (!contract || contract.status !== "signed"
+    if (!contract || !["signed", "terminated"].includes(contract.status)
       || !["draft", "sent"].includes(invoice.status)
       || (contract.effective_end_date
         && dateString(invoice.period_end) > dateString(contract.effective_end_date))) {
@@ -752,7 +752,7 @@ async function readyClientsForMonth(monthStart: string) {
             hc.effective_end_date, js.client_id
        FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
-      WHERE hc.status = 'signed' AND hc.billing_mode IN ('tracked', 'guaranteed')
+      WHERE hc.status IN ('signed', 'terminated') AND hc.billing_mode IN ('tracked', 'guaranteed')
         AND hc.effective_start_date IS NOT NULL AND hc.billing_activated_at IS NOT NULL
       ORDER BY js.client_id, hc.id`,
   );
@@ -937,7 +937,7 @@ async function catchUpClientMonthlyInvoices(now: Date) {
         (hc.billing_activated_at AT TIME ZONE '${BILLING_TIME_ZONE}')::date
       )) AS first_billable_date
        FROM hiring_contracts hc
-      WHERE hc.status = 'signed' AND hc.billing_mode IN ('tracked', 'guaranteed')
+      WHERE hc.status IN ('signed', 'terminated') AND hc.billing_mode IN ('tracked', 'guaranteed')
         AND hc.effective_start_date IS NOT NULL AND hc.billing_activated_at IS NOT NULL`,
   );
   if (!earliest.rows[0]?.first_billable_date) return;
@@ -966,7 +966,7 @@ export async function runTalentInvoiceAutomation(now = new Date()) {
        JOIN offers o ON o.id = hc.offer_id
        JOIN job_submissions js ON js.id = hc.submission_id
        JOIN jobs j ON j.id = js.job_id
-      WHERE hc.status = 'signed' AND hc.billing_mode IN ('tracked', 'guaranteed')
+      WHERE hc.status IN ('signed', 'terminated') AND hc.billing_mode IN ('tracked', 'guaranteed')
       ORDER BY hc.created_at`,
   );
   for (const contract of contracts.rows) {
