@@ -83,6 +83,11 @@ const managementItems = [
     url: "/hired-talent-portal/payouts",
     icon: Wallet,
   },
+  {
+    title: "Invoices",
+    url: "/talent/invoices",
+    icon: FileText,
+  },
 ];
 
 const systemItems = [

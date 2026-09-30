@@ -802,6 +802,7 @@ function validateStep(
       errors.otherFunction = "Please specify the function.";
     }
     if (!formData.engagementType?.trim()) errors.engagementType = "An Engagement Type (Lite or Standard) must be set before publishing a job.";
+    if (!["tracked", "guaranteed"].includes(formData.billingMode)) errors.billingMode = "Choose Tracked or Guaranteed billing mode before publishing.";
     if (!formData.experienceLevel) errors.experienceLevel = "Experience level is required";
   }
 
@@ -822,6 +823,7 @@ function buildPayload(formData: JobFormData): any {
     location: formData.location || null,
     category: jobFunction,
     engagementType: formData.engagementType?.trim() || "",
+    billingMode: formData.billingMode || null,
     experienceLevel: formData.experienceLevel,
     description: isEmptyQuill(formData.description) ? "" : formData.description.trim(),
     status: formData.status,

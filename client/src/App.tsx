@@ -92,6 +92,7 @@ import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
 import ClientTeamDashboard from "@/pages/ClientTeamDashboard";
 import TalentPayouts from "@/pages/TalentPayouts";
+import Timesheets from "@/pages/Timesheets";
 import OrganizationCreate from "@/pages/OrganizationCreate";
 import OrganizationDetail from "@/pages/OrganizationDetail";
 import OrganizationInvitations from "@/pages/OrganizationInvitations";
@@ -116,7 +117,10 @@ import { PortalChooser } from "@/components/PortalChooser";
 import Messages from "@/pages/Messages";
 import Billing from "@/pages/client/Billing";
 import Payouts from "@/pages/talent/Payouts";
+import Clock from "@/pages/talent/Clock";
 import AdminEmailDeliveries from "@/pages/AdminEmailDeliveries";
+import AdminClockExceptions from "@/pages/AdminClockExceptions";
+import Invoicing from "@/pages/Invoicing";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
@@ -281,6 +285,9 @@ function PublicRouter() {
           <Route path="/admin/insights/:id/edit" component={() => <AdminProtectedRoute><AdminInsightEditor /></AdminProtectedRoute>} />
           {/* Admin routes — always protected by AdminProtectedRoute */}
           <Route path="/admin/dashboard" component={() => <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/timesheets" component={() => <AdminProtectedRoute><Timesheets role="admin" /></AdminProtectedRoute>} />
+          <Route path="/admin/invoicing" component={() => <AdminProtectedRoute><Invoicing role="admin" /></AdminProtectedRoute>} />
+          <Route path="/admin/clock-exceptions" component={() => <AdminProtectedRoute><AdminClockExceptions /></AdminProtectedRoute>} />
           <Route path="/admin/find-work/jobs/new" component={() => <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
           <Route path="/admin/find-work/jobs/:jobId/edit" component={() => <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
           <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
@@ -368,6 +375,9 @@ function ClientRouter() {
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/client/billing/invoices/:id" component={Billing} />
           <Route path="/client/billing" component={Billing} />
+          <Route path="/client/timesheets" component={() => <Timesheets role="client" />} />
+          <Route path="/client/monthly-invoices" component={() => <Invoicing role="client" />} />
+          <Route path="/client/monthly-invoices/:id" component={() => <Invoicing role="client" />} />
           <Route path="/organization/create" component={OrganizationCreate} />
           <Route path="/organization-invitations" component={OrganizationInvitations} />
           <Route path="/organization/:organizationId" component={OrganizationDetail} />
@@ -445,6 +455,9 @@ function TalentRouter() {
         <Route path="/get-hired" component={TalentPortal} />
         <Route path="/talent-portal" component={TalentPortal} />
         <Route path="/talent/payouts" component={Payouts} />
+        <Route path="/talent/clock" component={Clock} />
+        <Route path="/talent/timesheets" component={() => <Timesheets role="talent" />} />
+        <Route path="/talent/invoices" component={() => <Invoicing role="talent" />} />
         <Route path="/hired-talent-portal/payouts" component={TalentPayouts} />
         <Route path="/hired-talent-portal" component={HiredTalentPortal} />
         <Route path="/settings" component={ProfileSettings} />
@@ -581,6 +594,9 @@ function AppContent() {
       <Route path="/talent/signup" component={TalentSignupFromApplication} />
       <Route path="/get-hired" component={PublicRouter} />
       <Route path="/talent/payouts" component={TalentRouter} />
+      <Route path="/talent/clock" component={TalentRouter} />
+      <Route path="/talent/timesheets" component={TalentRouter} />
+      <Route path="/talent/invoices" component={TalentRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
       <Route path="/why-onspot/:page" component={PublicRouter} />
       <Route path="/amazing" component={PublicRouter} />
@@ -604,6 +620,9 @@ function AppContent() {
       {/* Client Protected Routes */}
       <Route path="/client-dashboard" component={LegacyClientDashboardRedirect} />
       <Route path="/client/interviews" component={ClientRouter} />
+      <Route path="/client/timesheets" component={ClientRouter} />
+      <Route path="/client/monthly-invoices" component={ClientRouter} />
+      <Route path="/client/monthly-invoices/:id" component={ClientRouter} />
       <Route path="/client/billing/invoices/:id" component={ClientRouter} />
       <Route path="/client/billing" component={ClientRouter} />
       <Route path="/client-profile" component={ClientRouter} />

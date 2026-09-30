@@ -65,6 +65,11 @@ export function JobReviewStep({
   onSubmit,
 }: Props) {
   const contractLabel = getEngagementTypeLabel(formData.engagementType) || "—";
+  const billingModeLabel = formData.billingMode === "tracked"
+    ? "Tracked"
+    : formData.billingMode === "guaranteed"
+      ? "Guaranteed"
+      : "Unclassified";
   const expLabel =
     getExperienceLevelLabel(formData.experienceLevel) ||
     formData.experienceLevel ||
@@ -74,7 +79,7 @@ export function JobReviewStep({
   const functionLabel = getJobFunctionDisplay(formData);
 
   // Basics summary
-  const basicsSummary = [formData.location, expLabel, contractLabel, formData.duration]
+  const basicsSummary = [formData.location, expLabel, contractLabel, billingModeLabel, formData.duration]
     .filter(Boolean)
     .join(" · ");
 
@@ -96,6 +101,7 @@ export function JobReviewStep({
   if (formData.requiresFluentEnglish) reqParts.push("Fluent English");
 
   const missingEngagementType = !formData.engagementType?.trim();
+  const missingBillingMode = !["tracked", "guaranteed"].includes(formData.billingMode);
 
   return (
     <div>
@@ -122,6 +128,11 @@ export function JobReviewStep({
               </button>
             </p>
           </div>
+        </div>
+      )}
+      {missingBillingMode && (
+        <div className="mb-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Billing mode is unclassified. Select Tracked or Guaranteed in Basics before publishing.
         </div>
       )}
 

@@ -1550,6 +1550,19 @@ export default function TalentApplications() {
               Track your applications and discover roles that match your profile.
             </p>
           </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            onClick={() => navigate("/talent/clock")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          >
+            <Clock className="h-4 w-4" /> Time In / Out
+          </button>
+          <button
+            onClick={() => navigate("/talent/timesheets")}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100"
+          >
+            <Clock className="h-4 w-4" /> Timesheets
+          </button>
           <button
             onClick={() => navigate("/messages")}
             className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
@@ -1565,6 +1578,7 @@ export default function TalentApplications() {
               </span>
             )}
           </button>
+          </div>
         </div>
 
         {/* Stats banner */}

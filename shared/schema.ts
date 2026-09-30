@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index, uuid, date, check, pgSequence } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index, uuid, date, check, pgSequence, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -194,6 +194,7 @@ export const jobs = pgTable("jobs", {
   location: text("location").default("Remote"),
   category: text("category").notNull(),
   engagementType: text("engagement_type"), // Lite | Standard (nullable: unreviewed legacy rows stay NULL)
+  billingMode: text("billing_mode"), // tracked | guaranteed; NULL means legacy/unclassified
   budget: decimal("budget", { precision: 10, scale: 2 }),
   budgetCurrency: text("budget_currency").default("PHP"), // PHP, USD, EUR, etc.
   customCurrencyCode: text("custom_currency_code"), // 3-letter code when budgetCurrency = 'OTHER'
@@ -285,6 +286,7 @@ export const jobs = pgTable("jobs", {
   index("idx_jobs_created_at").on(table.createdAt),
   index("idx_jobs_posted_at").on(table.postedAt),
   index("idx_jobs_status_approval").on(table.status, table.approvalStatus),
+  check("jobs_billing_mode_check", sql`${table.billingMode} IS NULL OR ${table.billingMode} IN ('tracked', 'guaranteed')`),
 ]);
 
 // Private Client bookmarks. Favorites intentionally have no job or submission
@@ -1633,6 +1635,7 @@ export const offers = pgTable("offers", {
   submissionId:              varchar("submission_id").notNull().references(() => jobSubmissions.id, { onDelete: "cascade" }),
   // Snapshotted from jobs.engagement_type at offer creation — NOT freely settable.
   engagementType:            text("engagement_type").notNull(),
+  billingMode:               text("billing_mode"),
   rate:                      decimal("rate", { precision: 12, scale: 2 }).notNull(),
   rateCurrency:              text("rate_currency").notNull().default("PHP"),
   proposedStartDate:         timestamp("proposed_start_date"),
@@ -1664,6 +1667,7 @@ export const offers = pgTable("offers", {
 }, (table) => [
   index("idx_offers_submission_id").on(table.submissionId),
   index("idx_offers_status").on(table.status),
+  check("offers_billing_mode_check", sql`${table.billingMode} IS NULL OR ${table.billingMode} IN ('tracked', 'guaranteed')`),
 ]);
 
 export const insertOfferSchema = createInsertSchema(offers).omit({
@@ -1687,6 +1691,9 @@ export const hiringContracts = pgTable("hiring_contracts", {
   status:          text("status").notNull().default("draft"),
   // Snapshotted from platform_settings('contract_signing_entity') at row creation
   signingEntity:   text("signing_entity").notNull().default("OnSpot Technologies Inc."),
+  billingMode:     text("billing_mode"),
+  effectiveStartDate: date("effective_start_date"),
+  billingActivatedAt: timestamp("billing_activated_at", { withTimezone: true }),
   // Reserved for a future e-signature provider; current signing remains admin-controlled.
   signatureProvider: text("signature_provider"),
   signatureEnvelopeId: text("signature_envelope_id"),
@@ -1700,7 +1707,119 @@ export const hiringContracts = pgTable("hiring_contracts", {
   index("idx_hiring_contracts_offer_id").on(table.offerId),
   index("idx_hiring_contracts_submission_id").on(table.submissionId),
   index("idx_hiring_contracts_status").on(table.status),
+  check("hiring_contracts_billing_mode_check", sql`${table.billingMode} IS NULL OR ${table.billingMode} IN ('tracked', 'guaranteed')`),
 ]);
+
+// Clock-first work sessions. Raw startedAt/endedAt are server-captured events;
+// approved missing-out corrections are stored separately for auditability.
+export const clockSessions = pgTable("clock_sessions", {
+  id:                 uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId:   uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  talentId:           varchar("talent_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  startedAt:          timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  endedAt:            timestamp("ended_at", { withTimezone: true }),
+  exceptionType:      text("exception_type"),
+  exceptionDetectedAt: timestamp("exception_detected_at", { withTimezone: true }),
+  exceptionStatus:    text("exception_status"),
+  proposedEndAt:      timestamp("proposed_end_at", { withTimezone: true }),
+  proposalReason:     text("proposal_reason"),
+  approvedEndAt:      timestamp("approved_end_at", { withTimezone: true }),
+  resolvedBy:         varchar("resolved_by").references(() => users.id, { onDelete: "restrict" }),
+  resolvedAt:         timestamp("resolved_at", { withTimezone: true }),
+  resolutionReason:   text("resolution_reason"),
+  createdAt:          timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("clock_sessions_talent_recent").on(table.talentId, table.startedAt),
+]);
+
+export const clockExceptionReviews = pgTable("clock_exception_reviews", {
+  id:              uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clockSessionId:  uuid("clock_session_id").notNull().references(() => clockSessions.id, { onDelete: "cascade" }),
+  action:          text("action").notNull(),
+  actorId:         varchar("actor_id").references(() => users.id, { onDelete: "restrict" }),
+  reviewerId:      varchar("reviewer_id").references(() => users.id, { onDelete: "restrict" }),
+  proposedEndAt:   timestamp("proposed_end_at", { withTimezone: true }),
+  proposalReason:  text("proposal_reason"),
+  decisionReason:  text("decision_reason"),
+  createdAt:       timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("clock_exception_reviews_session_history").on(table.clockSessionId, table.createdAt),
+]);
+
+export const timesheetPeriods = pgTable("timesheet_periods", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  workTimezone: text("work_timezone"),
+  status: text("status").notNull().default("open"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  approvedRevisionId: uuid("approved_revision_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("timesheet_periods_contract_start_end").on(table.hiringContractId, table.periodStart, table.periodEnd),
+]);
+
+export const timesheetRevisions = pgTable("timesheet_revisions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  timesheetPeriodId: uuid("timesheet_period_id").notNull().references(() => timesheetPeriods.id, { onDelete: "restrict" }),
+  version: integer("version").notNull(),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "restrict" }),
+  decisionReason: text("decision_reason").notNull(),
+  exceptionApproved: boolean("exception_approved").notNull().default(false),
+  workTimezone: text("work_timezone"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("timesheet_revisions_period_version").on(table.timesheetPeriodId, table.version),
+]);
+
+export const timesheetRevisionSessions = pgTable("timesheet_revision_sessions", {
+  revisionId: uuid("revision_id").notNull().references(() => timesheetRevisions.id, { onDelete: "restrict" }),
+  clockSessionId: uuid("clock_session_id").notNull().references(() => clockSessions.id, { onDelete: "restrict" }),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  effectiveEndAt: timestamp("effective_end_at", { withTimezone: true }).notNull(),
+  source: text("source").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.revisionId, table.clockSessionId] }),
+]);
+
+export const timesheetCorrectionProposals = pgTable("timesheet_correction_proposals", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  timesheetPeriodId: uuid("timesheet_period_id").notNull().references(() => timesheetPeriods.id, { onDelete: "restrict" }),
+  clockSessionId: uuid("clock_session_id").notNull().references(() => clockSessions.id, { onDelete: "restrict" }),
+  requestedBy: varchar("requested_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  requestedStartedAt: timestamp("requested_started_at", { withTimezone: true }),
+  requestedEndAt: timestamp("requested_end_at", { withTimezone: true }),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("pending"),
+  decidedBy: varchar("decided_by").references(() => users.id, { onDelete: "restrict" }),
+  decisionReason: text("decision_reason"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const timesheetDisputes = pgTable("timesheet_disputes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  timesheetPeriodId: uuid("timesheet_period_id").notNull().references(() => timesheetPeriods.id, { onDelete: "restrict" }),
+  clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("open"),
+  resolvedBy: varchar("resolved_by").references(() => users.id, { onDelete: "restrict" }),
+  resolutionReason: text("resolution_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+});
+
+export const timesheetAudit = pgTable("timesheet_audit", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  timesheetPeriodId: uuid("timesheet_period_id").notNull().references(() => timesheetPeriods.id, { onDelete: "restrict" }),
+  actorId: varchar("actor_id").references(() => users.id, { onDelete: "restrict" }),
+  action: text("action").notNull(),
+  reason: text("reason"),
+  details: jsonb("details").notNull().default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 // ── Billing engine — additive schema ─────────────────────────────────────────
 // These tables are distinct from the preserved legacy payments/contracts models.
@@ -1796,6 +1915,7 @@ export const invoices = pgTable("invoices", {
 export const payouts = pgTable("payouts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   periodId: uuid("period_id").references(() => invoicePeriods.id, { onDelete: "restrict" }),
+  talentInvoiceId: uuid("talent_invoice_id"),
   hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
   talentId: varchar("talent_id").notNull().references(() => users.id),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
@@ -1807,6 +1927,7 @@ export const payouts = pgTable("payouts", {
   externalTransferId: text("external_transfer_id"),
   status: text("status").notNull().default("pending"),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+  payoutDueOn: date("payout_due_on"),
   disbursedAt: timestamp("disbursed_at", { withTimezone: true }),
   failedReason: text("failed_reason"),
   notes: text("notes"),
@@ -1816,7 +1937,163 @@ export const payouts = pgTable("payouts", {
   index("idx_payouts_contract").on(table.hiringContractId),
   index("idx_payouts_talent").on(table.talentId),
   index("idx_payouts_status").on(table.status),
+  uniqueIndex("payouts_talent_invoice_unique").on(table.talentInvoiceId)
+    .where(sql`${table.talentInvoiceId} IS NOT NULL`),
   check("payouts_status_check", sql`${table.status} IN ('pending', 'scheduled', 'disbursed', 'failed')`),
+]);
+
+// Phase 3B Talent-facing invoices are isolated from the historical Client
+// invoice ledger above. Client monthly invoices contain all-in line amounts.
+export const talentInvoices = pgTable("talent_invoices", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  offerId: uuid("offer_id").notNull().references(() => offers.id, { onDelete: "restrict" }),
+  talentId: varchar("talent_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  billingMode: text("billing_mode").notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  currency: text("currency").notNull(),
+  monthlyRate: decimal("monthly_rate", { precision: 12, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  baseAmount: decimal("base_amount", { precision: 12, scale: 2 }).notNull(),
+  creditAmount: decimal("credit_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  hours: decimal("hours", { precision: 10, scale: 4 }),
+  standardHours: decimal("standard_hours", { precision: 10, scale: 4 }),
+  hourlyEquivalent: decimal("hourly_equivalent", { precision: 12, scale: 4 }),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 4 }).notNull().default("0.2000"),
+  timesheetRevisionId: uuid("timesheet_revision_id").references(() => timesheetRevisions.id, { onDelete: "restrict" }),
+  status: text("status").notNull().default("draft"),
+  draftedAt: timestamp("drafted_at", { withTimezone: true }).notNull().defaultNow(),
+  autoSendAt: timestamp("auto_send_at", { withTimezone: true }).notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  payoutDueOn: date("payout_due_on").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("talent_invoices_contract_period_unique").on(table.hiringContractId, table.periodStart, table.periodEnd),
+  index("talent_invoices_talent_status_idx").on(table.talentId, table.status),
+  index("talent_invoices_period_idx").on(table.periodStart, table.periodEnd),
+]);
+
+export const guaranteedNonperformanceClaims = pgTable("guaranteed_nonperformance_claims", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  talentInvoiceId: uuid("talent_invoice_id").unique().references(() => talentInvoices.id, { onDelete: "restrict" }),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("open"),
+  decisionReason: text("decision_reason"),
+  decidedBy: varchar("decided_by").references(() => users.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+}, (table) => [index("guaranteed_claims_status_idx").on(table.status)]);
+
+export const talentCreditMemos = pgTable("talent_credit_memos", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  originalInvoiceId: uuid("original_invoice_id").notNull().references(() => talentInvoices.id, { onDelete: "restrict" }),
+  correctedRevisionId: uuid("corrected_revision_id").notNull().references(() => timesheetRevisions.id, { onDelete: "restrict" }),
+  talentId: varchar("talent_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  currency: text("currency").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("talent_credit_memos_invoice_revision_idx").on(table.originalInvoiceId, table.correctedRevisionId),
+  index("talent_credit_memos_talent_idx").on(table.talentId, table.createdAt),
+]);
+
+export const talentCreditMemoApplications = pgTable("talent_credit_memo_applications", {
+  creditMemoId: uuid("credit_memo_id").notNull().references(() => talentCreditMemos.id, { onDelete: "restrict" }),
+  talentInvoiceId: uuid("talent_invoice_id").notNull().references(() => talentInvoices.id, { onDelete: "restrict" }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [primaryKey({ columns: [table.creditMemoId, table.talentInvoiceId] })]);
+
+export const talentCreditMemoApplicationsV2 = pgTable("talent_credit_memo_applications_v2", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  creditMemoId: uuid("credit_memo_id").notNull().references(() => talentCreditMemos.id, { onDelete: "restrict" }),
+  talentInvoiceId: uuid("talent_invoice_id").notNull().references(() => talentInvoices.id, { onDelete: "restrict" }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("talent_credit_memo_apps_v2_invoice_idx").on(table.talentInvoiceId),
+  index("talent_credit_memo_apps_v2_memo_idx").on(table.creditMemoId),
+]);
+
+export const securityDepositReplenishments = pgTable("security_deposit_replenishments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").notNull(),
+  recordedBy: varchar("recorded_by").notNull().references(() => users.id, { onDelete: "restrict" }),
+  reference: text("reference"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("security_deposit_replenishments_contract_idx").on(table.hiringContractId, table.createdAt)]);
+
+export const clientMonthlyInvoices = pgTable("client_monthly_invoices", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  invoiceMonth: date("invoice_month").notNull(),
+  currency: text("currency").notNull(),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
+  status: text("status").notNull().default("sent"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("client_monthly_invoices_owner_month_currency").on(table.clientId, table.invoiceMonth, table.currency)]);
+
+export const clientMonthlyInvoiceLines = pgTable("client_monthly_invoice_lines", {
+  clientMonthlyInvoiceId: uuid("client_monthly_invoice_id").notNull().references(() => clientMonthlyInvoices.id, { onDelete: "restrict" }),
+  talentInvoiceId: uuid("talent_invoice_id").notNull().unique().references(() => talentInvoices.id, { onDelete: "restrict" }),
+  talentAmount: decimal("talent_amount", { precision: 12, scale: 2 }).notNull(),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 4 }).notNull(),
+  clientAmount: decimal("client_amount", { precision: 12, scale: 2 }).notNull(),
+}, (table) => [primaryKey({ columns: [table.clientMonthlyInvoiceId, table.talentInvoiceId] })]);
+
+// Late Guaranteed Client claims and their credit applications are an isolated
+// ledger: they never mutate a sent Talent invoice or a sent Client statement.
+export const clientLateGuaranteedClaims = pgTable("client_late_guaranteed_claims", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  originalTalentInvoiceId: uuid("original_talent_invoice_id").notNull().unique().references(() => talentInvoices.id, { onDelete: "restrict" }),
+  clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("open"),
+  decisionReason: text("decision_reason"),
+  decidedBy: varchar("decided_by").references(() => users.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("client_late_claim_contract_period_unique").on(table.hiringContractId, table.periodStart, table.periodEnd),
+  index("client_late_guaranteed_claims_status_idx").on(table.status, table.createdAt),
+]);
+
+export const clientCreditMemos = pgTable("client_credit_memos", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  lateClaimId: uuid("late_claim_id").notNull().unique().references(() => clientLateGuaranteedClaims.id, { onDelete: "restrict" }),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  originalTalentInvoiceId: uuid("original_talent_invoice_id").notNull().unique().references(() => talentInvoices.id, { onDelete: "restrict" }),
+  clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  currency: text("currency").notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  allInAmount: decimal("all_in_amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("client_credit_memos_client_currency_idx").on(table.clientId, table.currency, table.periodStart, table.createdAt)]);
+
+export const clientCreditApplications = pgTable("client_credit_applications", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientCreditMemoId: uuid("client_credit_memo_id").notNull().references(() => clientCreditMemos.id, { onDelete: "restrict" }),
+  clientMonthlyInvoiceId: uuid("client_monthly_invoice_id").notNull().references(() => clientMonthlyInvoices.id, { onDelete: "restrict" }),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("client_credit_memo_statement_unique").on(table.clientCreditMemoId, table.clientMonthlyInvoiceId),
+  index("client_credit_applications_invoice_idx").on(table.clientMonthlyInvoiceId),
+  index("client_credit_applications_memo_idx").on(table.clientCreditMemoId),
 ]);
 
 export const securityDeposits = pgTable("security_deposits", {

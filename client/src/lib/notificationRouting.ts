@@ -4,6 +4,7 @@ export const TALENT_NOTIFICATION_TYPES = [
   "job_application_status_changed",
   "interview_rescheduled",
   "interview_confirmed",
+  "talent_invoice_ready",
   "new_message",
 ] as const;
 
@@ -20,6 +21,7 @@ export const CLIENT_NOTIFICATION_TYPES = [
   "interview_confirmed",
   "client_application_status_changed",
   "talent_hired",
+  "monthly_client_invoice",
   "new_message",
 ] as const;
 
@@ -35,6 +37,8 @@ export function notificationRouteForRole(
   if (type === "interview_confirmed") {
     return role === "talent" ? "/my-applications" : "/client/interviews";
   }
+  if (type === "talent_invoice_ready") return "/talent/invoices";
+  if (type === "monthly_client_invoice") return "/client/monthly-invoices";
   if (role === "admin") {
     if (type === "job_application_received") return "/admin/job-applications";
     if (

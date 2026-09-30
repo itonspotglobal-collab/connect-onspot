@@ -30,6 +30,8 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
   return clean.trim() || null;
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
+import { registerTimesheetRoutes } from "./routes/timesheets.js";
+import { registerTalentInvoiceRoutes } from "./routes/talentInvoices.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
 import { inferCategory } from "./lib/searchScaffold";
@@ -186,6 +188,19 @@ export function validateEngagementType(
   return {
     error: "Invalid engagement type",
     message: `engagementType must be one of: ${CANONICAL_ENGAGEMENT_TYPES.join(", ")}`,
+  };
+}
+
+function validateBillingMode(value: unknown): { error: string; message: string } | null {
+  if (value == null || value === "") return null;
+  if (value === "tracked" || value === "guaranteed") return null;
+  return { error: "Invalid billing mode", message: "billingMode must be tracked or guaranteed." };
+}
+
+function billingModeRequiredError() {
+  return {
+    error: "Billing Mode required",
+    message: "Choose Tracked or Guaranteed billing mode before publishing or approving a job.",
   };
 }
 
@@ -3086,7 +3101,7 @@ export async function registerRoutes(
       if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
 
       const result = await query(
-        `SELECT id, amount, currency, status, scheduled_at, disbursed_at, created_at
+        `SELECT id, amount, currency, status, scheduled_at, payout_due_on, disbursed_at, created_at
            FROM payouts
           WHERE talent_id = $1
           ORDER BY COALESCE(scheduled_at, created_at) DESC, created_at DESC`,
@@ -3099,6 +3114,11 @@ export async function registerRoutes(
         currency: row.currency,
         status: row.status,
         scheduledAt: row.scheduled_at ?? null,
+        payoutDueOn: row.payout_due_on
+          ? row.payout_due_on instanceof Date
+            ? row.payout_due_on.toISOString().slice(0, 10)
+            : String(row.payout_due_on).slice(0, 10)
+          : null,
         disbursedAt: row.disbursed_at ?? null,
         createdAt: row.created_at ?? null,
       })));
@@ -3106,6 +3126,431 @@ export async function registerRoutes(
       console.error("GET /api/talent/payouts error:", err);
       return res.status(500).json({ error: "Failed to load payouts" });
     }
+  });
+
+  const serializeClockSession = (row: any) => ({
+    id: row.id,
+    hiringContractId: row.hiring_contract_id,
+    startedAt: row.started_at,
+    endedAt: row.ended_at ?? null,
+    status: row.exception_status === "detected"
+      ? "exception_detected"
+      : row.exception_status === "pending"
+        ? "exception_pending"
+      : row.exception_status === "approved"
+        ? "exception_approved"
+      : row.exception_status === "rejected"
+        ? "exception_rejected"
+        : row.ended_at
+          ? "completed"
+          : "active",
+  });
+
+  const serializeRecentClockSession = (row: any) => ({
+    ...serializeClockSession(row),
+    exceptionType: row.exception_type ?? null,
+    exceptionDetectedAt: row.exception_detected_at ?? null,
+    proposedEndAt: row.proposed_end_at ?? null,
+    proposalReason: row.proposal_reason ?? null,
+  });
+
+  // Clock activity is opt-in per signed contract: this route never changes
+  // contract status or associates legacy time_entries with billing.
+  app.get("/api/talent/clock", authenticateJWT, requireTalent, async (req: Request, res: Response) => {
+    try {
+      const talentId = await getTalentBillingUserId(req);
+      if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
+
+      const detector = await getClient();
+      try {
+        await detector.query("BEGIN");
+        const detected = await detector.query(
+          `UPDATE clock_sessions
+              SET exception_type = 'missed_out',
+                  exception_status = 'detected',
+                  exception_detected_at = NOW()
+            WHERE talent_id = $1
+              AND ended_at IS NULL
+              AND exception_status IS NULL
+              AND started_at < NOW() - INTERVAL '16 hours'
+            RETURNING id`,
+          [talentId],
+        );
+        for (const row of detected.rows) {
+          await detector.query(
+            `INSERT INTO clock_exception_reviews (clock_session_id, action)
+             VALUES ($1, 'detected')`,
+            [row.id],
+          );
+        }
+        await detector.query("COMMIT");
+      } catch (err) {
+        await detector.query("ROLLBACK").catch(() => {});
+        throw err;
+      } finally {
+        detector.release();
+      }
+
+      const [contracts, active, recent] = await Promise.all([
+        query(
+          `SELECT hc.id, j.title AS job_title,
+                  COALESCE(NULLIF(BTRIM(client.company), ''), NULLIF(BTRIM(CONCAT_WS(' ', client.first_name, client.last_name)), '')) AS client_name
+             FROM hiring_contracts hc
+             JOIN job_submissions js ON js.id = hc.submission_id
+             JOIN jobs j ON j.id = js.job_id
+             LEFT JOIN users client ON client.id = js.client_id
+            WHERE js.talent_id = $1 AND hc.status = 'signed' AND hc.billing_mode = 'tracked'
+            ORDER BY hc.created_at DESC`,
+          [talentId],
+        ),
+        query(
+          `SELECT id, hiring_contract_id, started_at, ended_at, exception_status
+             FROM clock_sessions
+            WHERE talent_id = $1 AND ended_at IS NULL
+              AND exception_status IS DISTINCT FROM 'approved'
+            ORDER BY started_at DESC LIMIT 1`,
+          [talentId],
+        ),
+        query(
+          `SELECT id, hiring_contract_id, started_at, ended_at, exception_type,
+                  exception_status, exception_detected_at, proposed_end_at, proposal_reason
+             FROM clock_sessions
+            WHERE talent_id = $1
+              AND (
+                ended_at IS NOT NULL
+                OR exception_status IN ('detected', 'pending', 'rejected', 'approved')
+              )
+            ORDER BY started_at DESC LIMIT 20`,
+          [talentId],
+        ),
+      ]);
+
+      return res.json({
+        contracts: contracts.rows.map((row: any) => ({
+          id: row.id,
+          jobTitle: row.job_title,
+          ...(row.client_name ? { clientName: row.client_name } : {}),
+        })),
+        activeSession: active.rows[0] ? {
+          id: active.rows[0].id,
+          hiringContractId: active.rows[0].hiring_contract_id,
+          startedAt: active.rows[0].started_at,
+          status: serializeClockSession(active.rows[0]).status,
+        } : null,
+        recentSessions: recent.rows.map(serializeRecentClockSession),
+      });
+    } catch (err: any) {
+      console.error("GET /api/talent/clock error:", err);
+      return res.status(500).json({ error: "Failed to load clock sessions" });
+    }
+  });
+
+  app.post("/api/talent/clock/in", authenticateJWT, requireTalent, async (req: Request, res: Response) => {
+    const talentId = await getTalentBillingUserId(req);
+    if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
+    const hiringContractId = req.body?.hiringContractId;
+    if (typeof hiringContractId !== "string" || !hiringContractId.trim()) {
+      return res.status(422).json({ error: "hiringContractId is required" });
+    }
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [talentId]);
+      const contract = await client.query(
+         `SELECT hc.id
+           FROM hiring_contracts hc
+           JOIN job_submissions js ON js.id = hc.submission_id
+           WHERE hc.id = $1 AND js.talent_id = $2 AND hc.status = 'signed'
+             AND hc.billing_mode = 'tracked'
+          FOR UPDATE OF hc`,
+        [hiringContractId, talentId],
+      );
+      if (!contract.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "No signed contract is available for this talent and contract ID" });
+      }
+      const open = await client.query(
+        `SELECT id FROM clock_sessions
+          WHERE talent_id = $1 AND ended_at IS NULL
+            AND exception_status IS DISTINCT FROM 'approved'
+          LIMIT 1 FOR UPDATE`,
+        [talentId],
+      );
+      if (open.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "A clock session is already open or awaiting exception resolution" });
+      }
+      const inserted = await client.query(
+        `INSERT INTO clock_sessions (hiring_contract_id, talent_id, started_at)
+         VALUES ($1, $2, NOW())
+         RETURNING id, hiring_contract_id, started_at, ended_at, exception_status`,
+        [hiringContractId, talentId],
+      );
+      await client.query("COMMIT");
+      return res.status(201).json(serializeClockSession(inserted.rows[0]));
+    } catch (err: any) {
+      await client.query("ROLLBACK").catch(() => {});
+      if (err.code === "23505") return res.status(409).json({ error: "A clock session is already open" });
+      console.error("POST /api/talent/clock/in error:", err);
+      return res.status(500).json({ error: "Failed to start clock session" });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post("/api/talent/clock/out", authenticateJWT, requireTalent, async (req: Request, res: Response) => {
+    const talentId = await getTalentBillingUserId(req);
+    if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [talentId]);
+      const active = await client.query(
+        `SELECT id, hiring_contract_id, started_at, ended_at, exception_status
+           FROM clock_sessions
+          WHERE talent_id = $1 AND ended_at IS NULL
+            AND exception_status IS DISTINCT FROM 'approved'
+          ORDER BY started_at DESC LIMIT 1 FOR UPDATE`,
+        [talentId],
+      );
+      if (!active.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "There is no active clock session to end" });
+      }
+      if (active.rows[0].exception_status === "pending") {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "A proposed missed-out exception must be reviewed before clocking out" });
+      }
+      // Detection must not depend on the Talent having reloaded GET /clock
+      // before clocking out. Mark long sessions as anomalies in this same
+      // transaction, then capture the real server clock-out without approval.
+      if (active.rows[0].exception_status === null) {
+        const detected = await client.query(
+          `UPDATE clock_sessions
+              SET exception_type = 'missed_out',
+                  exception_status = 'detected',
+                  exception_detected_at = NOW()
+            WHERE id = $1
+              AND started_at < NOW() - INTERVAL '16 hours'
+              AND exception_status IS NULL
+            RETURNING id`,
+          [active.rows[0].id],
+        );
+        if (detected.rows.length) {
+          await client.query(
+            `INSERT INTO clock_exception_reviews (clock_session_id, action)
+             VALUES ($1, 'detected')`,
+            [active.rows[0].id],
+          );
+        }
+      }
+      const ended = await client.query(
+        `UPDATE clock_sessions SET ended_at = NOW()
+          WHERE id = $1 AND ended_at IS NULL
+          RETURNING id, hiring_contract_id, started_at, ended_at, exception_status`,
+        [active.rows[0].id],
+      );
+      await client.query("COMMIT");
+      return res.json(serializeClockSession(ended.rows[0]));
+    } catch (err: any) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error("POST /api/talent/clock/out error:", err);
+      return res.status(500).json({ error: "Failed to end clock session" });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post("/api/talent/clock/exception", authenticateJWT, requireTalent, async (req: Request, res: Response) => {
+    const talentId = await getTalentBillingUserId(req);
+    if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
+    const { sessionId, proposedEndAt, reason } = req.body ?? {};
+    const proposalDate = new Date(String(proposedEndAt ?? ""));
+    if (!sessionId || !proposedEndAt || Number.isNaN(proposalDate.getTime()) || typeof reason !== "string" || !reason.trim()) {
+      return res.status(422).json({ error: "sessionId, valid proposedEndAt, and reason are required" });
+    }
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+      const current = await client.query(
+        `SELECT id, hiring_contract_id, started_at, ended_at, exception_status
+           FROM clock_sessions
+          WHERE id = $1 AND talent_id = $2
+          FOR UPDATE`,
+        [sessionId, talentId],
+      );
+      const currentRow = current.rows[0];
+      if (!currentRow
+        || !["detected", "rejected", null].includes(currentRow.exception_status)
+        || (currentRow.ended_at && !["detected", "rejected"].includes(currentRow.exception_status))) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "Session cannot accept this exception proposal" });
+      }
+      const updated = await client.query(
+        `UPDATE clock_sessions
+            SET exception_type = COALESCE(exception_type, 'missed_out'),
+                exception_status = 'pending',
+                exception_detected_at = COALESCE(exception_detected_at, NOW()),
+                proposed_end_at = $1,
+                proposal_reason = $2,
+                approved_end_at = NULL,
+                resolved_by = NULL,
+                resolved_at = NULL,
+                resolution_reason = NULL
+          WHERE id = $3 AND talent_id = $4
+            AND $1::timestamptz > started_at AND $1::timestamptz <= NOW()
+          RETURNING id, hiring_contract_id, started_at, ended_at, exception_status`,
+        [proposalDate.toISOString(), reason.trim(), sessionId, talentId],
+      );
+      if (!updated.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "Proposed end must be after clock-in and not in the future" });
+      }
+      await client.query(
+        `INSERT INTO clock_exception_reviews
+           (clock_session_id, action, actor_id, proposed_end_at, proposal_reason)
+         VALUES ($1, 'proposed', $2, $3, $4)`,
+        [sessionId, talentId, proposalDate.toISOString(), reason.trim()],
+      );
+      await client.query("COMMIT");
+      return res.json(serializeClockSession(updated.rows[0]));
+    } catch (err: any) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error("POST /api/talent/clock/exception error:", err);
+      return res.status(500).json({ error: "Failed to submit clock exception" });
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post("/api/admin/clock/:sessionId/resolve", authenticateJWT, requireAdmin, requireAdminSubRole(["talent_acquisition"]), async (req: Request, res: Response) => {
+    const { decision, reason } = req.body ?? {};
+    if (!["approve", "reject"].includes(decision) || typeof reason !== "string" || !reason.trim()) {
+      return res.status(422).json({ error: "decision (approve or reject) and reason are required" });
+    }
+    const adminId = (req as any).user?.id;
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+      const session = await client.query(
+        `SELECT id, hiring_contract_id, started_at, ended_at, exception_status, proposed_end_at, proposal_reason
+           FROM clock_sessions WHERE id = $1 FOR UPDATE`,
+        [req.params.sessionId],
+      );
+      if (!session.rows.length || session.rows[0].exception_status !== "pending") {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "Clock session has no pending exception" });
+      }
+      const status = decision === "approve" ? "approved" : "rejected";
+      await client.query(
+        `INSERT INTO clock_exception_reviews
+           (clock_session_id, action, reviewer_id, proposed_end_at, proposal_reason, decision_reason)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          req.params.sessionId,
+          status,
+          adminId,
+          session.rows[0].proposed_end_at,
+          session.rows[0].proposal_reason,
+          reason.trim(),
+        ],
+      );
+      const resolved = await client.query(
+        `UPDATE clock_sessions
+            SET exception_status = $1,
+                approved_end_at = CASE WHEN $1 = 'approved' THEN proposed_end_at ELSE NULL END,
+                resolved_by = $2,
+                resolved_at = NOW(),
+                resolution_reason = $3
+          WHERE id = $4
+          RETURNING id, hiring_contract_id, started_at, ended_at, exception_status`,
+        [status, adminId, reason.trim(), req.params.sessionId],
+      );
+      await client.query("COMMIT");
+      return res.json(serializeClockSession(resolved.rows[0]));
+    } catch (err: any) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error("POST /api/admin/clock/:sessionId/resolve error:", err);
+      return res.status(500).json({ error: "Failed to resolve clock exception" });
+    } finally {
+      client.release();
+    }
+  });
+
+  // Clock exception review exposes talent identity and proposed corrections,
+  // so restrict it to talent-acquisition admins (with the standard super-admin
+  // bypass provided by requireAdminSubRole).
+  app.get(
+    "/api/admin/clock/exceptions",
+    authenticateJWT,
+    requireAdmin,
+    requireAdminSubRole(["talent_acquisition"]),
+    async (_req: Request, res: Response) => {
+      try {
+        const result = await query(
+          `SELECT cs.id, cs.hiring_contract_id, cs.talent_id, cs.started_at, cs.ended_at,
+                  cs.exception_type, cs.exception_status, cs.exception_detected_at,
+                  cs.proposed_end_at, cs.proposal_reason, cs.approved_end_at,
+                  cs.resolved_by, cs.resolved_at, cs.resolution_reason,
+                  u.email AS talent_email,
+                  NULLIF(BTRIM(CONCAT_WS(' ', u.first_name, u.last_name)), '') AS talent_name,
+                  j.title AS job_title
+             FROM clock_sessions cs
+             JOIN users u ON u.id = cs.talent_id
+             JOIN hiring_contracts hc ON hc.id = cs.hiring_contract_id
+             JOIN job_submissions js ON js.id = hc.submission_id
+             JOIN jobs j ON j.id = js.job_id
+            WHERE cs.exception_status = 'detected'
+               OR (cs.ended_at IS NULL AND cs.exception_status IN ('pending', 'rejected'))
+            ORDER BY CASE cs.exception_status
+                       WHEN 'pending' THEN 0
+                       WHEN 'detected' THEN 1
+                       ELSE 2
+                     END,
+                     cs.exception_detected_at DESC NULLS LAST,
+                     cs.started_at DESC`,
+        );
+        return res.json(result.rows.map((row: any) => ({
+          id: row.id,
+          hiringContractId: row.hiring_contract_id,
+          talentId: row.talent_id,
+          talentName: row.talent_name ?? null,
+          talentEmail: row.talent_email,
+          jobTitle: row.job_title,
+          startedAt: row.started_at,
+          endedAt: row.ended_at ?? null,
+          exceptionType: row.exception_type,
+          status: row.exception_status,
+          exceptionDetectedAt: row.exception_detected_at ?? null,
+          proposedEndAt: row.proposed_end_at ?? null,
+          proposalReason: row.proposal_reason ?? null,
+          approvedEndAt: row.approved_end_at ?? null,
+          resolvedBy: row.resolved_by ?? null,
+          resolvedAt: row.resolved_at ?? null,
+          resolutionReason: row.resolution_reason ?? null,
+        })));
+      } catch (err: any) {
+        console.error("GET /api/admin/clock/exceptions error:", err);
+        return res.status(500).json({ error: "Failed to load clock exceptions" });
+      }
+    },
+  );
+
+  registerTimesheetRoutes(app, {
+    authenticateJWT,
+    requireTalent,
+    requireClient,
+    requireAdmin,
+    requireAdminSubRole,
+    getTalentBillingUserId,
+  });
+  registerTalentInvoiceRoutes(app, {
+    authenticateJWT,
+    requireTalent,
+    requireClient,
+    requireAdmin,
+    requireAdminSubRole,
+    getTalentBillingUserId,
   });
 
   app.get(
@@ -8161,6 +8606,8 @@ export async function registerRoutes(
     requireClient,
     async (req: Request, res: Response) => {
       try {
+        const billingModeErr = validateBillingMode(req.body.billingMode);
+        if (billingModeErr) return res.status(400).json(billingModeErr);
         // Guard 1: reject any non-canonical engagement type value before the DB sees it.
         const etErr = validateEngagementType(req.body.engagementType);
         if (etErr) return res.status(400).json(etErr);
@@ -8172,6 +8619,9 @@ export async function registerRoutes(
             error: "Engagement Type required",
             message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
           });
+        }
+        if (["open", "published"].includes(effectiveStatus) && !["tracked", "guaranteed"].includes(req.body.billingMode)) {
+          return res.status(400).json(billingModeRequiredError());
         }
 
         const metadataError = validateJobFormMetadata({
@@ -8198,6 +8648,8 @@ export async function registerRoutes(
     try {
       const existingJob = await storage.getJob(req.params.id);
       const effectiveStatus = req.body.status ?? existingJob?.status;
+      const billingModeErr = validateBillingMode(req.body.billingMode);
+      if (billingModeErr) return res.status(400).json(billingModeErr);
       const metadataError = validateEffectiveJobFormMetadata(req.body, existingJob as any);
       if (metadataError) return res.status(400).json(metadataError);
 
@@ -8218,6 +8670,11 @@ export async function registerRoutes(
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
+      }
+      const effectiveBillingMode = "billingMode" in updates ? updates.billingMode : existingJob?.billingMode;
+      if (["open", "published"].includes(effectiveStatus as string) &&
+          !["tracked", "guaranteed"].includes(effectiveBillingMode as string)) {
+        return res.status(400).json(billingModeRequiredError());
       }
 
       const job = await storage.updateJob(req.params.id, updates);
@@ -10453,6 +10910,8 @@ export async function registerRoutes(
       console.log("Admin job create - request body:", JSON.stringify(body));
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const adminCreateBillingErr = validateBillingMode(body.billingMode);
+      if (adminCreateBillingErr) return res.status(400).json(adminCreateBillingErr);
       const adminCreateEtErr = validateEngagementType(body.engagementType);
       if (adminCreateEtErr) return res.status(400).json(adminCreateEtErr);
       const adminCreateMetadataErr = validateJobFormMetadata(body);
@@ -10465,6 +10924,10 @@ export async function registerRoutes(
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
+      }
+      if (!isDraft && ["open", "published"].includes(effectiveStatus) &&
+          !["tracked", "guaranteed"].includes(body.billingMode)) {
+        return res.status(400).json(billingModeRequiredError());
       }
 
       const validated = insertJobSchema.parse(body);
@@ -10511,6 +10974,8 @@ export async function registerRoutes(
       );
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const adminPatchBillingErr = validateBillingMode(updates.billingMode);
+      if (adminPatchBillingErr) return res.status(400).json(adminPatchBillingErr);
       const adminPatchEtErr = validateEngagementType(updates.engagementType);
       if (adminPatchEtErr) return res.status(400).json(adminPatchEtErr);
       const adminPatchMetadataErr = validateEffectiveJobFormMetadata(
@@ -10531,6 +10996,11 @@ export async function registerRoutes(
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
+      }
+      const effectiveAdminBillingMode = "billingMode" in updates ? updates.billingMode : existingJob?.billingMode;
+      if (["open", "published"].includes(effectiveStatus as string) &&
+          !["tracked", "guaranteed"].includes(effectiveAdminBillingMode as string)) {
+        return res.status(400).json(billingModeRequiredError());
       }
 
       const job = await storage.updateJob(req.params.id, updates);
@@ -10565,6 +11035,9 @@ export async function registerRoutes(
             error: "Engagement Type required",
             message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
           });
+        }
+        if (!existingJob || !["tracked", "guaranteed"].includes(existingJob.billingMode as string)) {
+          return res.status(400).json(billingModeRequiredError());
         }
       }
       const job = await storage.updateJob(req.params.id, { status });
@@ -10637,6 +11110,9 @@ export async function registerRoutes(
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before approving a job.",
         });
+      }
+      if (!["tracked", "guaranteed"].includes(jobToApprove.billingMode as string)) {
+        return res.status(400).json(billingModeRequiredError());
       }
       const transition = await transitionJobApprovalStatus({
         jobId: req.params.id,
@@ -16244,6 +16720,8 @@ export async function registerRoutes(
           };
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const clientCreateBillingErr = validateBillingMode(body.billingMode);
+      if (clientCreateBillingErr) return res.status(400).json(clientCreateBillingErr);
       const clientCreateEtErr = validateEngagementType(body.engagementType);
       if (clientCreateEtErr) return res.status(400).json(clientCreateEtErr);
       const clientCreateMetadataErr = validateJobFormMetadata(body);
@@ -16256,6 +16734,10 @@ export async function registerRoutes(
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
+      }
+      if (!isDraft && ["open", "published"].includes(effectiveStatus) &&
+          !["tracked", "guaranteed"].includes(body.billingMode)) {
+        return res.status(400).json(billingModeRequiredError());
       }
 
       const validated = insertJobSchema.parse(body);
@@ -16292,6 +16774,8 @@ export async function registerRoutes(
       );
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
+      const clientPatchBillingErr = validateBillingMode(updates.billingMode);
+      if (clientPatchBillingErr) return res.status(400).json(clientPatchBillingErr);
       const clientPatchEtErr = validateEngagementType(updates.engagementType);
       if (clientPatchEtErr) return res.status(400).json(clientPatchEtErr);
       const clientPatchMetadataErr = validateEffectiveJobFormMetadata(
@@ -16312,6 +16796,11 @@ export async function registerRoutes(
           error: "Engagement Type required",
           message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
         });
+      }
+      const effectiveClientBillingMode = "billingMode" in updates ? updates.billingMode : existingJob?.billingMode;
+      if (["open", "published"].includes(effectiveStatus as string) &&
+          !["tracked", "guaranteed"].includes(effectiveClientBillingMode as string)) {
+        return res.status(400).json(billingModeRequiredError());
       }
 
       // Editing an approved job resets it to pending — must be re-reviewed
@@ -16356,6 +16845,9 @@ export async function registerRoutes(
             error: "Engagement Type required",
             message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
           });
+        }
+        if (!existingJob || !["tracked", "guaranteed"].includes(existingJob.billingMode as string)) {
+          return res.status(400).json(billingModeRequiredError());
         }
       }
       const r = await query(
@@ -21013,7 +21505,7 @@ export async function registerRoutes(
 
       // Ownership + submission state (formal pipeline guard)
       const subGuard = await loadClientFormalSubmission(submissionId, userId, {
-        extraCols: ", j.engagement_type AS job_engagement_type",
+        extraCols: ", j.engagement_type AS job_engagement_type, j.billing_mode AS job_billing_mode",
         joinClause: "JOIN jobs j ON j.id = js.job_id",
       });
       if (!subGuard.ok) return res.status(subGuard.status).json({ error: subGuard.error });
@@ -21050,6 +21542,13 @@ export async function registerRoutes(
           error: "job_missing_engagement_type",
           message: "The job for this submission has no valid engagement type (Lite or Standard). " +
             "Update the job before extending an offer.",
+        });
+      }
+      const billingMode: string | null = submission.job_billing_mode;
+      if (billingMode !== "tracked" && billingMode !== "guaranteed") {
+        return res.status(409).json({
+          error: "job_missing_billing_mode",
+          message: "The job for this submission has no classified billing mode. Update the job before extending an offer.",
         });
       }
 
@@ -21102,12 +21601,12 @@ export async function registerRoutes(
         await txClient.query("BEGIN");
         const insert = await txClient.query(
           `INSERT INTO offers
-             (submission_id, engagement_type, rate, rate_currency, proposed_start_date,
+             (submission_id, engagement_type, billing_mode, rate, rate_currency, proposed_start_date,
               status, talent_expected_rate, talent_expected_currency, talent_expected_engagement,
               rate_below_expectation, rate_delta, expires_at, notes)
-           VALUES ($1, $2, $3, $4, $5, 'sent', $6, $7, $8, $9, $10, $11, $12)
+           VALUES ($1, $2, $3, $4, $5, $6, 'sent', $7, $8, $9, $10, $11, $12, $13)
            RETURNING *`,
-          [submissionId, engagementType, rateNum.toFixed(2), rateCurrency,
+          [submissionId, engagementType, billingMode, rateNum.toFixed(2), rateCurrency,
            proposedStartDate ?? null, talentExpectedRate, talentExpectedCurrency,
            talentExpectedEngagement, rateBelowExpectation, rateDelta,
            expiresAt ?? null, notes ?? null],
@@ -21346,15 +21845,15 @@ export async function registerRoutes(
           const below = mismatchApplies ? counterRateNum < Number(expectedRate) : null;
           const delta = mismatchApplies ? (counterRateNum - Number(expectedRate)).toFixed(2) : null;
           const counter = await txClient.query(
-            `INSERT INTO offers
-               (submission_id, engagement_type, rate, rate_currency, proposed_start_date,
+             `INSERT INTO offers
+                (submission_id, engagement_type, billing_mode, rate, rate_currency, proposed_start_date,
                 status, parent_offer_id, proposer_role, talent_expected_rate,
                 talent_expected_currency, talent_expected_engagement, rate_below_expectation,
                 rate_delta, expires_at, notes)
-             VALUES ($1, $2, $3, $4, $5, 'sent', $6, 'client', $7, $8, $9, $10, $11, $12, $13)
+              VALUES ($1, $2, $3, $4, $5, $6, 'sent', $7, 'client', $8, $9, $10, $11, $12, $13, $14)
              RETURNING *`,
             [
-              offer.js_id, offer.engagement_type, counterRateNum.toFixed(2), counterCurrency,
+              offer.js_id, offer.engagement_type, offer.billing_mode, counterRateNum.toFixed(2), counterCurrency,
               proposedStartDate ?? offer.proposed_start_date ?? null, offer.id,
               expectedRate, expectedCurrency, expectedEngagement, below, delta,
               offer.expires_at ?? null, notes ?? null,
@@ -21479,7 +21978,7 @@ export async function registerRoutes(
       const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
 
        const result = await query(
-          `SELECT o.id, o.submission_id, o.engagement_type, o.rate, o.rate_currency,
+          `SELECT o.id, o.submission_id, o.engagement_type, o.billing_mode, o.rate, o.rate_currency,
                   o.parent_offer_id, o.proposer_role,
                 o.proposed_start_date, o.status,
                 o.talent_expected_rate, o.talent_expected_currency, o.talent_expected_engagement,
@@ -21508,6 +22007,7 @@ export async function registerRoutes(
             location: o.job_location || undefined,
           },
           engagementType: o.engagement_type,
+          billingMode: o.billing_mode,
           rate: o.rate,
           rateCurrency: o.rate_currency,
           proposedStartDate: o.proposed_start_date,
@@ -21548,6 +22048,7 @@ export async function registerRoutes(
           location: o.job_location || undefined,
         },
         engagementType: o.engagement_type,
+        billingMode: o.billing_mode,
         rate: o.rate,
         rateCurrency: o.rate_currency,
         proposedStartDate: o.proposed_start_date,
@@ -21651,14 +22152,14 @@ export async function registerRoutes(
           const delta = mismatchApplies ? (counterRateNum - Number(expectedRate)).toFixed(2) : null;
           const counter = await txClient.query(
             `INSERT INTO offers
-               (submission_id, engagement_type, rate, rate_currency, proposed_start_date,
+                (submission_id, engagement_type, billing_mode, rate, rate_currency, proposed_start_date,
                 status, parent_offer_id, proposer_role, talent_expected_rate, talent_expected_currency,
                 talent_expected_engagement, rate_below_expectation, rate_delta,
                 expires_at, notes)
-             VALUES ($1, $2, $3, $4, $5, 'sent', $6, 'talent', $7, $8, $9, $10, $11, $12, $13)
+              VALUES ($1, $2, $3, $4, $5, $6, 'sent', $7, 'talent', $8, $9, $10, $11, $12, $13, $14)
              RETURNING *`,
             [
-              offer.js_id, offer.engagement_type, counterRateNum.toFixed(2), counterCurrency,
+              offer.js_id, offer.engagement_type, offer.billing_mode, counterRateNum.toFixed(2), counterCurrency,
               proposedStartDate ?? offer.proposed_start_date ?? null, offer.id,
               expectedRate, expectedCurrency, expectedEngagement, below, delta,
               offer.expires_at ?? null, notes ?? null,
@@ -23387,6 +23888,9 @@ export async function registerRoutes(
             error: "Engagement Type required",
             message: "An Engagement Type (Lite or Standard) must be set before approving a job.",
           });
+        }
+        if (!["tracked", "guaranteed"].includes(jobToApprove.billingMode as string)) {
+          return res.status(400).json(billingModeRequiredError());
         }
       }
       const rendered = await renderClientJobEmail(job, req.body ?? {}, decision);

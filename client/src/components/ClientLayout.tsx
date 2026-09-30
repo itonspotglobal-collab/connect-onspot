@@ -2,6 +2,7 @@ import {
   BarChart3, 
   Briefcase, 
   Calendar,
+  Clock3,
   DollarSign,
   FileText,
   Home, 
@@ -87,6 +88,16 @@ const managementItems = [
     title: "Billing",
     url: "/client/billing",
     icon: Receipt,
+  },
+  {
+    title: "Monthly Invoices",
+    url: "/client/monthly-invoices",
+    icon: FileText,
+  },
+  {
+    title: "Timesheets",
+    url: "/client/timesheets",
+    icon: Clock3,
   },
   {
     title: "ROI Analytics",

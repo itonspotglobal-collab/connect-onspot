@@ -119,8 +119,8 @@ async function createFixtures() {
     [CANDIDATE_ID, TALENT_ID, `${TALENT_ID}@test.local`],
   );
   const jobRow = await query(
-    `INSERT INTO jobs (client_id, title, description, category, experience_level, status, engagement_type)
-     VALUES ($1, 'HC Test Job', 'test', 'Engineering', 'senior', 'open', 'Standard') RETURNING id`,
+    `INSERT INTO jobs (client_id, title, description, category, experience_level, status, engagement_type, billing_mode)
+     VALUES ($1, 'HC Test Job', 'test', 'Engineering', 'senior', 'open', 'Standard', 'tracked') RETURNING id`,
     [CLIENT_ID],
   );
   jobId = jobRow.rows[0].id;
@@ -157,8 +157,9 @@ async function createFixtures() {
 
   const makeOffer = async (subId: string, status: string) => {
     const row = await query(
-      `INSERT INTO offers (submission_id, engagement_type, rate, status)
-       VALUES ($1, 'Standard', 1000, $2) RETURNING id`,
+      `INSERT INTO offers
+         (submission_id, engagement_type, billing_mode, rate, proposed_start_date, status)
+       VALUES ($1, 'Standard', 'tracked', 1000, '2024-01-01'::date, $2) RETURNING id`,
       [subId, status],
     );
     return row.rows[0].id as string;
@@ -413,6 +414,7 @@ describe("hiring-contracts workflow (production routes)", () => {
     );
     assert.equal(counter.status, 200, JSON.stringify(counter.json));
     const counterId = counter.json.id as string;
+    assert.equal(counter.json.billing_mode, "tracked", "counteroffer preserves the parent billing mode");
     await query(`UPDATE offers SET expires_at = NOW() - INTERVAL '1 minute' WHERE id = $1`, [counterId]);
 
     const response = await request(
@@ -443,6 +445,8 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.equal(create.status, 201, JSON.stringify(create.json));
     contractId = create.json.id;
     assert.equal(create.json.status, "sent");
+    assert.equal(create.json.billing_mode, "tracked", "contract snapshots accepted offer billing mode");
+    assert.equal(String(create.json.effective_start_date).slice(0, 10), "2024-01-01", "contract snapshots accepted offer effective start");
     assert.ok(create.json.signing_entity && create.json.signing_entity.length > 0);
     assert.equal(await submissionStatus(submissionId), "contract_sent");
   });
@@ -495,7 +499,12 @@ describe("hiring-contracts workflow (production routes)", () => {
     assert.equal(r.status, 200, JSON.stringify(r.json));
     assert.ok(r.json.talent_signed_at);
     assert.equal(r.json.status, "signed");
+    assert.equal(r.json.billing_mode, "tracked");
     assert.equal(await submissionStatus(submissionId), "hired");
+    await assert.rejects(
+      query(`UPDATE hiring_contracts SET billing_mode = 'guaranteed' WHERE id = $1`, [contractId]),
+      /billing mode is immutable after contract signing/,
+    );
 
     const history = await query(
       `SELECT id FROM job_application_status_history

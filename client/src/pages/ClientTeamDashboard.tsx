@@ -173,7 +173,7 @@ function formatActivity(member: TeamMember) {
   return `Last active ${activityDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
-function TeamMemberCard({ member, onAction }: { member: TeamMember; onAction: (action: "timesheet" | "message", name: string) => void }) {
+function TeamMemberCard({ member, onAction }: { member: TeamMember; onAction: (name: string) => void }) {
   const status = statusCopy[member.status];
   const progress = Math.min((member.hoursLogged / member.weeklyTargetHours) * 100, 100);
   return (
@@ -209,8 +209,8 @@ function TeamMemberCard({ member, onAction }: { member: TeamMember; onAction: (a
         <Progress value={progress} className="mt-2 h-1.5 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-indigo-500 [&>div]:to-violet-500" />
         <ActivityStrip values={member.weeklyActivity} />
         <div className="mt-4 flex gap-2">
-          <Button type="button" variant="outline" size="sm" className="flex-1 border-slate-200 text-xs text-slate-700" onClick={() => onAction("timesheet", member.name)}>View timesheet</Button>
-          <Button type="button" size="sm" className="flex-1 bg-[#474ead] text-xs text-white hover:bg-[#3e439c]" onClick={() => onAction("message", member.name)}><MessageSquare className="h-3.5 w-3.5" />Message</Button>
+          <a href="/client/timesheets" className="inline-flex flex-1 items-center justify-center rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">View timesheets</a>
+          <Button type="button" size="sm" className="flex-1 bg-[#474ead] text-xs text-white hover:bg-[#3e439c]" onClick={() => onAction(member.name)}><MessageSquare className="h-3.5 w-3.5" />Message</Button>
         </div>
       </div>
     </Card>
@@ -297,8 +297,8 @@ export default function ClientTeamDashboard() {
     enabled: Boolean(selectedOrganizationId),
     staleTime: 30_000,
   });
-  const handleAction = useCallback((action: "timesheet" | "message", name: string) => {
-    toast({ title: action === "timesheet" ? "Timesheets are coming soon" : "Messaging is coming soon", description: `${action === "timesheet" ? "Timesheet access" : "A connection to"} ${name} will be available later.` });
+  const handleAction = useCallback((name: string) => {
+    toast({ title: "Messaging is coming soon", description: `A connection to ${name} will be available later.` });
   }, []);
 
   if (!selectedOrganizationId) {
@@ -354,6 +354,7 @@ export default function ClientTeamDashboard() {
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-7 pb-8">
       <TeamHeader data={data} />
+      <div className="-mt-4 flex justify-end"><a href="/client/timesheets" className="inline-flex items-center rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Review timesheets</a></div>
       <section>
         <SectionHeading eyebrow="This week at a glance" title="Your team, in focus" detail="Current reporting period" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map((metric) => <SummaryMetricCard key={metric.label} metric={metric} />)}</div>

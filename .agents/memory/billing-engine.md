@@ -55,6 +55,14 @@ Clients must choose between Tracked (clock-derived, approved timesheets with ext
 
 **How to apply:** Keep Tracked and Guaranteed generation paths separate. For Guaranteed mode, provide a period-specific Client non-performance claim and OnSpot decision before withholding a period's invoice; never apply Tracked timesheet-hour calculations to a Guaranteed period. Do not infer the mode of legacy contracts without an explicit selection.
 
+## Late Guaranteed claims and contract endings
+
+A substantiated late Guaranteed claim after the Talent invoice is sent creates a separate Client-side credit against the original period's all-in charge, never a Talent credit memo or a change to the sent Talent invoice. If the original Client statement was sent, apply it to the next eligible unsent statement, not to historical sent statements.
+
+**Why:** The guaranteed Talent commitment survives a late Client discovery, while the Client still needs a reviewed remedy. The two financial histories must remain independently auditable.
+
+**How to apply:** Keep Client credit applications distinct from Tracked Talent corrections; require an Admin finding, preserve original invoice snapshots, and do not post a credit to a statement older than the finding unless it is the original unsent statement. Signed-contract termination is a separate lifecycle feature, not a silent cutoff invented by the invoice worker.
+
 
 ## Customer-facing ledger views
 

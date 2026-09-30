@@ -245,6 +245,32 @@ export function JobBasicsStep({ formData, updateField, errors }: Props) {
         </div>
       </div>
 
+        <div className="mb-6">
+          <Label htmlFor="basics-billing-mode">
+            Billing Mode <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={formData.billingMode || ""}
+            onValueChange={(value) => updateField("billingMode", value)}
+          >
+            <SelectTrigger id="basics-billing-mode" className="mt-1.5">
+              <SelectValue placeholder="Select billing mode…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tracked">Tracked — bill based on approved tracked time</SelectItem>
+              <SelectItem value="guaranteed">Guaranteed — fixed agreed billing</SelectItem>
+            </SelectContent>
+          </Select>
+          {!formData.billingMode && (
+            <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
+              This legacy posting is unclassified. Choose a mode to publish or update it.
+            </p>
+          )}
+          {errors.billingMode && (
+            <p className="mt-1 text-xs text-red-500">{errors.billingMode}</p>
+          )}
+        </div>
+
       {/* Company section */}
       <div className="border-t border-dashed border-border pt-6 mb-5">
         <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-[#474ead] mb-4">

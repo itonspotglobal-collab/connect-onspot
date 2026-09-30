@@ -73,6 +73,7 @@ import {
   Database,
   Building2,
   CalendarDays,
+  Clock3,
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -430,6 +431,14 @@ export default function AdminDashboard() {
   });
 
   const adminUsers = users.filter((u) => u.role === 'admin');
+  // The exceptions endpoint is also the server-authoritative permission check:
+  // it returns talent-identifying data only for Talent Acquisition and Super Admin.
+  const clockExceptionsAccess = useQuery<any[]>({
+    queryKey: ['/api/admin/clock/exceptions'],
+    queryFn: () => authAPI.get('/api/admin/clock/exceptions'),
+    enabled: user?.role === 'admin',
+    retry: false,
+  });
 
   return (
     <div className="container mx-auto p-6 max-w-6xl space-y-8" data-testid="admin-dashboard-page">
@@ -485,6 +494,16 @@ export default function AdminDashboard() {
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/interviewers')}>
                 <CalendarDays className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Interviewers
+              </Button>
+              {user?.role === 'admin' && clockExceptionsAccess.isSuccess && (
+                <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/clock-exceptions')}>
+                  <Clock3 className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                  Missed Clock-Out Exceptions
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/timesheets')}>
+                <Clock3 className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Timesheet Review
               </Button>
             </CardContent>
           </Card>
@@ -549,6 +568,10 @@ export default function AdminDashboard() {
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/ledger')} data-testid="button-open-billing-ledger">
                 <FileText className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Billing Ledger
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/invoicing')}>
+                <FileText className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Guaranteed Claims &amp; Invoicing
               </Button>
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/csv-import')}>
                 <Upload className="w-3.5 h-3.5 mr-2 text-muted-foreground" />

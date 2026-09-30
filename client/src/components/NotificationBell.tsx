@@ -200,6 +200,20 @@ const TYPE_CONFIG: Record<
     label: "Talent Hired",
     route: "/client-profile",
   },
+  talent_invoice_ready: {
+    icon: FileText,
+    color: "#4D55C7",
+    bg: "#EEF2FF",
+    label: "Talent Invoice Draft",
+    route: "/talent-dashboard",
+  },
+  monthly_client_invoice: {
+    icon: FileText,
+    color: "#4D55C7",
+    bg: "#EEF2FF",
+    label: "Monthly Invoice Ready",
+    route: "/client/invoices",
+  },
   new_message: {
     icon: MessageSquare,
     color: "#4D55C7",

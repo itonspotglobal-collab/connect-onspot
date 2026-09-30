@@ -1,0 +1,52 @@
+Both remaining open questions resolved:
+
+1. Late-discovered claim (after invoice already sent): the Talent's
+   payment stands, untouched - the guarantee is protected once paid, no
+   clawback. Instead, OnSpot can adjust/credit what the CLIENT owes for
+   that period, effectively absorbing the risk itself. Propose the
+   mechanism for this - likely a Client-side credit/adjustment record
+   analogous in shape to the Talent-side credit_memos already designed
+   for Tracked mode, but applied to the Client's monthly invoice instead
+   and NOT touching the Talent's payout at all. Do not reuse the
+   Tracked credit_memo table directly if it assumes Talent-side
+   application - propose whichever structure fits cleanest, and report
+   your reasoning.
+
+2. Partial-period contract start in Guaranteed mode: prorate by calendar
+   days covered in the period, consistent with how Tracked mode already
+   handles a mid-window start/end.
+
+Both the two-mode design (Tracked/Guaranteed) and everything from the
+prior rounds now form one complete, confirmed model:
+- billing_mode on jobs/offers/hiring_contracts, set at job level, copied
+  to offer, locked at contract signing. Existing records stay
+  unclassified until explicitly reviewed - never silently defaulted to
+  Tracked.
+- Tracked: clock-derived timesheets, Client visibility/dispute, OnSpot
+  approval, Extended Hours/Deductions, credit_memos for post-send
+  corrections, 48-hour auto-send that does not pause for pending
+  disputes once a draft exists.
+- Guaranteed: no clock required, full flat rate per period (prorated by
+  calendar days for a partial start), non_performance_claims as the
+  Client's only lever (allegation alone never changes the amount - only
+  OnSpot substantiating it does), claims block draft generation until
+  resolved, unresolved claims escalate rather than silently billing or
+  silently withholding.
+- Both modes: fixed payment dates (25th/5th America/New_York), deposit-
+  coverage check (never treating a pending deposit as collected),
+  separate monthly all-in Client invoice with no Talent visibility into
+  it, non-retroactive handling of every correction.
+
+The signed-contract termination gap you found (no real "end and re-sign"
+flow exists) is a real, separate piece of work - flag it as its own
+follow-up task once this foundation ships, rather than blocking the
+current build on solving it now, since mode-locking for the life of a
+contract doesn't require the termination flow to exist yet, it just
+means switching modes isn't possible until that flow is built later.
+
+You now have a complete, fully-confirmed model. Proceed with
+implementation in real phases as you proposed earlier - clock foundation
+first, then timesheet/dispute workflow, then the two invoice-generation
+paths, then the Client-side credit adjustment mechanism for point 1
+above. Report real, traced evidence at each phase before moving to the
+next, same standard as every other part of this build.

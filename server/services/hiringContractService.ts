@@ -87,7 +87,7 @@ export async function createHiringContract(params: {
   return withTransaction(async (client) => {
     // Lock the offer row so two concurrent creates serialize on it.
     const offerResult = await client.query(
-      `SELECT id, submission_id, status FROM offers WHERE id = $1 FOR UPDATE`,
+      `SELECT id, submission_id, status, billing_mode, proposed_start_date FROM offers WHERE id = $1 FOR UPDATE`,
       [offerId],
     );
     if (offerResult.rows.length === 0) throw new ContractError(404, { error: "Offer not found" });
@@ -96,6 +96,12 @@ export async function createHiringContract(params: {
       throw new ContractError(409, {
         error: "offer_not_accepted",
         message: `A contract can only be created from an accepted offer (current offer status: '${offer.status}').`,
+      });
+    }
+    if (["tracked", "guaranteed"].includes(offer.billing_mode) && !offer.proposed_start_date) {
+      throw new ContractError(409, {
+        error: "effective_start_date_required",
+        message: "A confirmed billing-mode contract requires the accepted offer's agreed start date.",
       });
     }
 
@@ -156,10 +162,11 @@ export async function createHiringContract(params: {
     try {
       insert = await client.query(
         `INSERT INTO hiring_contracts
-           (offer_id, submission_id, template_ref, document_path, status, signing_entity)
-         VALUES ($1, $2, $3, $4, 'sent', $5)
+           (offer_id, submission_id, template_ref, document_path, status, signing_entity, billing_mode, effective_start_date)
+         VALUES ($1, $2, $3, $4, 'sent', $5, $6, $7::date)
          RETURNING *`,
-        [offerId, submissionId, templateRef ?? null, documentPath ?? null, signingEntity],
+        [offerId, submissionId, templateRef ?? null, documentPath ?? null, signingEntity,
+          offer.billing_mode ?? null, offer.proposed_start_date ? new Date(offer.proposed_start_date).toISOString().slice(0, 10) : null],
       );
     } catch (err: any) {
       // Partial unique index uq_hiring_contracts_active_offer — race-safe duplicate guard
@@ -273,6 +280,7 @@ export async function updateHiringContract(
     const fullySigned = willBeOnspotSigned && willBeTalentSigned;
     if (fullySigned && contract.status !== "signed") {
       sets.push(`status = 'signed'`);
+      sets.push(`billing_activated_at = NOW()`);
     }
     sets.push(`updated_at = NOW()`);
 

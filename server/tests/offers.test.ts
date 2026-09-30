@@ -42,8 +42,8 @@ async function setupFixture() {
   clientId = client.rows[0].id;
 
   const job = await query(
-    `INSERT INTO jobs (client_id, title, description, category, engagement_type, experience_level, status)
-     VALUES ($1, 'Offer Test Job', 'test', 'IT', 'Standard', 'intermediate', 'draft')
+    `INSERT INTO jobs (client_id, title, description, category, engagement_type, billing_mode, experience_level, status)
+     VALUES ($1, 'Offer Test Job', 'test', 'IT', 'Standard', 'tracked', 'intermediate', 'draft')
      RETURNING id`,
     [clientId],
   );
@@ -73,13 +73,17 @@ async function createOfferTx(subId: string, rate: number, currency = "PHP"): Pro
   try {
     await tx.query("BEGIN");
     const sub = await tx.query(
-      `SELECT js.status, j.engagement_type FROM job_submissions js JOIN jobs j ON j.id = js.job_id WHERE js.id = $1`,
+      `SELECT js.status, j.engagement_type, j.billing_mode FROM job_submissions js JOIN jobs j ON j.id = js.job_id WHERE js.id = $1`,
       [subId],
     );
+    if (!["tracked", "guaranteed"].includes(sub.rows[0]?.billing_mode)) {
+      await tx.query("ROLLBACK");
+      return { ok: false, code: "job_missing_billing_mode" };
+    }
     const insert = await tx.query(
-      `INSERT INTO offers (submission_id, engagement_type, rate, rate_currency, status)
-       VALUES ($1, $2, $3, $4, 'sent') RETURNING *`,
-      [subId, sub.rows[0].engagement_type, rate.toFixed(2), currency],
+      `INSERT INTO offers (submission_id, engagement_type, billing_mode, rate, rate_currency, status)
+       VALUES ($1, $2, $3, $4, $5, 'sent') RETURNING *`,
+      [subId, sub.rows[0].engagement_type, sub.rows[0].billing_mode, rate.toFixed(2), currency],
     );
     await tx.query(`UPDATE job_submissions SET status = 'offer_extended', updated_at = NOW() WHERE id = $1`, [subId]);
     await tx.query(
@@ -129,8 +133,9 @@ describe("offers — single-pending guarantee and transitions", () => {
       [submissionId],
     );
     assert.ok(hist.rows.length >= 1, "history entry for offer_extended must exist");
-    const offer = await query(`SELECT engagement_type FROM offers WHERE submission_id = $1 AND status = 'sent'`, [submissionId]);
+    const offer = await query(`SELECT engagement_type, billing_mode FROM offers WHERE submission_id = $1 AND status = 'sent'`, [submissionId]);
     assert.equal(offer.rows[0].engagement_type, "Standard", "engagement_type snapshotted from the jobs row");
+    assert.equal(offer.rows[0].billing_mode, "tracked", "billing_mode snapshotted from the jobs row");
   });
 
   it("(c) mismatch flag rules: NULL when currencies differ, computed when they match", async () => {
@@ -180,6 +185,18 @@ describe("offers — single-pending guarantee and transitions", () => {
     assert.equal(r.ok, true, "re-offer after decline must succeed");
     const n = await query(`SELECT count(*)::int AS n FROM offers WHERE submission_id = $1`, [submissionId]);
     assert.ok(n.rows[0].n >= 2, "re-offer creates a new row");
+  });
+
+  it("(f) legacy unclassified jobs remain NULL and cannot create a new offer", async () => {
+    if (!jobId || !submissionId) return;
+    await query(`UPDATE offers SET status = 'declined' WHERE submission_id = $1`, [submissionId]);
+    await query(`UPDATE jobs SET billing_mode = NULL WHERE id = $1`, [jobId]);
+    const result = await createOfferTx(submissionId, 500);
+    assert.equal(result.ok, false);
+    assert.equal(result.code, "job_missing_billing_mode");
+    const legacy = await query(`SELECT billing_mode FROM jobs WHERE id = $1`, [jobId]);
+    assert.equal(legacy.rows[0].billing_mode, null, "migration must not silently classify legacy jobs");
+    await query(`UPDATE jobs SET billing_mode = 'tracked' WHERE id = $1`, [jobId]);
   });
 });
 
