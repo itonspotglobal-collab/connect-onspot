@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Receipt,
   UserCircle,
+  CalendarOff,
 } from "lucide-react";
 import {
   Sidebar,
@@ -93,6 +94,11 @@ const managementItems = [
     title: "Monthly Invoices",
     url: "/client/monthly-invoices",
     icon: FileText,
+  },
+  {
+    title: "Contract End Requests",
+    url: "/client/contract-endings",
+    icon: CalendarOff,
   },
   {
     title: "Timesheets",

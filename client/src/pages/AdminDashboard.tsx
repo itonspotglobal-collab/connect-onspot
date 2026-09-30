@@ -573,6 +573,10 @@ export default function AdminDashboard() {
                 <FileText className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 Guaranteed Claims &amp; Invoicing
               </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/contract-endings')}>
+                <FileText className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                Contract End Requests
+              </Button>
               <Button variant="ghost" size="sm" className="w-full justify-start h-8 text-sm font-normal" onClick={() => setLocation('/admin/csv-import')}>
                 <Upload className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
                 CSV Import

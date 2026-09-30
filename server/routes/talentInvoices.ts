@@ -55,6 +55,14 @@ const periodsFrom = (startDate: string, through: string) => {
   }
   return output;
 };
+const periodsThrough = (startDate: string, through: string, effectiveEndDate: string | null = null) => {
+  if (effectiveEndDate && effectiveEndDate < startDate) return [];
+  const limit = effectiveEndDate && effectiveEndDate < through ? effectiveEndDate : through;
+  return periodsFrom(startDate, limit).map((period) => ({
+    ...period,
+    end: effectiveEndDate && effectiveEndDate < period.end ? effectiveEndDate : period.end,
+  }));
+};
 
 // All cutoffs and pay dates are calendar dates in New York, not UTC dates.
 const midnightInZone = (date: string) => {
@@ -115,17 +123,31 @@ export const guaranteedPeriodAmount = (
   return roundMoney(Math.max(0, monthlyRate * activeDays / monthLength(period.start)));
 };
 
-const revisionHours = async (db: { query: (sql: string, params?: any[]) => Promise<any> }, revisionId: string) => {
+const revisionHours = async (
+  db: { query: (sql: string, params?: any[]) => Promise<any> },
+  revisionId: string,
+  period?: { start: string; end: string },
+) => {
+  const startBoundary = period ? midnightInZone(period.start) : null;
+  const endBoundary = period ? midnightInZone(addCalendarDays(period.end, 1)) : null;
   const result = await db.query(
-    `SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (effective_end_at - started_at)) / 3600), 0) AS hours
-       FROM timesheet_revision_sessions WHERE revision_id = $1`,
-    [revisionId],
+    `SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (
+       LEAST(effective_end_at, COALESCE($3::timestamptz, effective_end_at))
+       - GREATEST(started_at, COALESCE($2::timestamptz, started_at))
+     )) / 3600), 0) AS hours
+       FROM timesheet_revision_sessions
+      WHERE revision_id = $1
+        AND effective_end_at > COALESCE($2::timestamptz, started_at)
+        AND started_at < COALESCE($3::timestamptz, effective_end_at)`,
+    [revisionId, startBoundary, endBoundary],
   );
   return Number(result.rows[0]?.hours ?? 0);
 };
 
-async function ensureTrackedPeriods(contract: any, startDate: string, through: string) {
-  const periods = periodsFrom(startDate, through).filter((period) => period.end < through);
+async function ensureTrackedPeriods(contract: any, startDate: string, through: string, today: string) {
+  const effectiveEndDate = contract.effective_end_date ? dateString(contract.effective_end_date) : null;
+  const periods = periodsThrough(startDate, through, effectiveEndDate)
+    .filter((period) => period.end < today);
   for (const period of periods) {
     await query(
       `INSERT INTO timesheet_periods (hiring_contract_id, period_start, period_end, work_timezone)
@@ -218,7 +240,19 @@ async function insertInvoiceDraft(contract: any, period: { start: string; end: s
   const client = await getClient();
   try {
     await client.query("BEGIN");
-    await client.query(`SELECT id FROM hiring_contracts WHERE id = $1 FOR UPDATE`, [contract.id]);
+    const contractResult = await client.query(
+      `SELECT id, status, billing_mode, effective_end_date
+         FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
+      [contract.id],
+    );
+    const lockedContract = contractResult.rows[0];
+    if (!lockedContract || lockedContract.status !== "signed"
+      || !["tracked", "guaranteed"].includes(lockedContract.billing_mode)
+      || (lockedContract.effective_end_date
+        && period.end > dateString(lockedContract.effective_end_date))) {
+      await client.query("ROLLBACK");
+      return false;
+    }
     const locked = await client.query(
       `SELECT id FROM talent_invoices
         WHERE hiring_contract_id = $1 AND period_start = $2::date AND period_end = $3::date
@@ -246,7 +280,7 @@ async function insertInvoiceDraft(contract: any, period: { start: string; end: s
       // an approved revision remains the only source of tracked invoice hours.
       if (!row?.approved_revision_id) { await client.query("ROLLBACK"); return false; }
       revisionId = String(row.approved_revision_id);
-      hours = await revisionHours(client, revisionId);
+      hours = await revisionHours(client, revisionId, period);
       const computed = trackedPeriodAmount(Number(contract.rate), contract.engagement_type, hours);
       amount = computed.amount;
       standardHours = computed.standardHours;
@@ -361,14 +395,51 @@ async function sendInvoice(invoiceId: string, onlyTalentId?: string) {
   const client = await getClient();
   try {
     await client.query("BEGIN");
+    const contractIdResult = await client.query(
+      `SELECT hiring_contract_id FROM talent_invoices WHERE id = $1`,
+      [invoiceId],
+    );
+    const contractId = contractIdResult.rows[0]?.hiring_contract_id;
+    if (!contractId) {
+      await client.query("ROLLBACK");
+      return { notFound: true };
+    }
+    const contractResult = await client.query(
+      `SELECT id, status, billing_mode, effective_end_date FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
+      [contractId],
+    );
+    const contract = contractResult.rows[0];
     const result = await client.query(
-      `SELECT id, status, talent_id FROM talent_invoices WHERE id = $1 FOR UPDATE`,
+      `SELECT id, status, talent_id, period_start, period_end, timesheet_revision_id
+         FROM talent_invoices WHERE id = $1 FOR UPDATE`,
       [invoiceId],
     );
     const invoice = result.rows[0];
     if (!invoice || (onlyTalentId && invoice.talent_id !== onlyTalentId)) {
       await client.query("ROLLBACK");
       return { notFound: true };
+    }
+    if (!contract || contract.status !== "signed"
+      || !["draft", "sent"].includes(invoice.status)
+      || (contract.effective_end_date
+        && dateString(invoice.period_end) > dateString(contract.effective_end_date))) {
+      await client.query("ROLLBACK");
+      return { notSendable: true };
+    }
+    if (invoice.status === "draft" && contract.billing_mode === "tracked"
+      && contract.effective_end_date
+      && dateString(invoice.period_end) === dateString(contract.effective_end_date)) {
+      const finalTimesheet = await client.query(
+        `SELECT approved_revision_id FROM timesheet_periods
+          WHERE hiring_contract_id = $1 AND period_start = $2::date AND period_end = $3::date
+          FOR UPDATE`,
+        [contractId, invoice.period_start, invoice.period_end],
+      );
+      if (!finalTimesheet.rows[0]?.approved_revision_id
+        || finalTimesheet.rows[0].approved_revision_id !== invoice.timesheet_revision_id) {
+        await client.query("ROLLBACK");
+        return { notSendable: true };
+      }
     }
     if (invoice.status === "draft") {
       await client.query(
@@ -387,9 +458,161 @@ async function sendInvoice(invoiceId: string, onlyTalentId?: string) {
   }
 }
 
+async function draftCreditApplications(client: any, invoiceId: string) {
+  const result = await client.query(
+    `SELECT credit_memo_id, SUM(amount) AS amount
+       FROM (
+         SELECT credit_memo_id, amount FROM talent_credit_memo_applications
+          WHERE talent_invoice_id = $1
+         UNION ALL
+         SELECT credit_memo_id, amount FROM talent_credit_memo_applications_v2
+          WHERE talent_invoice_id = $1
+       ) applications
+      GROUP BY credit_memo_id HAVING SUM(amount) <> 0`,
+    [invoiceId],
+  );
+  return result.rows.map((row: any) => ({ creditMemoId: row.credit_memo_id, amount: Number(row.amount) }));
+}
+
+async function appendDraftCreditApplication(client: any, memoId: string, invoiceId: string, amount: number) {
+  if (Math.abs(amount) < 0.01) return;
+  await client.query(
+    `INSERT INTO talent_credit_memo_applications_v2 (credit_memo_id, talent_invoice_id, amount)
+     VALUES ($1,$2,$3)`,
+    [memoId, invoiceId, amount.toFixed(2)],
+  );
+}
+
+export async function rebuildDraftInvoicesForTermination(
+  client: any,
+  contractId: string,
+  effectiveEndDate: string,
+) {
+  const contractResult = await client.query(
+    `SELECT hc.id, hc.status, hc.billing_mode, hc.effective_start_date,
+            hc.billing_activated_at, o.rate, o.engagement_type
+       FROM hiring_contracts hc JOIN offers o ON o.id = hc.offer_id
+      WHERE hc.id = $1`,
+    [contractId],
+  );
+  const contract = contractResult.rows[0];
+  if (!contract || contract.status !== "signed"
+    || !["tracked", "guaranteed"].includes(contract.billing_mode)) {
+    throw Object.assign(new Error("The signed contract is not eligible for draft invoice rebuilding"), { code: "terminationDraftInvalidContract" });
+  }
+  const now = new Date();
+  const today = dateInZone(now);
+  const effectiveStart = contract.effective_start_date
+    ? dateString(contract.effective_start_date)
+    : contract.billing_activated_at ? dateInZone(new Date(contract.billing_activated_at)) : null;
+  if (!effectiveStart) {
+    throw Object.assign(new Error("The contract has no effective billing start date for draft invoice rebuilding"), { code: "terminationDraftUnrebuildable" });
+  }
+  const activationDate = contract.billing_activated_at
+    ? dateInZone(new Date(contract.billing_activated_at))
+    : effectiveStart;
+  const startDate = effectiveStart > activationDate ? effectiveStart : activationDate;
+  const drafts = await client.query(
+    `SELECT id, period_start, period_end, currency, base_amount, credit_amount,
+            timesheet_revision_id
+       FROM talent_invoices
+      WHERE hiring_contract_id = $1 AND status = 'draft'
+        AND (period_start > $2::date OR period_end > $2::date)
+      ORDER BY period_start, id FOR UPDATE`,
+    [contractId, effectiveEndDate],
+  );
+  for (const original of drafts.rows) {
+    const originalStart = dateString(original.period_start);
+    const originalEnd = dateString(original.period_end);
+    if (originalStart > effectiveEndDate) {
+      for (const application of await draftCreditApplications(client, original.id)) {
+        await appendDraftCreditApplication(client, application.creditMemoId, original.id, -application.amount);
+      }
+      await client.query(
+        `UPDATE talent_invoices SET status = 'void', updated_at = now() WHERE id = $1 AND status = 'draft'`,
+        [original.id],
+      );
+      continue;
+    }
+
+    const finalPeriod = { start: originalStart, end: effectiveEndDate };
+    let canonicalId = original.id;
+    const collision = await client.query(
+      `SELECT id, status FROM talent_invoices
+        WHERE hiring_contract_id = $1 AND period_start = $2::date
+          AND period_end = $3::date AND id <> $4
+        FOR UPDATE`,
+      [contractId, originalStart, effectiveEndDate, original.id],
+    );
+    if (collision.rows[0]) {
+      if (collision.rows[0].status !== "draft") {
+        throw Object.assign(new Error("A final-period invoice already exists in a non-draft state"), { code: "terminationDraftUnrebuildable" });
+      }
+      canonicalId = collision.rows[0].id;
+      for (const application of await draftCreditApplications(client, original.id)) {
+        await appendDraftCreditApplication(client, application.creditMemoId, original.id, -application.amount);
+        await appendDraftCreditApplication(client, application.creditMemoId, canonicalId, application.amount);
+      }
+      await client.query(
+        `UPDATE talent_invoices SET status = 'void', updated_at = now() WHERE id = $1 AND status = 'draft'`,
+        [original.id],
+      );
+    }
+
+    const canonicalResult = await client.query(
+      `SELECT id, period_start, period_end, currency, base_amount, credit_amount,
+              timesheet_revision_id
+         FROM talent_invoices WHERE id = $1 AND status = 'draft' FOR UPDATE`,
+      [canonicalId],
+    );
+    const invoice = canonicalResult.rows[0];
+    if (!invoice) continue;
+    const applications = await draftCreditApplications(client, canonicalId);
+    const creditAmount = roundMoney(applications.reduce((sum: number, app: any) => sum + app.amount, 0));
+    let hours: number | null = null;
+    let standardHours: number | null = null;
+    let hourlyEquivalent: number | null = null;
+    let baseAmount: number;
+    if (contract.billing_mode === "tracked") {
+      if (!invoice.timesheet_revision_id) {
+        throw Object.assign(new Error("A Tracked draft crossing the contract end date has no approved revision"), { code: "terminationDraftUnrebuildable" });
+      }
+      hours = await revisionHours(client, String(invoice.timesheet_revision_id), finalPeriod);
+      const computed = trackedPeriodAmount(Number(contract.rate), contract.engagement_type, hours);
+      baseAmount = computed.amount;
+      standardHours = computed.standardHours;
+      hourlyEquivalent = computed.hourlyEquivalent;
+    } else {
+      baseAmount = guaranteedPeriodAmount(Number(contract.rate), finalPeriod, startDate);
+    }
+    const totalAmount = roundMoney(baseAmount + creditAmount);
+    if (totalAmount < 0) {
+      throw Object.assign(new Error("Existing immutable credit applications exceed the shortened draft amount"), { code: "terminationDraftCreditConflict" });
+    }
+    const payoutDate = payoutDateForPeriod(finalPeriod, today);
+    await client.query(
+      `UPDATE talent_invoices
+          SET period_end = $2::date, base_amount = $3, amount = $4, credit_amount = $5,
+              hours = $6, standard_hours = $7, hourly_equivalent = $8,
+              drafted_at = $9, auto_send_at = $10, payout_due_on = $11::date, updated_at = now()
+        WHERE id = $1 AND status = 'draft'`,
+      [canonicalId, effectiveEndDate, baseAmount.toFixed(2), totalAmount.toFixed(2),
+        creditAmount.toFixed(2), hours, standardHours, hourlyEquivalent, now,
+        new Date(now.getTime() + 48 * 60 * 60 * 1000), payoutDate],
+    );
+    const applied = await applyCreditMemosToDraft(client, canonicalId, now);
+    await notifyInvoiceDraft(
+      client, canonicalId,
+      `termination:${effectiveEndDate}:${invoice.timesheet_revision_id ?? "guaranteed"}:${applied.creditAmount.toFixed(2)}`,
+      true,
+    );
+  }
+}
+
 async function reconcileTrackedCorrections(now: Date) {
   const changed = await query(
     `SELECT ti.id AS invoice_id, ti.hiring_contract_id, ti.talent_id, ti.currency,
+            ti.period_start, ti.period_end,
             ti.status, ti.base_amount AS original_amount, ti.timesheet_revision_id AS original_revision_id,
             tp.approved_revision_id AS corrected_revision_id, o.rate, o.engagement_type
        FROM talent_invoices ti
@@ -409,8 +632,15 @@ async function reconcileTrackedCorrections(now: Date) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
+      const lockedContract = await client.query(
+        `SELECT hc.id, hc.effective_end_date
+           FROM hiring_contracts hc
+          WHERE hc.id = $1 FOR UPDATE`,
+        [row.hiring_contract_id],
+      );
       const invoice = await client.query(
-        `SELECT id, status, amount, base_amount, credit_amount, timesheet_revision_id
+        `SELECT id, hiring_contract_id, status, amount, base_amount, credit_amount,
+                period_start, period_end, timesheet_revision_id
            FROM talent_invoices WHERE id = $1 FOR UPDATE`,
         [row.invoice_id],
       );
@@ -429,7 +659,15 @@ async function reconcileTrackedCorrections(now: Date) {
         await client.query("COMMIT");
         continue;
       }
-      const correctedHours = await revisionHours(client, correctedRevisionId);
+      const invoiceEnd = dateString(current.period_end);
+      const contractEnd = lockedContract.rows[0]?.effective_end_date
+        ? dateString(lockedContract.rows[0].effective_end_date)
+        : null;
+      const correctionEnd = contractEnd && contractEnd < invoiceEnd ? contractEnd : invoiceEnd;
+      const correctedHours = await revisionHours(client, correctedRevisionId, {
+        start: dateString(current.period_start),
+        end: correctionEnd,
+      });
       const computed = trackedPeriodAmount(Number(row.rate), row.engagement_type, correctedHours);
       if (current.status === "draft") {
         const revisedAmount = roundMoney(computed.amount + Number(current.credit_amount));
@@ -510,7 +748,8 @@ async function applyAvailableCreditsToDrafts(now: Date) {
 async function readyClientsForMonth(monthStart: string) {
   const monthEnd = addCalendarDays(addCalendarDays(monthStart, monthLength(monthStart)), -1);
   const contracts = await query(
-    `SELECT hc.id, hc.billing_mode, hc.effective_start_date, hc.billing_activated_at, js.client_id
+    `SELECT hc.id, hc.billing_mode, hc.effective_start_date, hc.billing_activated_at,
+            hc.effective_end_date, js.client_id
        FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
       WHERE hc.status = 'signed' AND hc.billing_mode IN ('tracked', 'guaranteed')
@@ -522,9 +761,10 @@ async function readyClientsForMonth(monthStart: string) {
     const effectiveStart = dateString(contract.effective_start_date);
     const activationDate = dateInZone(new Date(contract.billing_activated_at));
     const startDate = effectiveStart > activationDate ? effectiveStart : activationDate;
-    if (startDate > monthEnd) continue;
+    const effectiveEndDate = contract.effective_end_date ? dateString(contract.effective_end_date) : null;
+    if (startDate > monthEnd || (effectiveEndDate && effectiveEndDate < monthStart)) continue;
     let ready = true;
-    const expected = periodsFrom(startDate, monthEnd)
+    const expected = periodsThrough(startDate, monthEnd, effectiveEndDate)
       .filter((period) => period.start >= monthStart && period.end <= monthEnd);
     for (const period of expected) {
       if (contract.billing_mode === "guaranteed") {
@@ -719,7 +959,7 @@ export async function runTalentInvoiceAutomation(now = new Date()) {
   const today = dateInZone(now);
   const contracts = await query(
     `SELECT hc.id, hc.offer_id, hc.billing_mode, hc.submission_id,
-            hc.effective_start_date, hc.billing_activated_at,
+            hc.effective_start_date, hc.billing_activated_at, hc.effective_end_date,
             o.rate, o.rate_currency, o.engagement_type,
             js.talent_id, js.client_id, j.time_zone
        FROM hiring_contracts hc
@@ -742,8 +982,11 @@ export async function runTalentInvoiceAutomation(now = new Date()) {
     const effectiveStart = dateString(contract.effective_start_date);
     const activationDate = dateInZone(new Date(contract.billing_activated_at));
     const startDate = effectiveStart > activationDate ? effectiveStart : activationDate;
-    if (contract.billing_mode === "tracked") await ensureTrackedPeriods(contract, startDate, today);
-    for (const period of periodsFrom(startDate, today).filter((item) => item.end < today)) {
+    const effectiveEndDate = contract.effective_end_date ? dateString(contract.effective_end_date) : null;
+    const through = effectiveEndDate && effectiveEndDate < today ? effectiveEndDate : today;
+    if (startDate > through) continue;
+    if (contract.billing_mode === "tracked") await ensureTrackedPeriods(contract, startDate, through, today);
+    for (const period of periodsThrough(startDate, through, effectiveEndDate).filter((item) => item.end < today)) {
       if (contract.billing_mode === "guaranteed" && now < claimDeadlineForPeriod(period.end)) continue;
       try {
         await insertInvoiceDraft(contract, period, startDate, now);
@@ -859,6 +1102,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
       if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
       const sent = await sendInvoice(req.params.id, talentId);
       if (sent.notFound) return res.status(404).json({ error: "Invoice not found" });
+      if (sent.notSendable) return res.status(409).json({ error: "Invoice cannot be sent after its contract end date" });
       return res.json({ sent: true, payoutScheduled: sent.payout?.scheduled ?? false, payoutBlock: sent.payout?.reason ?? null });
     } catch (error) {
       console.error("POST Talent invoice send failed", error);
@@ -1217,7 +1461,8 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
   app.get("/api/client/guaranteed-contracts", ...clientAuth, async (req: any, res) => {
     try {
       const contracts = await query(
-        `SELECT hc.id, hc.effective_start_date, hc.billing_activated_at, j.title AS job_title
+        `SELECT hc.id, hc.effective_start_date, hc.billing_activated_at,
+                hc.effective_end_date, j.title AS job_title
            FROM hiring_contracts hc
            JOIN job_submissions js ON js.id = hc.submission_id
            JOIN jobs j ON j.id = js.job_id
@@ -1233,7 +1478,9 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
         const effectiveStart = dateString(contract.effective_start_date);
         const activationDate = dateInZone(new Date(contract.billing_activated_at));
         const start = effectiveStart > activationDate ? effectiveStart : activationDate;
-        const periods = periodsFrom(start, today);
+        const effectiveEndDate = contract.effective_end_date ? dateString(contract.effective_end_date) : null;
+        const through = effectiveEndDate && effectiveEndDate < today ? effectiveEndDate : today;
+        const periods = periodsThrough(start, through, effectiveEndDate);
         const eligiblePeriods = [];
         for (const period of periods) {
           const deadline = claimDeadlineForPeriod(period.end);

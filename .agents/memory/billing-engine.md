@@ -63,6 +63,14 @@ A substantiated late Guaranteed claim after the Talent invoice is sent creates a
 
 **How to apply:** Keep Client credit applications distinct from Tracked Talent corrections; require an Admin finding, preserve original invoice snapshots, and do not post a credit to a statement older than the finding unless it is the original unsent statement. Signed-contract termination is a separate lifecycle feature, not a silent cutoff invented by the invoice worker.
 
+## Contract ending and rollout gate
+
+Final termination ends an engagement without requiring another contract. A billing-mode switch must use the same immutable contract-end boundary and then a newly offered and signed contract for the new mode; it must never edit the old signed mode or sent financial records. Do not release the two-mode billing foundation into production without a working formal end path in the same release.
+
+**Why:** An open-ended signed contract otherwise continues generating financial obligations indefinitely. The user expressly confirmed this separation and the combined-release gate.
+
+**How to apply:** Require an explicit approved effective end, settle the inclusive final service period, and preserve sent ledger history. Reverify the actual production database's migration state independently before any publish; route 404s alone are not schema evidence.
+
 
 ## Customer-facing ledger views
 

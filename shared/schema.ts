@@ -1693,6 +1693,10 @@ export const hiringContracts = pgTable("hiring_contracts", {
   signingEntity:   text("signing_entity").notNull().default("OnSpot Technologies Inc."),
   billingMode:     text("billing_mode"),
   effectiveStartDate: date("effective_start_date"),
+  effectiveEndDate: date("effective_end_date"),
+  terminationReason: text("termination_reason"),
+  terminatedBy: varchar("terminated_by").references(() => users.id, { onDelete: "restrict" }),
+  terminatedAt: timestamp("terminated_at", { withTimezone: true }),
   billingActivatedAt: timestamp("billing_activated_at", { withTimezone: true }),
   // Reserved for a future e-signature provider; current signing remains admin-controlled.
   signatureProvider: text("signature_provider"),
@@ -1708,6 +1712,23 @@ export const hiringContracts = pgTable("hiring_contracts", {
   index("idx_hiring_contracts_submission_id").on(table.submissionId),
   index("idx_hiring_contracts_status").on(table.status),
   check("hiring_contracts_billing_mode_check", sql`${table.billingMode} IS NULL OR ${table.billingMode} IN ('tracked', 'guaranteed')`),
+]);
+
+export const hiringContractTerminationRequests = pgTable("hiring_contract_termination_requests", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  requesterId: varchar("requester_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  requesterRole: text("requester_role").notNull(),
+  requestedEffectiveEndDate: date("requested_effective_end_date").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("open"),
+  decisionReason: text("decision_reason"),
+  decidedBy: varchar("decided_by").references(() => users.id, { onDelete: "restrict" }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  approvedEffectiveEndDate: date("approved_effective_end_date"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("hiring_contract_termination_requests_status_idx").on(table.status, table.createdAt),
 ]);
 
 // Clock-first work sessions. Raw startedAt/endedAt are server-captured events;

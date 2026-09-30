@@ -9,9 +9,11 @@ import {
   claimDeadlineForPeriod,
   guaranteedPeriodAmount,
   halfMonthPeriod,
+  trackedPeriodAmount,
   runTalentInvoiceAutomation,
 } from "../routes/talentInvoices.ts";
 import { registerTalentInvoiceRoutes } from "../routes/talentInvoices.ts";
+import { registerContractTerminationRoutes } from "../routes/contractTerminations.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET || "test-only-secret";
 const app = express();
@@ -58,6 +60,11 @@ const authenticateJWT: RequestHandler = (req, res, next) => {
   if (!token) return res.status(401).json({ error: "Unauthorized" });
   try {
     const claims = jwt.verify(token, JWT_SECRET) as Record<string, any>;
+    if (typeof claims.candidateId === "string" && typeof claims.email === "string") {
+      (req as any).user = { id: claims.candidateId, email: claims.email, role: "talent" };
+      (req as any).talentAuth = { candidateId: claims.candidateId, email: claims.email };
+      return next();
+    }
     if (typeof claims.userId !== "string") return res.status(401).json({ error: "Unauthorized" });
     (req as any).user = { ...claims, id: claims.userId };
     return next();
@@ -73,6 +80,19 @@ const requireAdminSubRole = (roles: string[]): RequestHandler => (req, res, next
     ? next()
     : res.status(403).json({ error: "Forbidden" });
 };
+const getTalentBillingUserId = async (req: any): Promise<string | null> => {
+  if (!req.talentAuth) return req.user?.id ?? null;
+  const result = await query(
+    `SELECT COALESCE(c.user_id, u.id) AS user_id
+       FROM candidates c
+       LEFT JOIN users u ON LOWER(u.email) = LOWER(c.email)
+      WHERE c.id = $1 OR c.user_id = $1 OR LOWER(c.email) = LOWER($2)
+      ORDER BY CASE WHEN c.user_id = $1 THEN 0 WHEN LOWER(c.email) = LOWER($2) THEN 1 ELSE 2 END
+      LIMIT 1`,
+    [req.talentAuth.candidateId, req.talentAuth.email],
+  );
+  return result.rows[0]?.user_id ?? null;
+};
 
 registerTalentInvoiceRoutes(app, {
   authenticateJWT,
@@ -80,14 +100,27 @@ registerTalentInvoiceRoutes(app, {
   requireClient: requireRole("client"),
   requireAdmin: requireRole("admin"),
   requireAdminSubRole,
-  getTalentBillingUserId: async (req) => req.user?.id ?? null,
+  getTalentBillingUserId,
   startAutomation: false,
+});
+registerContractTerminationRoutes(app, {
+  authenticateJWT,
+  requireTalent: requireRole("talent"),
+  requireClient: requireRole("client"),
+  requireAdmin: requireRole("admin"),
+  requireAdminSubRole,
+  getTalentBillingUserId,
 });
 
 let httpServer: Server;
 let userIds: string[] = [];
+let candidateIds: string[] = [];
 const auth = (id: string, role: string, subRole?: string) => jwt.sign(
   { userId: id, role, ...(subRole ? { subRole } : {}) },
+  JWT_SECRET,
+);
+const talentPortalAuth = (candidateId: string, email: string) => jwt.sign(
+  { candidateId, email },
   JWT_SECRET,
 );
 const dateInNY = (value: Date) => {
@@ -98,6 +131,20 @@ const dateInNY = (value: Date) => {
   return `${part("year")}-${part("month")}-${part("day")}`;
 };
 const toDate = (value: unknown) => value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
+const addDateDays = (date: string, days: number) => {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+};
+const midnightInNY = (date: string) => {
+  let low = Date.parse(`${date}T00:00:00Z`) - 48 * 60 * 60 * 1000;
+  let high = Date.parse(`${date}T00:00:00Z`) + 48 * 60 * 60 * 1000;
+  while (high - low > 1) {
+    const middle = Math.floor((low + high) / 2);
+    if (dateInNY(new Date(middle)) >= date) high = middle;
+    else low = middle;
+  }
+  return new Date(high);
+};
 const insertUser = async (id: string, role: string) => {
   await query(
     `INSERT INTO users (id, email, role, created_at, updated_at)
@@ -105,6 +152,14 @@ const insertUser = async (id: string, role: string) => {
     [id, `${id}@phase3b.test`, role],
   );
   userIds.push(id);
+};
+const insertCandidate = async (id: string, userId: string, email: string) => {
+  await query(
+    `INSERT INTO candidates (id, user_id, email, full_name, target_position, category)
+     VALUES ($1,$2,$3,$4,'Integration fixture','Engineering')`,
+    [id, userId, email, `Candidate ${id}`],
+  );
+  candidateIds.push(id);
 };
 
 type Fixture = {
@@ -124,6 +179,7 @@ const createContract = async (params: {
   start: string;
   rate: number;
   deposit?: number;
+  jobTitle?: string;
 }): Promise<Fixture> => {
   const jobId = `${params.label}-job`;
   const submissionId = `${params.label}-submission`;
@@ -133,7 +189,7 @@ const createContract = async (params: {
     `INSERT INTO jobs
        (id, client_id, title, description, category, experience_level, status, time_zone, created_at, updated_at)
      VALUES ($1,$2,$3,'Integration fixture','Engineering','intermediate','open','America/New_York',now(),now())`,
-    [jobId, params.clientId, `Fixture ${params.label}`],
+     [jobId, params.clientId, params.jobTitle ?? `Fixture ${params.label}`],
   );
   await query(
     `INSERT INTO job_submissions
@@ -226,6 +282,11 @@ const cleanup = async (fixtures: Fixture[]) => {
     await client.query("ALTER TABLE client_credit_applications DISABLE TRIGGER ALL");
     await client.query("ALTER TABLE timesheet_revision_sessions DISABLE TRIGGER ALL");
     await client.query("ALTER TABLE timesheet_revisions DISABLE TRIGGER ALL");
+    await client.query("ALTER TABLE hiring_contract_termination_requests DISABLE TRIGGER ALL");
+    await client.query(
+      `DELETE FROM hiring_contract_termination_requests WHERE hiring_contract_id = ANY($1::uuid[])`,
+      [contractIds],
+    );
     await client.query(
       `DELETE FROM client_monthly_invoice_lines WHERE talent_invoice_id IN
         (SELECT id FROM talent_invoices WHERE hiring_contract_id = ANY($1::uuid[]))`,
@@ -300,6 +361,7 @@ const cleanup = async (fixtures: Fixture[]) => {
     await client.query("ALTER TABLE client_credit_applications ENABLE TRIGGER ALL");
     await client.query("ALTER TABLE timesheet_revision_sessions ENABLE TRIGGER ALL");
     await client.query("ALTER TABLE timesheet_revisions ENABLE TRIGGER ALL");
+    await client.query("ALTER TABLE hiring_contract_termination_requests ENABLE TRIGGER ALL");
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
@@ -311,6 +373,9 @@ const cleanup = async (fixtures: Fixture[]) => {
 
 after(async () => {
   if (httpServer) await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  if (candidateIds.length) {
+    await query(`DELETE FROM candidates WHERE id = ANY($1::varchar[])`, [candidateIds]).catch(() => {});
+  }
   if (userIds.length) {
     await query(`DELETE FROM notifications WHERE user_id = ANY($1::varchar[])`, [userIds]).catch(() => {});
     await query(`DELETE FROM users WHERE id = ANY($1::varchar[])`, [userIds]).catch(() => {});
@@ -836,5 +901,557 @@ it("covers authenticated claims, correction credits, monthly close, deposit cove
     await cleanup(promptFixtures);
     await cleanup(claimFixtures);
     await cleanup(historical);
+  }
+});
+
+it("ends signed engagements safely, preserves locked ledgers, and stops invoices at the approved final date", async () => {
+  const address = httpServer.address();
+  if (!address || typeof address === "string") throw new Error("Integration listener is unavailable");
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const api = {
+    get: (path: string) => apiCall(baseUrl, "GET", path),
+    post: (path: string) => apiCall(baseUrl, "POST", path),
+  };
+  const salt = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+  const ids = {
+    admin: `term-admin-${salt}`,
+    client: `term-client-${salt}`,
+    foreignClient: `term-foreign-client-${salt}`,
+    talent: `term-talent-${salt}`,
+    foreignTalent: `term-foreign-talent-${salt}`,
+    candidate: `term-candidate-${salt}`,
+  };
+  for (const [key, value] of Object.entries(ids)) {
+    if (key === "candidate") continue;
+    await insertUser(value, key.includes("client") ? "client" : key.includes("talent") ? "talent" : "admin");
+  }
+  const portalTalentEmail = `${ids.foreignTalent}@phase3b.test`;
+  await insertCandidate(ids.candidate, ids.foreignTalent, portalTalentEmail);
+  const tokens = {
+    admin: auth(ids.admin, "admin", "talent_acquisition"),
+    client: auth(ids.client, "client"),
+    foreignClient: auth(ids.foreignClient, "client"),
+    talent: auth(ids.talent, "talent"),
+    foreignTalent: auth(ids.foreignTalent, "talent"),
+    talentPortal: talentPortalAuth(ids.candidate, portalTalentEmail),
+  };
+  const fixtures: Fixture[] = [];
+  const today = dateInNY(new Date());
+  const effectiveEndDate = addDateDays(today, 7);
+  let trackedEndDate: string | null = null;
+  for (let offset = 1; offset <= 400 && !trackedEndDate; offset += 1) {
+    const candidateDate = addDateDays(today, offset);
+    const nextMidnight = midnightInNY(addDateDays(candidateDate, 1));
+    const thisMidnight = midnightInNY(candidateDate);
+    if (nextMidnight.getTime() - thisMidnight.getTime() === 23 * 60 * 60 * 1000) {
+      trackedEndDate = candidateDate;
+    }
+  }
+  assert.ok(trackedEndDate, "A future DST spring-forward date must be available within the fixture horizon");
+  try {
+    const guaranteed = await createContract({
+      label: `term-guaranteed-${salt}`, clientId: ids.client, talentId: ids.talent,
+      billingMode: "guaranteed", start: addDateDays(today, -60), rate: 3100,
+    });
+    fixtures.push(guaranteed);
+    const tracked = await createContract({
+      label: `term-tracked-${salt}`, clientId: ids.foreignClient, talentId: ids.foreignTalent,
+      billingMode: "tracked", start: today, rate: 3100,
+    });
+    fixtures.push(tracked);
+    const raceContract = await createContract({
+      label: `term-race-${salt}`, clientId: ids.foreignClient, talentId: ids.foreignTalent,
+      billingMode: "guaranteed", start: today, rate: 3100,
+    });
+    fixtures.push(raceContract);
+    const pickerStart = addDateDays(trackedEndDate, 100);
+    const sameTitleOne = await createContract({
+      label: `term-picker-one-${salt}`, clientId: ids.client, talentId: ids.talent,
+      billingMode: "guaranteed", start: pickerStart, rate: 3100,
+      jobTitle: "Shared Admin Picker Title",
+    });
+    fixtures.push(sameTitleOne);
+    const sameTitleTwo = await createContract({
+      label: `term-picker-two-${salt}`, clientId: ids.foreignClient, talentId: ids.foreignTalent,
+      billingMode: "guaranteed", start: pickerStart, rate: 3100,
+      jobTitle: "Shared Admin Picker Title",
+    });
+    fixtures.push(sameTitleTwo);
+    const fullGuaranteedPeriod = halfMonthPeriod(effectiveEndDate);
+    const fullGuaranteedAmount = guaranteedPeriodAmount(
+      3100, fullGuaranteedPeriod, addDateDays(today, -60),
+    );
+    const shortenedDraft = await query(
+      `INSERT INTO talent_invoices
+         (hiring_contract_id, offer_id, talent_id, client_id, billing_mode,
+          period_start, period_end, currency, monthly_rate, amount, base_amount,
+          credit_amount, commission_rate, status, drafted_at, auto_send_at, payout_due_on)
+       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'PHP',3100,$7,$7,0,0.2000,
+               'draft',now(),now() + interval '100 years',$6::date)
+       RETURNING id`,
+      [guaranteed.id, guaranteed.offerId, ids.talent, ids.client, fullGuaranteedPeriod.start,
+        fullGuaranteedPeriod.end, fullGuaranteedAmount.toFixed(2)],
+    );
+
+    const clientActive = await api.get("/api/client/active-hiring-contracts")
+      .set("Authorization", `Bearer ${tokens.client}`);
+    const talentActive = await api.get("/api/talent/active-hiring-contracts")
+      .set("Authorization", `Bearer ${tokens.talentPortal}`);
+    const adminActive = await api.get("/api/admin/active-hiring-contracts")
+      .set("Authorization", `Bearer ${tokens.admin}`);
+    assert.equal(clientActive.status, 200);
+    assert.equal(talentActive.status, 200);
+    assert.equal(adminActive.status, 200);
+    assert.deepEqual(
+      adminActive.body.contracts.filter((contract: any) =>
+        [guaranteed.id, tracked.id, raceContract.id, sameTitleOne.id, sameTitleTwo.id].includes(contract.id))
+        .map((contract: any) => Object.keys(contract).sort()),
+      Array(5).fill([
+        "billing_mode", "client_email", "client_name", "effective_end_date",
+        "effective_start_date", "id", "job_title", "talent_email", "talent_name",
+      ]),
+    );
+    const sharedTitleRows = adminActive.body.contracts.filter(
+      (contract: any) => contract.job_title === "Shared Admin Picker Title",
+    );
+    assert.deepEqual(sharedTitleRows.map((contract: any) => contract.client_email).sort(), [
+      `${ids.client}@phase3b.test`, `${ids.foreignClient}@phase3b.test`,
+    ].sort());
+    assert.deepEqual(sharedTitleRows.map((contract: any) => contract.talent_email).sort(), [
+      `${ids.talent}@phase3b.test`, `${ids.foreignTalent}@phase3b.test`,
+    ].sort());
+    assert.equal((await api.get("/api/admin/active-hiring-contracts")
+      .set("Authorization", `Bearer ${auth(ids.admin, "admin")}`)).status, 403);
+    assert.deepEqual(
+      clientActive.body.contracts.filter((contract: any) => contract.id === guaranteed.id)
+        .map((contract: any) => Object.keys(contract).sort()),
+      [["billing_mode", "effective_end_date", "effective_start_date", "id", "job_title"]],
+    );
+    assert.deepEqual(
+      talentActive.body.contracts.filter((contract: any) => contract.id === tracked.id)
+        .map((contract: any) => contract.id).sort(),
+      [tracked.id],
+    );
+    const foreignActive = await api.get("/api/talent/active-hiring-contracts")
+      .set("Authorization", `Bearer ${tokens.talent}`);
+    assert.equal(foreignActive.body.contracts.some((contract: any) => contract.id === tracked.id), false);
+    const foreignClientActive = await api.get("/api/client/active-hiring-contracts")
+      .set("Authorization", `Bearer ${tokens.client}`);
+    assert.equal(foreignClientActive.body.contracts.some((contract: any) => contract.id === tracked.id), false);
+    const preTerminationRun = new Date(midnightInNY(addDateDays(today, 3)).getTime() + 12 * 60 * 60 * 1000);
+    const preTerminationSend = new Date(midnightInNY(addDateDays(today, 6)).getTime() + 12 * 60 * 60 * 1000);
+    await runTalentInvoiceAutomation(preTerminationRun);
+    await runTalentInvoiceAutomation(preTerminationSend);
+    const snapshotLockedLedgers = async (baseline?: any) => {
+      const sentInvoices = await query(
+        `SELECT id, period_start, period_end, amount, status, sent_at
+           FROM talent_invoices WHERE hiring_contract_id = $1 AND status = 'sent'
+             AND ($2::uuid[] IS NULL OR id = ANY($2::uuid[]))
+          ORDER BY period_start, id`,
+        [guaranteed.id, baseline?.sentInvoiceIds ?? null],
+      );
+      const payouts = await query(
+        `SELECT p.id, p.amount, p.currency, p.status, p.scheduled_at, p.disbursed_at
+           FROM payouts p JOIN talent_invoices ti ON ti.id = p.talent_invoice_id
+          WHERE ti.hiring_contract_id = $1
+            AND ($2::uuid[] IS NULL OR p.id = ANY($2::uuid[]))
+          ORDER BY p.id`,
+        [guaranteed.id, baseline?.payoutIds ?? null],
+      );
+      const statements = await query(
+        `SELECT cmi.id, cmi.invoice_month, cmi.subtotal, cmi.status,
+                line.talent_amount, line.client_amount
+           FROM client_monthly_invoices cmi
+           JOIN client_monthly_invoice_lines line ON line.client_monthly_invoice_id = cmi.id
+           JOIN talent_invoices ti ON ti.id = line.talent_invoice_id
+          WHERE ti.hiring_contract_id = $1
+            AND ($2::uuid[] IS NULL OR cmi.id = ANY($2::uuid[]))
+          ORDER BY cmi.invoice_month, cmi.id`,
+        [guaranteed.id, baseline?.statementIds ?? null],
+      );
+      const normalizedSentInvoices = sentInvoices.rows.map((row: any) => ({ ...row, period_start: toDate(row.period_start), period_end: toDate(row.period_end) }));
+      const normalizedStatements = statements.rows.map((row: any) => ({ ...row, invoice_month: toDate(row.invoice_month) }));
+      return {
+        sentInvoiceIds: normalizedSentInvoices.map((row: any) => row.id),
+        payoutIds: payouts.rows.map((row: any) => row.id),
+        statementIds: Array.from(new Set(normalizedStatements.map((row: any) => row.id))),
+        sentInvoices: normalizedSentInvoices,
+        payouts: payouts.rows,
+        statements: normalizedStatements,
+      };
+    };
+    const protectedLedgersBefore = await snapshotLockedLedgers();
+    assert.equal(protectedLedgersBefore.sentInvoices.length > 0, true);
+    assert.equal(protectedLedgersBefore.payouts.length > 0, true);
+    assert.equal(protectedLedgersBefore.statements.length > 0, true);
+    const futurePeriod = halfMonthPeriod(addDateDays(fullGuaranteedPeriod.end, 1));
+    const creditRevisionPeriod = await query(
+      `INSERT INTO timesheet_periods
+         (hiring_contract_id, period_start, period_end, work_timezone)
+       VALUES ($1,$2::date,$3::date,'America/New_York') RETURNING id`,
+      [tracked.id, futurePeriod.start, futurePeriod.end],
+    );
+    const creditRevision = await query(
+      `INSERT INTO timesheet_revisions (timesheet_period_id, version, created_by, decision_reason)
+       VALUES ($1,1,$2,'Credit application termination fixture') RETURNING id`,
+      [creditRevisionPeriod.rows[0].id, ids.foreignTalent],
+    );
+    const sourceSentInvoice = protectedLedgersBefore.sentInvoices[0];
+    const futureCreditMemo = await query(
+      `INSERT INTO talent_credit_memos
+         (original_invoice_id, corrected_revision_id, talent_id, hiring_contract_id, currency, amount)
+       VALUES ($1,$2,$3,$4,'PHP',100) RETURNING id`,
+      [sourceSentInvoice.id, creditRevision.rows[0].id, ids.talent, guaranteed.id],
+    );
+    const futureDraft = await query(
+      `INSERT INTO talent_invoices
+         (hiring_contract_id, offer_id, talent_id, client_id, billing_mode,
+          period_start, period_end, currency, monthly_rate, amount, base_amount,
+          credit_amount, commission_rate, status, drafted_at, auto_send_at, payout_due_on)
+       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'PHP',3100,1000,1000,0,0.2000,
+               'draft',now(),now() + interval '100 years',$6::date)
+       RETURNING id`,
+      [guaranteed.id, guaranteed.offerId, ids.talent, ids.client,
+        futurePeriod.start, futurePeriod.end],
+    );
+    await query(
+      `INSERT INTO talent_credit_memo_applications_v2 (credit_memo_id, talent_invoice_id, amount)
+       VALUES ($1,$2,100)`,
+      [futureCreditMemo.rows[0].id, futureDraft.rows[0].id],
+    );
+
+    const raceRequest = await api.post(`/api/client/hiring-contracts/${raceContract.id}/termination-requests`)
+      .set("Authorization", `Bearer ${tokens.foreignClient}`)
+      .send({ effectiveEndDate, reason: "Concurrent approval and send race" });
+    assert.equal(raceRequest.status, 201);
+    const raceInvoice = await query(
+      `INSERT INTO talent_invoices
+         (hiring_contract_id, offer_id, talent_id, client_id, billing_mode,
+          period_start, period_end, currency, monthly_rate, amount, base_amount,
+          credit_amount, commission_rate, status, drafted_at, auto_send_at, payout_due_on)
+       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'PHP',3100,1500,1500,0,0.2000,
+               'draft',now(),now() + interval '100 years',$6::date)
+       RETURNING id`,
+      [raceContract.id, raceContract.offerId, ids.foreignTalent, ids.foreignClient,
+        fullGuaranteedPeriod.start, fullGuaranteedPeriod.end],
+    );
+    const raceResults = await Promise.all([
+      api.post(`/api/admin/hiring-contract-termination-requests/${raceRequest.body.request.id}/decision`)
+        .set("Authorization", `Bearer ${tokens.admin}`)
+        .send({ decision: "approve", reason: "Race approval" }),
+      api.post(`/api/talent/invoices/${raceInvoice.rows[0].id}/send`)
+        .set("Authorization", `Bearer ${tokens.foreignTalent}`),
+    ]);
+    assert.equal(raceResults[1].status, 200);
+    assert.ok([200, 409].includes(raceResults[0].status));
+    const raceState = await query(
+      `SELECT hc.effective_end_date, ti.period_end, ti.status
+         FROM hiring_contracts hc JOIN talent_invoices ti ON ti.hiring_contract_id = hc.id
+        WHERE hc.id = $1 AND ti.id = $2`,
+      [raceContract.id, raceInvoice.rows[0].id],
+    );
+    if (raceResults[0].status === 200) {
+      assert.equal(toDate(raceState.rows[0].effective_end_date), effectiveEndDate);
+      assert.equal(toDate(raceState.rows[0].period_end), effectiveEndDate);
+    } else {
+      assert.equal(raceState.rows[0].effective_end_date, null);
+      assert.equal(toDate(raceState.rows[0].period_end), fullGuaranteedPeriod.end);
+      assert.ok(fullGuaranteedPeriod.end > effectiveEndDate);
+    }
+
+    assert.equal((await api.post(`/api/client/hiring-contracts/${guaranteed.id}/termination-requests`)
+      .send({ effectiveEndDate, reason: "Client ending the engagement" })).status, 401);
+    assert.equal((await api.post(`/api/client/hiring-contracts/${guaranteed.id}/termination-requests`)
+      .set("Authorization", `Bearer ${tokens.foreignClient}`)
+      .send({ effectiveEndDate, reason: "Foreign tenant attempt" })).status, 404);
+    assert.equal((await api.post(`/api/talent/hiring-contracts/${guaranteed.id}/termination-requests`)
+      .set("Authorization", `Bearer ${tokens.foreignTalent}`)
+      .send({ effectiveEndDate, reason: "Foreign Talent attempt" })).status, 404);
+    assert.equal((await api.post(`/api/client/hiring-contracts/${guaranteed.id}/termination-requests`)
+      .set("Authorization", `Bearer ${tokens.client}`)
+      .send({ effectiveEndDate: "yesterday", reason: "Bad date" })).status, 422);
+    assert.equal((await api.post(`/api/client/hiring-contracts/${guaranteed.id}/termination-requests`)
+      .set("Authorization", `Bearer ${tokens.client}`)
+      .send({ effectiveEndDate: addDateDays(today, -1), reason: "Backdated request" })).status, 422);
+
+    const concurrentRequests = await Promise.all([
+      api.post(`/api/client/hiring-contracts/${guaranteed.id}/termination-requests`)
+        .set("Authorization", `Bearer ${tokens.client}`)
+        .send({ effectiveEndDate, reason: "Client ending the engagement" }),
+      api.post(`/api/client/hiring-contracts/${guaranteed.id}/termination-requests`)
+        .set("Authorization", `Bearer ${tokens.client}`)
+        .send({ effectiveEndDate, reason: "Concurrent duplicate request" }),
+    ]);
+    assert.deepEqual(
+      concurrentRequests.map((response: any) => response.status).sort(),
+      [201, 409],
+      JSON.stringify(concurrentRequests.map((response: any) => response.body)),
+    );
+    const approvedRequest = concurrentRequests.find((response: any) => response.status === 201).body.request;
+    const clientHistory = await api.get("/api/client/hiring-contract-termination-requests")
+      .set("Authorization", `Bearer ${tokens.client}`);
+    assert.equal(clientHistory.status, 200);
+    assert.equal(clientHistory.body.requests.some((request: any) => request.id === approvedRequest.id), true);
+    assert.equal((await api.get("/api/admin/hiring-contract-termination-requests")
+      .set("Authorization", `Bearer ${tokens.client}`)).status, 403);
+    const queue = await api.get("/api/admin/hiring-contract-termination-requests")
+      .set("Authorization", `Bearer ${tokens.admin}`);
+    assert.equal(queue.body.requests.some((request: any) => request.id === approvedRequest.id), true);
+
+    const concurrentDecisions = await Promise.all([
+      api.post(`/api/admin/hiring-contract-termination-requests/${approvedRequest.id}/decision`)
+        .set("Authorization", `Bearer ${tokens.admin}`)
+        .send({ decision: "approve", reason: "Reviewed and approved" }),
+      api.post(`/api/admin/hiring-contract-termination-requests/${approvedRequest.id}/decision`)
+        .set("Authorization", `Bearer ${tokens.admin}`)
+        .send({ decision: "approve", reason: "Concurrent duplicate approval" }),
+    ]);
+    assert.deepEqual(
+      concurrentDecisions.map((response: any) => response.status).sort(),
+      [200, 404],
+      JSON.stringify(concurrentDecisions.map((response: any) => response.body)),
+    );
+    const rejectedRetry = await api.post(`/api/admin/hiring-contract-termination-requests/${approvedRequest.id}/decision`)
+      .set("Authorization", `Bearer ${tokens.admin}`)
+      .send({ decision: "reject", reason: "Cannot adjudicate twice" });
+    assert.equal(rejectedRetry.status, 404);
+    const savedGuaranteed = await query(
+      `SELECT status, billing_mode, effective_end_date, termination_reason, terminated_by
+         FROM hiring_contracts WHERE id = $1`,
+      [guaranteed.id],
+    );
+    assert.deepEqual(
+      { ...savedGuaranteed.rows[0], effective_end_date: toDate(savedGuaranteed.rows[0].effective_end_date) },
+      { status: "signed", billing_mode: "guaranteed", effective_end_date: effectiveEndDate,
+        termination_reason: "Reviewed and approved", terminated_by: ids.admin },
+    );
+    const shortenedGuaranteedDraft = await query(
+      `SELECT period_end, amount, status FROM talent_invoices WHERE id = $1`,
+      [shortenedDraft.rows[0].id],
+    );
+    assert.equal(toDate(shortenedGuaranteedDraft.rows[0].period_end), effectiveEndDate);
+    assert.equal(Number(shortenedGuaranteedDraft.rows[0].amount), guaranteedPeriodAmount(
+      3100, { start: fullGuaranteedPeriod.start, end: effectiveEndDate }, addDateDays(today, -60),
+    ));
+    assert.equal(shortenedGuaranteedDraft.rows[0].status, "draft");
+    assert.ok(futurePeriod.start > effectiveEndDate);
+    const cancelledFutureDraft = await query(
+      `SELECT period_start, period_end, status FROM talent_invoices WHERE id = $1`,
+      [futureDraft.rows[0].id],
+    );
+    assert.equal(cancelledFutureDraft.rows[0].status, "void");
+    assert.equal((await api.post(`/api/talent/invoices/${futureDraft.rows[0].id}/send`)
+      .set("Authorization", `Bearer ${tokens.talent}`)).status, 409);
+    const futureCreditLedger = await query(
+      `SELECT
+          (SELECT COUNT(*)::int FROM talent_credit_memo_applications_v2 WHERE credit_memo_id = $1) AS application_rows,
+          (SELECT COALESCE(SUM(amount),0) FROM talent_credit_memo_applications_v2 WHERE credit_memo_id = $1) AS net_applied,
+          (SELECT amount FROM talent_credit_memos WHERE id = $1) AS memo_amount`,
+      [futureCreditMemo.rows[0].id],
+    );
+    assert.equal(futureCreditLedger.rows[0].application_rows, 2);
+    assert.equal(Number(futureCreditLedger.rows[0].net_applied), 0);
+    assert.equal(Number(futureCreditLedger.rows[0].memo_amount), 100);
+    assert.equal((await api.post(`/api/client/hiring-contracts/${guaranteed.id}/termination-requests`)
+      .set("Authorization", `Bearer ${tokens.client}`)
+      .send({ effectiveEndDate, reason: "Already ended" })).status, 409);
+    await assert.rejects(
+      query(`UPDATE hiring_contracts SET effective_end_date = $2::date WHERE id = $1`, [guaranteed.id, addDateDays(effectiveEndDate, 1)]),
+      /termination is immutable/i,
+    );
+
+    const rejectRequest = await api.post(`/api/talent/hiring-contracts/${tracked.id}/termination-requests`)
+      .set("Authorization", `Bearer ${tokens.talentPortal}`)
+      .send({ effectiveEndDate: trackedEndDate, reason: "Talent asks to end the engagement" });
+    assert.equal(rejectRequest.status, 201);
+    const clientOpenRequests = await api.get("/api/client/hiring-contract-termination-requests")
+      .set("Authorization", `Bearer ${tokens.foreignClient}`);
+    assert.equal(clientOpenRequests.body.requests.some((request: any) => request.id === rejectRequest.body.request.id), true);
+    assert.equal(JSON.stringify(clientOpenRequests.body).includes(`${ids.foreignTalent}@phase3b.test`), false);
+    const talentHistory = await api.get("/api/talent/hiring-contract-termination-requests")
+      .set("Authorization", `Bearer ${tokens.talentPortal}`);
+    assert.equal(talentHistory.body.requests.some((request: any) => request.id === rejectRequest.body.request.id), true);
+    assert.equal(JSON.stringify(talentHistory.body).includes("counterparty_email"), false);
+    assert.equal(JSON.stringify(talentHistory.body).includes(`${ids.foreignClient}@phase3b.test`), false);
+    const rejected = await api.post(`/api/admin/hiring-contract-termination-requests/${rejectRequest.body.request.id}/decision`)
+      .set("Authorization", `Bearer ${tokens.admin}`)
+      .send({ decision: "reject", reason: "Requested dates require clarification" });
+    assert.equal(rejected.status, 200);
+    const rejectedHistory = await api.get("/api/talent/hiring-contract-termination-requests")
+      .set("Authorization", `Bearer ${tokens.talentPortal}`);
+    assert.equal(rejectedHistory.body.requests.find((request: any) => request.id === rejectRequest.body.request.id).status, "rejected");
+    await assert.rejects(
+      query(`UPDATE hiring_contract_termination_requests SET reason = 'rewritten' WHERE id = $1`, [rejectRequest.body.request.id]),
+      /one immutable adjudication/i,
+    );
+
+    const naturalPeriod = halfMonthPeriod(trackedEndDate);
+    const period = await query(
+      `INSERT INTO timesheet_periods (hiring_contract_id, period_start, period_end, work_timezone)
+       VALUES ($1,$2::date,$3::date,'America/New_York') RETURNING id`,
+      [tracked.id, naturalPeriod.start, naturalPeriod.end],
+    );
+    const revision = await query(
+      `INSERT INTO timesheet_revisions (timesheet_period_id, version, created_by, decision_reason)
+       VALUES ($1,1,$2,'Pre-termination final-window approval') RETURNING id`,
+      [period.rows[0].id, ids.foreignTalent],
+    );
+    const finalCutoff = midnightInNY(addDateDays(trackedEndDate, 1));
+    const sessionStart = midnightInNY(trackedEndDate);
+    const sessionAfterEnd = new Date(finalCutoff.getTime() + 3 * 60 * 60 * 1000);
+    const session = await query(
+      `INSERT INTO clock_sessions (hiring_contract_id, talent_id, started_at, ended_at)
+       VALUES ($1,$2,$3,$4) RETURNING id`,
+      [tracked.id, ids.foreignTalent, sessionStart, sessionAfterEnd],
+    );
+    await query(
+      `INSERT INTO timesheet_revision_sessions
+         (revision_id, clock_session_id, started_at, effective_end_at, source)
+       VALUES ($1,$2,$3,$4,'clock')`,
+      [revision.rows[0].id, session.rows[0].id, sessionStart, sessionAfterEnd],
+    );
+    await query(
+      `UPDATE timesheet_periods SET status = 'approved', approved_revision_id = $2 WHERE id = $1`,
+      [period.rows[0].id, revision.rows[0].id],
+    );
+    const originalTrackedAmount = trackedPeriodAmount(3100, "Standard", 26).amount;
+    const trackedDraft = await query(
+      `INSERT INTO talent_invoices
+         (hiring_contract_id, offer_id, talent_id, client_id, billing_mode,
+          period_start, period_end, currency, monthly_rate, amount, base_amount,
+          credit_amount, hours, standard_hours, hourly_equivalent, commission_rate,
+          timesheet_revision_id, status, drafted_at, auto_send_at, payout_due_on)
+       VALUES ($1,$2,$3,$4,'tracked',$5::date,$6::date,'PHP',3100,$7,$7,0,26,80,19.375,0.2000,
+               $8,'draft',now(),now() + interval '100 years',$6::date)
+       RETURNING id`,
+      [tracked.id, tracked.offerId, ids.foreignTalent, ids.foreignClient,
+        naturalPeriod.start, naturalPeriod.end, originalTrackedAmount.toFixed(2), revision.rows[0].id],
+    );
+    const directTermination = await api.post(`/api/admin/hiring-contracts/${tracked.id}/terminate`)
+      .set("Authorization", `Bearer ${tokens.admin}`)
+      .send({ effectiveEndDate: trackedEndDate, reason: "OnSpot approved final termination" });
+    assert.equal(directTermination.status, 201);
+    const shortenedTrackedDraft = await query(
+      `SELECT period_start, period_end, hours, amount, base_amount, status
+         FROM talent_invoices WHERE id = $1`,
+      [trackedDraft.rows[0].id],
+    );
+    assert.equal(toDate(shortenedTrackedDraft.rows[0].period_end), trackedEndDate);
+    assert.equal(Number(shortenedTrackedDraft.rows[0].hours), 23);
+    assert.equal(Number(shortenedTrackedDraft.rows[0].amount), 445.63);
+    assert.equal(shortenedTrackedDraft.rows[0].status, "draft");
+    const reopened = await query(
+      `SELECT period_end, status, approved_revision_id FROM timesheet_periods WHERE id = $1`,
+      [period.rows[0].id],
+    );
+    assert.equal(toDate(reopened.rows[0].period_end), trackedEndDate);
+    assert.equal(reopened.rows[0].status, "open");
+    assert.equal(reopened.rows[0].approved_revision_id, null);
+    const endedContract = await query(`SELECT status, billing_mode, effective_end_date FROM hiring_contracts WHERE id = $1`, [tracked.id]);
+    assert.equal(endedContract.rows[0].status, "signed");
+    assert.equal(endedContract.rows[0].billing_mode, "tracked");
+    assert.equal(toDate(endedContract.rows[0].effective_end_date), trackedEndDate);
+
+    const finalRevision = await query(
+      `INSERT INTO timesheet_revisions (timesheet_period_id, version, created_by, decision_reason)
+       VALUES ($1,2,$2,'Final clipped approval fixture') RETURNING id`,
+      [period.rows[0].id, ids.admin],
+    );
+    await query(
+      `INSERT INTO timesheet_revision_sessions
+         (revision_id, clock_session_id, started_at, effective_end_at, source)
+       VALUES ($1,$2,$3,$4,'clock')`,
+      [finalRevision.rows[0].id, session.rows[0].id, sessionStart, sessionAfterEnd],
+    );
+    await query(
+      `UPDATE timesheet_periods SET status = 'approved', approved_revision_id = $2 WHERE id = $1`,
+      [period.rows[0].id, finalRevision.rows[0].id],
+    );
+    const afterEnd = new Date(midnightInNY(addDateDays(trackedEndDate, 4)).getTime() + 12 * 60 * 60 * 1000);
+    await runTalentInvoiceAutomation(afterEnd);
+    assert.deepEqual(await snapshotLockedLedgers(protectedLedgersBefore), protectedLedgersBefore);
+
+    const guaranteedFinal = await query(
+      `SELECT id, period_start, period_end, amount, base_amount, credit_amount, status
+         FROM talent_invoices
+        WHERE hiring_contract_id = $1 AND period_start = $2::date`,
+      [guaranteed.id, halfMonthPeriod(effectiveEndDate).start],
+    );
+    assert.equal(guaranteedFinal.rows.length, 1);
+    assert.equal(toDate(guaranteedFinal.rows[0].period_end), effectiveEndDate);
+    assert.equal(Number(guaranteedFinal.rows[0].base_amount), guaranteedPeriodAmount(
+      3100, { start: halfMonthPeriod(effectiveEndDate).start, end: effectiveEndDate }, today,
+    ));
+    assert.equal(Number(guaranteedFinal.rows[0].amount),
+      Number(guaranteedFinal.rows[0].base_amount) + Number(guaranteedFinal.rows[0].credit_amount));
+    assert.equal(guaranteedFinal.rows[0].status, "draft");
+    const manualGuaranteedSend = await api.post(`/api/talent/invoices/${guaranteedFinal.rows[0].id}/send`)
+      .set("Authorization", `Bearer ${tokens.talent}`);
+    assert.equal(manualGuaranteedSend.status, 200);
+    const trackedFinal = await query(
+      `SELECT period_start, period_end, hours, amount, status FROM talent_invoices
+        WHERE hiring_contract_id = $1 AND period_start = $2::date`,
+      [tracked.id, naturalPeriod.start],
+    );
+    assert.equal(trackedFinal.rows.length, 1);
+    assert.equal(toDate(trackedFinal.rows[0].period_end), trackedEndDate);
+    assert.equal(Number(trackedFinal.rows[0].hours), 23);
+    assert.equal(Number(trackedFinal.rows[0].amount), 445.63);
+    const trackedInvoice = await query(
+      `SELECT id FROM talent_invoices WHERE hiring_contract_id = $1 AND period_start = $2::date`,
+      [tracked.id, naturalPeriod.start],
+    );
+    const manualTrackedSend = await api.post(`/api/talent/invoices/${trackedInvoice.rows[0].id}/send`)
+      .set("Authorization", `Bearer ${tokens.talentPortal}`);
+    assert.equal(manualTrackedSend.status, 200);
+    const postEndCorrection = await query(
+      `INSERT INTO timesheet_revisions (timesheet_period_id, version, created_by, decision_reason)
+       VALUES ($1,3,$2,'Correction includes additional post-end DST time') RETURNING id`,
+      [period.rows[0].id, ids.admin],
+    );
+    await query(
+      `INSERT INTO timesheet_revision_sessions
+         (revision_id, clock_session_id, started_at, effective_end_at, source)
+       VALUES ($1,$2,$3,$4,'admin_correction')`,
+      [postEndCorrection.rows[0].id, session.rows[0].id, sessionStart,
+        new Date(finalCutoff.getTime() + 10 * 60 * 60 * 1000)],
+    );
+    await query(
+      `UPDATE timesheet_periods SET status = 'approved', approved_revision_id = $2 WHERE id = $1`,
+      [period.rows[0].id, postEndCorrection.rows[0].id],
+    );
+    const finalClose = new Date(midnightInNY(addDateDays(trackedEndDate, 40)).getTime() + 12 * 60 * 60 * 1000);
+    await runTalentInvoiceAutomation(finalClose);
+    const noPostEndMemo = await query(
+      `SELECT id FROM talent_credit_memos WHERE original_invoice_id = $1`,
+      [trackedInvoice.rows[0].id],
+    );
+    assert.equal(noPostEndMemo.rows.length, 0);
+    const finalClientStatement = await query(
+      `SELECT cmi.id, cmi.invoice_month, cmi.status, cmi.subtotal,
+              line.talent_amount, line.client_amount
+         FROM client_monthly_invoices cmi
+         JOIN client_monthly_invoice_lines line ON line.client_monthly_invoice_id = cmi.id
+        WHERE line.talent_invoice_id = $1`,
+      [guaranteedFinal.rows[0].id],
+    );
+    assert.equal(finalClientStatement.rows.length, 1);
+    assert.equal(finalClientStatement.rows[0].status, "sent");
+    assert.ok(Number(finalClientStatement.rows[0].client_amount) > Number(guaranteedFinal.rows[0].amount));
+    assert.deepEqual(await snapshotLockedLedgers(protectedLedgersBefore), protectedLedgersBefore);
+    const afterEndInvoices = await query(
+      `SELECT id FROM talent_invoices
+        WHERE (hiring_contract_id = $1 AND period_end > $2::date AND status <> 'void')
+           OR (hiring_contract_id = $3 AND period_end > $4::date AND status <> 'void')`,
+      [guaranteed.id, effectiveEndDate, tracked.id, trackedEndDate],
+    );
+    assert.equal(afterEndInvoices.rows.length, 0);
+    const fixedRequests = await query(
+      `SELECT status FROM hiring_contract_termination_requests WHERE hiring_contract_id = ANY($1::uuid[])`,
+      [[guaranteed.id, tracked.id]],
+    );
+    assert.deepEqual(fixedRequests.rows.map((row: any) => row.status).sort(), ["approved", "approved", "rejected"]);
+  } finally {
+    await cleanup(fixtures);
   }
 });

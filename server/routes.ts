@@ -32,6 +32,7 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { registerTimesheetRoutes } from "./routes/timesheets.js";
 import { registerTalentInvoiceRoutes } from "./routes/talentInvoices.js";
+import { registerContractTerminationRoutes } from "./routes/contractTerminations.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
 import { inferCategory } from "./lib/searchScaffold";
@@ -3257,11 +3258,13 @@ export async function registerRoutes(
       await client.query("BEGIN");
       await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [talentId]);
       const contract = await client.query(
-         `SELECT hc.id
+         `SELECT hc.id, hc.effective_end_date
            FROM hiring_contracts hc
            JOIN job_submissions js ON js.id = hc.submission_id
            WHERE hc.id = $1 AND js.talent_id = $2 AND hc.status = 'signed'
              AND hc.billing_mode = 'tracked'
+             AND (hc.effective_end_date IS NULL
+               OR hc.effective_end_date >= (now() AT TIME ZONE 'America/New_York')::date)
           FOR UPDATE OF hc`,
         [hiringContractId, talentId],
       );
@@ -3545,6 +3548,14 @@ export async function registerRoutes(
     getTalentBillingUserId,
   });
   registerTalentInvoiceRoutes(app, {
+    authenticateJWT,
+    requireTalent,
+    requireClient,
+    requireAdmin,
+    requireAdminSubRole,
+    getTalentBillingUserId,
+  });
+  registerContractTerminationRoutes(app, {
     authenticateJWT,
     requireTalent,
     requireClient,

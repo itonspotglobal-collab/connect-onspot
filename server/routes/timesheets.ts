@@ -52,6 +52,8 @@ const halfMonthPeriodsBetween = (startDate: string, endDate: string) => {
   }
   return Array.from(periods);
 };
+const clipPeriodEnd = (start: string, end: string, effectiveEndDate: string | null) =>
+  effectiveEndDate && effectiveEndDate < end ? effectiveEndDate : end;
 const addCalendarDay = (date: string) => {
   const [year, month, day] = date.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10);
@@ -95,13 +97,22 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
            FROM clock_sessions WHERE hiring_contract_id = $1 ORDER BY started_at`,
         [contract.id],
       );
-      const dates = new Set<string>([periodDates(todayET).join("|")]);
+      const endDate = contract.effective_end_date ? dateString(contract.effective_end_date) : null;
+      const through = endDate && endDate < todayET ? endDate : todayET;
+      const dates = new Set<string>();
+      if (!endDate || todayET <= endDate) {
+        const [start, end] = periodDates(through);
+        dates.add(`${start}|${clipPeriodEnd(start, end, endDate)}`);
+      }
       for (const session of sessions.rows) {
         const first = dateInZone(new Date(session.started_at), ET);
-        const last = session.effective_end
-          ? dateInZone(new Date(session.effective_end), ET)
-          : todayET;
-        for (const crossed of halfMonthPeriodsBetween(first, last)) dates.add(crossed);
+        if (endDate && first > endDate) continue;
+        const rawLast = session.effective_end ? dateInZone(new Date(session.effective_end), ET) : todayET;
+        const last = endDate && rawLast > endDate ? endDate : rawLast;
+        for (const crossed of halfMonthPeriodsBetween(first, last)) {
+          const [start, end] = crossed.split("|");
+          dates.add(`${start}|${clipPeriodEnd(start, end, endDate)}`);
+        }
       }
       for (const value of Array.from(dates)) {
         const [start, end] = value.split("|");
@@ -119,7 +130,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
 
   async function loadPeriods(scopeSql: string, scopeArgs: unknown[]) {
     const contractResult = await query(
-      `SELECT hc.id, hc.billing_mode, j.time_zone FROM hiring_contracts hc
+      `SELECT hc.id, hc.billing_mode, hc.effective_end_date, j.time_zone FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
        JOIN jobs j ON j.id = js.job_id
        WHERE hc.status = 'signed' AND ${scopeSql}`,
@@ -420,13 +431,19 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     try {
       await client.query("BEGIN");
        const found = await client.query(
-         `SELECT tp.* FROM timesheet_periods tp
+         `SELECT tp.*, hc.effective_end_date FROM timesheet_periods tp
           JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
-          WHERE tp.id = $1 AND hc.billing_mode = 'tracked' FOR UPDATE OF tp`,
+          WHERE tp.id = $1 AND hc.billing_mode = 'tracked' FOR UPDATE OF tp, hc`,
          [req.params.id],
        );
       if (!found.rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Timesheet period not found" }); }
       const period = found.rows[0];
+      if (period.effective_end_date
+        && dateString(period.period_end) === dateString(period.effective_end_date)
+        && dateInZone(new Date(), ET) <= dateString(period.effective_end_date)) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "The final timesheet period cannot be approved until the contract end date has passed" });
+      }
       if (!["submitted", "disputed"].includes(period.status)) {
         await client.query("ROLLBACK"); return res.status(409).json({ error: "Only submitted or disputed periods can be reviewed" });
       }
@@ -528,8 +545,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
           const snapshotStart = startedAt < startBoundary ? startBoundary : startedAt;
           const snapshotEnd = endAt > endBoundary ? endBoundary : endAt;
           eligible.push({
-            id: session.id, startedAt: correction ? snapshotStart : new Date(session.started_at),
-            endAt: correction ? snapshotEnd : new Date(session.effective_end_at),
+            id: session.id, startedAt: snapshotStart, endAt: snapshotEnd,
             source: correction ? "admin_correction" : session.source,
           });
           continue;

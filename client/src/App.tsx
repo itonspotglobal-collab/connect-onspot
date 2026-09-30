@@ -121,6 +121,7 @@ import Clock from "@/pages/talent/Clock";
 import AdminEmailDeliveries from "@/pages/AdminEmailDeliveries";
 import AdminClockExceptions from "@/pages/AdminClockExceptions";
 import Invoicing from "@/pages/Invoicing";
+import ContractEndings from "@/pages/ContractEndings";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
@@ -285,6 +286,7 @@ function PublicRouter() {
           <Route path="/admin/insights/:id/edit" component={() => <AdminProtectedRoute><AdminInsightEditor /></AdminProtectedRoute>} />
           {/* Admin routes — always protected by AdminProtectedRoute */}
           <Route path="/admin/dashboard" component={() => <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+          <Route path="/admin/contract-endings" component={() => <AdminProtectedRoute><ContractEndings role="admin" /></AdminProtectedRoute>} />
           <Route path="/admin/timesheets" component={() => <AdminProtectedRoute><Timesheets role="admin" /></AdminProtectedRoute>} />
           <Route path="/admin/invoicing" component={() => <AdminProtectedRoute><Invoicing role="admin" /></AdminProtectedRoute>} />
           <Route path="/admin/clock-exceptions" component={() => <AdminProtectedRoute><AdminClockExceptions /></AdminProtectedRoute>} />
@@ -378,6 +380,7 @@ function ClientRouter() {
           <Route path="/client/timesheets" component={() => <Timesheets role="client" />} />
           <Route path="/client/monthly-invoices" component={() => <Invoicing role="client" />} />
           <Route path="/client/monthly-invoices/:id" component={() => <Invoicing role="client" />} />
+          <Route path="/client/contract-endings" component={() => <ContractEndings role="client" />} />
           <Route path="/organization/create" component={OrganizationCreate} />
           <Route path="/organization-invitations" component={OrganizationInvitations} />
           <Route path="/organization/:organizationId" component={OrganizationDetail} />
@@ -458,6 +461,7 @@ function TalentRouter() {
         <Route path="/talent/clock" component={Clock} />
         <Route path="/talent/timesheets" component={() => <Timesheets role="talent" />} />
         <Route path="/talent/invoices" component={() => <Invoicing role="talent" />} />
+        <Route path="/talent/contract-endings" component={() => <ContractEndings role="talent" />} />
         <Route path="/hired-talent-portal/payouts" component={TalentPayouts} />
         <Route path="/hired-talent-portal" component={HiredTalentPortal} />
         <Route path="/settings" component={ProfileSettings} />

@@ -34,6 +34,7 @@ import {
   Loader2,
   LogOut,
   Wallet,
+  CalendarOff,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
@@ -87,6 +88,11 @@ const managementItems = [
     title: "Invoices",
     url: "/talent/invoices",
     icon: FileText,
+  },
+  {
+    title: "Contract End Requests",
+    url: "/talent/contract-endings",
+    icon: CalendarOff,
   },
 ];
 
