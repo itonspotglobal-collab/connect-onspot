@@ -1,0 +1,72 @@
+FINAL, complete model for Talent invoicing — this SUPERSEDES the earlier
+"Talent submits a claim, Admin reviews for discrepancy against
+claimed/computed/approved amounts" design. Do not build that version;
+build this one.
+
+ARCHITECTURE:
+1. TIMESHEET is the single source of truth for attendance/hours. The
+   Talent can dispute/edit their timesheet; edits require approval
+   (audit first: does a real timesheet/attendance data source and edit-
+   approval workflow already exist today — e.g. the legacy Attendance
+   Dashboard mentioned in earlier session history — or does this need to
+   be built from scratch? Report before proposing further).
+2. INVOICE is a pure, mechanical, auto-generated derivation from the
+   currently-approved timesheet for that period. The Talent NEVER edits
+   an invoice directly and never independently claims a number - there
+   is no "claimed vs platform-computed" divergence at the invoice level
+   at all, since the invoice IS the timesheet's numbers. Drop the
+   claimed_amount/platform_computed_amount/discrepancy-review fields
+   from the earlier schema proposal entirely.
+3. At the end of each calendar-aligned period (1st-15th, 16th-end of
+   month), the system automatically generates an invoice DRAFT from the
+   approved timesheet and notifies the Talent it's ready for review.
+4. The Talent reviews the draft. If they disagree, they go edit the
+   TIMESHEET (a separate action/page), which triggers the approval
+   workflow from point 1; once that edit is approved, the invoice draft
+   is regenerated to reflect it.
+5. If the Talent agrees, they click Send. Once sent, the invoice goes to
+   the OnSpot ledger for batch processing toward the fixed payment dates
+   (25th for the 1st-15th period, 5th of the next month for the 16th-end
+   period).
+6. DEADLINE: 48 hours from when the draft/notification is sent. If the
+   Talent does not respond within 48 hours, the invoice AUTO-SENDS as-is
+   (implicit agreement). This fires regardless of any pending, unresolved
+   timesheet dispute - do NOT pause or block auto-send for a pending
+   dispute.
+7. CREDIT MEMO mechanism: if a timesheet correction is approved AFTER
+   its invoice has already auto-sent (or been sent), do NOT reopen or
+   reprice that already-sent invoice. Instead, create a credit_memo
+   record capturing the delta (positive or negative), linked to the
+   original period/invoice and the approving timesheet edit, and apply
+   it as a line-item adjustment on the NEXT period's invoice draft when
+   it's generated. Document this reasoning clearly in code comments -
+   this is the same non-retroactive principle already used for the
+   Loyalty tier and commission-rate versioning elsewhere in this build.
+8. TIMEZONE: all deadline/cutoff computation is anchored to US Eastern
+   Time (matching OnSpot's Delaware entity), never a Talent's local
+   time. This is the single canonical clock for global consistency as
+   the Talent pool expands beyond the Philippines. When DISPLAYING a
+   deadline or payment date to a Talent, convert it to their local time
+   for clarity - the underlying cutoff computation must never change
+   based on Talent location.
+
+Client-side monthly invoice generation, the legacy invoice_periods
+preservation, and the deposit-coverage check (never treating a pending
+deposit as collected) from the prior rounds all still stand unchanged.
+
+AUDIT FIRST, report before implementing:
+1. Does a real, usable timesheet/attendance data source and Talent-
+   facing edit-and-approval workflow already exist? If only a stub/UI
+   shell exists, that needs to be built for real before invoice
+   generation can depend on it.
+2. Propose the credit_memo schema: fields needed, how it links to the
+   original period/invoice and the correcting timesheet edit, and how it
+   gets applied as a line item on the next period's draft.
+3. Propose the notification mechanism for "your invoice draft is ready"
+   and the 48-hour countdown - does a notification system already exist
+   to extend, or does this need new infrastructure?
+
+Report the full audit findings and finalized schema/workflow proposal
+before implementing anything - this is the third revision of this exact
+feature, so the goal is to get the complete model right this time, not
+patch incrementally again.
