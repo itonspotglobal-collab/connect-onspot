@@ -1,0 +1,50 @@
+Thanks. Do not make any changes yet.
+
+I now need to resolve the most important remaining deployment question from your report.
+
+For THIS specific Replit project and its current Production Database, determine the exact order of operations when I click Republish.
+
+Specifically, I need to know the order between:
+
+1. Replit's Production schema synchronization / Publish database changes
+2. Deployment build
+3. Our production command:
+   node dist/run-migrations.js && node dist/index.js
+4. The new SQL migrations 0018 through 0031
+
+Please inspect the project's .replit configuration, deployment configuration, package.json, build/start commands, and any Replit-specific database configuration available to you.
+
+I need a concrete timeline like:
+
+Republish
+→ step A
+→ step B
+→ step C
+→ application available
+
+Most importantly answer:
+
+A. Does Replit schema synchronization happen BEFORE our run-migrations.js executes?
+
+B. If yes, could Replit create tables/columns represented in shared/schema.ts before migrations such as 0021, 0023, 0024, and 0029 execute?
+
+C. Is there a supported project-level mechanism to run our custom SQL migrations against the Production Database BEFORE Replit performs its schema synchronization?
+
+D. Can Publish schema synchronization be disabled or configured so that our versioned SQL migrations are the source of truth for production schema changes?
+
+E. Is there a supported pre-deploy/pre-publish command or hook for this project that runs against the Production DATABASE_URL?
+
+F. Based on the current project configuration, what exact action would you recommend so that:
+   - app_schema_migrations remains accurate
+   - custom PL/pgSQL functions/triggers are installed
+   - Replit schema sync does not create objects before our migrations
+   - we do not manually fake/stamp migration IDs
+
+IMPORTANT:
+- READ ONLY.
+- Do NOT modify .replit, package.json, migrations, or schema files.
+- Do NOT run SQL.
+- Do NOT run migrations.
+- Do NOT Publish/Republish.
+- Do NOT modify the Production Database.
+- Clearly distinguish what you can prove from this project from what requires confirmation from Replit platform documentation/support.
