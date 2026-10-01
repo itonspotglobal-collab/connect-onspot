@@ -1,0 +1,195 @@
+We have an URGENT production authentication incident.
+
+A large number of users are currently attempting to register/login. Desktop/laptop appears to work in testing, but many mobile users cannot complete signup/login.
+
+Observed user behavior:
+- User fills out signup.
+- Submission fails or appears to loop.
+- User remains on the signup page.
+- Users retry multiple times.
+- Some eventually hit signup rate limiting.
+- Desktop/laptop appears to work more reliably than mobile.
+
+We also observed live logs showing some signup attempts being rejected because the password is missing a required special character.
+
+The current signup UI apparently only clearly communicates the 8-character minimum, so the frontend requirements may not match backend password validation.
+
+IMPORTANT:
+This is a LIVE PRODUCTION incident.
+
+DO NOT:
+- run migrations
+- change production schema
+- drop/alter tables
+- modify production data
+- modify app_schema_migrations
+- reset the database
+- disable authentication/security validation
+- disable rate limiting globally
+- weaken password requirements just to make signup work
+- Publish/Republish automatically
+- make unrelated billing/timesheet migration changes
+- change DATABASE_URL
+- assume the database migrations caused this without evidence
+
+FIRST: INVESTIGATE READ-ONLY.
+
+1. Inspect current production authentication logs for failed:
+   - signup/register requests
+   - login requests
+
+Separate the failures by reason/status code, including:
+- password validation
+- duplicate email/account
+- rate limiting / 429
+- authentication failure / 401
+- validation / 400
+- server error / 500
+- database errors
+- session/cookie errors
+- any other failure
+
+Do not expose passwords, password hashes, tokens, cookies, or other secrets in your report.
+
+2. Compare MOBILE vs DESKTOP authentication flows in the code.
+
+Inspect:
+- signup form
+- login form
+- frontend validation
+- backend validation
+- password requirements
+- API requests
+- error handling
+- loading/submitting state
+- navigation after successful signup/login
+- session establishment
+- cookies
+- SameSite/Secure/domain configuration
+- redirects
+- responsive/mobile-specific components
+- mobile browser behavior
+- any code that could resubmit or loop
+
+Determine whether mobile and desktop actually use the same auth flow.
+
+3. Trace ONE signup attempt end-to-end:
+
+Mobile form submit
+→ frontend validation
+→ signup API request
+→ backend validation
+→ user creation
+→ session/auth response
+→ frontend response handling
+→ navigation/redirect
+
+Identify exactly where a failed request leaves the user on the same page and whether the UI displays the backend error clearly.
+
+4. Compare frontend and backend password requirements.
+
+Determine the COMPLETE backend password policy.
+
+Check whether frontend validation and helper text communicate ALL requirements before submission.
+
+If backend requires:
+- minimum length
+- uppercase
+- lowercase
+- number
+- special character
+or anything else,
+
+the signup form must communicate the same requirements and validate them before sending the request.
+
+Do NOT weaken the backend policy unless explicitly instructed.
+
+5. Investigate rate limiting.
+
+Determine:
+- which endpoint is rate limited
+- threshold/window
+- whether limits are per IP, account/email, session, or something else
+- whether mobile/carrier/shared IP behavior could cause legitimate users to share a rate-limit bucket
+- whether repeated password-validation failures consume signup attempts
+- whether this explains part of the mobile-heavy failure pattern
+
+Do not disable rate limiting.
+
+6. Check whether successful account creation is followed by a failed login/session/redirect.
+
+Look for cases where:
+- user record was successfully created
+- frontend still shows signup page
+- session cookie was not established
+- subsequent automatic login fails
+- navigation fails
+- mobile browser rejects or fails to send the expected cookie
+
+This distinction is critical because we must not create duplicate users or tell existing users to repeatedly register.
+
+7. Determine whether the recent database/deployment changes are actually related.
+
+Look for concrete production errors involving:
+- users table
+- profiles
+- auth/session storage
+- constraints
+- missing columns
+- database connection failures
+
+If there is no evidence connecting the migration work to authentication, explicitly say so.
+
+8. Reproduce safely.
+
+Test the signup/login flow using a NON-PRODUCTION test account/environment at mobile viewport sizes and, where possible, mobile browser behavior.
+
+Test at least:
+- valid password
+- password without required special character
+- invalid credentials
+- existing email
+- rate-limited response
+- successful signup
+- successful login
+- post-auth redirect/session persistence
+
+Do not create test accounts in Production unless I explicitly approve it.
+
+AFTER INVESTIGATION:
+
+If the problem can be fixed entirely in application code without production database/schema changes, implement the smallest safe fix.
+
+Prioritize:
+- clear inline password requirements
+- frontend validation matching backend validation
+- visible persistent error messages instead of easy-to-miss toast-only errors
+- correct submit/loading-state reset after errors
+- preventing accidental repeated submissions
+- displaying rate-limit errors clearly
+- correct mobile session/redirect behavior if a bug is found
+
+Do not weaken security controls.
+
+After code changes:
+- run TypeScript/tests/build
+- test desktop and mobile viewport auth flows
+- do NOT Publish automatically
+
+STOP and give me a report containing:
+
+A. Confirmed root cause(s)
+B. Evidence from production logs
+C. Whether database/migrations are involved
+D. Why mobile users are affected more often, if confirmed
+E. Password policy frontend vs backend
+F. Rate-limit findings
+G. Whether any accounts are successfully created despite the apparent signup loop
+H. Files changed
+I. Exact fix implemented
+J. Tests performed/results
+K. Whether the fix requires database changes
+L. Whether it is safe for me to manually deploy ONLY this authentication fix
+
+Do not continue work on billing/timesheet migrations as part of this incident.
+Do not Publish/Republish.

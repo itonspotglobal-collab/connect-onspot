@@ -24,6 +24,9 @@ export default defineConfig({
     },
   },
   root: path.resolve(import.meta.dirname, "client"),
+  ...(process.env.AUTH_BROWSER_CACHE_DIR
+    ? { cacheDir: process.env.AUTH_BROWSER_CACHE_DIR }
+    : {}),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,

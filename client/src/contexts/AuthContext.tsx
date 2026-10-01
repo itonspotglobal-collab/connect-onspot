@@ -2,8 +2,9 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { useToast } from '@/hooks/use-toast';
 import { authAPI, getCurrentUser, isAuthenticated as checkIsAuthenticated } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
+import { decodeBase64UrlJson } from '@/lib/talentToken';
 
-interface User {
+export interface User {
   id: string;
   username?: string;
   email: string;
@@ -28,7 +29,7 @@ interface AuthContextType {
   setSelectedOrganizationId: (organizationId: string | null) => void;
   login: (email: string, password: string, userType?: "client" | "talent" | null) => Promise<boolean>;
   logout: () => Promise<void>;
-  refreshAuth: () => Promise<void>;
+  refreshAuth: () => Promise<User | null>;
   checkNewUserStatus: (userId: string) => Promise<boolean>;
   redirectToOnboarding: () => void;
 }
@@ -186,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Refresh authentication state from localStorage (JWT-based)
-  const refreshAuth = async (): Promise<void> => {
+  const refreshAuth = async (): Promise<User | null> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -240,9 +241,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           needsOnboarding: !hasCompleted && !hasSkipped && storedUser.role === 'talent'
         };
         
+        if (user && user.id !== mappedUser.id) queryClient.clear();
         setUser(mappedUser);
         setIsAuthenticated(true);
-        return;
+        return mappedUser;
       }
 
       // ── 2. Talent portal token (candidate JWT) ───────────────────────────────
@@ -253,49 +255,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const talentRaw = localStorage.getItem('talent_profile_token');
         if (talentRaw) {
-          const parsed = JSON.parse(talentRaw) as { token?: string };
+          const parsed = JSON.parse(talentRaw) as { token?: string; candidateId?: string; email?: string };
           const talentToken = parsed?.token;
           if (talentToken) {
             // Decode payload client-side (no crypto verification — just for reading claims)
             const payloadB64 = talentToken.split('.')[1];
-            const payload = JSON.parse(atob(payloadB64)) as {
+            const payload = decodeBase64UrlJson<{
               type?: string;
               candidateId?: string;
               email?: string;
               exp?: number;
-            };
+            }>(payloadB64);
 
-            if (payload.type === 'candidate' && payload.email) {
+            if (
+              payload.type === 'candidate' &&
+              payload.candidateId &&
+              payload.email &&
+              payload.candidateId === parsed.candidateId &&
+              payload.email.trim().toLowerCase() === parsed.email?.trim().toLowerCase()
+            ) {
               // Check expiry before hitting the network
               const nowSec = Math.floor(Date.now() / 1000);
               if (payload.exp && payload.exp < nowSec) {
                 console.log('🔒 Talent token expired — clearing');
                 localStorage.removeItem('talent_profile_token');
               } else {
-                // Ask the backend for the backend-resolved userId (the server looks up
-                // the users table by email and returns the real user row id).
-                console.log('🔐 Talent portal token found — resolving user via backend...');
-                const resp = await fetch('/api/profiles/me', {
+                // Verify the candidate session through its read-only identity endpoint.
+                // This also works for legacy candidates with no linked users row; /profiles/me
+                // may try to create a users.id-keyed profile and fail for those accounts.
+                const resp = await fetch('/api/talent-auth/me', {
                   headers: { Authorization: `Bearer ${talentToken}` },
                 });
 
                 if (resp.ok) {
-                  const data = await resp.json() as { success: boolean; profile?: { userId: string; firstName?: string; lastName?: string } };
-                  const resolvedId = data.profile?.userId ?? payload.candidateId;
-                  if (resolvedId) {
+                  const data = await resp.json() as {
+                    candidateId?: string;
+                    userId?: string;
+                    email?: string;
+                    fullName?: string;
+                  };
+                  const resolvedId = data.userId || data.candidateId;
+                  if (
+                    typeof resolvedId === 'string' &&
+                    resolvedId &&
+                    data.candidateId === payload.candidateId &&
+                    typeof data.email === 'string' &&
+                    data.email.trim().toLowerCase() === payload.email.trim().toLowerCase()
+                  ) {
+                    const [firstName, ...lastNameParts] = (data.fullName || '').trim().split(/\s+/);
                     const talentUser: User = {
                       id: resolvedId,
-                      email: payload.email,
-                      firstName: data.profile?.firstName || undefined,
-                      lastName: data.profile?.lastName || undefined,
+                      email: data.email,
+                      firstName: firstName || undefined,
+                      lastName: lastNameParts.join(' ') || undefined,
                       role: 'talent',
                       userType: 'talent',
                       authProvider: 'talent_portal',
                     };
-                    console.log('✅ Talent portal user resolved:', { id: resolvedId, email: payload.email });
+                    if (user && user.id !== resolvedId) queryClient.clear();
                     setUser(talentUser);
                     setIsAuthenticated(true);
-                    return;
+                    return talentUser;
                   }
                 } else if (resp.status === 401) {
                   // Token rejected by server — clear it
@@ -316,12 +336,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔒 No JWT authentication found');
       setUser(null);
       setIsAuthenticated(false);
+      return null;
     } catch (error) {
       console.error('Error refreshing JWT auth:', error);
       setError('Failed to check authentication status');
       setUser(null);
       setIsAuthenticated(false);
       authAPI.logout();
+      return null;
     } finally {
       setIsLoading(false);
     }

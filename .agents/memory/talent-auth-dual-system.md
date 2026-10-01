@@ -13,11 +13,25 @@ description: Two separate auth systems coexist; how they interact and what each 
 ## AuthContext
 
 `AuthContext.refreshAuth()` now checks BOTH tokens (main JWT first, then talent portal token).
-- For talent tokens: calls `GET /api/profiles/me` with the talent token to get the backend-resolved `userId` (server looks up `users` by email).
+- Candidate-only identity must be resolved through an authenticated, read-only candidate path, without requiring a users-backed profile.
 - Populates `user` state so all `enabled: !!user?.id` guards fire correctly.
 - If talent token is expired or server rejects it (401), clears `localStorage.removeItem("talent_profile_token")`.
 
 **Why:** `useTalentProfile` queries use `enabled: !!user?.id`. Without AuthContext recognising the talent token, `user` stayed null → queries never fired → profile never loaded for talent-portal-only logins.
+
+## Sign-in activation and legacy compatibility
+
+Stored credentials are not proof that the current page's shared authentication state has changed. Verify the active Talent identity and account-dependent UI in the same SPA session, without reloading.
+
+**Why:** Same-tab storage writes do not emit browser storage events. Storage-only success tests missed a dialog login that still left the shared user state unauthenticated.
+
+**How to apply:** Explicitly synchronize live authentication after sign-in. When switching identities, prevent an older main session from taking precedence over the newly authenticated candidate session; preserve existing sessions on rejected credentials.
+
+Legacy candidate-only accounts are supported identities, even when no users-backed profile exists.
+
+**Why:** Requiring a profile lookup as an authentication prerequisite can attempt a foreign-key-invalid profile insert and reject otherwise valid candidate credentials.
+
+**How to apply:** Separate read-only authentication identity verification from optional profile hydration. Keep backend signature, ownership, claim, and expiry checks; do not create account rows merely to make sign-in appear successful.
 
 ## Axios interceptor (`api.ts`)
 

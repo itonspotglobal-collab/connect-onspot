@@ -1950,6 +1950,9 @@ export default function FindBestMatches() {
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileLoadError, setProfileLoadError] = useState(false);
+  const [profileHydrating, setProfileHydrating] = useState(false);
+  const [profileHydrationRetry, setProfileHydrationRetry] = useState(0);
 
   // ── Work history form state ──────────────────────────────────────────────
   const [showWorkForm, setShowWorkForm] = useState(false);
@@ -1973,12 +1976,15 @@ export default function FindBestMatches() {
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
+      setProfileHydrating(false);
       if (user?.email) {
         setProfile((p) => ({ ...p, email: p.email || user.email || "" }));
       }
       return;
     }
 
+    let cancelled = false;
+    setProfileHydrating(true);
     const fetchAndHydrate = async () => {
       try {
         const endpoint = candidateId
@@ -1986,12 +1992,22 @@ export default function FindBestMatches() {
           : "/api/candidates/me";
         const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
         const r = await fetch(endpoint, { headers });
-        if (!r.ok) return;
+        if (cancelled) return;
+        // /me returning 404 means a new user has no profile to hydrate yet.
+        if (!r.ok && r.status === 404 && !candidateId) {
+          setProfileLoadError(false);
+          setProfileHydrating(false);
+          return;
+        }
+        if (!r.ok) throw new Error(`Profile request failed (${r.status})`);
         const data = await r.json();
-        if (!data?.id) return;
+        if (cancelled) return;
+        if (!data?.id) throw new Error("Profile response did not include an id");
 
         // Persist the candidateId so subsequent saves use PATCH instead of POST
         if (!candidateId) setCandidateId(data.id);
+        setProfileLoadError(false);
+        setProfileHydrating(false);
 
         // ── Returning user detection ────────────────────────────────────────
         // If the DB says onboarding was already completed, skip to results immediately.
@@ -2053,13 +2069,17 @@ export default function FindBestMatches() {
             : (data.valuesAnswers && typeof data.valuesAnswers === "object" ? data.valuesAnswers : {}),
         }));
       } catch {
-        // Silently ignore — form defaults are fine
+        if (!cancelled) {
+          setProfileLoadError(true);
+          setProfileHydrating(false);
+        }
       }
     };
 
     fetchAndHydrate();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [profileHydrationRetry]);
 
   const { openJobs, isLoading: jobsLoading } = usePostedJobs();
 
@@ -2354,6 +2374,7 @@ export default function FindBestMatches() {
   async function handleNext() {
     // ── Step 1 → 2: Save profile to DB ──────────────────────────────────────
     if (flowStep === 1) {
+      if (profileLoadError || profileHydrating) return;
       setIsSavingProfile(true);
       let savedOk = false;
       try {
@@ -2594,7 +2615,8 @@ export default function FindBestMatches() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const ready = canProceed(flowStep, profile) && !extracting && !isSavingProfile && !isSavingEvaluation;
+  const ready = canProceed(flowStep, profile) && !extracting && !isSavingProfile && !isSavingEvaluation
+    && !(flowStep === 1 && (profileLoadError || profileHydrating));
 
   // ── Hero ──────────────────────────────────────────────────────────────────
   function HeroContent() {
@@ -4005,6 +4027,20 @@ export default function FindBestMatches() {
 
       {/* Content */}
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+        {profileLoadError && (
+          <div role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <span>We couldn’t load your saved profile. Your changes won’t be saved until it loads successfully.</span>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={profileHydrating}
+              onClick={() => setProfileHydrationRetry((retry) => retry + 1)}
+              className="rounded-full"
+            >
+              {profileHydrating ? "Retrying…" : "Retry profile load"}
+            </Button>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {phase === "matching" ? (
             <motion.div

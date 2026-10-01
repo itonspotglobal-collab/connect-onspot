@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
@@ -32,12 +32,16 @@ const backBtnCls = [
 // ── Reusable action button ─────────────────────────────────────────────────
 function PrimaryButton({
   onClick,
+  type = "button",
+  testId,
   disabled,
   loading,
   loadingText,
   children,
 }: {
-  onClick: () => void;
+  onClick?: () => void;
+  type?: "button" | "submit";
+  testId?: string;
   disabled?: boolean;
   loading?: boolean;
   loadingText?: string;
@@ -45,8 +49,9 @@ function PrimaryButton({
 }) {
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
+      data-testid={testId}
       disabled={disabled || loading}
       className="w-full flex items-center justify-center gap-2 text-base font-semibold text-white rounded-2xl transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
       style={{
@@ -189,6 +194,9 @@ export default function PortalLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const activePortal = routePortal ?? selectedPortal;
   const [portalError, setPortalError] = useState("");
+  const [retrySeconds, setRetrySeconds] = useState(0);
+  const retryUntil = useRef(0);
+  const signInPending = useRef(false);
 
   // Password setup state
   const [setupPassword, setSetupPassword] = useState("");
@@ -202,6 +210,18 @@ export default function PortalLogin() {
   const [forgotConfirm, setForgotConfirm] = useState("");
   const [showForgotPw, setShowForgotPw] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  useEffect(() => {
+    if (!retryUntil.current) return;
+    const updateCooldown = () => {
+      const remaining = Math.max(0, Math.ceil((retryUntil.current - Date.now()) / 1000));
+      setRetrySeconds(remaining);
+      if (remaining === 0) retryUntil.current = 0;
+    };
+    updateCooldown();
+    const interval = window.setInterval(updateCooldown, 1000);
+    return () => window.clearInterval(interval);
+  }, [retrySeconds > 0]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -223,18 +243,38 @@ export default function PortalLogin() {
     }
   }, [isAuthenticated, user, applicationToken, returnTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleSignIn() {
-    if (!email || !password || !activePortal) {
-      toast({ variant: "destructive", title: "Missing fields", description: "Please fill in your email and password." });
+  async function handleSignIn(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (signInPending.current || isLoading || retryUntil.current > Date.now()) return;
+    const formData = new FormData(event.currentTarget);
+    const loginEmail = String(formData.get("email") ?? "");
+    const loginPassword = String(formData.get("password") ?? "");
+    if (!loginEmail.trim() || loginPassword.length === 0 || !activePortal) {
+      const message = "Please fill in your email and password.";
+      setPortalError(message);
+      toast({ variant: "destructive", title: "Missing fields", description: message });
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail.trim())) {
+      const message = "Please enter a valid email address.";
+      setPortalError(message);
+      toast({ variant: "destructive", title: "Invalid email", description: message });
+      return;
+    }
+    signInPending.current = true;
+    setEmail(loginEmail);
+    setPassword(loginPassword);
     setPortalError("");
     let result: Awaited<ReturnType<typeof signInToPortal>>;
     try {
-      result = await signInToPortal(activePortal, email, password);
+      result = await signInToPortal(activePortal, loginEmail, loginPassword);
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Sign in error", description: err?.message || "An unexpected error occurred. Please try again." });
+      const message = err?.message || "An unexpected error occurred. Please try again.";
+      setPortalError(message);
+      toast({ variant: "destructive", title: "Sign in error", description: message });
       return;
+    } finally {
+      signInPending.current = false;
     }
     if (!result.success) {
       if (result.requiresPasswordSetup) {
@@ -243,6 +283,10 @@ export default function PortalLogin() {
         return;
       }
       setPortalError(result.message);
+      if (result.rateLimited && result.retryAfter) {
+        retryUntil.current = Date.now() + result.retryAfter * 1000;
+        setRetrySeconds(result.retryAfter);
+      }
       toast({ variant: "destructive", title: "Sign in failed", description: result.message });
       return;
     }
@@ -465,62 +509,70 @@ export default function PortalLogin() {
             ? "Sign in to manage your team and talent."
             : "Sign in to manage your profile and opportunities."}
         </p>
-        <Link href={`/login${currentSearch}`}>
-          <span className="mb-7 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[#6D5EF7] hover:underline">
-            <ArrowLeft className="h-3 w-3" /> Choose another portal
-          </span>
-        </Link>
+        <button type="button" disabled={isLoading || retrySeconds > 0}
+          onClick={() => { if (!signInPending.current) navigate(`/login${currentSearch}`); }}
+          className="mb-7 inline-flex items-center gap-1 text-xs font-medium text-[#6D5EF7] hover:underline disabled:cursor-not-allowed disabled:opacity-50">
+          <ArrowLeft className="h-3 w-3" /> Choose another portal
+        </button>
 
-        {/* Email */}
-        <div className="space-y-2 mb-4">
-          <Label htmlFor="login-email" className={labelCls}>Email Address</Label>
-          <Input id="login-email" name="email" type="email" placeholder="you@example.com"
-            value={email} onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email" className={inputCls} />
-        </div>
+        <form id="portal-login-form" noValidate onSubmit={handleSignIn}>
+          {/* Email */}
+          <div className="space-y-2 mb-4">
+            <Label htmlFor="login-email" className={labelCls}>Email Address</Label>
+            <Input id="login-email" name="email" type="email" placeholder="you@example.com" required
+              value={email} onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email" className={inputCls} data-testid="input-portal-login-email" />
+          </div>
 
-        {/* Password */}
-        <div className="space-y-2 mb-6">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="login-password" className={labelCls}>Password</Label>
-            <button type="button"
-              onClick={() => { setForgotEmail(email); setStep("forgot-password"); }}
-              className="text-xs font-medium transition-colors duration-200 hover:underline"
-              style={{ color: BRAND }}>
-              Forgot password?
-            </button>
+          {/* Password */}
+          <div className="space-y-2 mb-6">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="login-password" className={labelCls}>Password</Label>
+              <button type="button" disabled={isLoading || retrySeconds > 0}
+                onClick={() => {
+                  if (signInPending.current) return;
+                  setForgotEmail(email);
+                  setStep("forgot-password");
+                }}
+                className="text-xs font-medium transition-colors duration-200 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ color: BRAND }}>
+                Forgot password?
+              </button>
+            </div>
+            <div className="relative">
+              <Input id="login-password" name="password" type={showPassword ? "text" : "password"}
+                placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password" className={`${inputCls} pr-11`} required
+                data-testid="input-portal-login-password" />
+              <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
+            </div>
           </div>
-          <div className="relative">
-            <Input id="login-password" name="password" type={showPassword ? "text" : "password"}
-              placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password" className={`${inputCls} pr-11`}
-              onKeyDown={(e) => e.key === "Enter" && handleSignIn()} />
-            <EyeToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />
-          </div>
-        </div>
 
-        {/* Sign In Button */}
-        <div className="mb-5">
-          <PrimaryButton onClick={handleSignIn} loading={isLoading} loadingText="Signing in…"
-            disabled={!activePortal || !email || !password}>
-            <span>Sign In</span> <ArrowRight className="w-4 h-4" />
-          </PrimaryButton>
-        </div>
-        {portalError && (
-          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <p>{portalError}</p>
-            {portalError.includes("Client") && activePortal === "talent" && (
-              <Link href={`/login/client${currentSearch}`}>
-                <span className="mt-2 inline-block cursor-pointer font-semibold underline">Go to Client Login</span>
-              </Link>
-            )}
-            {portalError.includes("Talent") && activePortal === "client" && (
-              <Link href={`/login/talent${currentSearch}`}>
-                <span className="mt-2 inline-block cursor-pointer font-semibold underline">Go to Talent Login</span>
-              </Link>
-            )}
+          {/* Sign In Button */}
+          <div className="mb-5">
+            <PrimaryButton type="submit" loading={isLoading} loadingText="Signing in…"
+              testId="button-submit-portal-login" disabled={!activePortal || retrySeconds > 0}>
+              <span>{retrySeconds > 0 ? `Try again in ${retrySeconds}s` : "Sign In"}</span>
+              {retrySeconds === 0 && <ArrowRight className="w-4 h-4" />}
+            </PrimaryButton>
           </div>
-        )}
+          {portalError && (
+            <div role="alert" aria-live="assertive" data-testid="portal-login-error"
+              className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <p>{portalError}</p>
+              {portalError.includes("Client") && activePortal === "talent" && (
+                <Link href={`/login/client${currentSearch}`}>
+                  <span className="mt-2 inline-block cursor-pointer font-semibold underline">Go to Client Login</span>
+                </Link>
+              )}
+              {portalError.includes("Talent") && activePortal === "client" && (
+                <Link href={`/login/talent${currentSearch}`}>
+                  <span className="mt-2 inline-block cursor-pointer font-semibold underline">Go to Talent Login</span>
+                </Link>
+              )}
+            </div>
+          )}
+        </form>
 
         {/* Footer links */}
         <div className="text-center space-y-2">

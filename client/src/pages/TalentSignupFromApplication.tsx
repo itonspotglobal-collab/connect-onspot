@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, CheckCircle2, AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 import { saveTalentAuth } from "@/components/TalentLoginModal";
+import { PASSWORD_POLICY_HINT, validatePasswordStrength } from "@shared/passwordPolicy";
+import { signupRetryDelayMs } from "@/lib/signupRetry";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PrefillData {
@@ -22,21 +24,24 @@ interface PrefillData {
 
 // ─── Password strength helper ────────────────────────────────────────────────
 function PasswordStrength({ password }: { password: string }) {
-  const score = [
+  const checks = [
     password.length >= 8,
+    password.length <= 128,
+    /[a-z]/.test(password),
     /[A-Z]/.test(password),
     /[0-9]/.test(password),
-    /[^A-Za-z0-9]/.test(password),
-  ].filter(Boolean).length;
+    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+  ];
+  const score = checks.filter(Boolean).length;
 
-  const labels = ["", "Weak", "Fair", "Good", "Strong"];
-  const colors = ["", "bg-red-400", "bg-yellow-400", "bg-blue-400", "bg-emerald-400"];
+  const labels = ["", "Weak", "Weak", "Fair", "Good", "Strong", "Strong"];
+  const colors = ["", "bg-red-400", "bg-red-400", "bg-yellow-400", "bg-blue-400", "bg-emerald-400", "bg-emerald-400"];
 
   if (!password) return null;
   return (
     <div className="mt-1.5 flex items-center gap-2">
       <div className="flex flex-1 gap-1">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-colors ${i <= score ? colors[score] : "bg-slate-200 dark:bg-white/10"}`}
@@ -58,6 +63,14 @@ export default function TalentSignupFromApplication() {
   const searchParams = new URLSearchParams(window.location.search);
   const applicationToken = searchParams.get("applicationToken") ?? "";
   const returnTo = searchParams.get("returnTo") ?? "";
+  const talentSignInUrl = (() => {
+    const params = new URLSearchParams({
+      portal: "talent",
+      returnTo: returnTo || "/find-best-matches",
+    });
+    if (applicationToken) params.set("applicationToken", applicationToken);
+    return `/portal-login?${params.toString()}`;
+  })();
 
   // ── Mode detection ────────────────────────────────────────────────────────
   // Account-first mode: user clicked "Create Talent Account & Apply" from a
@@ -71,6 +84,14 @@ export default function TalentSignupFromApplication() {
   const [errorMsg, setErrorMsg] = useState("");
   const [errorKind, setErrorKind] = useState<"expired" | "used" | "generic">("generic");
   const [prefill, setPrefill] = useState<PrefillData | null>(null);
+  const [submitError, setSubmitError] = useState("");
+  const [accountCreated, setAccountCreated] = useState(false);
+  const [linkRecovery, setLinkRecovery] = useState<{ token: string; submissionId: string } | null>(null);
+  const [retryAt, setRetryAt] = useState(0);
+  const [retrySeconds, setRetrySeconds] = useState(0);
+  const retryAtRef = useRef(0);
+  const submissionInFlight = useRef(false);
+  const accountCreatedRef = useRef(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -81,6 +102,28 @@ export default function TalentSignupFromApplication() {
     confirmPassword: "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+
+  useEffect(() => {
+    if (!retryAt) {
+      setRetrySeconds(0);
+      return;
+    }
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
+      setRetrySeconds(remaining);
+      if (!remaining) {
+        setRetryAt(0);
+        retryAtRef.current = 0;
+      }
+    };
+    updateRemaining();
+    const timer = window.setInterval(updateRemaining, 1000);
+    document.addEventListener("visibilitychange", updateRemaining);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", updateRemaining);
+    };
+  }, [retryAt]);
 
   // ── Resolve mode on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -142,15 +185,18 @@ export default function TalentSignupFromApplication() {
     if (errors[k]) setErrors((p) => ({ ...p, [k]: undefined }));
   };
 
-  const validate = () => {
+  const validate = (values: typeof form) => {
     const next: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.firstName.trim()) next.firstName = "First name is required";
-    if (!form.lastName.trim()) next.lastName = "Last name is required";
-    if (!form.email.trim()) next.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = "Enter a valid email";
-    if (!form.password) next.password = "Password is required";
-    else if (form.password.length < 8) next.password = "Password must be at least 8 characters";
-    if (form.confirmPassword !== form.password) next.confirmPassword = "Passwords do not match";
+    if (!values.firstName.trim()) next.firstName = "First name is required";
+    if (!values.lastName.trim()) next.lastName = "Last name is required";
+    if (!values.email.trim()) next.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) next.email = "Enter a valid email";
+    if (!values.password) next.password = "Password is required";
+    else {
+      const passwordResult = validatePasswordStrength(values.password);
+      if (!passwordResult.isValid) next.password = passwordResult.errors.join(". ");
+    }
+    if (values.confirmPassword !== values.password) next.confirmPassword = "Passwords do not match";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -181,104 +227,159 @@ export default function TalentSignupFromApplication() {
     }
   };
 
+  const linkApplication = async (recovery: { token: string; submissionId: string }, candidateId?: string) => {
+    const linkRes = await fetch("/api/job-applications/link", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${recovery.token}`,
+      },
+      body: JSON.stringify({
+        submissionId: recovery.submissionId,
+        token: applicationToken,
+      }),
+    });
+    if (!linkRes.ok) {
+      const linkErr = (await linkRes.json().catch(() => ({}))) ?? {};
+      const message = linkErr.error || linkErr.message || "Could not link your application. Please try again.";
+      throw new Error(message);
+    }
+
+    setLinkRecovery(null);
+    setSubmitError("");
+    await refreshAuth();
+    toast({
+      title: "🎉 Account created!",
+      description:
+        "Your account has been created and your application has been submitted successfully. You're now signed in and can apply for more opportunities.",
+      duration: 8000,
+    });
+    sessionStorage.setItem("onspot_new_talent_welcome", "1");
+    if (candidateId) sessionStorage.setItem("onspot_talent_candidate_id", candidateId);
+    navigate("/find-best-matches");
+  };
+
+  const handleLinkRetry = async () => {
+    if (submissionInFlight.current || !linkRecovery) return;
+    submissionInFlight.current = true;
+    setStage("submitting");
+    setSubmitError("");
+    try {
+      await linkApplication(linkRecovery);
+    } catch (err: any) {
+      setSubmitError(
+        `Your account was created, but the application could not be linked: ${err.message || "Please try again."} You can retry linking below or sign in; your application details are still here.`,
+      );
+      setStage("ready");
+    } finally {
+      submissionInFlight.current = false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (submissionInFlight.current || retryAtRef.current > Date.now() || accountCreatedRef.current) return;
+
+    const fields = new FormData(e.currentTarget as HTMLFormElement);
+    const values = {
+      firstName: String(fields.get("firstName") ?? "").trim(),
+      lastName: String(fields.get("lastName") ?? "").trim(),
+      email: String(fields.get("email") ?? "").trim(),
+      phone: String(fields.get("phone") ?? "").trim(),
+      password: String(fields.get("password") ?? ""),
+      confirmPassword: String(fields.get("confirmPassword") ?? ""),
+    };
+    setForm(values);
+    setSubmitError("");
+    if (!validate(values)) return;
     // Legacy mode requires prefill to be loaded
     if (!isAccountFirstMode && !prefill) return;
 
+    submissionInFlight.current = true;
     setStage("submitting");
+    let recoveryForAttempt: { token: string; submissionId: string } | null = null;
     try {
-      // 1. Create the talent account
       const signupRes = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          first_name: form.firstName.trim(),
-          last_name: form.lastName.trim(),
-          email: form.email.trim(),
-          password: form.password,
+          first_name: values.firstName,
+          last_name: values.lastName,
+          email: values.email,
+          password: values.password,
           role: "talent",
         }),
       });
 
       if (!signupRes.ok) {
-        const err = await signupRes.json().catch(() => ({ error: "Registration failed" }));
-        throw new Error(err.error || err.message || "Registration failed");
+        const err = (await signupRes.json().catch(() => ({}))) ?? {};
+        if (signupRes.status === 429) {
+          const now = Date.now();
+          const delayMs = signupRetryDelayMs(
+            signupRes.headers.get("retry-after") ?? err.retryAfter,
+            now,
+          );
+          retryAtRef.current = now + delayMs;
+          setRetryAt(retryAtRef.current);
+          setRetrySeconds(Math.ceil(delayMs / 1000));
+        }
+        const serverMessage = err.error || err.message || "Registration failed. Please try again.";
+        throw new Error(serverMessage);
       }
 
+      // A confirmed signup response must never be posted again, even if parsing,
+      // storage, or application linking fails afterward.
+      accountCreatedRef.current = true;
+      setAccountCreated(true);
       const signupData = await signupRes.json();
-      const authToken: string = signupData.token;
+      const authToken: string | undefined = signupData.token;
+      const hasTalentAuth = Boolean(signupData.talentToken && signupData.candidateId);
+      if (!authToken || !signupData.user || !hasTalentAuth) {
+        setSubmitError("Your account was created, but automatic sign-in could not be completed. Please sign in to continue. Your entered details are still here.");
+        setStage("ready");
+        return;
+      }
 
-      // 2. Persist standard JWT (both auth systems benefit from this)
+      const fullName = `${values.firstName} ${values.lastName}`;
+      recoveryForAttempt = isAccountFirstMode ? null : { token: authToken, submissionId: prefill!.submissionId };
+      if (recoveryForAttempt) setLinkRecovery(recoveryForAttempt);
       localStorage.setItem("onspot_jwt_token", authToken);
       localStorage.setItem("onspot_user", JSON.stringify(signupData.user));
+      saveTalentAuth({
+        token: signupData.talentToken,
+        candidateId: signupData.candidateId,
+        email: values.email,
+        fullName,
+      });
+      sessionStorage.setItem("onspot_new_talent_welcome", "1");
+      sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
 
       if (isAccountFirstMode) {
-        // ── Account-first flow ───────────────────────────────────────────────
-        // Establish the Talent portal session (talent_profile_token) so that
-        // JobApplyPage.tsx's loadTalentAuth() call finds it immediately.
-        if (signupData.talentToken && signupData.candidateId) {
-          saveTalentAuth({
-            token: signupData.talentToken,
-            candidateId: signupData.candidateId,
-            email: form.email.trim(),
-            fullName: `${form.firstName.trim()} ${form.lastName.trim()}`,
-          });
-        }
-
-        // Signal Find Best Matches / other pages about the new signup
-        sessionStorage.setItem("onspot_new_talent_welcome", "1");
-        if (signupData.candidateId) {
-          sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
-        }
-
         toast({
           title: "🎉 Account created!",
           description: "Your Talent account is ready. Review and submit your application below.",
           duration: 6000,
         });
-
-        // Return to the job application page — it will see the fresh session
         navigate(returnTo);
-      } else {
-        // ── Legacy continuation flow ─────────────────────────────────────────
-        // Link the previously-submitted application to the new account
-        const linkRes = await fetch("/api/job-applications/link", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            submissionId: prefill!.submissionId,
-            token: applicationToken,
-          }),
-        });
-        if (!linkRes.ok) {
-          const linkErr = await linkRes.json().catch(() => ({ error: "Linking failed" }));
-          throw new Error(linkErr.error || "Could not link your application to your new account. Please contact support.");
-        }
-
-        // Sync AuthContext so guards see the user as authenticated
-        await refreshAuth();
-
-        toast({
-          title: "🎉 Account created!",
-          description:
-            "Your account has been created and your application has been submitted successfully. You're now signed in and can apply for more opportunities.",
-          duration: 8000,
-        });
-
-        sessionStorage.setItem("onspot_new_talent_welcome", "1");
-        if (signupData.candidateId) {
-          sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
-        }
-        navigate("/find-best-matches");
+        return;
       }
+
+      await linkApplication(recoveryForAttempt!, signupData.candidateId);
     } catch (err: any) {
-      toast({ title: "Registration failed", description: err.message, variant: "destructive" });
+      if (accountCreatedRef.current) {
+        if (recoveryForAttempt) {
+          setSubmitError(
+            `Your account was created, but the application could not be linked: ${err.message || "Please try again."} You can retry linking below or sign in; your application details are still here.`,
+          );
+        } else {
+          setSubmitError("Your account was created, but automatic sign-in could not be completed. Please sign in to continue. Your entered details are still here.");
+        }
+      } else {
+        setSubmitError(err.message || "Registration failed. Please try again.");
+      }
       setStage("ready");
+    } finally {
+      submissionInFlight.current = false;
     }
   };
 
@@ -373,9 +474,11 @@ export default function TalentSignupFromApplication() {
                   </Label>
                   <Input
                     id="firstName"
+                    name="firstName"
                     value={form.firstName}
                     onChange={(e) => setField("firstName", e.target.value)}
                     autoComplete="given-name"
+                    data-testid="application-signup-first-name"
                   />
                   {errors.firstName && <p className="text-xs text-red-500">{errors.firstName}</p>}
                 </div>
@@ -385,9 +488,11 @@ export default function TalentSignupFromApplication() {
                   </Label>
                   <Input
                     id="lastName"
+                    name="lastName"
                     value={form.lastName}
                     onChange={(e) => setField("lastName", e.target.value)}
                     autoComplete="family-name"
+                    data-testid="application-signup-last-name"
                   />
                   {errors.lastName && <p className="text-xs text-red-500">{errors.lastName}</p>}
                 </div>
@@ -401,21 +506,25 @@ export default function TalentSignupFromApplication() {
                 {isAccountFirstMode ? (
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     value={form.email}
                     onChange={(e) => setField("email", e.target.value)}
                     placeholder="you@example.com"
                     autoComplete="email"
+                    data-testid="application-signup-email"
                   />
                 ) : (
                   <>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       value={form.email}
                       readOnly
                       className="bg-slate-100 dark:bg-white/5 cursor-not-allowed"
                       autoComplete="email"
+                      data-testid="application-signup-email"
                     />
                     <p className="text-xs text-slate-400">Email is pre-filled from your application.</p>
                   </>
@@ -430,12 +539,17 @@ export default function TalentSignupFromApplication() {
                 </Label>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   value={form.password}
                   onChange={(e) => setField("password", e.target.value)}
-                  placeholder="Min. 8 characters"
+                  placeholder="8–128 characters"
                   autoComplete="new-password"
+                  data-testid="application-signup-password"
                 />
+                <p className="text-xs leading-relaxed text-slate-500">
+                  {PASSWORD_POLICY_HINT}
+                </p>
                 <PasswordStrength password={form.password} />
                 {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
               </div>
@@ -447,19 +561,47 @@ export default function TalentSignupFromApplication() {
                 </Label>
                 <Input
                   id="confirmPassword"
+                  name="confirmPassword"
                   type="password"
                   value={form.confirmPassword}
                   onChange={(e) => setField("confirmPassword", e.target.value)}
                   autoComplete="new-password"
+                  data-testid="application-signup-confirm-password"
                 />
                 {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
               </div>
 
               {/* Submit */}
               <div className="pt-2">
+                {submitError && (
+                  <div
+                    role="alert"
+                    data-testid="application-signup-error"
+                    className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm leading-relaxed text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
+                  >
+                    <p>{submitError}</p>
+                    {linkRecovery && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-3"
+                        onClick={handleLinkRetry}
+                        disabled={stage === "submitting"}
+                        data-testid="application-signup-retry-link"
+                      >
+                        {stage === "submitting" ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Linking application…</>
+                        ) : (
+                          "Retry linking application"
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                )}
                 <Button
                   type="submit"
-                  disabled={stage === "submitting"}
+                  disabled={stage === "submitting" || retrySeconds > 0 || accountCreated}
+                  data-testid="application-signup-submit"
                   className="w-full rounded-full bg-[#474ead] py-2.5 text-white hover:bg-[#3d439c]"
                 >
                   {stage === "submitting" ? (
@@ -469,6 +611,10 @@ export default function TalentSignupFromApplication() {
                     </>
                   ) : isAccountFirstMode ? (
                     "Create account & continue to application"
+                  ) : accountCreated ? (
+                    "Account created"
+                  ) : retrySeconds > 0 ? (
+                    `Try again in ${Math.floor(retrySeconds / 60)}:${String(retrySeconds % 60).padStart(2, "0")}`
                   ) : (
                     "Create account & track my application"
                   )}
@@ -477,14 +623,9 @@ export default function TalentSignupFromApplication() {
                   Already have an account?{" "}
                   <button
                     type="button"
-                    onClick={() => {
-                      if (returnTo) {
-                        navigate(`/portal-login?portal=talent&returnTo=${encodeURIComponent(returnTo)}`);
-                      } else {
-                        navigate("/");
-                      }
-                    }}
+                    onClick={() => navigate(talentSignInUrl)}
                     className="text-[#474ead] hover:underline"
+                    data-testid="application-signup-signin"
                   >
                     Sign in
                   </button>

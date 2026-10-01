@@ -27,7 +27,7 @@
 - [Client status approval workflow](client-status-approval.md) — Clients submit status requests; Admin approval plus a successful applicant email is required before any canonical transition.
 - [Deployment dependency policy](deployment-dependency-policy.md) — blank publish logs can hide dependency-firewall blocks; verify clean installs and runtime engines before retrying.
 - [Organization invitation lifecycle](organization-invitation-lifecycle.md) — organization invites expire after 30 days; expired history remains visible and resendable.
-- [Browser test environment](browser-test-environment.md) — Playwright browser tests need system browser libraries and should disable Replit-only Vite plugins in isolated frontend servers.
+- [Browser test environment](browser-test-environment.md) — isolate Vite plugins and optimizer caches per browser fixture; browser libraries are required.
 - [Mobile hero preview rule](homepage-mobile-hero-previews.md) — mobile carousel previews must be purpose-built compact cards, never fixed-height crops of desktop cards.
 - [Tablet hero layout rule](homepage-tablet-hero-layout.md) — 768–1023px uses a contained two-column hero, preventing stacked desktop previews from overflowing.
 - [Flat-rate compensation language](flat-rate-compensation-language.md) — public OnSpot copy must never imply hourly billing; use flat period-based terminology.
@@ -53,3 +53,5 @@
 - [USD currency policy](usd-currency-policy.md) — new pricing is USD worldwide; historical denominations remain unchanged, and text prices count even when numeric budgets are zero.
 - [Account-count audit](account-counter-audit.md) — candidate registration flags can be set without an auth account; verify sign-in evidence before public counting.
 - [Investor request routing](investor-request-routing.md) — owner approved one saved intake and founder notifications for all three CTAs; failed email must never be reported as sent.
+- [Mobile signup failures](mobile-signup-failures.md) — hidden validation errors can look like loops; preserve security rules, honor full retry windows, and check sticky actions against the viewport.
+- [Auth incident release safety](auth-incident-release-safety.md) — an app-only fix does not make restart or Publish database-free; inspect launch side effects separately.

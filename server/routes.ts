@@ -45,6 +45,11 @@ import {
 } from "./lib/interviewTime";
 import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
 import { maskClientTalentName } from "../shared/talentName";
+import { createCandidateMeHandler } from "./lib/candidateMeHandler";
+import {
+  createTalentIdentityHandler,
+  lookupTalentAuthUser,
+} from "./lib/talentAuthIdentity";
 import {
   filterMessageContentWithVanessa,
   MAX_USER_MESSAGE_CHARS,
@@ -629,26 +634,13 @@ const authenticateJWT = async (
       const candidateEmail = (decoded as any).email;
       // Prefer the stable candidates.user_id link. The email fallback is kept
       // only for legacy candidate rows that predate that link.
-      const talentUserResult = await query(
-        `SELECT u.id, u.email, u.role
-           FROM candidates c
-           JOIN users u ON u.id = c.user_id
-          WHERE c.id = $1
-         UNION ALL
-         SELECT u.id, u.email, u.role
-           FROM users u
-          WHERE lower(u.email) = lower($2)
-            AND NOT EXISTS (
-              SELECT 1
-                FROM candidates c
-                JOIN users linked ON linked.id = c.user_id
-               WHERE c.id = $1
-            )
-          LIMIT 1`,
-        [(decoded as any).candidateId, candidateEmail],
+      const talentUser = await lookupTalentAuthUser(
+        query,
+        (decoded as any).candidateId,
+        candidateEmail,
       );
 
-      if (talentUserResult.rows.length === 0) {
+      if (!talentUser) {
         // No linked user account — use candidateId as the user id so profile
         // routes can still find/create a profile row keyed to this identity.
         // This handles candidates who were never registered as JWT users.
@@ -661,8 +653,7 @@ const authenticateJWT = async (
           role: "talent",
         };
       } else {
-        const u = talentUserResult.rows[0];
-        (req as any).user = { id: u.id, email: u.email, role: u.role };
+        (req as any).user = { id: talentUser.id, email: talentUser.email, role: talentUser.role };
       }
       // Preserve the auth form for billing routes that distinguish a
       // candidate-portal identity from a standard users.id JWT.
@@ -7494,19 +7485,14 @@ export async function registerRoutes(
    * GET /api/talent-auth/me
    * Verifies the talent JWT and returns basic identity info.
    */
-  app.get("/api/talent-auth/me", authenticateTalentJWT, async (req: any, res) => {
-    try {
-      const candidate = await storage.getCandidate(req.talentAuth.candidateId);
-      if (!candidate) return res.status(404).json({ error: "Candidate not found" });
-      res.json({
-        candidateId: candidate.id,
-        fullName: candidate.fullName,
-        email: candidate.email,
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to verify session" });
-    }
-  });
+  app.get(
+    "/api/talent-auth/me",
+    authenticateTalentJWT,
+    createTalentIdentityHandler({
+      getCandidate: (candidateId) => storage.getCandidate(candidateId),
+      query,
+    }),
+  );
 
   /**
    * GET /api/talent/applications
@@ -7933,53 +7919,7 @@ export async function registerRoutes(
   // Must be registered BEFORE /api/candidates/:id so Express doesn't match "me" as an id param.
   // Returns the same full DTO as GET /api/candidates/:id so all pages compute an identical
   // completion percentage regardless of which endpoint they use.
-  app.get("/api/candidates/me", authenticateJWT, async (req: any, res) => {
-    try {
-      const userEmail = req.user?.email;
-      if (!userEmail) return res.status(400).json({ error: "No email on authenticated user" });
-      const result = await query(
-        `SELECT c.id,
-                c.display_name        AS "displayName",
-                c.full_name           AS "fullName",
-                c.first_name          AS "firstName",
-                c.last_name           AS "lastName",
-                c.email, c.phone, c.location,
-                c.target_position     AS "targetPosition",
-                c.headline,
-                c.category,
-                c.experience_years    AS "experienceYears",
-                c.seniority,
-                c.core_skills         AS "coreSkills",
-                c.secondary_skills    AS "secondarySkills",
-                c.work_history        AS "workHistory",
-                c.education,
-                c.preferences,
-                c.summary,
-                c.profile_photo_url   AS "profilePhotoUrl",
-                c.resume_url          AS "resumeUrl",
-                c.resume_file_name    AS "resumeFileName",
-                c.linkedin_url        AS "linkedinUrl",
-                c.portfolio_url       AS "portfolioUrl",
-                c.profile_completed   AS "profileCompleted",
-                c.culture_score       AS "cultureScore",
-                c.availability,
-                c.values_answers      AS "valuesAnswers",
-                c.created_at          AS "createdAt",
-                c.updated_at          AS "updatedAt"
-          FROM candidates c
-          JOIN users u
-            ON u.role = 'talent'
-           AND (u.id = c.user_id OR LOWER(u.email) = LOWER(c.email))
-          WHERE LOWER(c.email) = LOWER($1) LIMIT 1`,
-        [userEmail],
-      );
-      if (result.rows.length === 0) return res.status(404).json({ error: "No candidate profile found" });
-      res.json(result.rows[0]);
-    } catch (error) {
-      console.error("GET /api/candidates/me error:", error);
-      res.status(500).json({ error: "Failed to fetch candidate" });
-    }
-  });
+  app.get("/api/candidates/me", authenticateJWT, createCandidateMeHandler(query));
 
   app.get("/api/candidates/:id", async (req: any, res) => {
     try {

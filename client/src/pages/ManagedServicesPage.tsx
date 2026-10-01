@@ -198,7 +198,7 @@ export default function ManagedServicesPage() {
           </p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {pillars.map((pillar) => (
+          {pillars.map((pillar) => ( 
             <div key={pillar.title} className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.20)] backdrop-blur-xl transition duration-300 hover:-translate-y-2 hover:bg-white/[0.07]">
               <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
                 <div className="h-3 w-3 rounded-full" style={{ backgroundColor: brand.primarySoft }} />

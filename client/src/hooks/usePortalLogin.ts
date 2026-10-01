@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { saveTalentAuth, TalentAuthState } from "@/components/TalentLoginModal";
+import { activateTalentSession, TalentAuthState } from "@/components/TalentLoginModal";
+import { signupRetryDelayMs } from "@/lib/signupRetry";
 
 export type PortalType = "client" | "talent";
 
@@ -16,6 +17,7 @@ export type PasswordSetupResult =
 export function usePortalLogin() {
   const { refreshAuth } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const signInPending = useRef(false);
 
   async function signInToPortal(
     portal: PortalType,
@@ -23,15 +25,11 @@ export function usePortalLogin() {
     password: string,
   ): Promise<PortalLoginResult> {
     const normalizedEmail = email.trim().toLowerCase();
-    setIsLoading(true);
-
-    if (import.meta.env.DEV) {
-      console.log("[PORTAL LOGIN]", {
-        portal,
-        normalizedEmail,
-        endpoint: portal === "client" ? "/api/login" : "/api/talent-auth/login",
-      });
+    if (signInPending.current) {
+      return { success: false, message: "Sign in is already in progress. Please wait." };
     }
+    signInPending.current = true;
+    setIsLoading(true);
 
     try {
       if (portal === "talent") {
@@ -40,14 +38,22 @@ export function usePortalLogin() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: normalizedEmail, password }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (res.status === 429) {
-          const retryAfter = data.retryAfter ?? Number(res.headers.get("Retry-After") ?? 900);
+          const retryAfterMs = signupRetryDelayMs(
+            res.headers.get("Retry-After")
+              ?? data.retryAfter
+              ?? data.retry_after
+              ?? data.metadata?.retryAfter
+              ?? data.metadata?.retry_after,
+            Date.now(),
+            15 * 60 * 1000,
+          );
           return {
             success: false,
             rateLimited: true,
-            retryAfter,
+            retryAfter: Math.ceil(retryAfterMs / 1000),
             message: data.message || "Too many attempts. Please try again shortly.",
           };
         }
@@ -66,19 +72,27 @@ export function usePortalLogin() {
           }
           return {
             success: false,
-            message: data.error === "not_found"
+            message: data.message || (data.error === "not_found"
               ? "No account was found for this portal."
-              : "Incorrect email or password.",
+              : res.status >= 500
+                ? "Sign in is temporarily unavailable. Please try again."
+                : res.status === 400
+                  ? "Please check your email and password."
+                  : "Incorrect email or password."),
           };
         }
 
+        const candidate = data.candidate;
         const auth: TalentAuthState = {
-          token: data.token,
-          candidateId: data.candidate.id,
-          email: data.candidate.email,
-          fullName: data.candidate.fullName || data.candidate.email,
+          token: typeof data.token === "string" ? data.token : "",
+          candidateId: typeof candidate?.id === "string" ? candidate.id : "",
+          email: typeof candidate?.email === "string" ? candidate.email : "",
+          fullName: candidate?.fullName || candidate?.email || "",
         };
-        saveTalentAuth(auth);
+        if (!auth.token || !auth.candidateId || !auth.email ||
+          !await activateTalentSession(auth, refreshAuth)) {
+          return { success: false, message: "We couldn't verify the signed-in Talent account. Please try again." };
+        }
         return { success: true, portal: "talent", auth, redirectTo: `/talent-profile/${auth.candidateId}` };
       } else {
         const res = await fetch("/api/login", {
@@ -86,19 +100,27 @@ export function usePortalLogin() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: normalizedEmail, password }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (res.status === 429) {
-          const retryAfter = data.retryAfter ?? Number(res.headers.get("Retry-After") ?? 900);
+          const retryAfterMs = signupRetryDelayMs(
+            res.headers.get("Retry-After")
+              ?? data.retryAfter
+              ?? data.retry_after
+              ?? data.metadata?.retryAfter
+              ?? data.metadata?.retry_after,
+            Date.now(),
+            15 * 60 * 1000,
+          );
           return {
             success: false,
             rateLimited: true,
-            retryAfter,
+            retryAfter: Math.ceil(retryAfterMs / 1000),
             message: data.message || "Too many attempts. Please try again shortly.",
           };
         }
 
-        if (data.success) {
+        if (res.ok && data.success) {
           const role = (data.user?.role ?? "").toLowerCase();
           if (role === "talent") {
             return { success: false, message: "This is a Talent account. Please use the Talent Portal." };
@@ -113,12 +135,20 @@ export function usePortalLogin() {
           if (data.error === "talent_account") {
             return { success: false, message: "This is a Talent account. Please use the Talent Portal." };
           }
-          return { success: false, message: data.message || "Incorrect email or password." };
+          return {
+            success: false,
+            message: data.message || (res.status >= 500
+              ? "Sign in is temporarily unavailable. Please try again."
+              : res.status === 400
+                ? "Please check your email and password."
+                : "Incorrect email or password."),
+          };
         }
       }
     } catch {
       return { success: false, message: "Could not reach the server. Please try again." };
     } finally {
+      signInPending.current = false;
       setIsLoading(false);
     }
   }
@@ -144,12 +174,15 @@ export function usePortalLogin() {
         return { success: false, message: msg };
       }
       const auth: TalentAuthState = {
-        token: data.token,
-        candidateId: data.candidate?.id || data.candidateId,
+        token: typeof data.token === "string" ? data.token : "",
+        candidateId: data.candidate?.id || data.candidateId || "",
         email: data.candidate?.email || normalizedEmail,
         fullName: data.candidate?.fullName || normalizedEmail,
       };
-      saveTalentAuth(auth);
+      if (!auth.token || !auth.candidateId ||
+        !await activateTalentSession(auth, refreshAuth)) {
+        return { success: false, message: "We couldn't verify the signed-in Talent account. Please try again." };
+      }
       return { success: true, auth, redirectTo: `/talent-profile/${auth.candidateId}` };
     } catch {
       return { success: false, message: "Could not reach the server. Please try again." };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,11 @@ import { useLocation } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
 import { authAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { PASSWORD_POLICY_HINT, validatePasswordStrength } from "@shared/passwordPolicy";
+import { signupRetryDelayMs } from "@/lib/signupRetry";
+import { saveTalentAuth } from "@/components/TalentLoginModal";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
+import "./SignUpDialog.css";
 
 type UserType = "client" | "talent" | null;
 type SignupStep = "user-type" | "signup";
@@ -72,9 +76,39 @@ export function SignUpDialog({
   const [showPassword, setShowPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<{ title: string; message: string } | null>(null);
+  const [accountCreated, setAccountCreated] = useState(false);
+  const [retryAt, setRetryAt] = useState(0);
+  const [retrySeconds, setRetrySeconds] = useState(0);
+  const submissionInFlight = useRef(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   useAuth(); // Keep context available for potential future use
+
+  useEffect(() => {
+    if (!retryAt) {
+      setRetrySeconds(0);
+      return;
+    }
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
+      setRetrySeconds(remaining);
+      if (!remaining) setRetryAt(0);
+    };
+    updateRemaining();
+    const timer = window.setInterval(updateRemaining, 1000);
+    document.addEventListener("visibilitychange", updateRemaining);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", updateRemaining);
+    };
+  }, [retryAt]);
+
+  const showSignupError = (title: string, message: string) => {
+    // Keep failures inside the sticky footer. A transient toast can be hidden
+    // by the signup dialog or missed while a phone keyboard is open.
+    setSubmitError({ title, message });
+  };
 
   const resetDialog = () => {
     setCurrentStep(defaultUserType ? "signup" : "user-type");
@@ -89,67 +123,100 @@ export function SignUpDialog({
     });
     setAgreeToTerms(false);
     setShowPassword(false);
+    setSubmitError(null);
+    setAccountCreated(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submissionInFlight.current || retryAt > Date.now() || accountCreated) return;
+    setSubmitError(null);
 
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      toast({ title: "Missing Information", description: "Please fill in all required fields", variant: "destructive" });
+    // Safari/password managers can populate an input without updating React
+    // state. Submit the actual form controls, not a potentially stale snapshot.
+    const fields = new FormData(e.currentTarget as HTMLFormElement);
+    const values = {
+      firstName: String(fields.get("firstName") ?? "").trim(),
+      lastName: String(fields.get("lastName") ?? "").trim(),
+      email: String(fields.get("email") ?? "").trim(),
+      password: String(fields.get("password") ?? ""),
+      confirmPassword: String(fields.get("confirmPassword") ?? ""),
+      company: String(fields.get("company") ?? "").trim(),
+    };
+    setFormData(values);
+
+    if (!values.firstName || !values.lastName || !values.email || !values.password) {
+      showSignupError("Missing information", "Please fill in all required fields.");
       return;
     }
 
-    if (userType === "client" && !formData.company) {
-      toast({ title: "Company Required", description: "Company name is required for client accounts", variant: "destructive" });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+      showSignupError("Check your email", "Please enter a valid email address, such as name@example.com.");
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({ title: "Password Mismatch", description: "Passwords do not match. Please check and try again.", variant: "destructive" });
+    if (userType === "client" && !values.company) {
+      showSignupError("Company required", "Company name is required for client accounts.");
       return;
     }
 
-    if (formData.password.length < 8) {
-      toast({ title: "Password Too Short", description: "Password must be at least 8 characters long", variant: "destructive" });
+    if (values.password !== values.confirmPassword) {
+      showSignupError("Passwords do not match", "Please enter the same password in both password fields.");
+      return;
+    }
+
+    const passwordValidation = validatePasswordStrength(values.password);
+    if (!passwordValidation.isValid) {
+      showSignupError("Check your password", passwordValidation.errors.join(". "));
       return;
     }
 
     if (!agreeToTerms) {
-      toast({ title: "Terms Required", description: "Please agree to the terms and conditions to continue", variant: "destructive" });
+      showSignupError("Terms required", "Please agree to the terms and conditions to continue.");
       return;
     }
 
     if (!userType) {
-      toast({ title: "Account Type Required", description: "Please select an account type (Client or Talent) to continue", variant: "destructive" });
+      showSignupError("Choose an account type", "Please select Client or Talent to continue.");
       return;
     }
 
+    submissionInFlight.current = true;
     setIsLoading(true);
+    let created = false;
     try {
       const signupData = {
-        email: formData.email.trim(),
-        username: formData.email.split("@")[0],
-        password: formData.password,
-        first_name: formData.firstName.trim(),
-        last_name: formData.lastName.trim(),
+        email: values.email,
+        username: values.email.split("@")[0],
+        password: values.password,
+        first_name: values.firstName,
+        last_name: values.lastName,
         role: userType,
-        ...(userType === "client" && { company: formData.company.trim() }),
+        ...(userType === "client" && { company: values.company }),
       };
 
-      console.log("🚀 Sending signup request with data:", { ...signupData, password: "[REDACTED]" });
-      console.log("🚀 Step 1: Calling signup API...");
       const signupResponse = await authAPI.signup(signupData);
+      if (signupResponse?.accountCreated || signupResponse?.success) {
+        created = true;
+        setAccountCreated(true);
+      }
 
-      if (signupResponse.success) {
+      if (signupResponse?.success) {
         const accountType = userType === "client" ? "Client" : "Talent";
-        console.log("✅ Step 1 complete: Signup successful", signupResponse);
 
-        toast({ title: `Welcome to OnSpot!`, description: `Your ${accountType.toLowerCase()} account has been created successfully! Logging you in...` });
-
-        if (signupResponse.token && signupResponse.user) {
-          console.log("✅ Step 2: Token received from signup, storing...");
+        const hasTalentSession = userType !== "talent"
+          || Boolean(signupResponse.talentToken && signupResponse.candidateId);
+        if (signupResponse.token && signupResponse.user && hasTalentSession) {
           localStorage.setItem("onspot_jwt_token", signupResponse.token);
           localStorage.setItem("onspot_user", JSON.stringify(signupResponse.user));
+          if (userType === "talent" && signupResponse.talentToken && signupResponse.candidateId) {
+            saveTalentAuth({
+              token: signupResponse.talentToken,
+              candidateId: signupResponse.candidateId,
+              email: values.email,
+              fullName: `${values.firstName} ${values.lastName}`,
+            });
+          }
 
           toast({ title: "Logged In Successfully", description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!` });
 
@@ -162,28 +229,43 @@ export function SignUpDialog({
             window.location.href = returnTo || "/hire-talent";
           }
         } else {
-          console.error("❌ Step 2 failed: Signup response missing token", signupResponse);
-          toast({ title: "Auto-Login Failed", description: "Account created successfully. Please log in manually to continue.", variant: "destructive" });
+          showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
         }
+      } else if (created) {
+        showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
       } else {
-        const errorMessage = signupResponse.message || "Failed to create account. Please try again.";
-        console.error("❌ Step 1 failed: Signup failed:", { message: signupResponse.message, response: signupResponse });
-        toast({ title: "Account Creation Failed", description: errorMessage, variant: "destructive" });
+        showSignupError("Account creation failed", signupResponse?.message || "Failed to create account. Please try again.");
       }
     } catch (error: any) {
-      console.error("❌ Signup error:", { message: error.message, response: error.response?.data, status: error.response?.status });
-      if (error.name === "TypeError" && error.message.includes("fetch")) {
-        toast({ title: "Network Error", description: "Unable to connect to the server. Please check your connection and try again.", variant: "destructive" });
-      } else if (error.response?.status === 400) {
-        toast({ title: "Validation Error", description: error.response.data?.message || "Invalid signup information provided", variant: "destructive" });
-      } else if (error.response?.status === 409) {
-        toast({ title: "Account Already Exists", description: "An account with this email already exists. Please log in instead.", variant: "destructive" });
-      } else if (error.response?.status >= 500) {
-        toast({ title: "Server Error", description: "Our servers are experiencing issues. Please try again in a few moments.", variant: "destructive" });
+      const status = error.response?.status;
+      const body = error.response?.data;
+      const serverMessage = typeof body?.message === "string" ? body.message
+        : typeof body?.error === "string" ? body.error
+        : typeof body === "string" ? body : "";
+      if (created || error.accountCreated || error.response?.accountCreated || body?.accountCreated
+        || status === 201 || error.status === 201) {
+        created = true;
+        setAccountCreated(true);
+        showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
+      } else if (status === 429) {
+        const now = Date.now();
+        const delayMs = signupRetryDelayMs(error.response?.headers?.["retry-after"] ?? body?.retryAfter, now);
+        setRetrySeconds(Math.ceil(delayMs / 1000));
+        setRetryAt(now + delayMs);
+        showSignupError("Please wait before trying again", serverMessage || "Too many signup attempts. Please wait for the timer below, then try again.");
+      } else if (!error.response) {
+        showSignupError("Connection problem", "Unable to connect to the server. Your details are still here. Please check your connection and try again.");
+      } else if (status === 400) {
+        showSignupError("Check your details", serverMessage || "Invalid signup information provided.");
+      } else if (status === 409) {
+        showSignupError("Account already exists", "An account with this email or username already exists. Please sign in instead, or use a different email address.");
+      } else if (status >= 500) {
+        showSignupError("Server error", "Our servers are experiencing issues. Your details are still here; please try again in a few moments.");
       } else {
-        toast({ title: "Signup Failed", description: error.response?.data?.message || error.message || "An unexpected error occurred during signup", variant: "destructive" });
+        showSignupError("Signup failed", serverMessage || "An unexpected error occurred during signup. Please try again.");
       }
     } finally {
+      submissionInFlight.current = false;
       setIsLoading(false);
     }
   };
@@ -216,6 +298,7 @@ export function SignUpDialog({
   };
 
   const handleBackToUserType = () => {
+    if (submissionInFlight.current || accountCreated) return;
     if (onChooseAnotherAccountType) {
       onChooseAnotherAccountType();
       return;
@@ -232,6 +315,7 @@ export function SignUpDialog({
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
+        if (!isOpen && submissionInFlight.current) return;
         setOpen(isOpen);
         if (!isOpen) resetDialog();
       }}
@@ -265,7 +349,7 @@ export function SignUpDialog({
       >
         {/* Dark card — flex column with capped height + internal scroll */}
         <div
-          className="flex flex-col max-h-[calc(100dvh-2rem)] rounded-2xl overflow-hidden"
+          className="flex flex-col max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-9rem)] rounded-2xl overflow-hidden"
           style={{
             background: "linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 40%, #1e1e55 70%, #1a1a4e 100%)",
             border: "1px solid rgba(91,124,255,0.2)",
@@ -294,6 +378,7 @@ export function SignUpDialog({
                 <button
                   type="button"
                   onClick={handleBackToUserType}
+                  disabled={isLoading || accountCreated}
                   aria-label="Back to account type selection"
                   className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1 text-white/50 hover:text-white/90 text-sm transition-colors"
                   data-testid="button-back"
@@ -409,7 +494,7 @@ export function SignUpDialog({
                 </div>
 
                 {/* Email form — id lets the sticky footer button submit it */}
-                <form id="signup-form" onSubmit={handleSubmit} className="space-y-3">
+                <form id="signup-form" onSubmit={handleSubmit} noValidate className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label htmlFor="firstName" className={darkLabel}>First Name</Label>
@@ -479,8 +564,9 @@ export function SignUpDialog({
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder="Min. 8 chars"
+                        placeholder="8–128 characters"
                         autoComplete="new-password"
+                        aria-describedby="signup-password-hint"
                         data-testid="input-signup-password"
                         className={`${darkInput} pr-10`}
                       />
@@ -493,6 +579,9 @@ export function SignUpDialog({
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <p id="signup-password-hint" className="text-xs leading-relaxed text-white/60">
+                      {PASSWORD_POLICY_HINT}
+                    </p>
                   </div>
 
                   <div className="space-y-1">
@@ -544,11 +633,21 @@ export function SignUpDialog({
               className="shrink-0 px-6 py-4 border-t border-white/10"
               style={{ background: "linear-gradient(to bottom, transparent, #1a1a4e 20%)" }}
             >
+              {submitError && (
+                <div
+                  role="alert"
+                  data-testid="signup-error"
+                  className="mb-3 rounded-lg border border-red-300/40 bg-red-400/10 px-3 py-2 text-sm leading-snug text-red-100"
+                >
+                  <p className="font-semibold">{submitError.title}</p>
+                  <p className="mt-1">{submitError.message}</p>
+                </div>
+              )}
               {/* Primary CTA — references the form by id */}
               <button
                 type="submit"
                 form="signup-form"
-                disabled={isLoading}
+                disabled={isLoading || retrySeconds > 0 || accountCreated}
                 data-testid="button-submit-signup"
                 className="w-full px-6 py-2.5 text-sm font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                 style={{
@@ -560,6 +659,10 @@ export function SignUpDialog({
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" /> Creating Account…
                   </>
+                ) : accountCreated ? (
+                  <span>Account created — sign in below</span>
+                ) : retrySeconds > 0 ? (
+                  <span>Try again in {Math.floor(retrySeconds / 60)}:{String(retrySeconds % 60).padStart(2, "0")}</span>
                 ) : (
                   <>
                     <span>{userType === "client" ? "Create Client Account" : "Create Talent Profile"}</span>
@@ -573,12 +676,14 @@ export function SignUpDialog({
                 <button
                   type="button"
                   onClick={handleBackToUserType}
+                  disabled={isLoading || accountCreated}
                   className="text-xs text-white/35 hover:text-white/65 transition-colors"
                 >
                   ← Back to options
                 </button>
                 <button
                   type="button"
+                  disabled={isLoading}
                   onClick={() => {
                     setOpen(false);
                     resetDialog();

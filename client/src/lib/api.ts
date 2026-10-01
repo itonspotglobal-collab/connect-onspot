@@ -118,7 +118,9 @@ export const authAPI = {
 
       return response.data;
     } catch (error) {
-      console.error("Login API error:", error);
+      console.warn("Login request failed", {
+        status: axios.isAxiosError(error) ? error.response?.status : undefined,
+      });
       throw error;
     }
   },
@@ -135,9 +137,17 @@ export const authAPI = {
   }) => {
     try {
       const response = await api.post("/api/signup", userData);
-      return response.data;
+      // HTTP 201 confirms creation even if the session payload is incomplete
+      // or could not be decoded. Never invite another signup in that case.
+      const payload = response.data && typeof response.data === "object" && !Array.isArray(response.data)
+        ? response.data
+        : {};
+      return { ...payload, accountCreated: response.status === 201 || payload.accountCreated === true };
     } catch (error) {
-      console.error("Signup API error:", error);
+      // Axios errors include the submitted password in config.data.
+      console.warn("Signup request failed", {
+        status: axios.isAxiosError(error) ? error.response?.status : undefined,
+      });
       throw error;
     }
   },

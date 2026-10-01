@@ -1,0 +1,5 @@
+/* The fixed assistant launcher overlaps the sticky signup action on phones.
+   Restore it automatically as soon as the signup form closes. */
+body:has(#signup-form) button[aria-label="Open Vanessa AI assistant"] {
+  display: none !important;
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { LogIn, Eye, EyeOff, Mail, Shield, Zap, Building, User, Users, ArrowLeft, Briefcase, Lock, CheckCircle } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { usePortalLogin } from "@/hooks/usePortalLogin";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 type UserType = "client" | "talent" | null;
@@ -44,7 +44,11 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [loginError, setLoginError] = useState("");
+  const [retrySeconds, setRetrySeconds] = useState(0);
+  const retryUntil = useRef(0);
+  const signInPending = useRef(false);
+  const { signInToPortal } = usePortalLogin();
   const { toast } = useToast();
 
   const resetDialog = () => {
@@ -53,77 +57,59 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
     setEmail("");
     setPassword("");
     setRememberMe(false);
+    setLoginError("");
   };
 
-  // Enhanced error handling with specific messages
-  const getSpecificErrorMessage = (email: string, password: string) => {
-    if (!email || !email.includes('@')) {
-      return {
-        title: "Invalid Email Format",
-        description: "Please enter a valid email address (e.g., name@example.com)"
-      };
-    }
-    
-    if (!password) {
-      return {
-        title: "Password Required",
-        description: "Please enter your password to continue"
-      };
-    }
-    
-    if (password.length < 6) {
-      return {
-        title: "Password Too Short",
-        description: "Password must be at least 6 characters long"
-      };
-    }
-    
-    // Check if account might not exist
-    const commonDomains = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com'];
-    const domain = email.split('@')[1]?.toLowerCase();
-    
-    if (commonDomains.includes(domain)) {
-      return {
-        title: "Account Not Found",
-        description: "No account found with this email. Would you like to sign up instead?"
-      };
-    }
-    
-    return {
-      title: "Incorrect Credentials",
-      description: "The email or password you entered is incorrect. Please try again or reset your password."
+  useEffect(() => {
+    if (!retryUntil.current) return;
+    const updateCooldown = () => {
+      const remaining = Math.max(0, Math.ceil((retryUntil.current - Date.now()) / 1000));
+      setRetrySeconds(remaining);
+      if (remaining === 0) retryUntil.current = 0;
     };
-  };
+    updateCooldown();
+    const interval = window.setInterval(updateCooldown, 1000);
+    return () => window.clearInterval(interval);
+  }, [retrySeconds > 0]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required fields
-    if (!email || !password) {
+    if (signInPending.current || retryUntil.current > Date.now()) return;
+    const form = e.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+    const loginEmail = String(formData.get("email") ?? "");
+    const loginPassword = String(formData.get("password") ?? "");
+
+    if (!loginEmail.trim() || loginPassword.length === 0 || !userType) {
+      const message = "Please enter both email and password.";
+      setLoginError(message);
       toast({
         title: "Missing Information",
-        description: "Please enter both email and password",
+        description: message,
         variant: "destructive",
       });
       return;
     }
 
-    // Basic email format validation
-    if (!email.includes('@') || !email.includes('.')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginEmail.trim())) {
+      const message = "Please enter a valid email address.";
+      setLoginError(message);
       toast({
         title: "Invalid Email Format",
-        description: "Please enter a valid email address",
+        description: message,
         variant: "destructive",
       });
       return;
     }
 
+    signInPending.current = true;
+    setEmail(loginEmail);
+    setPassword(loginPassword);
+    setLoginError("");
     setIsLoading(true);
-    console.log('🔐 Attempting login for:', email.replace(/^(.{3}).*@/, '$1***@'));
-    
     try {
-      const success = await login(email, password, userType);
-      if (success) {
+      const result = await signInToPortal(userType, loginEmail, loginPassword);
+      if (result.success) {
         const portalType = userType === "client" ? "Client Portal" : "Talent Portal";
         toast({
           title: "Login Successful",
@@ -132,61 +118,24 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
         setOpen(false);
         resetDialog();
       } else {
-        // Use generic message since AuthContext handles specific backend errors
+        const message = result.message || "Please check your email and password and try again.";
+        setLoginError(message);
+        if (result.rateLimited && result.retryAfter) {
+          retryUntil.current = Date.now() + result.retryAfter * 1000;
+          setRetrySeconds(result.retryAfter);
+        }
         toast({
           title: "Login Failed",
-          description: "Please check your email and password and try again.",
+          description: message,
           variant: "destructive",
         });
       }
-    } catch (error: any) {
-      console.error('❌ Login error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
-      
-      // Handle different types of errors with specific messages
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        toast({
-          title: "Network Error",
-          description: "Unable to connect to the server. Please check your connection and try again.",
-          variant: "destructive",
-        });
-      } else if (error.response?.status === 401) {
-        // Backend authentication error
-        const errorMessage = error.response.data?.message || "Invalid email or password";
-        toast({
-          title: "Authentication Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } else if (error.response?.status === 400) {
-        // Backend validation error
-        const errorMessage = error.response.data?.message || "Invalid login information provided";
-        toast({
-          title: "Validation Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } else if (error.response?.status >= 500) {
-        // Server error
-        toast({
-          title: "Server Error",
-          description: "Our servers are experiencing issues. Please try again in a few moments.",
-          variant: "destructive",
-        });
-      } else {
-        // Generic error with backend message if available
-        const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred during login";
-        toast({
-          title: "Login Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
+    } catch {
+      const message = "Could not reach the server. Please try again.";
+      setLoginError(message);
+      toast({ title: "Network Error", description: message, variant: "destructive" });
     } finally {
+      signInPending.current = false;
       setIsLoading(false);
     }
   };
@@ -231,12 +180,14 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
   };
 
   const handleBackToUserType = () => {
+    if (signInPending.current) return;
     setCurrentStep("user-type");
     setUserType(null);
   };
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen && signInPending.current) return;
       setOpen(isOpen);
       if (!isOpen) resetDialog();
     }}>
@@ -277,7 +228,9 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
                 <Button 
                   variant="ghost" 
                   size="sm" 
+                  type="button"
                   onClick={handleBackToUserType}
+                  disabled={signInPending.current}
                   className="p-1 h-auto"
                   data-testid="button-back-login"
                 >
@@ -461,13 +414,14 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
                 </>
               ) : null}
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               name="email"
               type="email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
@@ -482,6 +436,7 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
@@ -515,22 +470,29 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
               />
               <Label htmlFor="remember" className="text-sm">Remember me</Label>
             </div>
-            <Button variant="ghost" className="p-0 h-auto text-sm hover:bg-transparent">
+            <Button type="button" variant="ghost" className="p-0 h-auto text-sm hover:bg-transparent">
               Forgot password?
             </Button>
           </div>
 
               <div className="flex flex-col gap-2">
-                <Button type="submit" disabled={isLoading} className="w-full" data-testid="button-submit-login">
-                  {isLoading ? "Signing in..." :
+                <Button type="submit" disabled={isLoading || retrySeconds > 0} className="w-full" data-testid="button-submit-login">
+                  {isLoading ? "Signing in..." : retrySeconds > 0 ? `Try again in ${retrySeconds}s` :
                     userType === "client" ? "Access Client Portal" : "Access Talent Portal"
                   }
                 </Button>
-                <Button type="button" variant="outline" onClick={handleBackToUserType}>
+                <Button type="button" variant="outline" onClick={handleBackToUserType} disabled={isLoading}>
                   Back to Options
                 </Button>
               </div>
             </form>
+
+            {loginError && (
+              <div role="alert" aria-live="assertive" data-testid="login-dialog-error"
+                className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {loginError}
+              </div>
+            )}
 
             <Separator className="my-4" />
 

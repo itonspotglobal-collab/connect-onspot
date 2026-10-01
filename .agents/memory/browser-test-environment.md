@@ -26,3 +26,15 @@ Injected or removed test styles should be followed by a rendering turn before as
 **Why:** In host Chromium, stylesheet invalidation can briefly expose the previous computed style even after the injection/removal promise resolves; deliberate-drift tests otherwise fail intermittently.
 
 **How to apply:** Wait for animation frames after test-only style mutations rather than weakening layout assertions or adding arbitrary long timeouts.
+
+Register request-event waits before triggering the action that emits the request.
+
+**Why:** A Playwright click can resolve after the request has already been emitted; registering `waitForRequest` afterward then times out even though the application submitted correctly.
+
+**How to apply:** Create the request-wait promise first, trigger the click, and then await that promise. Do not add product delays to compensate for a test listener race.
+
+Isolated Vite servers need separate optimizer caches, not just separate ports.
+
+**Why:** Parallel browser fixtures sharing the running preview's cache produced stale dependency hashes, blank lazy-navigation pages, and `Outdated Optimize Dep` responses even when form checks passed.
+
+**How to apply:** Give each fixture a unique temporary cache directory through its subprocess configuration, then remove only that directory during teardown. Never repair a frontend cache issue by restarting a backend that performs prohibited database work.

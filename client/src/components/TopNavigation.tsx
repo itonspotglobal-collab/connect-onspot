@@ -61,6 +61,7 @@ import {
   loadTalentAuth,
   saveTalentAuth,
   clearTalentAuth,
+  activateTalentSession,
   type TalentAuthState,
 } from "@/components/TalentLoginModal";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
@@ -197,7 +198,7 @@ export function TopNavigation() {
         return null;
       }
     },
-    enabled: !!user && user.role === "talent",
+    enabled: !talentAuth && !!user && user.role === "talent",
     staleTime: 2 * 60_000,
   });
   // Derive a public URL for the profile picture; use the stored UUID as a cache-busting key
@@ -467,6 +468,12 @@ export function TopNavigation() {
       }
     };
   }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    const syncTalentAuth = () => setTalentAuth(loadTalentAuth());
+    window.addEventListener("talent-auth-changed", syncTalentAuth);
+    return () => window.removeEventListener("talent-auth-changed", syncTalentAuth);
+  }, []);
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -2419,7 +2426,14 @@ export function TopNavigation() {
                                 email: data.candidate.email,
                                 fullName: data.candidate.fullName || data.candidate.email,
                               };
-                              saveTalentAuth(auth);
+                              if (!await activateTalentSession(auth, refreshAuth)) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Account verification failed",
+                                  description: "We couldn't verify the signed-in Talent account. Please try again.",
+                                });
+                                return;
+                              }
                               setTalentAuth(auth);
                               setShowPortal(false);
                               setModalStep("signin");
