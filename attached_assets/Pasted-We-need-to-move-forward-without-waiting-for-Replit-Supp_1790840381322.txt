@@ -1,0 +1,115 @@
+We need to move forward without waiting for Replit Support, but we are NOT touching the live Production Database yet.
+
+I want you to DESIGN a reconciliation-safe migration strategy for this project.
+
+IMPORTANT:
+- Do NOT modify files yet.
+- Do NOT run migrations.
+- Do NOT run SQL against Production.
+- Do NOT Publish or Republish.
+- Do NOT alter app_schema_migrations.
+- Analysis and proposed patch only.
+
+Problem:
+
+Production's migration ledger is currently through 0017.
+
+The repository contains migrations 0018 through 0031.
+
+Replit Publish may synchronize structural changes from the development database to Production before our application startup migration runner executes.
+
+Some of our migrations contain unconditional CREATE TABLE, ADD COLUMN, CREATE INDEX, CREATE CONSTRAINT, and CREATE TRIGGER statements.
+
+Therefore this sequence is possible:
+
+Replit Publish schema sync
+→ structural object already exists
+→ run-migrations.js sees migration ID missing
+→ migration executes
+→ duplicate-object error
+→ migration rolls back
+→ application fails to start
+
+We need our versioned SQL migrations to remain authoritative for:
+- app_schema_migrations
+- data backfills
+- PL/pgSQL functions
+- triggers
+- constraints
+- partial/unique indexes
+- financial immutability protections
+
+TASK:
+
+Review migrations 0018 through 0031 and propose the smallest safe patch that makes them reconciliation-safe if Replit Publish has already created matching structural objects.
+
+For EACH affected migration/object:
+
+1. Identify unconditional DDL that can collide with Publish-created objects.
+
+2. Classify each object as:
+   - safe to use IF NOT EXISTS
+   - must verify existing definition before continuing
+   - must DROP/CREATE or CREATE OR REPLACE
+   - requires special reconciliation logic
+
+3. Do NOT blindly add IF NOT EXISTS.
+
+If an object already exists, determine what properties must be checked to prove it matches the migration's intended definition.
+
+This is especially important for:
+- foreign keys
+- CHECK constraints
+- unique constraints
+- partial unique indexes
+- column type/nullability/default
+- triggers
+- trigger bindings/events
+- functions
+- financial ledger tables
+
+4. Preserve ALL non-structural migration behavior:
+- data backfills
+- trigger/function creation
+- immutability protections
+- migration ledger insertion
+- transaction behavior
+
+5. Pay particular attention to:
+- 0021_timesheets.sql
+- 0022_timesheet_revision_timezone.sql
+- 0023_billing_mode.sql
+- 0024_talent_invoicing.sql
+- 0025_phase3b_review_fixes.sql
+- 0027_client_late_guaranteed_credits.sql
+- 0029_contract_termination.sql
+- 0030_terminated_contract_snapshot_guards.sql
+- 0031_reconcile_contract_termination.sql
+
+6. Also determine whether modifying historical migrations 0018-0031 is appropriate given that Production has not applied them yet, OR whether a different migration/bootstrap strategy would be safer.
+
+7. Design verification SQL that can be run after the migrations to prove:
+- migrations 0018-0031 are recorded
+- expected tables exist
+- expected columns have correct definitions
+- expected constraints/indexes exist
+- expected functions exist
+- expected triggers exist and are ENABLED
+- backfill preconditions/postconditions are satisfied
+- financial immutability protections are active
+
+8. Design a rollback/failure strategy.
+
+Remember that run-migrations.ts commits each migration separately, so if migration 0025 fails, earlier successful migrations remain committed.
+
+OUTPUT ONLY A PLAN AND PROPOSED CHANGES.
+
+Do not edit the repository yet.
+
+At the end, provide:
+A. recommended migration strategy
+B. files that would need modification
+C. exact reason for each modification
+D. risks remaining
+E. isolated rehearsal procedure using Replit Deployment Preview or another non-production copy
+F. production deployment procedure only after rehearsal succeeds
