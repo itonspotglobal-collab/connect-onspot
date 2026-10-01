@@ -1,0 +1,242 @@
+## Task: Fix Client and Talent Contract-Ending Routes
+
+Fix **Priority 1 only**. Do not work on other MVP gaps, security issues, refactors, or unrelated cleanup.
+
+### Problem
+
+The backend contract-termination functionality is already implemented. Do **not** rebuild or redesign the termination backend.
+
+The frontend already contains these nested routes:
+
+- `/client/contract-endings` → `ContractEndings` with `role="client"`
+- `/talent/contract-endings` → `ContractEndings` with `role="talent"`
+
+However, these routes are only declared inside `ClientRouter` and `TalentRouter`.
+
+The outer `AppContent` `<Switch>` in:
+
+`client/src/App.tsx`
+
+does not currently mount these URL paths, so the request never reaches the appropriate nested router.
+
+As a result:
+
+- `/client/contract-endings` currently falls through instead of reaching `ClientRouter`.
+- `/talent/contract-endings` currently falls through instead of reaching `TalentRouter`.
+
+The Admin contract-ending route is already reachable. Use the existing routing architecture as the reference, but preserve the correct role-specific Client and Talent layouts/authentication behavior.
+
+---
+
+## Required Fix
+
+### 1. Fix the outer routing
+
+In `client/src/App.tsx`, update the outer `AppContent` route table so that:
+
+`/client/contract-endings`
+
+is mounted through the existing `ClientRouter`.
+
+And:
+
+`/talent/contract-endings`
+
+is mounted through the existing `TalentRouter`.
+
+Do **not** duplicate the `ContractEndings` page directly in the outer router if routing through the existing role router is the established architecture.
+
+The intended flow should be:
+
+Client:
+
+`AppContent`
+→ `/client/contract-endings`
+→ `ClientRouter`
+→ existing `<Route path="/client/contract-endings" ...>`
+→ `<ContractEndings role="client" />`
+
+Talent:
+
+`AppContent`
+→ `/talent/contract-endings`
+→ `TalentRouter`
+→ existing `<Route path="/talent/contract-endings" ...>`
+→ `<ContractEndings role="talent" />`
+
+Preserve all existing authentication and role protections.
+
+Do not make these routes public.
+
+### 2. Audit the existing ContractEndings component
+
+After making the routes reachable, inspect the existing `ContractEndings` implementation.
+
+Confirm that the Client version calls the existing real Client contract-termination API and that the Talent version calls the existing real Talent contract-termination API.
+
+Trace the requests all the way to the registered backend handlers.
+
+Do not create replacement endpoints if working endpoints already exist.
+
+Do not mock termination responses.
+
+Do not replace real API calls with fake/sample data.
+
+### 3. Do not modify termination business logic unless a genuine wiring bug is discovered
+
+The backend termination system already contains business rules around areas such as:
+
+- effective end dates
+- proration
+- locked-ledger protection
+- role/ownership validation
+- termination request persistence
+- Admin review/decision flow
+
+This task is primarily a **routing fix**.
+
+Do not rewrite, simplify, bypass, or remove those protections.
+
+If you discover a separate backend defect while testing, document it first rather than silently redesigning the termination workflow.
+
+---
+
+## Required Verification
+
+Do not consider this task complete just because the application compiles.
+
+### Client verification
+
+Using an authenticated **Client account**:
+
+1. Navigate to `/client/contract-endings`.
+2. Confirm the page loads normally instead of returning NotFound/404.
+3. Confirm the normal Client portal layout remains intact.
+4. Confirm eligible contracts are loaded from the real backend.
+5. Submit a real contract-ending request using appropriate test data.
+6. Confirm the backend accepts and persists the request.
+7. Confirm the UI reflects the real result returned by the backend.
+
+Capture a screenshot showing the successfully loaded Client Contract End Requests page.
+
+### Talent verification
+
+Using an authenticated **Talent account**:
+
+1. Navigate to `/talent/contract-endings`.
+2. Confirm the page loads normally instead of falling through/redirecting incorrectly.
+3. Confirm Talent authentication remains enforced.
+4. Confirm eligible contracts are loaded from the real backend.
+5. Submit a real contract-ending request using appropriate test data.
+6. Confirm the backend accepts and persists the request.
+7. Confirm the UI reflects the real backend result.
+
+Capture a screenshot showing the successfully loaded Talent contract-ending page.
+
+### Negative/access verification
+
+Also confirm:
+
+- Unauthenticated users cannot access protected contract-ending functionality.
+- A Client cannot use the Talent termination path to bypass role restrictions.
+- A Talent cannot use the Client termination path to bypass role restrictions.
+- `/admin/contract-endings` continues working as before.
+- Existing Client and Talent routes are not broken by the new outer-route declarations.
+
+---
+
+## Scope Restrictions
+
+Do NOT:
+
+- redesign `ContractEndings`
+- redesign the termination backend
+- change proration logic
+- change ledger locking behavior
+- change effective-date calculations
+- build new termination APIs when existing handlers already provide them
+- modify unrelated Client/Talent routing
+- fix other MVP priorities
+- perform unrelated refactoring
+- work on security issues from the separate security workstream
+- add mock/sample termination data merely to make testing pass
+
+Keep the change as small and targeted as possible.
+
+---
+
+## Before Editing
+
+First inspect:
+
+- `client/src/App.tsx`
+- the existing `ContractEndings` component
+- the existing Client/Talent nested route declarations
+- the `/admin/contract-endings` routing pattern
+- the registered backend contract-termination routes/handlers
+
+Then briefly state:
+
+1. why the two routes are currently unreachable,
+2. exactly what route declarations need to be added to the outer switch,
+3. which existing backend endpoints `ContractEndings` uses.
+
+Only then implement the fix.
+
+---
+
+## Completion Report
+
+When finished, report:
+
+### Files changed
+List every modified file and briefly explain why it changed.
+
+### Routing fix
+Show the exact outer routes that were added and explain how they dispatch into `ClientRouter` and `TalentRouter`.
+
+### API verification
+For both Client and Talent, provide:
+
+- HTTP method
+- endpoint
+- frontend caller
+- backend handler
+- result of the test request
+
+### Client test
+Report:
+
+- account role used: Client
+- page loaded: PASS/FAIL
+- eligible contract data loaded: PASS/FAIL
+- termination request submitted: PASS/FAIL
+- request persisted/returned by backend: PASS/FAIL
+- screenshot evidence
+
+### Talent test
+Report:
+
+- account role used: Talent
+- page loaded: PASS/FAIL
+- eligible contract data loaded: PASS/FAIL
+- termination request submitted: PASS/FAIL
+- request persisted/returned by backend: PASS/FAIL
+- screenshot evidence
+
+### Regression checks
+Report PASS/FAIL for:
+
+- Client route protection
+- Talent route protection
+- `/admin/contract-endings`
+- existing Client navigation
+- existing Talent navigation
+
+### Important
+
+Do not claim successful end-to-end verification unless you actually performed the request against the running application with real authenticated test accounts.
+
+If the environment does not contain suitable Client/Talent accounts or eligible contracts, report exactly what prevented the end-to-end test instead of fabricating success or screenshots.
+
+The final result should be a **minimal routing fix with real runtime verification**, not a redesign of the contract termination system.

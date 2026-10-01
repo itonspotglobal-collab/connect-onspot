@@ -601,6 +601,7 @@ function AppContent() {
       <Route path="/talent/clock" component={TalentRouter} />
       <Route path="/talent/timesheets" component={TalentRouter} />
       <Route path="/talent/invoices" component={TalentRouter} />
+      <Route path="/talent/contract-endings" component={TalentRouter} />
       <Route path="/why-onspot" component={PublicRouter} />
       <Route path="/why-onspot/:page" component={PublicRouter} />
       <Route path="/amazing" component={PublicRouter} />
@@ -627,6 +628,7 @@ function AppContent() {
       <Route path="/client/timesheets" component={ClientRouter} />
       <Route path="/client/monthly-invoices" component={ClientRouter} />
       <Route path="/client/monthly-invoices/:id" component={ClientRouter} />
+      <Route path="/client/contract-endings" component={ClientRouter} />
       <Route path="/client/billing/invoices/:id" component={ClientRouter} />
       <Route path="/client/billing" component={ClientRouter} />
       <Route path="/client-profile" component={ClientRouter} />
