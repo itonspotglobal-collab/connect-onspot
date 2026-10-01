@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manifesto — Final Direction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0A0F2E;
+    --navy-panel:#12183F;
+    --gold:#F5A623;
+    --white:#FFFFFF;
+    --gray-light:#B8BAD6;
+    --gray-muted:#6F72A0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--navy);
+    color:var(--white);
+    -webkit-font-smoothing:antialiased;
+  }
+  .script{font-family:'Caveat',cursive;}
+  .display{font-family:'Bricolage Grotesque',sans-serif;}
+
+  .wrap{max-width:760px; margin:0 auto; padding:120px 32px 0;}
+
+  /* ---------- Headline (no header above it, overlap preserved) ---------- */
+  .headline{
+    font-weight:800;
+    font-size:clamp(48px, 7vw, 92px);
+    line-height:0.90;
+    letter-spacing:-0.02em;
+    margin-bottom:28px;
+  }
+  .headline .row{display:block;}
+  .headline .row:first-child{color:var(--white);}
+  .headline .row:last-child{color:var(--gray-muted); opacity:0.6; margin-top:-0.1em;}
+
+  .back-link{
+    font-size:15px; font-weight:500; color:var(--gray-light);
+    text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+    margin-bottom:72px;
+  }
+
+  /* ---------- Body copy ---------- */
+  .lead{
+    font-size:21px; line-height:1.75; color:var(--white); font-weight:500;
+    margin-bottom:36px;
+  }
+  p{
+    font-size:19px; line-height:1.8; color:var(--gray-light);
+    margin-bottom:32px;
+  }
+  .emphasis{
+    font-family:'Caveat',cursive;
+    font-size:30px; font-weight:600;
+    color:var(--gold);
+    line-height:1.3;
+    margin:48px 0;
+  }
+  .divider{
+    width:48px; height:2px; background:var(--gray-muted); opacity:0.4;
+    margin:56px 0;
+  }
+  ul{list-style:none; margin-bottom:32px;}
+  li{
+    font-size:19px; line-height:1.7; color:var(--gray-light);
+    margin-bottom:20px; padding-left:24px; position:relative;
+  }
+  li::before{
+    content:"";
+    position:absolute; left:0; top:11px;
+    width:6px; height:6px; border-radius:50%;
+    background:var(--gold);
+  }
+
+  /* ---------- Signature ---------- */
+  .signature{margin:72px 0 56px;}
+  .signature .line{
+    font-family:'Caveat',cursive;
+    font-size:38px; font-weight:600; color:var(--gold);
+    margin-bottom:8px;
+  }
+  .signature .role{
+    font-size:15px; color:var(--gray-muted);
+  }
+
+  /* ---------- Closing panel ---------- */
+  .closing{
+    background:var(--navy-panel);
+    border-radius:16px;
+    padding:36px 40px;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+    margin-bottom:64px;
+  }
+  .closing p{
+    font-size:17px; color:var(--gray-light); margin:0; max-width:460px;
+  }
+  .closing a{
+    font-size:16px; font-weight:700; color:var(--gold);
+    text-decoration:none; white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1 class="headline">
+    <span class="row">The OnSpot</span>
+    <span class="row">Manifesto</span>
+  </h1>
+  <a href="#" class="back-link">← About OnSpot</a>
+
+  <p class="lead">Somewhere along the way, work got complicated. Not the work itself — the systems built up around it.</p>
+
+  <p>Talent stopped setting their own value. Someone else decided what you were worth, where you could work, who you could work for, and how much of what the client paid would actually reach you.</p>
+
+  <p>Businesses got boxed in too — by headcount, by geography, by recruiting cycles that take months, by layer after layer of markup standing between a great person and the company that needed them.</p>
+
+  <div class="emphasis">We don't accept that.</div>
+
+  <p>The problem was never each other. It was everything standing in between — and how much of it stayed hidden.</p>
+
+  <p>People should be free to work on their terms. Businesses should be free to grow on theirs.</p>
+
+  <ul>
+    <li>Freedom to choose the work that's actually worth your time.</li>
+    <li>Freedom to earn what your work is actually worth.</li>
+    <li>Freedom to hire the right person, wherever they are.</li>
+    <li>Freedom to build a team without unnecessary layers in the way.</li>
+  </ul>
+
+  <div class="divider"></div>
+
+  <p>This isn't a freelance platform. It isn't an outsourcing firm. Freedom is the reason any of this exists at all.</p>
+
+  <p>We're not free either — we don't pretend to be. OnSpot takes a fee, same as anyone standing between a client and the work getting done. The difference is what that fee is, and what it isn't.</p>
+
+  <p>It's small. It's the only cut anywhere in the transaction — not one of several nobody can see. Talent sets a rate and keeps every bit of it.</p>
+
+  <div class="signature">
+    <div class="line script">Work Without Limits.</div>
+    <div class="role">— Nur Laminero, Co-Founder &amp; CEO</div>
+  </div>
+
+  <div class="closing">
+    <p>OnSpot exists to make the way work happens more direct, more visible, and more fair.</p>
+    <a href="#">More about OnSpot →</a>
+  </div>
+</div>
+
+</body>
+</html>

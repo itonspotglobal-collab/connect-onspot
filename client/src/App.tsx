@@ -673,6 +673,10 @@ function AppContent() {
 
 function GlobalVanessaWidget() {
   const { showVanessaChat, isMinimized, openVanessa, closeVanessa } = useVanessa();
+  const [location] = useLocation();
+
+  // Keep the manifesto's standalone reading layout free of floating controls.
+  if (location === "/manifesto") return null;
 
   return (
     <>

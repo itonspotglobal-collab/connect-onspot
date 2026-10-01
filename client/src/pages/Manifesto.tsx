@@ -1,343 +1,271 @@
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
-import { Footer } from "@/components/Footer";
-
-const INK = "#080B2A";
-const MUTED = "rgba(8,11,42,0.72)";
-const SOFT = "rgba(8,11,42,0.54)";
-const GOLD = "#9A6500";
-const PAPER = "#F2F3FF";
 
 const freedoms = [
   "Freedom to choose the work that's actually worth your time.",
   "Freedom to earn what your work is actually worth.",
   "Freedom to hire the right person, wherever they are.",
   "Freedom to build a team without unnecessary layers in the way.",
-  "Freedom to grow without being boxed in by geography or headcount.",
-  "Freedom to move — between roles, between rates, between what's next.",
 ];
-
-function ManifestoParagraph({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <p
-      className={`manifesto-copy text-left sm:text-justify ${className}`}
-      style={{
-        color: MUTED,
-        fontFamily: "Inter, sans-serif",
-        fontSize: "clamp(1.0625rem, 1.65vw, 1.3125rem)",
-        lineHeight: 1.7,
-        letterSpacing: "normal",
-        textWrap: "pretty",
-      }}
-    >
-      {children}
-    </p>
-  );
-}
-
-function Handwritten({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <span
-      className={className}
-      style={{
-        color: GOLD,
-        fontFamily: "'Caveat', cursive",
-        fontSize: "1.35em",
-        fontWeight: 600,
-        letterSpacing: "0.005em",
-        lineHeight: 1,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
 
 export default function Manifesto() {
   return (
-    <div
-      className="manifesto-page min-h-screen"
-      style={{
-        background: `radial-gradient(circle at 84% 8%, rgba(71,78,173,0.12), transparent 30rem), linear-gradient(160deg, #F4F5FF 0%, ${PAPER} 54%, #EDEFFF 100%)`,
-        color: INK,
-      }}
-    >
+    <div className="manifesto-page">
       <style>{`
-        .manifesto-unfurl {
+        /* The reference imports Inter only through 600, then synthesizes its
+           heavier title/link weights. Isolate that face from the app's 700
+           face so the approved letterforms remain identical. */
+        @font-face {
+          font-family: "Manifesto Inter";
+          font-style: normal;
+          font-weight: 600;
+          font-display: swap;
+          src: url("/fonts/manifesto-inter-reference-600.woff2") format("woff2");
+        }
+
+        .manifesto-page {
+          display: flow-root;
+          min-height: 100vh;
+          background: #0A0F2E;
+          color: #FFFFFF;
+          font-family: Inter, sans-serif;
+          font-size: 16px;
+          font-weight: 400;
+          line-height: normal;
+          -webkit-font-smoothing: antialiased;
+        }
+
+        .manifesto-page *,
+        .manifesto-page *::before,
+        .manifesto-page *::after {
+          box-sizing: border-box;
+        }
+
+        .manifesto-page .manifesto-wrap {
+          max-width: 760px;
+          margin: 0 auto;
+          padding: 120px 32px 0;
+        }
+
+        .manifesto-page .manifesto-headline {
+          margin: 0 0 28px;
+          font-family: "Manifesto Inter", Inter, sans-serif;
+          font-size: clamp(48px, 7vw, 92px);
+          font-weight: 800;
+          line-height: 0.9;
+          letter-spacing: -0.02em;
+        }
+
+        .manifesto-page .manifesto-headline-row {
+          display: block;
+        }
+
+        .manifesto-page .manifesto-headline-row:first-child {
+          color: #FFFFFF;
+        }
+
+        .manifesto-page .manifesto-headline-row:last-child {
+          margin-top: -0.1em;
+          color: #6F72A0;
+          opacity: 0.6;
+        }
+
+        .manifesto-page .manifesto-about-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin: 0 0 72px;
+          color: #B8BAD6;
+          font-size: 15px;
+          font-weight: 500;
+          text-decoration: none;
+        }
+
+        .manifesto-page .manifesto-about-link:hover {
+          color: #FFFFFF;
+        }
+
+        .manifesto-page .manifesto-lead {
+          margin: 0 0 36px;
+          color: #FFFFFF;
+          font-size: 21px;
+          font-weight: 500;
+          line-height: 1.75;
+        }
+
+        .manifesto-page .manifesto-copy {
+          margin: 0 0 32px;
+          color: #B8BAD6;
+          font-size: 19px;
+          line-height: 1.8;
+        }
+
+        .manifesto-page .manifesto-emphasis {
+          margin: 48px 0;
+          color: #F5A623;
+          font-family: Caveat, cursive;
+          font-size: 30px;
+          font-weight: 600;
+          line-height: 1.3;
+        }
+
+        .manifesto-page .manifesto-divider {
+          width: 48px;
+          height: 2px;
+          margin: 56px 0;
+          background: linear-gradient(90deg, #F5A623 0 8px, #6F72A0 8px 100%);
+          opacity: 0.4;
+        }
+
+        .manifesto-page .manifesto-freedoms {
+          margin: 0 0 32px;
+          padding: 0;
+          list-style: none;
+        }
+
+        .manifesto-page .manifesto-freedoms li {
           position: relative;
-          isolation: isolate;
-          padding-top: 1.25rem;
-          background: rgba(242, 243, 255, 0.2);
+          margin: 0 0 20px;
+          padding-left: 24px;
+          color: #B8BAD6;
+          font-size: 19px;
+          line-height: 1.7;
         }
 
-        .manifesto-unfurl::before,
-        .manifesto-unfurl::after {
-          content: "";
+        .manifesto-page .manifesto-freedoms li::before {
           position: absolute;
-          left: 4%;
-          right: 4%;
-          height: 1.25rem;
-          pointer-events: none;
-          border-radius: 999px;
-          background: linear-gradient(
-            180deg,
-            rgba(71, 78, 173, 0.2),
-            rgba(71, 78, 173, 0.04) 58%,
-            transparent
-          );
-          box-shadow: 0 -0.75rem 1.75rem rgba(71, 78, 173, 0.08);
+          top: 11px;
+          left: 0;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #F5A623;
+          content: "";
         }
 
-        .manifesto-unfurl::before {
-          top: 0;
-          transform-origin: center bottom;
+        .manifesto-page .manifesto-signature {
+          margin: 72px 0 56px;
         }
 
-        .manifesto-unfurl::after {
-          bottom: 0;
-          transform: scaleY(0.55);
-          opacity: 0.48;
-          transform-origin: center top;
-          background: linear-gradient(
-            180deg,
-            transparent,
-            rgba(71, 78, 173, 0.04) 42%,
-            rgba(71, 78, 173, 0.16)
-          );
-          box-shadow: 0 0.75rem 1.75rem rgba(71, 78, 173, 0.06);
+        .manifesto-page .manifesto-signature-line {
+          margin: 0 0 8px;
+          color: #F5A623;
+          font-family: Caveat, cursive;
+          font-size: 38px;
+          font-weight: 600;
         }
 
-        @media (prefers-reduced-motion: no-preference) {
-          @supports (animation-timeline: scroll()) {
-            .manifesto-unfurl::before {
-              animation: manifesto-lip-settle 1ms linear both;
-              animation-timeline: scroll(root block);
-              animation-range: 0% 18%;
-            }
-
-            .manifesto-unfurl::after {
-              animation: manifesto-tail-unfurl 1ms linear both;
-              animation-timeline: scroll(root block);
-              animation-range: 82% 100%;
-            }
-          }
+        .manifesto-page .manifesto-signature-role {
+          margin: 0;
+          color: #6F72A0;
+          font-size: 15px;
         }
 
-        @media (prefers-reduced-motion: reduce) {
-          .manifesto-unfurl::before,
-          .manifesto-unfurl::after {
-            animation: none;
-          }
+        .manifesto-page .manifesto-closing {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+          margin-bottom: 64px;
+          padding: 36px 40px;
+          border-radius: 16px;
+          background: #12183F;
         }
 
-        @keyframes manifesto-lip-settle {
-          from {
-            transform: scaleY(1) translateY(0);
-            opacity: 0.9;
-          }
-          to {
-            transform: scaleY(0.22) translateY(-0.55rem);
-            opacity: 0.26;
-          }
+        .manifesto-page .manifesto-closing-copy {
+          max-width: 460px;
+          line-height: 1.8;
+          margin: 0;
+          color: #B8BAD6;
+          font-size: 17px;
         }
 
-        @keyframes manifesto-tail-unfurl {
-          from {
-            transform: scaleY(0.35);
-            opacity: 0.18;
-          }
-          to {
-            transform: scaleY(0.95);
-            opacity: 0.58;
-          }
+        .manifesto-page .manifesto-closing-link {
+          font-family: "Manifesto Inter", Inter, sans-serif;
+          color: #F5A623;
+          font-size: 16px;
+          font-weight: 700;
+          text-decoration: none;
+          white-space: nowrap;
         }
 
-        @media (max-width: 640px) {
-          .manifesto-unfurl {
-             padding-top: 1rem;
-          }
+        .manifesto-page .manifesto-closing-link:hover {
+          color: #FFFFFF;
+        }
 
-          .manifesto-unfurl::before,
-          .manifesto-unfurl::after {
-            left: 2%;
-            right: 2%;
-            height: 0.9rem;
+        @media (max-width: 600px) {
+          .manifesto-page .manifesto-closing {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 28px 24px;
           }
         }
       `}</style>
-      <main>
-        <section className="mx-auto max-w-[1000px] px-6 pb-16 pt-12 sm:px-10 sm:pb-20 sm:pt-20 lg:px-14 lg:pb-24 lg:pt-24">
-          <div className="max-w-[840px]">
-            <p className="mb-5 flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-[#9A6500] sm:mb-7">
-              <span aria-hidden className="h-px w-9 bg-[#9A6500]" />
-              Why We Built OnSpot
-            </p>
-            <h1
-              className="max-w-[800px] text-[#080B2A]"
-              style={{
-                fontFamily: "'Bricolage Grotesque', sans-serif",
-                fontSize: "clamp(3.05rem, 8vw, 7rem)",
-                lineHeight: 1.02,
-                letterSpacing: "-0.025em",
-                fontWeight: 700,
-                margin: 0,
-              }}
-            >
-              The OnSpot
-              <br />
-              <span style={{ color: "rgba(8,11,42,0.64)" }}>Manifesto</span>
-            </h1>
-            <Link href="/why-onspot/about">
-              <span className="mt-4 inline-flex min-h-11 cursor-pointer items-center gap-2 text-xs font-semibold text-[#080B2A]/55 transition-colors hover:text-[#080B2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9A6500] sm:mt-5">
-                <ArrowLeft className="h-3.5 w-3.5" />
-                About OnSpot
-              </span>
-            </Link>
-          </div>
 
-          <div className="manifesto-unfurl mt-10 max-w-[720px] sm:mt-14 lg:mt-16">
-            <article className="space-y-9 sm:space-y-10">
-              <ManifestoParagraph>
-                Somewhere along the way, work got complicated. Not the work itself — the systems built up around it.
-              </ManifestoParagraph>
+      <main className="manifesto-wrap">
+        <h1 className="manifesto-headline">
+          <span className="manifesto-headline-row">The OnSpot</span>
+          <span className="manifesto-headline-row">Manifesto</span>
+        </h1>
+        <Link href="/why-onspot/about" className="manifesto-about-link">
+          ← About OnSpot
+        </Link>
 
-              <ManifestoParagraph>
-                Talent stopped setting their own value. Someone else decided what you were worth, where you could work, who you could work for, and how much of what the client paid would actually reach you.
-              </ManifestoParagraph>
+        <p className="manifesto-lead">
+          Somewhere along the way, work got complicated. Not the work itself — the systems built up around it.
+        </p>
 
-              <ManifestoParagraph>
-                Businesses got boxed in too — by headcount, by geography, by recruiting cycles that take months, by layer after layer of markup standing between a great person and the company that needed them.
-              </ManifestoParagraph>
+        <p className="manifesto-copy">
+          Talent stopped setting their own value. Someone else decided what you were worth, where you could work, who you could work for, and how much of what the client paid would actually reach you.
+        </p>
 
-              <ManifestoParagraph>
-                Neither side asked for this. Both sides just accepted it, because that's how it's always been done.
-              </ManifestoParagraph>
+        <p className="manifesto-copy">
+          Businesses got boxed in too — by headcount, by geography, by recruiting cycles that take months, by layer after layer of markup standing between a great person and the company that needed them.
+        </p>
 
-              <p
-                className="py-2"
-                style={{
-                  color: INK,
-                  fontFamily: "'Caveat', cursive",
-                  fontSize: "clamp(1.35rem, 3vw, 2rem)",
-                  fontWeight: 600,
-                  lineHeight: 1.2,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                We don't accept that.
-              </p>
+        <div className="manifesto-emphasis">We don't accept that.</div>
 
-              <ManifestoParagraph>
-                The problem was never each other. It was everything standing in between — and how much of it stayed hidden.
-              </ManifestoParagraph>
+        <p className="manifesto-copy">
+          The problem was never each other. It was everything standing in between — and how much of it stayed hidden.
+        </p>
 
-              <ManifestoParagraph>
-                People should be free to work on their terms. Businesses should be free to grow on theirs.
-              </ManifestoParagraph>
+        <p className="manifesto-copy">
+          People should be free to work on their terms. Businesses should be free to grow on theirs.
+        </p>
 
-              <ul
-                aria-label="The freedoms OnSpot stands for"
-                className="manifesto-freedom-list list-none space-y-6 border-y border-[rgba(8,11,42,0.15)] py-9 sm:space-y-8 sm:py-12"
-              >
-                {freedoms.map((freedom) => (
-                  <li key={freedom} className="flex gap-4">
-                    <span aria-hidden className="mt-[0.8em] h-1.5 w-1.5 shrink-0 rounded-full bg-[#9A6500]" />
-                    <span
-                      style={{
-                        color: INK,
-                        fontFamily: "Inter, sans-serif",
-                        fontSize: "clamp(1.35rem, 2.8vw, 2.1rem)",
-                        lineHeight: 1.24,
-                         letterSpacing: "normal",
-                      }}
-                    >
-                      {freedom}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+        <ul className="manifesto-freedoms">
+          {freedoms.map((freedom) => (
+            <li key={freedom}>{freedom}</li>
+          ))}
+        </ul>
 
-              <ManifestoParagraph>
-                This isn't a freelance platform. It isn't an outsourcing firm. Those are mechanisms — ways of getting work done. Freedom is the reason any of this exists at all.
-              </ManifestoParagraph>
+        <div className="manifesto-divider" aria-hidden="true" />
 
-              <ManifestoParagraph>
-                We're not free either — we don't pretend to be. OnSpot takes a fee, same as anyone standing between a client and the work getting done. The difference is what that fee is, and what it isn't.
-              </ManifestoParagraph>
+        <p className="manifesto-copy">
+          This isn't a freelance platform. It isn't an outsourcing firm. Freedom is the reason any of this exists at all.
+        </p>
 
-              <ManifestoParagraph>
-                It's small. It's the same for everyone. And it's the only cut anywhere in the transaction — not one of several nobody can see. Talent sets a rate and keeps every bit of it. Clients see exactly what they're paying and exactly why. Nothing hidden, nothing padded, nothing added in the fine print.
-              </ManifestoParagraph>
+        <p className="manifesto-copy">
+          We're not free either — we don't pretend to be. OnSpot takes a fee, same as anyone standing between a client and the work getting done. The difference is what that fee is, and what it isn't.
+        </p>
 
-              <ManifestoParagraph>
-                That's not a discount. It's not a compromise. It's what happens when you replace an invisible cut with a visible one.
-              </ManifestoParagraph>
+        <p className="manifesto-copy">
+          It's small. It's the only cut anywhere in the transaction — not one of several nobody can see. Talent sets a rate and keeps every bit of it.
+        </p>
 
-              <ManifestoParagraph>
-                We're not on the side of the client. We're not on the side of the talent.
-              </ManifestoParagraph>
+        <div className="manifesto-signature">
+          <div className="manifesto-signature-line">Work Without Limits.</div>
+          <div className="manifesto-signature-role">— Nur Laminero, Co-Founder &amp; CEO</div>
+        </div>
 
-              <ManifestoParagraph>
-                We're on the side of the transaction actually being fair to both.
-              </ManifestoParagraph>
-
-              <div className="border-t border-[rgba(8,11,42,0.15)] pt-10 sm:pt-14">
-                <p
-                  style={{
-                    color: INK,
-                    fontFamily: "'Caveat', cursive",
-                    fontSize: "clamp(1.5rem, 3.2vw, 2.25rem)",
-                    fontWeight: 600,
-                    lineHeight: 1.15,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  Work Without Limits.
-                </p>
-                <p
-                  className="mt-8"
-                  style={{
-                    color: SOFT,
-                    fontFamily: "'Caveat', cursive",
-                    fontSize: "clamp(1.1rem, 1.8vw, 1.35rem)",
-                    lineHeight: 1.2,
-                    margin: 0,
-                  }}
-                >
-                  — Nur Laminero, Co-Founder &amp; CEO
-                </p>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="border-t border-[rgba(8,11,42,0.1)] bg-[rgba(71,78,173,0.04)]">
-          <div className="mx-auto flex max-w-[1000px] flex-col gap-5 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-6 lg:px-14">
-            <p className="max-w-xl text-sm leading-relaxed text-[#080B2A]/55">
-              OnSpot exists to make the way work happens more direct, more visible, and more fair.
-            </p>
-            <Link href="/why-onspot/about">
-              <span className="inline-flex min-h-12 cursor-pointer items-center gap-2 text-sm font-semibold text-[#9A6500] transition-colors hover:text-[#080B2A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9A6500]">
-                More about OnSpot <ArrowRight className="h-4 w-4" />
-              </span>
-            </Link>
-          </div>
-        </section>
+        <div className="manifesto-closing">
+          <p className="manifesto-closing-copy">
+            OnSpot exists to make the way work happens more direct, more visible, and more fair.
+          </p>
+          <Link href="/why-onspot/about" className="manifesto-closing-link">
+            More about OnSpot →
+          </Link>
+        </div>
       </main>
-
-      <Footer variant="light" separator />
     </div>
   );
 }

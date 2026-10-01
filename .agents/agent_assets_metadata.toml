@@ -447,3 +447,31 @@ mtime_ms = 1790834149081
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/5cacead3-7d6b-4156-a33f-be15a792cafd/55364e38-a751-40fe-82ec-27a0b8507b3a"
 storage_version_token = "1790834169002916"
 content_type = "image/png"
+
+[[outputs]]
+id = "dHo18_30k_ckM_lZAl-PN"
+uri = "file://screenshots/manifesto-rebuilt-1280.png"
+type = "image"
+title = "Rebuilt Manifesto — desktop screenshot"
+description = "Full-page capture of the running app, compared directly against the supplied HTML at 1280px and 1440px. The only detected desktop difference is the requested small gold divider accent."
+logical_id = "f99a0064-ccee-4985-8d6b-1d08cfd4908d"
+content_hash = "sha256:bec17b02723a40f055bc5cfad82b3c5d33740ecdc064817fbd7e3ad387e584e5"
+size = 164965
+mtime_ms = 1790835440745
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/f99a0064-ccee-4985-8d6b-1d08cfd4908d/4e013b3e-9e9c-4562-baad-139a42b6f511"
+storage_version_token = "1790835521623897"
+content_type = "image/png"
+
+[[outputs]]
+id = "3RIaROGKWNVlfVbuUhIR_"
+uri = "file://screenshots/manifesto-rebuilt-390.png"
+type = "image"
+title = "Rebuilt Manifesto — mobile screenshot"
+description = "Real 390px-wide capture. Approved headline overlap and typography remain; the closing panel stacks to avoid horizontal overflow."
+logical_id = "49cc023a-2ae5-4d23-9d61-a64ff5f03c67"
+content_hash = "sha256:1d43f97dfda54e0216a6d519110a361814e6706df2fd50e7380aaa2b8f9f3b21"
+size = 184838
+mtime_ms = 1790835448689
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/49cc023a-2ae5-4d23-9d61-a64ff5f03c67/ff72c53b-40a8-41e4-983a-581cb21d8633"
+storage_version_token = "1790835524002271"
+content_type = "image/png"

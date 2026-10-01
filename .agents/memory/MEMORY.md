@@ -48,3 +48,4 @@
 - [Notification role allow-lists](notification-role-allowlists.md) — a persisted notification remains invisible unless its type is enabled for the recipient role’s bell and unread count.
 - [One-time event popups](one-time-event-popups.md) — cross-device transactional popups must atomically claim the canonical notification without consuming its bell read state.
 - [Controlled dialog focus](controlled-dialog-focus.md) — custom card-opened Radix dialogs need explicit focus restoration if the card should regain focus after close.
+- [Approved Manifesto design](approved-manifesto-design.md) — preserve the approved reference; do not reinterpret the overlapping headline or dark reading layout during later edits.
