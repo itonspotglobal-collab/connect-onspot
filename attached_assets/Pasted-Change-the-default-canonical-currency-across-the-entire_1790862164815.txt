@@ -1,0 +1,38 @@
+Change the default/canonical currency across the entire billing system
+from PHP to USD. This applies to ALL Talent worldwide, not just
+Philippines-based — rate-setting, offers, counters, invoices, payouts,
+and security deposits are all USD-only going forward. No currency
+conversion logic is needed anywhere — this is a single-currency system
+for now. Multi-currency support is explicitly deferred to a future
+phase; do not build any conversion/exchange-rate mechanism as part of
+this fix.
+
+AUDIT FIRST, report before changing anything:
+1. Every schema field currently defaulting to 'PHP' (security_deposits,
+   invoice_periods, invoices, payouts, talent_invoices,
+   client_monthly_invoices, and any others using a currency column) -
+   list them all.
+2. Confirm whether the Billing Ledger's "₱" symbol (and anywhere else
+   it appears) is hardcoded in the frontend, or dynamically rendered
+   from the currency field's actual value - this determines whether the
+   fix is a schema default change, a frontend symbol-mapping fix, or
+   both.
+3. Check for any REAL (non-zero, non-test) records currently using PHP
+   as their currency. The screenshot shows all-zero values, suggesting
+   there may be no real production data yet, but confirm this directly -
+   do not assume based on a zero-value summary screen.
+
+FIX:
+1. Change all schema currency defaults from 'PHP' to 'USD'.
+2. Fix any hardcoded "₱" symbol rendering to correctly reflect USD ("$")
+   - prefer reading the actual currency field over hardcoding either
+   symbol, so this doesn't need another manual fix if currency handling
+   changes again later.
+3. If any real PHP-denominated records exist (per point 3 above), do
+   NOT silently reprice or convert them - flag them explicitly and
+   report back for a decision on how to handle them, consistent with
+   this build's non-retroactive principle. Do not guess at a conversion
+   rate for existing records.
+
+Report the audit findings before making schema changes, especially if
+any real non-zero PHP records are found.
