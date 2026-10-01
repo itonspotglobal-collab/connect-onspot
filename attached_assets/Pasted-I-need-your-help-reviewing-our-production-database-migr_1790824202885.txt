@@ -1,0 +1,80 @@
+I need your help reviewing our production database migration setup before our first production deployment of the new billing/invoicing feature.
+
+IMPORTANT:
+- Do NOT modify any files.
+- Do NOT run any migrations.
+- Do NOT run any write/update/delete SQL against the Production Database.
+- Do NOT Publish or Republish the app.
+- Do NOT change DATABASE_URL or any database settings.
+- This is inspection/review only.
+
+Context:
+
+Our Production Database is the Replit Production Database connected through DATABASE_URL.
+
+I checked the production app_schema_migrations table. The latest recorded migration appears to be 0017.
+
+However, the repository has newer migration files after 0017, including billing/invoicing changes.
+
+Please inspect the project and give me the following:
+
+1. List every migration file in migrations/ from 0018 onward, in the exact order that scripts/run-migrations.ts will execute them.
+
+For each migration, tell me:
+- filename
+- what it does in simple terms
+- tables/columns/functions/triggers it creates or modifies
+- whether it performs a data backfill or UPDATE
+- whether it deletes/drops/renames anything
+- dependencies on previous migrations
+- any risks if applied to the current production database
+
+2. Pay special attention to these billing migrations:
+
+- 0023_billing_mode.sql
+- 0024_talent_invoicing.sql
+- 0025_phase3b_review_fixes.sql
+- 0026_phase3b_acceptance_fixes.sql
+
+Verify that they are intended to run sequentially and identify all financial integrity protections they create, including:
+- invoice immutability
+- credit memo immutability
+- client invoice protections
+- security deposit/replenishment protections
+- signed contract/billing-mode protections
+- any other financial integrity triggers
+
+3. Inspect scripts/run-migrations.ts and the production start command/package.json.
+
+Confirm:
+- how migration files are ordered
+- how app_schema_migrations determines whether a migration has already run
+- whether all unapplied migrations after 0017 will automatically execute on the next production deployment
+- whether migrations run inside transactions
+- what happens if one migration fails
+- whether the application starts if a migration fails
+
+4. Compare the migrations with the current schema definitions in shared/schema.ts.
+
+Look specifically for possible schema drift or conflicts between:
+- what Replit Publish/schema sync may create
+- what our SQL migration runner creates
+- what shared/schema.ts defines
+
+I especially want to know if Publish could create the billing tables first and then cause our migration files to fail with errors such as "relation already exists", "column already exists", "constraint already exists", or "trigger already exists".
+
+5. Check whether migrations 0018 onward are safe to run against a production database currently recorded at migration 0017.
+
+Do NOT actually run them.
+
+Instead, give me a pre-deployment report with:
+
+SAFE / NEEDS REVIEW / HIGH RISK
+
+for each migration, with the specific reason.
+
+6. Tell me exactly what you recommend we do BEFORE clicking Republish.
+
+I want a step-by-step deployment checklist specific to this project.
+
+Again: this is READ-ONLY analysis. Do not change code, database state, deployment configuration, or migration records.
