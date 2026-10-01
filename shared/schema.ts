@@ -14,6 +14,22 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Public investor enquiries are stored before attempting notification delivery.
+export const investorRequests = pgTable("investor_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  firm: text("firm").notNull(),
+  email: varchar("email", { length: 254 }).notNull(),
+  requestType: text("request_type").notNull(),
+  message: text("message"),
+  notificationStatus: text("notification_status").notNull().default("pending"),
+  notificationError: text("notification_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  notificationSentAt: timestamp("notification_sent_at", { withTimezone: true }),
+}, (table) => [
+  index("idx_investor_requests_created_at").on(table.createdAt),
+]);
+
 // User storage table for Replit Auth integration
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

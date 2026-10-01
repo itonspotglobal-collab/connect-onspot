@@ -531,3 +531,31 @@ mtime_ms = 1790865344675
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8444c1c1-deac-424f-804c-69c1ad7583b7/53f74948-d59d-45d2-9244-6a6473925ca2"
 storage_version_token = "1790865764850942"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "8OLwOuXPunJGSOozjP2Tm"
+uri = "file://screenshots/investors-development-desktop.jpg"
+type = "image"
+title = "Investors page — desktop preview"
+description = "Real 1280×720 running development page. Its live development account totals are 12 Contractors and 30 Clients; separately audited production totals are 90 and 8."
+logical_id = "fe39703b-014e-48ab-a7f4-1b57bbd0b353"
+content_hash = "sha256:7e6fd611a55452d5045a77fab0ae42ec6db55dd65864da000d367536ddd5a3bd"
+size = 76905
+mtime_ms = 1790867687559
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/fe39703b-014e-48ab-a7f4-1b57bbd0b353/9b363691-a5f0-4e40-980e-c2d369610750"
+storage_version_token = "1790868072840415"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "PUwORAKA0Gqr0N7EthiAd"
+uri = "file://screenshots/investors-development-compact-mobile.png"
+type = "image"
+title = "Investors page — compact mobile preview"
+description = "Real 320×568 running development page: all three actions fit on the first screen without scrolling. Counts 12 and 30 are development data, not production."
+logical_id = "2f06af21-b620-45d5-bc3b-36d9b9e43b6d"
+content_hash = "sha256:bba26b85dd1f41f9b5853d5814420d3100bdc37d301b2a032cb692f7db9fc37e"
+size = 116804
+mtime_ms = 1790867978959
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/2f06af21-b620-45d5-bc3b-36d9b9e43b6d/1a34c591-9320-4b92-b880-8fd0fa12be3d"
+storage_version_token = "1790868075144807"
+content_type = "image/png"

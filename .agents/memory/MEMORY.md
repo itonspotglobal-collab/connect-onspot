@@ -52,3 +52,4 @@
 - [Approved Manifesto design](approved-manifesto-design.md) — preserve the approved reference; do not reinterpret the overlapping headline or dark reading layout during later edits.
 - [USD currency policy](usd-currency-policy.md) — new pricing is USD worldwide; historical denominations remain unchanged, and text prices count even when numeric budgets are zero.
 - [Account-count audit](account-counter-audit.md) — candidate registration flags can be set without an auth account; verify sign-in evidence before public counting.
+- [Investor request routing](investor-request-routing.md) — owner approved one saved intake and founder notifications for all three CTAs; failed email must never be reported as sent.

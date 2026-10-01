@@ -31,6 +31,7 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
   return clean.trim() || null;
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
+import { registerInvestorRoutes } from "./routes/investors.js";
 import { registerTimesheetRoutes } from "./routes/timesheets.js";
 import { registerTalentInvoiceRoutes } from "./routes/talentInvoices.js";
 import { registerContractTerminationRoutes } from "./routes/contractTerminations.js";
@@ -3633,6 +3634,8 @@ export async function registerRoutes(
       }
     },
   );
+
+  registerInvestorRoutes(app);
 
   registerTimesheetRoutes(app, {
     authenticateJWT,
