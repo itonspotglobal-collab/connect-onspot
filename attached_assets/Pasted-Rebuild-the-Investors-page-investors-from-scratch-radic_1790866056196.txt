@@ -1,0 +1,58 @@
+Rebuild the Investors page (/investors) from scratch — radically
+simplified. This is NOT a long-form page with multiple scrolling
+sections. The entire page is: a headline, a one-line subhead, one live
+stat, one stage line, and three equal-weight calls to action. Nothing
+else. No scrolling should be required to reach a decision point.
+
+CONTENT, exact text:
+
+Eyebrow: FOR INVESTORS
+
+Headline: "A world where anyone can work anywhere. And every company
+can hire anyone to work without limits."
+
+Subhead: "Talent earns more. Clients pay less."
+
+Live counter (the only stat on the page): real-time counts of total
+Contractor accounts and total Client accounts. AUDIT FIRST: propose the
+precise definition of a countable account (does a bare signup count, or
+does it need a completed profile?), and how to correctly exclude test/
+scaffold/internal accounts from the count - this build has had to filter
+these out before for candidate search, apply the same discipline here.
+Report the actual current real counts under your proposed definition
+before building the display, so there's a real number to sanity-check.
+Build this as a public, unauthenticated endpoint with reasonable caching
+(propose a sensible refresh interval - genuinely current, not stale for
+hours, but not an uncached query on every page load either).
+
+Stage line: "Currently raising our seed round."
+
+Three CTAs, equal visual weight, large and impossible to miss:
+- Request a Meeting
+- Request the Pitch Deck
+- Speak to the Founder
+
+Each opens a short form: Name / Firm or Affiliation / Email / which of
+the three are they requesting / optional message.
+
+DESIGN DIRECTION: this should feel confident and uncluttered - closer to
+a single strong statement than a marketing page. Generous whitespace,
+large type on the headline, the live counter should feel like a genuine,
+credible proof point (not a buried stat), and the three CTAs should be
+the most visually prominent thing on the page since they're the entire
+point of it existing. Stay within the established brand system (navy/
+purple/gold, Bricolage Grotesque + Inter).
+
+Do NOT add any additional sections, stats, traction figures, opportunity
+framing, or monetization detail - all of that belongs in the actual
+pitch deck, which is requested via one of the three CTAs, not duplicated
+on this page.
+
+Confirm before building: where do these three CTAs actually route? All
+to the same general intake, or does "Speak to the Founder" go directly
+to Nur specifically? Propose a sensible default if this isn't already
+clear from existing contact-routing patterns elsewhere on the site, and
+flag it for confirmation rather than guessing silently.
+
+Report back with a real screenshot and the live counter's actual current
+numbers before this is considered done.
