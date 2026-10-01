@@ -14,3 +14,15 @@ When validating a new browser suite, run it by file as well as through the packa
 **Why:** The package-wide Node test command loads multiple suites that independently start and stop isolated Vite servers; failures in one suite can mask the result of another.
 
 **How to apply:** Treat the changed suite's direct command and typecheck as the primary signal, then report unrelated aggregate-suite failures separately rather than changing product code to accommodate them.
+
+Browser callbacks serialized by Playwright do not inherit tsx/esbuild's module-scoped function-name helper. Nested named or inferred-name functions in `evaluate` can therefore fail with `__name is not defined`.
+
+**Why:** The host compiler preserves function names, but the browser receives only the callback source, not the compiler runtime.
+
+**How to apply:** When using nested helpers in browser callbacks, supply the minimal function-name shim through a test-only init script, or avoid transformations that require that runtime. Do not modify application code to fix a test serialization failure.
+
+Injected or removed test styles should be followed by a rendering turn before asserting their computed effects.
+
+**Why:** In host Chromium, stylesheet invalidation can briefly expose the previous computed style even after the injection/removal promise resolves; deliberate-drift tests otherwise fail intermittently.
+
+**How to apply:** Wait for animation frames after test-only style mutations rather than weakening layout assertions or adding arbitrary long timeouts.
