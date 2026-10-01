@@ -433,3 +433,17 @@ mtime_ms = 1788359565700
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/36ff9a24-f82e-44ae-a0e6-068de145ce87/9701ec8c-cb5d-4b77-a7b6-0017ec4b8d35"
 storage_version_token = "1788359580758170"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "Z9WCTPkOmW3MPQvZAZD7j"
+uri = "file://screenshots/homepage-hero-to-next-section.png"
+type = "image"
+title = "Homepage without the Manifesto section"
+description = "Verified in the running preview: the hero carousel flows directly into the Talent section, with no Manifesto block between them."
+logical_id = "5cacead3-7d6b-4156-a33f-be15a792cafd"
+content_hash = "sha256:9440879bca209dbcc36924d96b926cbd4d3267ecc7bce1f0ad5122e622171134"
+size = 298120
+mtime_ms = 1790834149081
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/5cacead3-7d6b-4156-a33f-be15a792cafd/55364e38-a751-40fe-82ec-27a0b8507b3a"
+storage_version_token = "1790834169002916"
+content_type = "image/png"

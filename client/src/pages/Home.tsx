@@ -392,7 +392,6 @@ export default function Home() {
   return (
     <div>
       <HeroSection />
-      <ManifestoTeaserSection />
       <TalentCarouselSection />
       <ProblemSection />
       <BetterWaySection />
@@ -407,43 +406,6 @@ export default function Home() {
         <Footer variant="dark-gradient" separator />
       </div>
     </div>
-  );
-}
-
-function ManifestoTeaserSection() {
-  return (
-    <section
-      aria-labelledby="manifesto-teaser-title"
-      className="border-y border-white/10 px-6 py-16 sm:px-10 lg:px-16 xl:px-20 lg:py-20"
-      style={{ background: "#0C123F" }}
-    >
-      <div className="mx-auto flex max-w-[1180px] flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
-        <div className="max-w-2xl">
-          <p className="mb-4 text-[0.68rem] font-bold uppercase tracking-[0.17em]" style={{ color: C.orange }}>
-            The OnSpot Manifesto
-          </p>
-          <h2
-            id="manifesto-teaser-title"
-            className="font-bold text-white"
-            style={{
-              fontFamily: "'Bricolage Grotesque', sans-serif",
-              fontSize: "clamp(1.9rem, 4vw, 3.4rem)",
-              lineHeight: 1.06,
-              letterSpacing: "-0.04em",
-              margin: 0,
-            }}
-          >
-            We don't accept that.
-          </h2>
-        </div>
-        <Link
-          href="/manifesto"
-          className="inline-flex min-h-12 shrink-0 items-center gap-2 self-start rounded-full border border-white/20 px-5 text-sm font-semibold text-white transition-colors hover:border-white/45 hover:bg-white/10 sm:self-auto"
-        >
-          Read the manifesto <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
-    </section>
   );
 }
 
