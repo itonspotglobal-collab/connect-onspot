@@ -1,0 +1,464 @@
+## Task: Priority 2 — Verify Production Microsoft Graph Email and Object Storage
+
+Work on **Priority 2 only**.
+
+This is primarily a **production verification task, not a build/refactoring task**.
+
+Do not work on other MVP gaps or the separate security workstream.
+
+The goal is to determine whether these two external services actually work in the deployed/production environment:
+
+1. Microsoft Graph email
+2. Object storage
+
+A configuration variable merely existing is **NOT** sufficient evidence.
+
+We need actual end-to-end tests.
+
+---
+
+# CRITICAL SECURITY REQUIREMENT
+
+Do **not** print, log, screenshot, copy, expose, or report actual secret values.
+
+This includes but is not limited to:
+
+- Microsoft tenant IDs where unnecessarily sensitive
+- Microsoft client secrets
+- access tokens
+- refresh tokens
+- authorization headers
+- storage credentials
+- private keys
+- connection strings
+- signed URLs containing sensitive credentials/tokens
+- session tokens
+- JWTs
+- Replit secrets
+
+You may determine whether required configuration is present, but report only:
+
+`configured/present`
+
+or:
+
+`missing/not configured`
+
+Never report the secret value itself.
+
+Do not modify or rotate secrets as part of this task.
+
+---
+
+# PHASE 1 — Inspect Before Testing
+
+Before making any changes, inspect the existing implementation and identify exactly how production email and object storage currently work.
+
+## Microsoft Graph email
+
+Inspect the existing Microsoft Graph email implementation, including the relevant service(s), configuration checks, and callers.
+
+Determine:
+
+- which environment/configuration variables are required
+- how Microsoft Graph authentication is performed
+- which sender/mailbox is used
+- which service sends the email
+- which application workflows depend on this service
+
+Pay particular attention to workflows such as:
+
+- interview confirmations/notifications
+- offer notifications
+- other transactional emails
+
+Do not assume that because the Microsoft Graph code exists, email works in production.
+
+## Object storage
+
+Inspect the existing object-storage implementation and registered endpoints.
+
+Determine:
+
+- which storage provider/SDK is actually being used
+- which production configuration is required
+- how upload URLs are generated
+- how files are uploaded
+- how files are subsequently retrieved
+- which application workflows depend on this storage
+
+Pay particular attention to:
+
+- resumes
+- video introductions
+- candidate media/documents
+- any other production uploads using the same storage layer
+
+---
+
+# PHASE 2 — Verify Microsoft Graph Configuration
+
+Check whether all configuration required by the existing Microsoft Graph email service is present in the **production/deployed environment**.
+
+Again:
+
+Do NOT expose values.
+
+Report only whether each required configuration item is:
+
+- PRESENT
+- MISSING
+
+Do not stop after this check.
+
+Environment-variable presence does NOT count as successful verification.
+
+---
+
+# PHASE 3 — Perform a Real Email Test
+
+Using the existing production Microsoft Graph email implementation, send a harmless test email to an approved test inbox that can actually be checked.
+
+Do not create a fake/mock email service.
+
+Do not bypass the application's Graph implementation merely to prove Microsoft Graph itself works.
+
+The purpose is to prove that the application's actual email transport can successfully send email in the deployed environment.
+
+Use an obvious test subject, for example:
+
+`OnSpot Production Email Verification`
+
+The message should clearly state that it is a test and requires no action.
+
+Verify BOTH:
+
+1. Microsoft Graph accepted/sent the message successfully.
+2. The destination mailbox actually received the message.
+
+A successful API response alone is useful evidence, but the strongest PASS requires confirming receipt at the destination mailbox.
+
+Record safe evidence such as:
+
+- test timestamp
+- recipient address with sensitive portions redacted if appropriate
+- test subject
+- application/Graph success response without tokens or secrets
+- evidence that the message arrived
+
+Do NOT expose authentication headers or credentials.
+
+### Microsoft Graph PASS criteria
+
+Mark:
+
+`PASS`
+
+only if a real email was successfully sent through the application's actual Microsoft Graph implementation and received by the destination mailbox.
+
+If credentials exist but sending fails:
+
+`FAIL — configured but email delivery failed`
+
+If required configuration is missing:
+
+`FAIL — Microsoft Graph email is not fully configured`
+
+If sending succeeds but mailbox receipt cannot be verified:
+
+`INCONCLUSIVE — send accepted, receipt not independently verified`
+
+Do not call this PASS.
+
+---
+
+# PHASE 4 — Verify Object Storage Configuration
+
+Check whether the production/deployed environment contains all configuration required by the existing object-storage implementation.
+
+Report required items only as:
+
+- PRESENT
+- MISSING
+
+Do not display actual values.
+
+Again, configuration presence alone is not sufficient.
+
+---
+
+# PHASE 5 — Perform a Real Object Storage Test
+
+Perform an actual end-to-end object-storage test through the application's real storage implementation.
+
+Create a harmless temporary test file such as:
+
+`onspot-storage-verification.txt`
+
+with simple content such as:
+
+`OnSpot object storage verification test.`
+
+Include a timestamp if useful.
+
+Then test the actual storage flow.
+
+### Required test
+
+1. Request/create an upload through the application's existing object-storage implementation.
+2. Upload the test file.
+3. Confirm the upload succeeds.
+4. Retrieve/read the same stored object using the application's supported retrieval mechanism.
+5. Verify that the retrieved file contents match the uploaded contents.
+
+Do not consider generation of an upload URL by itself a successful test.
+
+Do not consider an HTTP upload response by itself sufficient.
+
+The object must be retrieved again successfully.
+
+If appropriate and safe, delete the temporary verification object after successful testing.
+
+Do not delete real user files.
+
+### Object Storage PASS criteria
+
+Mark:
+
+`PASS`
+
+only if:
+
+`create/request upload`
+→ `upload actual file`
+→ `retrieve stored file`
+→ `verify matching contents`
+
+all succeed against the production/deployed storage configuration.
+
+If configuration exists but upload fails:
+
+`FAIL — configured but upload failed`
+
+If upload succeeds but retrieval fails:
+
+`FAIL — upload succeeded but retrieval failed`
+
+If required configuration is missing:
+
+`FAIL — object storage is not fully configured`
+
+---
+
+# PHASE 6 — Trace User Impact
+
+If Microsoft Graph fails verification, identify the currently implemented user workflows that depend on it.
+
+At minimum inspect whether failures can affect:
+
+- interview confirmations
+- interview notifications
+- offer notifications
+- other transactional notifications
+
+Report the affected flows based on actual code references.
+
+Do not speculate.
+
+If object storage fails verification, identify the actual application workflows depending on it.
+
+At minimum inspect:
+
+- resume uploads
+- video introduction uploads
+- candidate media/document uploads
+
+Again, trace actual callers rather than guessing.
+
+---
+
+# IMPORTANT: Check Failure Handling
+
+For both integrations, inspect what happens when the provider is unavailable or unconfigured.
+
+Determine whether the user:
+
+- receives a visible error,
+- receives a misleading success message,
+- experiences a silent no-op,
+- or encounters another failure mode.
+
+This is an **audit finding only** for this task.
+
+Do not redesign global error handling unless a tiny change is absolutely required to perform the verification.
+
+If you discover silent failures, document them clearly for a future task.
+
+---
+
+# DO NOT
+
+Do NOT:
+
+- expose production secrets
+- print environment-variable values
+- print access tokens
+- expose signed URLs containing sensitive information
+- rotate credentials
+- create new provider accounts
+- replace Microsoft Graph
+- replace the existing object-storage provider
+- redesign the email architecture
+- redesign the storage architecture
+- build unrelated features
+- fix unrelated security findings
+- modify interview/offer workflows unnecessarily
+- fabricate screenshots
+- fabricate email delivery evidence
+- fabricate storage evidence
+- report PASS simply because configuration variables exist
+- report PASS because code exists
+- report PASS because an upload URL was generated
+- use mocks as evidence of production functionality
+
+---
+
+# Changes Should Normally Be Unnecessary
+
+This is a verification task.
+
+Prefer making **zero production code changes**.
+
+If a code change is genuinely required to perform safe verification, stop first and explain:
+
+1. why the existing implementation cannot be tested as-is,
+2. what minimal change is required,
+3. whether that change affects production behavior.
+
+Do not quietly introduce debugging endpoints, backdoors, or permanent test-only production routes.
+
+---
+
+# Required Final Report
+
+Return a concise verification report using this structure.
+
+## 1. Microsoft Graph Email
+
+**Configuration:**  
+PASS / FAIL
+
+Required configuration:
+
+- `<configuration name>` — PRESENT/MISSING
+- `<configuration name>` — PRESENT/MISSING
+- etc.
+
+Do not show values.
+
+**Real send test:**  
+PASS / FAIL / INCONCLUSIVE
+
+**Real receipt verification:**  
+PASS / FAIL / INCONCLUSIVE
+
+**Evidence:**
+
+- timestamp:
+- test subject:
+- safe/redacted recipient:
+- send result:
+- receipt result:
+- screenshot or other runtime evidence:
+
+**Application implementation traced through:**
+
+`<frontend/backend workflow>`
+→ `<email service>`
+→ `Microsoft Graph`
+
+**Affected workflows if unavailable:**
+
+List only workflows confirmed from the source.
+
+**Failure behavior:**
+
+Explain whether users receive a visible error or whether failure can occur silently.
+
+---
+
+## 2. Object Storage
+
+**Configuration:**  
+PASS / FAIL
+
+Required configuration:
+
+- `<configuration name>` — PRESENT/MISSING
+- etc.
+
+Do not show values.
+
+**Real upload test:**  
+PASS / FAIL
+
+**Real retrieval test:**  
+PASS / FAIL
+
+**Content verification:**  
+PASS / FAIL
+
+**Evidence:**
+
+- timestamp:
+- test filename:
+- upload result:
+- retrieval result:
+- content matched: YES/NO
+- screenshot or other runtime evidence:
+
+Do not include sensitive signed URLs.
+
+**Application implementation traced through:**
+
+`application upload`
+→ `<registered endpoint>`
+→ `<storage service/provider>`
+→ `stored object`
+→ `retrieval`
+
+**Affected workflows if unavailable:**
+
+List only workflows confirmed from source.
+
+**Failure behavior:**
+
+Explain whether users receive a visible error or whether failures can occur silently.
+
+---
+
+# Final Verdict
+
+End with exactly these two integration statuses:
+
+### Microsoft Graph Email
+`PASS`, `FAIL`, or `INCONCLUSIVE`
+
+### Object Storage
+`PASS`, `FAIL`, or `INCONCLUSIVE`
+
+Then provide a short explanation for each.
+
+If either fails, clearly state:
+
+**PRODUCTION BLOCKER**
+
+and identify the confirmed user-facing workflows affected by that failed integration.
+
+If testing could not actually be performed because Replit does not have access to the production environment, mailbox, deployed secrets, or required account/session, report:
+
+`INCONCLUSIVE — production runtime verification could not be completed`
+
+and state exactly what access/evidence is missing.
+
+Never substitute source-code inspection for a successful production runtime test.
