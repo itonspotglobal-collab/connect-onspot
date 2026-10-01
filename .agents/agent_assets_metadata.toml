@@ -475,3 +475,31 @@ mtime_ms = 1790835448689
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/49cc023a-2ae5-4d23-9d61-a64ff5f03c67/ff72c53b-40a8-41e4-983a-581cb21d8633"
 storage_version_token = "1790835524002271"
 content_type = "image/png"
+
+[[outputs]]
+id = "ZAQTKWWcCaQNFwMrdOLSX"
+uri = "file://docs/CURRENT_TECH_STACK.md"
+type = "text"
+title = "Current Tech Stack — Markdown"
+description = "Complete as-built technology audit, including integrations, persistence, tests, migrations, and Publish mechanics."
+logical_id = "c669239a-c11e-40c0-920d-908387dd4488"
+content_hash = "sha256:526060ef94737929840786cb2358d1d6ea08c8dff8a82fd13a86a94284beeaef"
+size = 60685
+mtime_ms = 1790848645209
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/c669239a-c11e-40c0-920d-908387dd4488/dd6fa548-953a-49c0-9e77-0c7852e8b9c0"
+storage_version_token = "1790848675801018"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "g896d1bTV6BQiYrdFxM9k"
+uri = "file://docs/AS_BUILT_JOURNEY_MAPS.md"
+type = "text"
+title = "Client, Talent & Admin Journey Maps — Markdown"
+description = "Complete source-traced journeys with routes, APIs, storage, and explicit LIVE, PARTIAL/STUBBED, and LEGACY/DEAD labels."
+logical_id = "a6d20386-976d-4a1d-b3dd-b2b300aad35b"
+content_hash = "sha256:80ab8189e36b665be6a2a1199a09ffa4f1afccae3382c5b5f2d8d5f54c4baa51"
+size = 93693
+mtime_ms = 1790848655697
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/a6d20386-976d-4a1d-b3dd-b2b300aad35b/9a3a27db-711b-48a7-8b8d-68a73d3da130"
+storage_version_token = "1790848677504408"
+content_type = "text/markdown"

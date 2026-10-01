@@ -4,7 +4,7 @@
 **Basis:** read-only source-checkout review. This describes code paths, not a production certification.  
 **Evidence boundary:** a citation identifies source files and line ranges inspected; it is not proof that those files are in the currently published build.
 
-> **Publication boundary:** read-only deployment metadata collected during the audit reports a successful autoscale deployment at `https://connect.onspotglobal.com`. No request was made to that URL. Metadata proves neither endpoint health nor that this checkout is the published revision. No fresh database, runtime, email, payment, storage, or external-provider verification was performed.
+> **Publication boundary:** read-only deployment metadata collected during the audit reports a successful autoscale deployment at `https://connect.onspotglobal.com`. No request was made to that URL. Metadata proves neither endpoint health nor that this checkout is the published revision. No fresh database, role-journey, production-runtime, email, payment, or storage verification was performed. A final development-homepage visual check is qualified below.
 
 ## Table of contents
 
@@ -374,8 +374,10 @@ The existence of these URLs establishes route reachability, not that a public ma
 
 ## Verification boundary and related documentation
 
-- This file records a source-checkout audit dated 2026-10-01. No test suite, build, app preview, runtime request, database query, secret/environment read, provider call, migration, or publish was performed for this document.
-- The supplied successful autoscale deployment metadata for `https://connect.onspotglobal.com` is only deployment metadata; it does not prove health, feature availability, data state, or that this checkout is what is published.
+**Final preview-check qualification:** after the source audit, the existing development homepage was checked visually and rendered. This was not a role-journey test or a production URL probe. Its browser console reported a Lindy embed authorization error and a missing frontend Stripe public key. The Lindy script is actually wired in `client/index.html:86`; it must not be described as marketing-only. This limited check does not certify the role journeys or production integrations.
+
+- This file records a source-checkout audit dated 2026-10-01, supplemented only by read-only Replit metadata and the limited development-homepage visual check above. No test suite, build, direct database query, secret/environment read, migration, or publish was performed. No email, charge, transfer, or provider-account operation was initiated.
+- The successful autoscale deployment metadata collected for `https://connect.onspotglobal.com` is only deployment metadata; it does not prove health, feature availability, data state, or that this checkout is what is published.
 - The historical migration-reconciliation note about functions/triggers and migrations 0021–0031 is tied to its documented inspection date, not a current deployment claim: `docs/migration-reconciliation.md:194-210`.
 - For declared frameworks, persistence architecture, auth/runtime configuration, provider requirements, scheduler distinctions and table inventory, see [`CURRENT_TECH_STACK.md`](CURRENT_TECH_STACK.md). That companion is not a substitute for the route-by-route journey evidence here.
 - Source citations are intended to make the as-built conclusions auditable. If a route is absent from the outer route appendix, a nested component declaration or backend handler alone does not make it a LIVE user journey.
