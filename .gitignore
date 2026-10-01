@@ -7,3 +7,4 @@ vite.config.ts.*
 resources/rag_index.jsonresources/rag_index.json
 resources/rag_index.json
 rag_index.json
+browser-tests/results/
