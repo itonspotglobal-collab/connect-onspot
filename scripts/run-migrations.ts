@@ -115,11 +115,25 @@ async function runMigrations() {
 
       const migrationSql = await readFile(migrationPath, "utf8");
 
+      // Pending financial migrations reconcile against Publish-created objects.
+      // Helpers are session-local and loaded inside this same transaction; they
+      // never decide ledger completion or connect to a different database.
+      if (/^(001[89]|002[0-9]|003[01])_/.test(migrationId)) {
+        const reconciliationSql = await readFile(
+          new URL("./migration-reconciliation.sql", import.meta.url),
+          "utf8",
+        );
+        await client.query(reconciliationSql);
+      }
+
       // Some migrations contain their own BEGIN/COMMIT (e.g. 0011). Run the
       // SQL as-is; the outer BEGIN/COMMIT wraps tracking-table bookkeeping only
       // when the inner script does NOT manage its own transaction. Since both
       // paths ultimately COMMIT, the tracking INSERT is safe in both cases.
       await client.query(migrationSql);
+      if (/^(001[89]|002[0-9]|003[01])_/.test(migrationId)) {
+        await client.query("SELECT pg_temp.finish_reconciliation()");
+      }
       await client.query(
         "INSERT INTO app_schema_migrations (id) VALUES ($1)",
         [migrationId],

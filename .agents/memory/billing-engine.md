@@ -86,6 +86,12 @@ Do not publish billing and termination until production schema synchronization, 
 
 **How to apply:** Confirm whether the actual live database is Replit-managed or external, use only its authorized migration channel, rehearse on an isolated equivalent database, inspect the remaining publish diff and enabled trigger definitions, and keep publish blocked if any gate is unproven. If Replit controls and documentation cannot definitively resolve ownership, seek a direct answer from Replit support; never infer it from the database hostname.
 
+Publish schema synchronization and startup migrations are separate commits. A failed promotion does not mean either schema synchronization or already-successful startup migrations rolled back.
+
+**Why:** Publish can precreate final-looking tables while leaving SQL-only history protections absent, and a later startup failure can leave a partially advanced custom ledger even while an earlier app build remains live.
+
+**How to apply:** Correlate Publish DDL, startup logs, and the actual ledger independently. Preserve committed migration records; reconcile the pending definitions instead of clearing history, blindly rerunning completed work, or manually stamping pending IDs.
+
 
 ## Customer-facing ledger views
 

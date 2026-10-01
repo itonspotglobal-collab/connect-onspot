@@ -1,11 +1,17 @@
-ALTER TABLE hiring_contracts
-  ADD COLUMN effective_end_date date,
-  ADD COLUMN termination_reason text,
-  ADD COLUMN terminated_by varchar REFERENCES users(id) ON DELETE RESTRICT,
-  ADD COLUMN terminated_at timestamptz;
+SELECT pg_temp.reconcile_column('public.hiring_contracts', 'effective_end_date', 'date');
+SELECT pg_temp.reconcile_column('public.hiring_contracts', 'termination_reason', 'text');
+SELECT pg_temp.reconcile_column('public.hiring_contracts', 'terminated_by', 'varchar');
+SELECT pg_temp.reconcile_column('public.hiring_contracts', 'terminated_at', 'timestamptz');
 
-ALTER TABLE hiring_contracts
-  ADD CONSTRAINT hiring_contracts_termination_snapshot_check CHECK (
+SELECT pg_temp.reconcile_constraint(
+  'public.hiring_contracts',
+  'hiring_contracts_terminated_by_fkey',
+  'FOREIGN KEY (terminated_by) REFERENCES users(id) ON DELETE RESTRICT'
+);
+SELECT pg_temp.reconcile_constraint(
+  'public.hiring_contracts',
+  'hiring_contracts_termination_snapshot_check',
+  $definition$CHECK (
     (effective_end_date IS NULL AND termination_reason IS NULL
       AND terminated_by IS NULL AND terminated_at IS NULL)
     OR
@@ -13,9 +19,12 @@ ALTER TABLE hiring_contracts
       AND termination_reason IS NOT NULL AND btrim(termination_reason) <> ''
       AND terminated_by IS NOT NULL AND terminated_at IS NOT NULL
       AND (effective_start_date IS NULL OR effective_end_date >= effective_start_date))
-  );
+  )$definition$
+);
 
-CREATE OR REPLACE FUNCTION protect_hiring_contract_termination()
+SELECT pg_temp.reconcile_function(
+  'protect_hiring_contract_termination',
+  $ddl$CREATE OR REPLACE FUNCTION protect_hiring_contract_termination()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP <> 'UPDATE' THEN RETURN NEW; END IF;
@@ -32,14 +41,21 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
+$$;$ddl$
+);
 
-CREATE TRIGGER hiring_contract_termination_immutable
+SELECT pg_temp.reconcile_trigger(
+  'public.hiring_contracts',
+  'hiring_contract_termination_immutable',
+  $ddl$CREATE TRIGGER hiring_contract_termination_immutable
   BEFORE UPDATE OF effective_end_date, termination_reason, terminated_by, terminated_at
   ON hiring_contracts
-  FOR EACH ROW EXECUTE FUNCTION protect_hiring_contract_termination();
+  FOR EACH ROW EXECUTE FUNCTION protect_hiring_contract_termination();$ddl$
+);
 
-CREATE TABLE hiring_contract_termination_requests (
+SELECT pg_temp.reconcile_table(
+  'public.hiring_contract_termination_requests',
+  $body$
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   hiring_contract_id uuid NOT NULL REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
   requester_id varchar NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -65,16 +81,31 @@ CREATE TABLE hiring_contract_termination_requests (
       AND approved_effective_end_date IS NULL)
   ),
   CHECK (approved_effective_end_date IS NULL OR approved_effective_end_date >= requested_effective_end_date)
+  $body$
 );
 
-CREATE UNIQUE INDEX hiring_contract_termination_one_open_request_idx
-  ON hiring_contract_termination_requests(hiring_contract_id) WHERE status = 'open';
-CREATE UNIQUE INDEX hiring_contract_termination_one_approval_idx
-  ON hiring_contract_termination_requests(hiring_contract_id) WHERE status = 'approved';
-CREATE INDEX hiring_contract_termination_requests_status_idx
-  ON hiring_contract_termination_requests(status, created_at);
+SELECT pg_temp.reconcile_index(
+  'public.hiring_contract_termination_requests',
+  'hiring_contract_termination_one_open_request_idx',
+  $ddl$CREATE UNIQUE INDEX hiring_contract_termination_one_open_request_idx
+  ON hiring_contract_termination_requests(hiring_contract_id) WHERE status = 'open';$ddl$
+);
+SELECT pg_temp.reconcile_index(
+  'public.hiring_contract_termination_requests',
+  'hiring_contract_termination_one_approval_idx',
+  $ddl$CREATE UNIQUE INDEX hiring_contract_termination_one_approval_idx
+  ON hiring_contract_termination_requests(hiring_contract_id) WHERE status = 'approved';$ddl$
+);
+SELECT pg_temp.reconcile_index(
+  'public.hiring_contract_termination_requests',
+  'hiring_contract_termination_requests_status_idx',
+  $ddl$CREATE INDEX hiring_contract_termination_requests_status_idx
+  ON hiring_contract_termination_requests(status, created_at);$ddl$
+);
 
-CREATE OR REPLACE FUNCTION protect_hiring_contract_termination_requests()
+SELECT pg_temp.reconcile_function(
+  'protect_hiring_contract_termination_requests',
+  $ddl$CREATE OR REPLACE FUNCTION protect_hiring_contract_termination_requests()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -99,8 +130,12 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
-
-CREATE TRIGGER hiring_contract_termination_requests_immutable
+$$;$ddl$
+);
+SELECT pg_temp.reconcile_trigger(
+  'public.hiring_contract_termination_requests',
+  'hiring_contract_termination_requests_immutable',
+  $ddl$CREATE TRIGGER hiring_contract_termination_requests_immutable
   BEFORE UPDATE OR DELETE ON hiring_contract_termination_requests
-  FOR EACH ROW EXECUTE FUNCTION protect_hiring_contract_termination_requests();
+  FOR EACH ROW EXECUTE FUNCTION protect_hiring_contract_termination_requests();$ddl$
+);

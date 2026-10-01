@@ -1,6 +1,8 @@
 -- Fix capacity accounting for multiple Client credit memos and prevent late
 -- credits from being applied retroactively after their source statement sent.
-CREATE OR REPLACE FUNCTION protect_client_credit_applications()
+SELECT pg_temp.reconcile_function(
+  'public.protect_client_credit_applications',
+  $function_ddl$CREATE OR REPLACE FUNCTION protect_client_credit_applications()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
   statement_status text;
@@ -75,4 +77,5 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
+$$;$function_ddl$
+);

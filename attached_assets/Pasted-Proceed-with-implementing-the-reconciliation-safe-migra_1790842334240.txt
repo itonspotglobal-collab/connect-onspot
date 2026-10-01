@@ -1,0 +1,94 @@
+Proceed with implementing the reconciliation-safe migration plan you just proposed.
+
+IMPORTANT SAFETY BOUNDARIES:
+
+- Modify repository CODE only.
+- Do NOT query or modify the Production Database.
+- Do NOT run migrations against Production.
+- Do NOT Publish or Republish.
+- Do NOT alter Production app_schema_migrations.
+- Do NOT change DATABASE_URL or deployment/database settings.
+- Do NOT create a production schema push/build hook.
+- Do NOT manually stamp migration IDs.
+
+Implement the smallest reviewed patch described in your plan.
+
+Requirements:
+
+1. Make the pending migrations 0018–0031 reconciliation-safe where required.
+
+2. Preserve the existing migration IDs and execution order.
+
+3. Preserve ALL business/data behavior:
+   - backfills
+   - historical imports
+   - PL/pgSQL functions
+   - triggers
+   - financial immutability protections
+   - constraints/indexes
+   - migration ledger behavior
+
+4. Do NOT solve collisions by blindly adding IF NOT EXISTS.
+
+For existing objects:
+- verify their definitions
+- accept matching definitions
+- complete safely incomplete definitions where appropriate
+- fail with a clear diagnostic on conflicting definitions
+
+5. Handle the special cases identified in your audit:
+- backfills when final immutability triggers already exist
+- 0025 deduction_amount removal
+- 0026 intentional removal of credit-memo pair uniqueness
+- 0031 legacy termination reconciliation
+- relation-scoped constraint/trigger checks
+- wrong/disabled trigger bindings
+- partial unique indexes
+- existing column type/nullability/default mismatches
+
+6. When a migration temporarily disables one of OUR known immutability triggers for a required historical backfill:
+- verify the exact trigger first
+- disable only that trigger
+- keep this inside the migration transaction
+- re-enable it immediately
+- verify it is enabled before migration completion
+- never use DISABLE TRIGGER ALL
+- never change session_replication_role
+
+7. Do not hide the termination CHECK NULL-semantics issue inside this collision patch.
+
+If you believe it requires correction, create a clearly separate forward migration for review rather than silently changing historical behavior.
+
+8. Align shared/schema.ts only where necessary so representable final structural definitions do not fight the SQL migrations.
+
+Do not attempt to represent PL/pgSQL functions/triggers through ORM schema inference.
+
+9. Add the isolated migration/reconciliation test harness and read-only verification specification proposed in your plan.
+
+The tests must cover at least:
+- clean 0017 baseline
+- matching final objects precreated while ledger remains at 0017
+- partially precreated objects
+- wrong column definitions
+- wrong index predicates
+- wrong/disabled trigger bindings
+- final immutability triggers existing before required backfills
+- legitimate repeated credit-memo pairs
+- legacy termination conflicts
+- failure/rollback/resume behavior
+
+10. After editing, run ONLY safe local/non-production checks available in this workspace.
+
+Do not connect to or alter Production.
+
+At completion, report:
+
+A. exact files changed
+B. summary of each change
+C. tests/checks executed
+D. test results
+E. any remaining risks
+F. whether you believe the code is ready for an ISOLATED Deployment Preview
+
+Do NOT create the Deployment Preview or publish anything yet.
+Stop after the code changes and local verification so I can review the result first.

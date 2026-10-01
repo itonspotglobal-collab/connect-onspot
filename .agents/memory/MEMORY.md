@@ -14,7 +14,8 @@
 - [Client↔talent messaging gate](client-talent-messaging.md) — threads only after accepted client-initiated invitation; conditional UPDATE + advisory lock for accepts; tests need --test-concurrency=1.
 - [Neon prod schema sync](neon-schema-sync.md) — scripts/sync-schema-to-neon.sh closes dev→Neon drift additively before deploys; startup-block DDL never reaches prod.
 - [Drizzle schema preview limitation](drizzle-schema-preview.md) — Drizzle 0.39.1 cannot inspect the pending organization-invitation partial index; do not treat its preview failure as a migration diff.
-- [Two-database setup](db-two-databases.md) — each env has its own DATABASE_URL; NEON_DATABASE_URL removed (was staging Neon, never prod). Production verification = live API hit only.
+- [Database identity checks](db-two-databases.md) — correlate a public live-API record before using the production read-only interface; never trust staging variables.
+- [SQL inspection size limit](sql-inspection-size-limit.md) — oversized read-only SQL can fail with spawn E2BIG before execution; batch with relational context preserved.
 - [Scaffold elimination](scaffold-elimination.md) — Hire Talent search bar never creates a jobs row; invitations need a real open/approved job; job-picker modal handles 0/1/2+ cases.
 - [Direct client→talent messaging](direct-messaging.md) — pre-invite null-job_id thread, masking rules in thread list, graduation on invite-accept, DbStorage notification overrides.
 - [Hiring pipeline — Phase 1](hiring-pipeline-phase1.md) — canonical status constant, 3 new tables, CHECK constraint, interview endpoints; key decisions and gotchas for Phase 2/3.

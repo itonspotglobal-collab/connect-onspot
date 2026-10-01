@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, index, uuid, date, check, pgSequence, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, serial, uniqueIndex, unique, index, uuid, date, check, pgSequence, primaryKey, AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -1712,6 +1712,15 @@ export const hiringContracts = pgTable("hiring_contracts", {
   index("idx_hiring_contracts_submission_id").on(table.submissionId),
   index("idx_hiring_contracts_status").on(table.status),
   check("hiring_contracts_billing_mode_check", sql`${table.billingMode} IS NULL OR ${table.billingMode} IN ('tracked', 'guaranteed')`),
+  check("hiring_contracts_termination_snapshot_check", sql`
+    (${table.effectiveEndDate} IS NULL AND ${table.terminationReason} IS NULL
+      AND ${table.terminatedBy} IS NULL AND ${table.terminatedAt} IS NULL)
+    OR
+    (${table.effectiveEndDate} IS NOT NULL AND ${table.billingMode} IN ('tracked', 'guaranteed')
+      AND ${table.terminationReason} IS NOT NULL AND btrim(${table.terminationReason}) <> ''
+      AND ${table.terminatedBy} IS NOT NULL AND ${table.terminatedAt} IS NOT NULL
+      AND (${table.effectiveStartDate} IS NULL OR ${table.effectiveEndDate} >= ${table.effectiveStartDate}))
+  `),
 ]);
 
 export const hiringContractTerminationRequests = pgTable("hiring_contract_termination_requests", {
@@ -1729,6 +1738,29 @@ export const hiringContractTerminationRequests = pgTable("hiring_contract_termin
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("hiring_contract_termination_requests_status_idx").on(table.status, table.createdAt),
+  uniqueIndex("hiring_contract_termination_one_open_request_idx").on(table.hiringContractId)
+    .where(sql`${table.status} = 'open'`),
+  uniqueIndex("hiring_contract_termination_one_approval_idx").on(table.hiringContractId)
+    .where(sql`${table.status} = 'approved'`),
+  check("hiring_contract_termination_requests_requester_role_check", sql`${table.requesterRole} IN ('client', 'talent', 'admin')`),
+  check("hiring_contract_termination_requests_reason_check", sql`btrim(${table.reason}) <> ''`),
+  check("hiring_contract_termination_requests_status_check", sql`${table.status} IN ('open', 'approved', 'rejected')`),
+  check("hiring_contract_termination_requests_check", sql`
+    (${table.status} = 'open' AND ${table.decisionReason} IS NULL AND ${table.decidedBy} IS NULL
+      AND ${table.decidedAt} IS NULL AND ${table.approvedEffectiveEndDate} IS NULL)
+    OR
+    (${table.status} = 'approved' AND ${table.decisionReason} IS NOT NULL AND btrim(${table.decisionReason}) <> ''
+      AND ${table.decidedBy} IS NOT NULL AND ${table.decidedAt} IS NOT NULL
+      AND ${table.approvedEffectiveEndDate} IS NOT NULL)
+    OR
+    (${table.status} = 'rejected' AND ${table.decisionReason} IS NOT NULL AND btrim(${table.decisionReason}) <> ''
+      AND ${table.decidedBy} IS NOT NULL AND ${table.decidedAt} IS NOT NULL
+      AND ${table.approvedEffectiveEndDate} IS NULL)
+  `),
+  check("hiring_contract_termination_requests_approved_date_check", sql`
+    ${table.approvedEffectiveEndDate} IS NULL
+    OR ${table.approvedEffectiveEndDate} >= ${table.requestedEffectiveEndDate}
+  `),
 ]);
 
 // Clock-first work sessions. Raw startedAt/endedAt are server-captured events;
@@ -1750,7 +1782,29 @@ export const clockSessions = pgTable("clock_sessions", {
   resolutionReason:   text("resolution_reason"),
   createdAt:          timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  index("clock_sessions_talent_recent").on(table.talentId, table.startedAt),
+  uniqueIndex("clock_sessions_one_open_per_talent").on(table.talentId)
+    .where(sql`${table.endedAt} IS NULL AND ${table.exceptionStatus} IS DISTINCT FROM 'approved'`),
+  index("clock_sessions_talent_recent").on(table.talentId, table.startedAt.desc()),
+  check("clock_sessions_exception_type_check", sql`${table.exceptionType} IS NULL OR ${table.exceptionType} IN ('missed_out')`),
+  check("clock_sessions_exception_status_check", sql`${table.exceptionStatus} IS NULL OR ${table.exceptionStatus} IN ('detected', 'pending', 'approved', 'rejected')`),
+  check("clock_sessions_exception_pair_check", sql`(${table.exceptionStatus} IS NULL) = (${table.exceptionType} IS NULL)`),
+  check("clock_sessions_exception_state_check", sql`
+    (${table.exceptionStatus} IS NULL AND ${table.proposedEndAt} IS NULL AND ${table.proposalReason} IS NULL
+      AND ${table.approvedEndAt} IS NULL AND ${table.resolvedBy} IS NULL AND ${table.resolvedAt} IS NULL
+      AND ${table.resolutionReason} IS NULL)
+    OR (${table.exceptionStatus} = 'detected' AND ${table.exceptionType} IS NOT NULL
+      AND ${table.proposedEndAt} IS NULL AND ${table.proposalReason} IS NULL AND ${table.approvedEndAt} IS NULL
+      AND ${table.resolvedBy} IS NULL AND ${table.resolvedAt} IS NULL AND ${table.resolutionReason} IS NULL)
+    OR (${table.exceptionStatus} = 'pending' AND ${table.exceptionType} IS NOT NULL
+      AND ${table.proposedEndAt} IS NOT NULL AND ${table.proposalReason} IS NOT NULL AND ${table.approvedEndAt} IS NULL
+      AND ${table.resolvedBy} IS NULL AND ${table.resolvedAt} IS NULL AND ${table.resolutionReason} IS NULL)
+    OR (${table.exceptionStatus} = 'approved' AND ${table.exceptionType} IS NOT NULL
+      AND ${table.proposedEndAt} IS NOT NULL AND ${table.proposalReason} IS NOT NULL AND ${table.approvedEndAt} IS NOT NULL
+      AND ${table.resolvedBy} IS NOT NULL AND ${table.resolvedAt} IS NOT NULL AND ${table.resolutionReason} IS NOT NULL)
+    OR (${table.exceptionStatus} = 'rejected' AND ${table.exceptionType} IS NOT NULL
+      AND ${table.proposedEndAt} IS NOT NULL AND ${table.proposalReason} IS NOT NULL AND ${table.approvedEndAt} IS NULL
+      AND ${table.resolvedBy} IS NOT NULL AND ${table.resolvedAt} IS NOT NULL AND ${table.resolutionReason} IS NOT NULL)
+  `),
 ]);
 
 export const clockExceptionReviews = pgTable("clock_exception_reviews", {
@@ -1764,7 +1818,16 @@ export const clockExceptionReviews = pgTable("clock_exception_reviews", {
   decisionReason:  text("decision_reason"),
   createdAt:       timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  index("clock_exception_reviews_session_history").on(table.clockSessionId, table.createdAt),
+  index("clock_exception_reviews_session_history").on(table.clockSessionId, table.createdAt, table.id),
+  check("clock_exception_reviews_action_check", sql`${table.action} IN ('detected', 'proposed', 'approved', 'rejected')`),
+  check("clock_exception_reviews_state_check", sql`
+    (${table.action} = 'detected' AND ${table.actorId} IS NULL AND ${table.reviewerId} IS NULL
+      AND ${table.proposedEndAt} IS NULL AND ${table.proposalReason} IS NULL AND ${table.decisionReason} IS NULL)
+    OR (${table.action} = 'proposed' AND ${table.actorId} IS NOT NULL AND ${table.reviewerId} IS NULL
+      AND ${table.proposedEndAt} IS NOT NULL AND ${table.proposalReason} IS NOT NULL AND ${table.decisionReason} IS NULL)
+    OR (${table.action} IN ('approved', 'rejected') AND ${table.actorId} IS NULL AND ${table.reviewerId} IS NOT NULL
+      AND ${table.proposedEndAt} IS NOT NULL AND ${table.proposalReason} IS NOT NULL AND ${table.decisionReason} IS NOT NULL)
+  `),
 ]);
 
 export const timesheetPeriods = pgTable("timesheet_periods", {
@@ -1775,11 +1838,17 @@ export const timesheetPeriods = pgTable("timesheet_periods", {
   workTimezone: text("work_timezone"),
   status: text("status").notNull().default("open"),
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
-  approvedRevisionId: uuid("approved_revision_id"),
+  approvedRevisionId: uuid("approved_revision_id").references(
+    (): AnyPgColumn => timesheetRevisions.id,
+    { onDelete: "restrict" },
+  ),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("timesheet_periods_contract_start_end").on(table.hiringContractId, table.periodStart, table.periodEnd),
+  index("timesheet_periods_contract_period").on(table.hiringContractId, table.periodStart.desc()),
+  check("timesheet_periods_status_check", sql`${table.status} IN ('open', 'submitted', 'approved', 'disputed', 'rejected')`),
+  check("timesheet_periods_dates_check", sql`${table.periodStart} <= ${table.periodEnd}`),
 ]);
 
 export const timesheetRevisions = pgTable("timesheet_revisions", {
@@ -1803,6 +1872,8 @@ export const timesheetRevisionSessions = pgTable("timesheet_revision_sessions", 
   source: text("source").notNull(),
 }, (table) => [
   primaryKey({ columns: [table.revisionId, table.clockSessionId] }),
+  check("timesheet_revision_sessions_source_check", sql`${table.source} IN ('clock', 'approved_exception', 'admin_correction')`),
+  check("timesheet_revision_sessions_time_check", sql`${table.effectiveEndAt} > ${table.startedAt}`),
 ]);
 
 export const timesheetCorrectionProposals = pgTable("timesheet_correction_proposals", {
@@ -1818,7 +1889,11 @@ export const timesheetCorrectionProposals = pgTable("timesheet_correction_propos
   decisionReason: text("decision_reason"),
   decidedAt: timestamp("decided_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("timesheet_corrections_period").on(table.timesheetPeriodId, table.createdAt),
+  check("timesheet_correction_proposals_status_check", sql`${table.status} IN ('pending', 'approved', 'rejected')`),
+  check("timesheet_correction_proposals_requested_time_check", sql`${table.requestedStartedAt} IS NOT NULL OR ${table.requestedEndAt} IS NOT NULL`),
+]);
 
 export const timesheetDisputes = pgTable("timesheet_disputes", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1830,7 +1905,10 @@ export const timesheetDisputes = pgTable("timesheet_disputes", {
   resolutionReason: text("resolution_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-});
+}, (table) => [
+  index("timesheet_disputes_period").on(table.timesheetPeriodId, table.createdAt),
+  check("timesheet_disputes_status_check", sql`${table.status} IN ('open', 'resolved')`),
+]);
 
 export const timesheetAudit = pgTable("timesheet_audit", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1840,7 +1918,10 @@ export const timesheetAudit = pgTable("timesheet_audit", {
   reason: text("reason"),
   details: jsonb("details").notNull().default(sql`'{}'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("timesheet_audit_period").on(table.timesheetPeriodId, table.createdAt),
+  check("timesheet_audit_action_check", sql`${table.action} IN ('submitted', 'correction_requested', 'disputed', 'review_approved', 'review_rejected', 'review_exception', 'correction_decided')`),
+]);
 
 // ── Billing engine — additive schema ─────────────────────────────────────────
 // These tables are distinct from the preserved legacy payments/contracts models.
@@ -1995,6 +2076,8 @@ export const talentInvoices = pgTable("talent_invoices", {
   uniqueIndex("talent_invoices_contract_period_unique").on(table.hiringContractId, table.periodStart, table.periodEnd),
   index("talent_invoices_talent_status_idx").on(table.talentId, table.status),
   index("talent_invoices_period_idx").on(table.periodStart, table.periodEnd),
+  check("talent_invoices_billing_mode_check", sql`${table.billingMode} IN ('tracked', 'guaranteed')`),
+  check("talent_invoices_status_check", sql`${table.status} IN ('draft', 'sent', 'void')`),
 ]);
 
 export const guaranteedNonperformanceClaims = pgTable("guaranteed_nonperformance_claims", {
@@ -2010,7 +2093,12 @@ export const guaranteedNonperformanceClaims = pgTable("guaranteed_nonperformance
   decidedBy: varchar("decided_by").references(() => users.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   decidedAt: timestamp("decided_at", { withTimezone: true }),
-}, (table) => [index("guaranteed_claims_status_idx").on(table.status)]);
+}, (table) => [
+  index("guaranteed_claims_status_idx").on(table.status),
+  unique("guaranteed_nonperformance_claims_hiring_contract_id_period_start_period_end_key")
+    .on(table.hiringContractId, table.periodStart, table.periodEnd),
+  check("guaranteed_nonperformance_claims_status_check", sql`${table.status} IN ('open', 'approved', 'rejected')`),
+]);
 
 export const talentCreditMemos = pgTable("talent_credit_memos", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2042,6 +2130,7 @@ export const talentCreditMemoApplicationsV2 = pgTable("talent_credit_memo_applic
 }, (table) => [
   index("talent_credit_memo_apps_v2_invoice_idx").on(table.talentInvoiceId),
   index("talent_credit_memo_apps_v2_memo_idx").on(table.creditMemoId),
+  check("talent_credit_memo_applications_v2_amount_check", sql`${table.amount} <> 0`),
 ]);
 
 export const securityDepositReplenishments = pgTable("security_deposit_replenishments", {
@@ -2052,7 +2141,10 @@ export const securityDepositReplenishments = pgTable("security_deposit_replenish
   recordedBy: varchar("recorded_by").notNull().references(() => users.id, { onDelete: "restrict" }),
   reference: text("reference"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("security_deposit_replenishments_contract_idx").on(table.hiringContractId, table.createdAt)]);
+}, (table) => [
+  index("security_deposit_replenishments_contract_idx").on(table.hiringContractId, table.createdAt),
+  check("security_deposit_replenishments_amount_check", sql`${table.amount} > 0`),
+]);
 
 export const clientMonthlyInvoices = pgTable("client_monthly_invoices", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2062,7 +2154,10 @@ export const clientMonthlyInvoices = pgTable("client_monthly_invoices", {
   subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
   status: text("status").notNull().default("sent"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [uniqueIndex("client_monthly_invoices_owner_month_currency").on(table.clientId, table.invoiceMonth, table.currency)]);
+}, (table) => [
+  uniqueIndex("client_monthly_invoices_owner_month_currency").on(table.clientId, table.invoiceMonth, table.currency),
+  check("client_monthly_invoices_status_check", sql`${table.status} IN ('draft', 'sent')`),
+]);
 
 export const clientMonthlyInvoiceLines = pgTable("client_monthly_invoice_lines", {
   clientMonthlyInvoiceId: uuid("client_monthly_invoice_id").notNull().references(() => clientMonthlyInvoices.id, { onDelete: "restrict" }),
@@ -2090,6 +2185,7 @@ export const clientLateGuaranteedClaims = pgTable("client_late_guaranteed_claims
 }, (table) => [
   uniqueIndex("client_late_claim_contract_period_unique").on(table.hiringContractId, table.periodStart, table.periodEnd),
   index("client_late_guaranteed_claims_status_idx").on(table.status, table.createdAt),
+  check("client_late_guaranteed_claims_status_check", sql`${table.status} IN ('open', 'approved', 'rejected')`),
 ]);
 
 export const clientCreditMemos = pgTable("client_credit_memos", {
@@ -2103,7 +2199,10 @@ export const clientCreditMemos = pgTable("client_credit_memos", {
   periodEnd: date("period_end").notNull(),
   allInAmount: decimal("all_in_amount", { precision: 12, scale: 2 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("client_credit_memos_client_currency_idx").on(table.clientId, table.currency, table.periodStart, table.createdAt)]);
+}, (table) => [
+  index("client_credit_memos_client_currency_idx").on(table.clientId, table.currency, table.periodStart, table.createdAt),
+  check("client_credit_memos_all_in_amount_check", sql`${table.allInAmount} > 0`),
+]);
 
 export const clientCreditApplications = pgTable("client_credit_applications", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2115,6 +2214,7 @@ export const clientCreditApplications = pgTable("client_credit_applications", {
   uniqueIndex("client_credit_memo_statement_unique").on(table.clientCreditMemoId, table.clientMonthlyInvoiceId),
   index("client_credit_applications_invoice_idx").on(table.clientMonthlyInvoiceId),
   index("client_credit_applications_memo_idx").on(table.clientCreditMemoId),
+  check("client_credit_applications_amount_check", sql`${table.amount} > 0`),
 ]);
 
 export const securityDeposits = pgTable("security_deposits", {

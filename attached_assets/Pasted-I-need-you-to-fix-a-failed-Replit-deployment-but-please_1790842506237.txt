@@ -1,0 +1,223 @@
+I need you to fix a failed Replit deployment, but please be extremely careful with the database.
+
+CURRENT FAILURE
+
+The deployment builds successfully but fails during startup.
+
+The production start command is:
+
+NODE_ENV=production node dist/run-migrations.js && NODE_ENV=production node dist/index.js
+
+The deployment logs show:
+
+Migration 0018_payment_provider_framework applied
+Migration 0019_clock_sessions applied
+Migration 0020_clock_exception_reviews applied
+
+Then:
+
+Migration runner failed:
+Migration 0021_timesheets failed:
+relation "timesheet_periods" already exists
+
+Because run-migrations.js exits with an error, dist/index.js never starts. Replit then reports healthcheck failures / status 500 and eventually:
+
+"a port configuration was specified but the required port was never opened, expected port 5000"
+
+IMPORTANT:
+
+The port/healthcheck error appears to be a downstream symptom.
+Do NOT try to fix this by changing the application port.
+
+The immediate root cause is migration 0021 colliding with an already-existing timesheet_periods relation.
+
+GOAL
+
+I need to get the application deployable again so I can publish my homepage/frontend changes, while preserving all database work and safely resolving the migration/schema conflict.
+
+SAFETY RULES
+
+Do NOT:
+- drop timesheet_periods
+- drop production tables
+- delete production data
+- reset the production database
+- delete rows from app_schema_migrations
+- manually mark 0021 or later migrations as applied
+- bypass the migration runner
+- remove migrations from npm start
+- change DATABASE_URL
+- change the port configuration as a workaround
+- disable database protections globally
+- use session_replication_role
+- Publish/Republish automatically
+
+Do not assume the existing timesheet tables are correct just because they exist.
+
+STEP 1 — INSPECT CURRENT STATE FIRST
+
+Before modifying anything, determine:
+
+1. Which database/environment this failed deployment was connected to.
+
+2. Current app_schema_migrations state, specifically whether:
+   - 0018 is recorded
+   - 0019 is recorded
+   - 0020 is recorded
+   - 0021 is NOT recorded
+
+3. Inspect the existing public.timesheet_periods object.
+
+Determine:
+- whether it is actually a table
+- columns and types
+- defaults
+- nullability
+- primary key
+- foreign keys
+- CHECK constraints
+- unique constraints
+- indexes
+
+4. Inspect ALL structures that migration 0021 expects to create:
+- timesheet_periods
+- timesheet_revisions
+- timesheet_revision_sessions
+- timesheet_correction_proposals
+- timesheet_disputes
+- timesheet_audit
+- related indexes
+- timesheet_period_approved_revision_fk
+- reject_timesheet_history_mutation()
+- timesheet_revisions_immutable
+- timesheet_revision_sessions_immutable
+- timesheet_audit_immutable
+- jobs.time_zone
+
+5. Compare the actual existing definitions against the intended definitions in migrations/0021_timesheets.sql and the relevant final definitions in shared/schema.ts.
+
+Classify every expected object as:
+- MISSING
+- MATCHING
+- INCOMPLETE BUT SAFELY RECONCILABLE
+- CONFLICTING
+
+Do not modify the database during this inspection.
+
+STEP 2 — DETERMINE WHY THE OBJECT ALREADY EXISTS
+
+Determine from the available project/deployment information whether timesheet_periods appears to have been pre-created by Replit's Publish schema synchronization or another project schema mechanism while app_schema_migrations still lacks 0021.
+
+Report evidence, not assumptions.
+
+STEP 3 — FIX THE MIGRATION CODE
+
+If the existing structures are compatible with the intended schema, modify migration 0021 to be reconciliation-safe.
+
+Do NOT simply add CREATE TABLE IF NOT EXISTS and move on.
+
+Migration 0021 must:
+
+- create missing objects
+- verify already-existing objects have the expected definitions
+- safely install missing constraints/indexes/functions/triggers
+- accept correctly matching existing definitions
+- stop with a clear error if an existing definition conflicts
+- preserve the intended financial/audit integrity rules
+- allow app_schema_migrations to record 0021 only after the FULL migration succeeds
+
+Use relation-scoped catalog checks for constraints and triggers.
+
+For existing indexes, verify:
+- table
+- uniqueness
+- columns/expressions
+- ordering where relevant
+- partial predicate
+- valid/ready state
+
+For triggers, verify:
+- target table
+- timing
+- events
+- row/statement level
+- function binding
+- enabled state
+
+For columns, verify:
+- type
+- nullability
+- default
+- generated/identity properties where applicable
+
+STEP 4 — CHECK LATER MIGRATIONS TOO
+
+We already know later pending migrations may have the same Publish/schema-sync collision problem.
+
+After fixing 0021, inspect pending migrations 0022 through 0031.
+
+Apply the previously designed reconciliation-safe strategy where needed so that fixing 0021 does not simply cause the next deployment to fail at 0022, 0023, 0024, etc.
+
+Preserve:
+- backfills
+- functions
+- triggers
+- constraints
+- indexes
+- financial immutability protections
+- historical reconciliation logic
+- existing migration IDs/order
+
+Pay special attention to:
+0022_timesheet_revision_timezone
+0023_billing_mode
+0024_talent_invoicing
+0025_phase3b_review_fixes
+0026_phase3b_acceptance_fixes
+0027_client_late_guaranteed_credits
+0029_contract_termination
+0030_terminated_contract_snapshot_guards
+0031_reconcile_contract_termination
+
+Do not blindly add IF NOT EXISTS.
+
+STEP 5 — HANDLE PARTIAL MIGRATION PROGRESS
+
+0018, 0019, and 0020 appear to have successfully committed before 0021 failed.
+
+Preserve those successful ledger records and database changes.
+
+Do NOT attempt to rerun or undo them unless inspection proves there is an actual problem.
+
+0021 should remain unapplied until its complete migration succeeds.
+
+STEP 6 — VERIFY LOCALLY / SAFELY
+
+After making CODE changes:
+
+- run safe non-production tests
+- run the migration/reconciliation test harness if available
+- verify clean 0017-style baseline behavior
+- verify pre-created timesheet objects + missing 0021 ledger behavior
+- verify partial schema behavior
+- verify conflicting definitions fail safely
+- verify migration retry/resume behavior
+
+Do NOT publish automatically.
+
+FINAL REPORT
+
+When finished, STOP before Republish and tell me:
+
+A. Root cause confirmed
+B. Database/environment that experienced the failure
+C. Current migration ledger state
+D. Existing timesheet objects found
+E. Files changed
+F. Exact reconciliation changes made to 0021
+G. Changes made to 0022–0031
+H. Tests performed and results
+I. Any remaining risks
+J. Whether it is now safe for me to manually retry Republish
+
+Do not click Republish yourself.

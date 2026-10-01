@@ -1,6 +1,8 @@
 -- Late Guaranteed nonperformance claims are a Client-side ledger, independent
 -- of Talent credit memos and immutable Talent invoices.
-CREATE TABLE client_late_guaranteed_claims (
+SELECT pg_temp.reconcile_table(
+  'public.client_late_guaranteed_claims',
+  $table_body$
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   hiring_contract_id uuid NOT NULL REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
   original_talent_invoice_id uuid NOT NULL UNIQUE REFERENCES talent_invoices(id) ON DELETE RESTRICT,
@@ -14,11 +16,17 @@ CREATE TABLE client_late_guaranteed_claims (
   created_at timestamptz NOT NULL DEFAULT now(),
   decided_at timestamptz,
   UNIQUE (hiring_contract_id, period_start, period_end)
+  $table_body$
 );
-CREATE INDEX client_late_guaranteed_claims_status_idx
-  ON client_late_guaranteed_claims(status, created_at);
+SELECT pg_temp.reconcile_index(
+  'public.client_late_guaranteed_claims',
+  'client_late_guaranteed_claims_status_idx',
+  'CREATE INDEX client_late_guaranteed_claims_status_idx ON client_late_guaranteed_claims(status, created_at);'
+);
 
-CREATE TABLE client_credit_memos (
+SELECT pg_temp.reconcile_table(
+  'public.client_credit_memos',
+  $table_body$
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   late_claim_id uuid NOT NULL UNIQUE REFERENCES client_late_guaranteed_claims(id) ON DELETE RESTRICT,
   hiring_contract_id uuid NOT NULL REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
@@ -29,24 +37,39 @@ CREATE TABLE client_credit_memos (
   period_end date NOT NULL,
   all_in_amount numeric(12,2) NOT NULL CHECK (all_in_amount > 0),
   created_at timestamptz NOT NULL DEFAULT now()
+  $table_body$
 );
-CREATE INDEX client_credit_memos_client_currency_idx
-  ON client_credit_memos(client_id, currency, period_start, created_at);
+SELECT pg_temp.reconcile_index(
+  'public.client_credit_memos',
+  'client_credit_memos_client_currency_idx',
+  'CREATE INDEX client_credit_memos_client_currency_idx ON client_credit_memos(client_id, currency, period_start, created_at);'
+);
 
-CREATE TABLE client_credit_applications (
+SELECT pg_temp.reconcile_table(
+  'public.client_credit_applications',
+  $table_body$
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_credit_memo_id uuid NOT NULL REFERENCES client_credit_memos(id) ON DELETE RESTRICT,
   client_monthly_invoice_id uuid NOT NULL REFERENCES client_monthly_invoices(id) ON DELETE RESTRICT,
   amount numeric(12,2) NOT NULL CHECK (amount > 0),
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (client_credit_memo_id, client_monthly_invoice_id)
+  $table_body$
 );
-CREATE INDEX client_credit_applications_invoice_idx
-  ON client_credit_applications(client_monthly_invoice_id);
-CREATE INDEX client_credit_applications_memo_idx
-  ON client_credit_applications(client_credit_memo_id);
+SELECT pg_temp.reconcile_index(
+  'public.client_credit_applications',
+  'client_credit_applications_invoice_idx',
+  'CREATE INDEX client_credit_applications_invoice_idx ON client_credit_applications(client_monthly_invoice_id);'
+);
+SELECT pg_temp.reconcile_index(
+  'public.client_credit_applications',
+  'client_credit_applications_memo_idx',
+  'CREATE INDEX client_credit_applications_memo_idx ON client_credit_applications(client_credit_memo_id);'
+);
 
-CREATE OR REPLACE FUNCTION protect_client_late_claims()
+SELECT pg_temp.reconcile_function(
+  'public.protect_client_late_claims',
+  $function_ddl$CREATE OR REPLACE FUNCTION protect_client_late_claims()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'late Client claims cannot be deleted'; END IF;
@@ -66,12 +89,19 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
-CREATE TRIGGER client_late_claims_immutable
+$$;$function_ddl$
+);
+SELECT pg_temp.reconcile_trigger(
+  'public.client_late_guaranteed_claims',
+  'client_late_claims_immutable',
+  $trigger_ddl$CREATE TRIGGER client_late_claims_immutable
   BEFORE UPDATE OR DELETE ON client_late_guaranteed_claims
-  FOR EACH ROW EXECUTE FUNCTION protect_client_late_claims();
+  FOR EACH ROW EXECUTE FUNCTION protect_client_late_claims();$trigger_ddl$
+);
 
-CREATE OR REPLACE FUNCTION protect_client_credit_memos()
+SELECT pg_temp.reconcile_function(
+  'public.protect_client_credit_memos',
+  $function_ddl$CREATE OR REPLACE FUNCTION protect_client_credit_memos()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE claim_status text; invoice_status text; invoice_currency text;
         claim_contract uuid; claim_invoice uuid; claim_client text;
@@ -107,12 +137,19 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
-CREATE TRIGGER client_credit_memos_immutable
+$$;$function_ddl$
+);
+SELECT pg_temp.reconcile_trigger(
+  'public.client_credit_memos',
+  'client_credit_memos_immutable',
+  $trigger_ddl$CREATE TRIGGER client_credit_memos_immutable
   BEFORE INSERT OR UPDATE OR DELETE ON client_credit_memos
-  FOR EACH ROW EXECUTE FUNCTION protect_client_credit_memos();
+  FOR EACH ROW EXECUTE FUNCTION protect_client_credit_memos();$trigger_ddl$
+);
 
-CREATE OR REPLACE FUNCTION protect_client_credit_applications()
+SELECT pg_temp.reconcile_function(
+  'public.protect_client_credit_applications',
+  $function_ddl$CREATE OR REPLACE FUNCTION protect_client_credit_applications()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE statement_status text; statement_client text; statement_currency text;
         memo_client text; memo_currency text; memo_period date;
@@ -143,7 +180,12 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
-CREATE TRIGGER client_credit_applications_immutable
+$$;$function_ddl$
+);
+SELECT pg_temp.reconcile_trigger(
+  'public.client_credit_applications',
+  'client_credit_applications_immutable',
+  $trigger_ddl$CREATE TRIGGER client_credit_applications_immutable
   BEFORE INSERT OR UPDATE OR DELETE ON client_credit_applications
-  FOR EACH ROW EXECUTE FUNCTION protect_client_credit_applications();
+  FOR EACH ROW EXECUTE FUNCTION protect_client_credit_applications();$trigger_ddl$
+);

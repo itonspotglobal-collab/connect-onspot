@@ -1,5 +1,7 @@
 -- The existing immutable-snapshot triggers must protect ended contracts, too.
-CREATE OR REPLACE FUNCTION prevent_signed_contract_billing_start_change()
+SELECT pg_temp.reconcile_function(
+  'prevent_signed_contract_billing_start_change',
+  $ddl$CREATE OR REPLACE FUNCTION prevent_signed_contract_billing_start_change()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.status IN ('signed', 'terminated') AND (
@@ -10,9 +12,12 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
+$$;$ddl$
+);
 
-CREATE OR REPLACE FUNCTION prevent_signed_contract_billing_mode_change()
+SELECT pg_temp.reconcile_function(
+  'prevent_signed_contract_billing_mode_change',
+  $ddl$CREATE OR REPLACE FUNCTION prevent_signed_contract_billing_mode_change()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF OLD.status IN ('signed', 'terminated') AND NEW.billing_mode IS DISTINCT FROM OLD.billing_mode THEN
@@ -20,4 +25,5 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
+$$;$ddl$
+);

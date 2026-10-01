@@ -1,7 +1,7 @@
 -- Clock-first work-session records are separate from legacy time_entries.
 -- ended_at is only the server-captured clock-out event; approved corrections
 -- are retained separately and never rewrite either captured timestamp.
-CREATE TABLE IF NOT EXISTS clock_sessions (
+SELECT pg_temp.reconcile_table('public.clock_sessions', $body$
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   hiring_contract_id uuid NOT NULL REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
   talent_id varchar NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -34,14 +34,22 @@ CREATE TABLE IF NOT EXISTS clock_sessions (
       AND proposal_reason IS NOT NULL AND approved_end_at IS NULL AND resolved_by IS NOT NULL
       AND resolved_at IS NOT NULL AND resolution_reason IS NOT NULL)
   )
-);
+$body$);
 
 -- An approved correction resolves the open clock session without changing its
 -- raw ended_at event. Detected/pending exceptions and ordinary open sessions hold
 -- the global per-talent lock; rejected exceptions remain open until clocked out.
-CREATE UNIQUE INDEX IF NOT EXISTS clock_sessions_one_open_per_talent
-  ON clock_sessions (talent_id)
-  WHERE ended_at IS NULL AND exception_status IS DISTINCT FROM 'approved';
+SELECT pg_temp.reconcile_index(
+  'public.clock_sessions',
+  'clock_sessions_one_open_per_talent',
+  $ddl$CREATE UNIQUE INDEX clock_sessions_one_open_per_talent
+    ON clock_sessions (talent_id)
+    WHERE ended_at IS NULL AND exception_status IS DISTINCT FROM 'approved';$ddl$
+);
 
-CREATE INDEX IF NOT EXISTS clock_sessions_talent_recent
-  ON clock_sessions (talent_id, started_at DESC);
+SELECT pg_temp.reconcile_index(
+  'public.clock_sessions',
+  'clock_sessions_talent_recent',
+  $ddl$CREATE INDEX clock_sessions_talent_recent
+    ON clock_sessions (talent_id, started_at DESC);$ddl$
+);
