@@ -61,10 +61,18 @@ interface LedgerResponse {
   pages: number;
   total: number;
   summary: {
-    gtv: string;
-    outstanding_invoices: string;
-    pending_payouts: string;
+    gtv: string | number | null;
+    outstanding_invoices: string | number | null;
+    pending_payouts: string | number | null;
     deposits_at_risk: number;
+    currency?: string;
+    currencyTotals?: {
+      gtv?: Array<{ currency: string; amount: string }>;
+      outstanding_invoices?: Array<{ currency: string; amount: string }>;
+      pending_payouts?: Array<{ currency: string; amount: string }>;
+    };
+    mixedCurrencies?: boolean;
+    currencyWarnings?: string[];
   };
   items: LedgerRow[];
 }
@@ -91,13 +99,25 @@ interface SignedContract {
 
 const PAGE_SIZE = 20;
 
-function money(value: string | number | null | undefined, currency: string | null = "PHP") {
-  const amount = Number(value ?? 0);
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency || "PHP",
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
+function money(value: string | number | null | undefined, currency: string | null = "USD") {
+  if (value == null) return "—";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "—";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency || "USD",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${currency || "USD"} ${amount.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  }
+}
+
+function summaryMoney(value: string | number | null | undefined) {
+  if (value === null) return "Review currencies";
+  if (value === undefined) return "—";
+  return money(value, "USD");
 }
 
 function date(value: string | null | undefined) {
@@ -274,6 +294,20 @@ export default function AdminLedger() {
 
   const summary = data?.summary;
   const rows = data?.items ?? [];
+  const currencyTotals = summary?.currencyTotals;
+  const currencyTotalSections = [
+    ["GTV", currencyTotals?.gtv],
+    ["Outstanding invoices", currencyTotals?.outstanding_invoices],
+    ["Pending payouts", currencyTotals?.pending_payouts],
+  ] as const;
+  const currencyGroups = currencyTotalSections.flatMap(([label, groups]) =>
+    (groups ?? []).map((group) => ({ label, ...group })),
+  );
+  const hasNonUsdTotals = currencyGroups.some(({ currency }) => currency.toUpperCase() !== "USD");
+  const showCurrencyReview =
+    Boolean(summary?.mixedCurrencies) ||
+    Boolean(summary?.currencyWarnings?.length) ||
+    hasNonUsdTotals;
 
   return (
     <div className="container mx-auto max-w-7xl space-y-6 p-6" data-testid="admin-ledger-page">
@@ -297,21 +331,45 @@ export default function AdminLedger() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">GTV</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{money(summary?.gtv)}</p><p className="text-xs text-muted-foreground">Client billing value</p></CardContent>
+          <CardContent><p className="text-2xl font-bold">{summaryMoney(summary?.gtv)}</p><p className="text-xs text-muted-foreground">Client billing value · USD</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Outstanding invoices</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{money(summary?.outstanding_invoices)}</p><p className="text-xs text-muted-foreground">Not paid or void</p></CardContent>
+          <CardContent><p className="text-2xl font-bold">{summaryMoney(summary?.outstanding_invoices)}</p><p className="text-xs text-muted-foreground">Not paid or void · USD</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pending payouts</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{money(summary?.pending_payouts)}</p><p className="text-xs text-muted-foreground">Pending or scheduled</p></CardContent>
+          <CardContent><p className="text-2xl font-bold">{summaryMoney(summary?.pending_payouts)}</p><p className="text-xs text-muted-foreground">Pending or scheduled · USD</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Deposits at risk</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{summary?.deposits_at_risk ?? 0}</p><p className="text-xs text-muted-foreground">Drawn or suspended</p></CardContent>
         </Card>
       </div>
+
+      {showCurrencyReview && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+          data-testid="ledger-currency-review"
+        >
+          <p className="font-semibold">Currency review required — totals are not converted.</p>
+          {summary?.currencyWarnings?.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {summary.currencyWarnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}
+            </ul>
+          ) : null}
+          {currencyGroups.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {currencyGroups.map((group, index) => (
+                <li key={`${group.label}-${group.currency}-${index}`}>
+                  {group.label}: {money(group.amount, group.currency)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -541,7 +599,10 @@ export default function AdminLedger() {
                         )}
                       </td>
                       <td className="space-y-1 px-4 py-4">
-                        <div className="font-semibold">{money(row.adjusted_talent_payout, row.talent_rate_currency)}</div>
+                        <div className="font-semibold">{money(
+                          row.payout_id && row.payout_amount != null ? row.payout_amount : row.adjusted_talent_payout,
+                          row.payout_id && row.payout_amount != null ? row.payout_currency : row.talent_rate_currency,
+                        )}</div>
                         {row.payout_id ? (
                           <>
                             <Badge variant="outline" className={statusClass(row.payout_status)}>{row.payout_status}</Badge>

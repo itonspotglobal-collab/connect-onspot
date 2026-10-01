@@ -50,3 +50,4 @@
 - [One-time event popups](one-time-event-popups.md) — cross-device transactional popups must atomically claim the canonical notification without consuming its bell read state.
 - [Controlled dialog focus](controlled-dialog-focus.md) — custom card-opened Radix dialogs need explicit focus restoration if the card should regain focus after close.
 - [Approved Manifesto design](approved-manifesto-design.md) — preserve the approved reference; do not reinterpret the overlapping headline or dark reading layout during later edits.
+- [USD currency policy](usd-currency-policy.md) — new pricing is USD worldwide; historical denominations remain unchanged, and text prices count even when numeric budgets are zero.

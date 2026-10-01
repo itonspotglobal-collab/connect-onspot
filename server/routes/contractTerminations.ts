@@ -31,6 +31,10 @@ const validReason = (value: unknown): value is string =>
   typeof value === "string" && !!value.trim() && value.trim().length <= 2000;
 const BILLING_MODES = ["tracked", "guaranteed"];
 
+export const usdOnlyTerminationFailure = (error: any) => error?.status === 400 && error?.code === "USD_ONLY"
+  ? { status: 400, body: { error: error.message, code: error.code } }
+  : null;
+
 async function reopenFinalTimesheetPeriod(client: any, contractId: string, effectiveEndDate: string) {
   await client.query(
     `UPDATE timesheet_periods
@@ -357,6 +361,8 @@ export function registerContractTerminationRoutes(app: Express, options: Options
       return res.json({ requestId: request.id, status: decision === "approve" ? "approved" : "rejected" });
     } catch (error: any) {
       await client.query("ROLLBACK").catch(() => {});
+      const usdOnlyFailure = usdOnlyTerminationFailure(error);
+      if (usdOnlyFailure) return res.status(usdOnlyFailure.status).json(usdOnlyFailure.body);
       if (error.code === "terminationDraftUnrebuildable"
         || error.code === "terminationDraftCreditConflict"
         || error.code === "terminationDraftInvalidContract") {
@@ -434,6 +440,8 @@ export function registerContractTerminationRoutes(app: Express, options: Options
       });
     } catch (error: any) {
       await client.query("ROLLBACK").catch(() => {});
+      const usdOnlyFailure = usdOnlyTerminationFailure(error);
+      if (usdOnlyFailure) return res.status(usdOnlyFailure.status).json(usdOnlyFailure.body);
       if (error.code === "terminationDraftUnrebuildable"
         || error.code === "terminationDraftCreditConflict"
         || error.code === "terminationDraftInvalidContract") {

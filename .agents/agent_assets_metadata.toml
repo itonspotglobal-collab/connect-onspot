@@ -503,3 +503,31 @@ mtime_ms = 1790848655697
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/a6d20386-976d-4a1d-b3dd-b2b300aad35b/9a3a27db-711b-48a7-8b8d-68a73d3da130"
 storage_version_token = "1790848677504408"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "U0-fJUUaXErgLu8oKGQxK"
+uri = "file://screenshots/ledger-development-readonly.jpg"
+type = "image"
+title = "Ledger — real read-only development data"
+description = "Actual Ledger UI rendering a read-only development data snapshot in a browser-test session. Historical PHP totals stay PHP; USD totals are not falsely combined. Not a live authenticated admin API request."
+logical_id = "05d916a5-4793-4384-88a9-d4f6af7f32b6"
+content_hash = "sha256:03a986e7b4f7bc24c4c33ba3ad21111bc731f607ef8de5c28e224e3c9250a235"
+size = 94457
+mtime_ms = 1790865363459
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/05d916a5-4793-4384-88a9-d4f6af7f32b6/18a7cf0c-13dc-46bf-b05a-6fe56c5b27af"
+storage_version_token = "1790865762887768"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "QTqPeguAuLwsQ6CJ8sLRs"
+uri = "file://screenshots/usd-ledger.jpg"
+type = "image"
+title = "Ledger — USD empty-ledger display test"
+description = "Actual rendered Ledger UI with an isolated empty-ledger API fixture: USD $0.00 summary cards. This is a browser-test screenshot, not a live development or production account."
+logical_id = "8444c1c1-deac-424f-804c-69c1ad7583b7"
+content_hash = "sha256:899e46eef220a3cc316c4a93bbfe20699db2d97d44d7426eebd27996b4148c6a"
+size = 115722
+mtime_ms = 1790865344675
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8444c1c1-deac-424f-804c-69c1ad7583b7/53f74948-d59d-45d2-9244-6a6473925ca2"
+storage_version_token = "1790865764850942"
+content_type = "image/jpeg"

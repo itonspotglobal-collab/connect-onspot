@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { buildRateDisplay, getTimeAgo } from "@/lib/jobUtils";
+import { buildRateDisplay, formatCurrencyAmount, getTimeAgo } from "@/lib/jobUtils";
 import { getJobFunctionDisplay } from "@shared/jobFunction";
 import {
   Building2,
@@ -1619,7 +1619,7 @@ function ExtendOfferDialog({
 }) {
   const { toast } = useToast();
   const [rate, setRate] = useState("");
-  const [rateCurrency, setRateCurrency] = useState("PHP");
+  const rateCurrency = "USD";
   const [proposedStartDate, setProposedStartDate] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [notes, setNotes] = useState("");
@@ -1694,14 +1694,14 @@ function ExtendOfferDialog({
       counterResponseMutation.mutate({ offerId: offer.id, action });
       return;
     }
-    const nextRate = window.prompt("Enter your revised rate:", offer.rate);
+    const nextRate = window.prompt("Enter a new revised rate in USD. The existing offer amount is not copied.");
     if (!nextRate || Number.isNaN(Number(nextRate)) || Number(nextRate) <= 0) return;
     counterResponseMutation.mutate({
       offerId: offer.id,
       action,
       payload: {
         counterRate: Number(nextRate),
-        counterRateCurrency: offer.rate_currency || "PHP",
+        counterRateCurrency: "USD",
       },
     });
   };
@@ -1754,14 +1754,9 @@ function ExtendOfferDialog({
             </div>
             <div className="w-28">
               <Label htmlFor="offer-currency" className="text-xs font-semibold">Currency</Label>
-              <Input
-                id="offer-currency"
-                maxLength={3}
-                placeholder="PHP"
-                value={rateCurrency}
-                onChange={(e) => setRateCurrency(e.target.value.toUpperCase())}
-                className="mt-1 uppercase"
-              />
+              <div id="offer-currency" className="mt-1 flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm" data-testid="offer-currency">
+                USD ($)
+              </div>
             </div>
           </div>
 
@@ -1822,7 +1817,7 @@ function ExtendOfferDialog({
                   <p className="font-semibold">Rate is below the talent's expectation</p>
                   {lastResult.rate_delta && (
                     <p className="text-xs mt-0.5">
-                      Difference: {rateCurrency} {Math.abs(parseFloat(lastResult.rate_delta)).toLocaleString()}
+                      Difference: {formatCurrencyAmount(Math.abs(parseFloat(lastResult.rate_delta)), rateCurrency)}
                     </p>
                   )}
                 </>
@@ -1847,7 +1842,7 @@ function ExtendOfferDialog({
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          {o.rate_currency} {parseFloat(o.rate).toLocaleString()}
+                          {formatCurrencyAmount(o.rate, o.rate_currency || "USD")}
                           {o.engagement_type && <span className="ml-1 text-slate-400">· {o.engagement_type}</span>}
                         </span>
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
@@ -1869,7 +1864,7 @@ function ExtendOfferDialog({
                         <span>Sent: {formatOfferDate(o.sent_at ?? o.created_at)}</span>
                       </div>
                       {o.rate_below_expectation === true && (
-                        <p className="mt-0.5 text-amber-600 dark:text-amber-400">Below expectation by {o.rate_currency} {Math.abs(parseFloat(o.rate_delta ?? "0")).toLocaleString()}</p>
+                        <p className="mt-0.5 text-amber-600 dark:text-amber-400">Below expectation by {formatCurrencyAmount(Math.abs(parseFloat(o.rate_delta ?? "0")), o.rate_currency || "USD")}</p>
                       )}
                        {o.notes && <p className="mt-1 text-slate-500 italic line-clamp-2">{o.notes}</p>}
                        {o.status === "sent" && o.proposer_role === "talent" && (!o.expires_at || new Date(o.expires_at) >= new Date()) && (
@@ -1894,7 +1889,7 @@ function ExtendOfferDialog({
           </Button>
           <Button
             onClick={() => offerMutation.mutate()}
-            disabled={offerMutation.isPending || !rate || !rateCurrency || rateCurrency.length !== 3}
+            disabled={offerMutation.isPending || !rate}
             className="bg-[#474ead] hover:bg-[#3a3d8f] text-white"
           >
             {offerMutation.isPending ? "Sending…" : "Send Offer"}

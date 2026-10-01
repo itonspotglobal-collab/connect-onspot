@@ -63,6 +63,8 @@ export interface JobShape {
   experienceLevel: string;
   description: string;
   budget?: string | null;
+  budgetCurrency?: string | null;
+  customCurrencyCode?: string | null;
   salaryDisplay?: string | null;
   responsibilities?: string[] | null;
   requirements?: string[] | null;

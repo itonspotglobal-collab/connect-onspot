@@ -1,4 +1,5 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
+import { buildLedgerCurrencySummary, ledgerCurrencySummarySql } from "./services/ledgerCurrencySummary";
 import sanitizeHtml from "sanitize-html";
 
 // ── Profile rich-text sanitizer (server-side) ─────────────────────────────────
@@ -57,6 +58,13 @@ import path from "path";
 import { createServer, type Server } from "http";
 import * as Sentry from "@sentry/node";
 import { storage, type CreateUserData } from "./storage";
+import {
+  buildProfileRatePreferencePatch,
+  validateUsdJobUpdate,
+  validateUsdProfileUpdate,
+  validateUsdRatePreferenceUpdate,
+} from "./storage";
+import { BILLING_CURRENCY, isUsdCurrency, requireUsdCurrency } from "../shared/currency";
 import { isAuthenticated } from "./replitAuth";
 import {
   hashPassword,
@@ -166,6 +174,93 @@ import { z } from "zod";
 export const ORGANIZATION_INVITATION_EXPIRY_DAYS = 30;
 export const CURRENT_MESSAGING_POLICY_VERSION = "2026-08-28";
 const MESSAGING_POLICY_TYPE = "messaging_communication";
+
+function respondUsdOnly(res: Response, error: any): boolean {
+  if (error?.code !== "USD_ONLY") return false;
+  res.status(400).json({
+    error: "USD_ONLY",
+    code: "USD_ONLY",
+    message: error.message,
+  });
+  return true;
+}
+
+export function jobUpdateAuthorizationStatus(
+  user: { id?: string; role?: string } | null | undefined,
+  job: { clientId?: string | null } | null | undefined,
+): 401 | 403 | null {
+  if (!user?.id) return 401;
+  if (user.role === "admin") return null;
+  if (user.role === "client" && job?.clientId === user.id) return null;
+  return 403;
+}
+
+export function registerGenericJobUpdateRoute(
+  app: Express,
+  authentication: RequestHandler,
+  routeStorage: Pick<typeof storage, "getJob" | "updateJob">,
+): void {
+  app.patch("/api/jobs/:id", authentication, async (req: Request, res: Response) => {
+    try {
+      const existingJob = await routeStorage.getJob(req.params.id);
+      if (!existingJob) return res.status(404).json({ error: "Job not found" });
+      const authorizationStatus = jobUpdateAuthorizationStatus(
+        (req as any).user,
+        existingJob as any,
+      );
+      if (authorizationStatus === 401) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      if (authorizationStatus === 403) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const updateBody = { ...req.body };
+      validateUsdJobUpdate(existingJob as any, updateBody as any);
+      if (Object.prototype.hasOwnProperty.call(updateBody, "budgetCurrency")) {
+        if (isUsdCurrency(updateBody.budgetCurrency)) {
+          updateBody.budgetCurrency = requireUsdCurrency(updateBody.budgetCurrency);
+        } else {
+          delete updateBody.budgetCurrency;
+        }
+      }
+      const effectiveStatus = req.body.status ?? existingJob.status;
+      const billingModeErr = validateBillingMode(req.body.billingMode);
+      if (billingModeErr) return res.status(400).json(billingModeErr);
+      const metadataError = validateEffectiveJobFormMetadata(req.body, existingJob as any);
+      if (metadataError) return res.status(400).json(metadataError);
+
+      const updates = insertJobSchema.partial().parse(updateBody);
+      const etErrPatch = validateEngagementType(updates.engagementType);
+      if (etErrPatch) return res.status(400).json(etErrPatch);
+      const effectiveEngagementType =
+        "engagementType" in updates ? updates.engagementType : existingJob.engagementType;
+      if (
+        ["open", "published"].includes(effectiveStatus as string) &&
+        !["Lite", "Standard"].includes(effectiveEngagementType as string)
+      ) {
+        return res.status(400).json({
+          error: "Engagement Type required",
+          message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
+        });
+      }
+      const effectiveBillingMode = "billingMode" in updates ? updates.billingMode : existingJob.billingMode;
+      if (["open", "published"].includes(effectiveStatus as string) &&
+          !["tracked", "guaranteed"].includes(effectiveBillingMode as string)) {
+        return res.status(400).json(billingModeRequiredError());
+      }
+
+      const job = await routeStorage.updateJob(req.params.id, updates);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      return res.json(job);
+    } catch (error) {
+      if (respondUsdOnly(res, error)) return;
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      return res.status(500).json({ error: "Failed to update job" });
+    }
+  });
+}
 
 /**
  * Canonical engagement type values shared across all job-write routes.
@@ -309,7 +404,7 @@ function validateEffectiveJobFormMetadata(
 }
 
 function hasMeaningfulDraftData(value: Record<string, unknown>): boolean {
-  const ignoredDefaults = new Set(["", "Remote", "entry", "range", "PHP", "open", "draft"]);
+  const ignoredDefaults = new Set(["", "Remote", "entry", "range", "USD", "PHP", "open", "draft"]);
   return Object.entries(value).some(([key, raw]) => {
     if (["status", "approvalStatus", "clientId", "draftStep"].includes(key)) return false;
     if (typeof raw === "string") return raw.trim() !== "" && !ignoredDefaults.has(raw.trim());
@@ -1815,7 +1910,7 @@ export async function registerRoutes(
 
   // ── One-time safe migration: budget / salary extended fields ─────────────
   try {
-    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS budget_currency text DEFAULT 'PHP'`);
+    await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS budget_currency text DEFAULT 'USD'`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS custom_currency_code text`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_display text`);
     await query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS duration text`);
@@ -2159,7 +2254,7 @@ export async function registerRoutes(
         submission_id              varchar       NOT NULL REFERENCES job_submissions(id) ON DELETE CASCADE,
         engagement_type            text          NOT NULL CHECK (engagement_type IN ('Lite', 'Standard')),
         rate                       numeric(12,2) NOT NULL,
-        rate_currency              text          NOT NULL DEFAULT 'PHP',
+        rate_currency              text          NOT NULL DEFAULT 'USD',
         proposed_start_date        date,
         status                     text          NOT NULL DEFAULT 'sent',
         parent_offer_id            uuid,
@@ -2668,7 +2763,7 @@ export async function registerRoutes(
 
         -- Rate snapshot (from offers.rate at period creation; never re-derived)
         talent_rate             numeric(12,2) NOT NULL,
-        talent_rate_currency    text          NOT NULL DEFAULT 'PHP',
+        talent_rate_currency    text          NOT NULL DEFAULT 'USD',
 
         -- Rate-adjustment engine inputs
         -- standard_period_hours = 160 (Standard) or 80 (Lite) — derived from engagement_type
@@ -2718,7 +2813,7 @@ export async function registerRoutes(
 
         -- Amount mirrors invoice_periods.client_invoice_amount
         amount                numeric(12,2) NOT NULL,
-        currency              text          NOT NULL DEFAULT 'PHP',
+        currency              text          NOT NULL DEFAULT 'USD',
         commission_rate       numeric(5,4)  NOT NULL,   -- copied from period row for auditability
 
         -- Payment details
@@ -2756,7 +2851,7 @@ export async function registerRoutes(
 
         -- Amount = invoice_periods.adjusted_talent_payout (commission never deducted)
         amount                numeric(12,2) NOT NULL,
-        currency              text          NOT NULL DEFAULT 'PHP',
+        currency              text          NOT NULL DEFAULT 'USD',
 
         -- Payout rail — per-region configurable, never hardcoded to PH
         payout_region         text          REFERENCES payout_region_configs(region_code),
@@ -2791,7 +2886,7 @@ export async function registerRoutes(
         hiring_contract_id      uuid          NOT NULL UNIQUE REFERENCES hiring_contracts(id) ON DELETE RESTRICT,
 
         amount                  numeric(12,2) NOT NULL,
-        currency                text          NOT NULL DEFAULT 'PHP',
+        currency                text          NOT NULL DEFAULT 'USD',
 
         -- Status lifecycle (see header comment above)
         status                  text          NOT NULL DEFAULT 'pending'
@@ -2853,7 +2948,7 @@ export async function registerRoutes(
         'PH',
         ARRAY['gcash','bank_transfer','wise'],
         'bank_transfer',
-        'PHP',
+        'USD',
         'Philippines — primary sourcing region'
       )
       ON CONFLICT (region_code) DO NOTHING
@@ -3830,8 +3925,8 @@ export async function registerRoutes(
       if (role === "talent") {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
-          INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
-          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'UTC', NOW(), NOW())
+          INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, rate_currency, languages, timezone, "created_at", "updated_at")
+          VALUES ($1, $2, $3, $4, 'Global', 'USD', ARRAY['English'], 'UTC', NOW(), NOW())
         `;
 
         console.log(`👤 Creating talent profile [${requestId}]:`, {
@@ -5680,8 +5775,8 @@ export async function registerRoutes(
       // 3. Upsert into profiles table using direct SQL
       const profileResult = await query(
         `
-        INSERT INTO profiles (user_id, first_name, last_name, title, bio, location, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        INSERT INTO profiles (user_id, first_name, last_name, title, bio, location, rate_currency, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, 'USD', NOW())
         ON CONFLICT (user_id)
         DO UPDATE SET 
           first_name = COALESCE(EXCLUDED.first_name, profiles.first_name),
@@ -6201,6 +6296,27 @@ export async function registerRoutes(
           bodyData: req.body,
         });
 
+        const existingProfile = await db
+          .select()
+          .from(profiles)
+          .where(eq(profiles.userId, userId));
+        const currentProfile = existingProfile[0];
+        const submittedHourlyRate = Object.prototype.hasOwnProperty.call(req.body, "hourlyRate")
+          ? (req.body.hourlyRate == null || req.body.hourlyRate === "" ? null : String(req.body.hourlyRate))
+          : currentProfile?.hourlyRate ?? null;
+        const submittedRateCurrency = Object.prototype.hasOwnProperty.call(req.body, "rateCurrency")
+          ? req.body.rateCurrency
+          : currentProfile
+            ? currentProfile.rateCurrency
+            : BILLING_CURRENCY;
+        validateUsdProfileUpdate(currentProfile ?? {}, {
+          hourlyRate: submittedHourlyRate,
+          rateCurrency: submittedRateCurrency,
+        });
+        const normalizedRateCurrency = isUsdCurrency(submittedRateCurrency)
+          ? requireUsdCurrency(submittedRateCurrency)
+          : submittedRateCurrency;
+
         // Prepare profile data (already in camelCase, which Drizzle expects)
         // NOTE: profilePicture is intentionally excluded — use POST/DELETE /api/profiles/me/photo
         const profileData = {
@@ -6210,13 +6326,35 @@ export async function registerRoutes(
           title: req.body.title,
           bio: req.body.bio,
           location: req.body.location,
-          hourlyRate: req.body.hourlyRate ? String(req.body.hourlyRate) : null,
-          rateCurrency: req.body.rateCurrency,
+          hourlyRate: submittedHourlyRate,
+          rateCurrency: normalizedRateCurrency,
           availability: req.body.availability,
           phoneNumber: req.body.phoneNumber,
           languages: req.body.languages,
           timezone: req.body.timezone,
         };
+
+        const existingCandidateResult = await query(
+          `SELECT id, preferences FROM candidates WHERE user_id = $1 LIMIT 1`,
+          [userId],
+        );
+        const existingCandidate = existingCandidateResult.rows[0];
+        const existingCandidatePreferences = existingCandidate?.preferences;
+        if (existingCandidatePreferences != null &&
+            (typeof existingCandidatePreferences !== "object" || Array.isArray(existingCandidatePreferences))) {
+          throw new Error("Candidate preferences are not a valid object.");
+        }
+        const candidatePreferencePatch = existingCandidate
+          ? buildProfileRatePreferencePatch(
+              currentProfile ?? null,
+              {
+                hourlyRate: submittedHourlyRate,
+                rateCurrency: normalizedRateCurrency,
+              },
+              existingCandidatePreferences ?? {},
+              req.body.rateEngagementType,
+            )
+          : null;
 
         console.log(
           `🔍 Profile data for validation [${requestId}]:`,
@@ -6226,13 +6364,10 @@ export async function registerRoutes(
         // Validate the data using Drizzle schema
         const validated = insertProfileSchema.parse(profileData);
 
-        // Check if profile already exists for this user using Drizzle ORM
-        const existingProfile = await db
-          .select()
-          .from(profiles)
-          .where(eq(profiles.userId, userId));
-
         let profile;
+        const persistedRateCurrency = currentProfile
+          ? profileData.rateCurrency
+          : requireUsdCurrency(profileData.rateCurrency);
 
         if (existingProfile.length > 0) {
           // Update existing profile
@@ -6248,7 +6383,7 @@ export async function registerRoutes(
             bio: validated.bio,
             location: validated.location || "Global",
             hourlyRate: validated.hourlyRate,
-            rateCurrency: validated.rateCurrency || "USD",
+            rateCurrency: persistedRateCurrency,
             availability: validated.availability || "available",
             phoneNumber: validated.phoneNumber,
             languages: validated.languages || ["English"],
@@ -6275,7 +6410,7 @@ export async function registerRoutes(
             bio: validated.bio,
             location: validated.location || "Global",
             hourlyRate: validated.hourlyRate,
-            rateCurrency: validated.rateCurrency || "USD",
+            rateCurrency: persistedRateCurrency,
             availability: validated.availability || "available",
             profilePicture: null,
             phoneNumber: validated.phoneNumber,
@@ -6290,28 +6425,14 @@ export async function registerRoutes(
           profile = insertedProfiles[0];
         }
 
-        // Dual-write: mirror rateAmount + rateEngagementType into candidates.preferences
-        // so the match scorer sees data entered through onboarding forms, not just Settings.
-        // Use profileData.hourlyRate (pre-parse string) — insertProfileSchema may return
-        // Decimal/undefined for this field, making validated.hourlyRate falsy.
-        const rawHourlyRate = profileData.hourlyRate;
-        const rawRateEngagementType = req.body.rateEngagementType
-          ? String(req.body.rateEngagementType)
-          : null;
-        const rawRateCurrency = profileData.rateCurrency
-          ? String(profileData.rateCurrency)
-          : null;
-        if (rawHourlyRate || rawRateEngagementType) {
-          const prefPatch: Record<string, string> = {};
-          if (rawHourlyRate) prefPatch.rateAmount = rawHourlyRate;
-          if (rawRateEngagementType) prefPatch.rateEngagementType = rawRateEngagementType;
-          if (rawRateCurrency) prefPatch.rateCurrency = rawRateCurrency;
+        // Mirror only intentional and validated rate preference changes.
+        if (candidatePreferencePatch && existingCandidate) {
           await query(
             `UPDATE candidates
              SET preferences = COALESCE(preferences, '{}'::jsonb)
                || $1::jsonb
-             WHERE user_id = $2`,
-            [JSON.stringify(prefPatch), userId],
+             WHERE id = $2`,
+            [JSON.stringify(candidatePreferencePatch), existingCandidate.id],
           );
         }
 
@@ -6333,6 +6454,7 @@ export async function registerRoutes(
             .catch((err: any) => console.error("❌ Background match recompute (profile save):", err));
         });
       } catch (error: any) {
+        if (respondUsdOnly(res, error)) return;
         const requestId = (req as any).requestId;
         console.error(
           `❌ Failed to update current user profile [${requestId}]:`,
@@ -6444,20 +6566,43 @@ export async function registerRoutes(
           userId: userId,
         });
 
-        // Add userId from authenticated session to the request body
-        const dataWithUserId = {
-          ...req.body,
-          userId: userId,
-        };
-
-        // Validate the complete data including userId
-        const validated = insertProfileSchema.parse(dataWithUserId);
-
-        // Check if profile already exists for this user
+        // Read the existing financial fields first so an unrelated profile edit
+        // cannot default a preserved legacy PHP rate to USD.
         const existingProfileQuery = `
-          SELECT id FROM profiles WHERE user_id = $1
+          SELECT id, hourly_rate, rate_currency FROM profiles WHERE user_id = $1
         `;
         const existingResult = await query(existingProfileQuery, [userId]);
+        const currentProfile = existingResult.rows[0];
+        const submittedHourlyRate = Object.prototype.hasOwnProperty.call(req.body, "hourlyRate")
+          ? req.body.hourlyRate
+          : currentProfile?.hourly_rate ?? null;
+        const submittedRateCurrency = Object.prototype.hasOwnProperty.call(req.body, "rateCurrency")
+          ? req.body.rateCurrency
+          : currentProfile
+            ? currentProfile.rate_currency
+            : BILLING_CURRENCY;
+        validateUsdProfileUpdate(currentProfile ? {
+          hourlyRate: currentProfile.hourly_rate,
+          rateCurrency: currentProfile.rate_currency,
+        } : {}, {
+          hourlyRate: submittedHourlyRate,
+          rateCurrency: submittedRateCurrency,
+        });
+        const normalizedRateCurrency = isUsdCurrency(submittedRateCurrency)
+          ? requireUsdCurrency(submittedRateCurrency)
+          : submittedRateCurrency;
+
+        // Validate the complete data including userId and preserved financial fields.
+        const dataWithUserId = {
+          ...req.body,
+          userId,
+          hourlyRate: submittedHourlyRate,
+          rateCurrency: normalizedRateCurrency,
+        };
+        const validated = insertProfileSchema.parse(dataWithUserId);
+        const persistedRateCurrency = currentProfile
+          ? normalizedRateCurrency
+          : requireUsdCurrency(normalizedRateCurrency);
 
         let profile;
 
@@ -6486,7 +6631,7 @@ export async function registerRoutes(
             validated.bio,
             validated.location || "Global",
             validated.hourlyRate,
-            validated.rateCurrency || "USD",
+            persistedRateCurrency,
             validated.availability || "available",
             validated.phoneNumber,
             validated.languages || ["English"],
@@ -6515,7 +6660,7 @@ export async function registerRoutes(
             validated.bio,
             validated.location || "Global",
             validated.hourlyRate,
-            validated.rateCurrency || "USD",
+            persistedRateCurrency,
             validated.availability || "available",
             validated.phoneNumber,
             validated.languages || ["English"],
@@ -6534,6 +6679,7 @@ export async function registerRoutes(
           profile,
         });
       } catch (error: any) {
+        if (respondUsdOnly(res, error)) return;
         const requestId = (req as any).requestId;
         console.error(
           `❌ Failed to save profile [${requestId}]:`,
@@ -6575,6 +6721,7 @@ export async function registerRoutes(
         });
         res.json(profile);
       } catch (error) {
+        if (respondUsdOnly(res, error)) return;
         handleRouteError(error, req, res, "Update profile", 500);
       }
     },
@@ -7016,6 +7163,7 @@ export async function registerRoutes(
         candidate: created,
       });
     } catch (error: any) {
+      if (respondUsdOnly(res, error)) return;
       if (error?.name === "ZodError") return res.status(400).json({ error: error.errors });
       console.error("POST /api/candidates/account-setup error:", error);
       res.status(500).json({ error: "Account setup failed" });
@@ -7620,6 +7768,7 @@ export async function registerRoutes(
       const candidate = await storage.createCandidate(data);
       res.json(candidate);
     } catch (error: any) {
+      if (respondUsdOnly(res, error)) return;
       if (error?.name === "ZodError") return res.status(400).json({ error: error.errors });
       console.error("POST /api/candidates error:", error);
       res.status(500).json({ error: "Failed to save candidate" });
@@ -7954,7 +8103,14 @@ export async function registerRoutes(
         const existingPrefs = (existing?.preferences && typeof existing.preferences === "object")
           ? (existing.preferences as Record<string, any>)
           : {};
+        validateUsdRatePreferenceUpdate(existingPrefs, body.preferences as Record<string, unknown>);
         candidateUpdates.preferences = { ...existingPrefs, ...body.preferences };
+        const mergedPreferences = candidateUpdates.preferences as Record<string, unknown>;
+        if (isUsdCurrency(mergedPreferences.rateCurrency) &&
+            (Object.prototype.hasOwnProperty.call(body.preferences, "rateAmount") ||
+             Object.prototype.hasOwnProperty.call(body.preferences, "rateCurrency"))) {
+          mergedPreferences.rateCurrency = BILLING_CURRENCY;
+        }
       }
       if (body.workHistory !== undefined && Array.isArray(body.workHistory)) {
         candidateUpdates.workHistory = body.workHistory;
@@ -7999,6 +8155,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       const pgErr = error as any;
+      if (respondUsdOnly(res, pgErr)) return;
       console.error("PATCH /api/candidates/:id FAILED", {
         candidateId: req.params.id,
         message:     pgErr instanceof Error ? pgErr.message : String(pgErr),
@@ -8617,6 +8774,10 @@ export async function registerRoutes(
     requireClient,
     async (req: Request, res: Response) => {
       try {
+        const jobBody = {
+          ...req.body,
+          budgetCurrency: requireUsdCurrency(req.body.budgetCurrency),
+        };
         const billingModeErr = validateBillingMode(req.body.billingMode);
         if (billingModeErr) return res.status(400).json(billingModeErr);
         // Guard 1: reject any non-canonical engagement type value before the DB sees it.
@@ -8641,10 +8802,11 @@ export async function registerRoutes(
         });
         if (metadataError) return res.status(400).json(metadataError);
 
-        const validated = insertJobSchema.parse(req.body);
+        const validated = insertJobSchema.parse(jobBody);
         const job = await storage.createJob(validated);
         res.status(201).json(job);
       } catch (error) {
+        if (respondUsdOnly(res, error)) return;
         if (error instanceof z.ZodError) {
           return res
             .status(400)
@@ -8655,53 +8817,7 @@ export async function registerRoutes(
     },
   );
 
-  app.patch("/api/jobs/:id", async (req, res) => {
-    try {
-      const existingJob = await storage.getJob(req.params.id);
-      const effectiveStatus = req.body.status ?? existingJob?.status;
-      const billingModeErr = validateBillingMode(req.body.billingMode);
-      if (billingModeErr) return res.status(400).json(billingModeErr);
-      const metadataError = validateEffectiveJobFormMetadata(req.body, existingJob as any);
-      if (metadataError) return res.status(400).json(metadataError);
-
-      const updates = insertJobSchema.partial().parse(req.body);
-
-      // Guard 1: reject any non-canonical engagement type value before the DB sees it.
-      const etErrPatch = validateEngagementType(updates.engagementType);
-      if (etErrPatch) return res.status(400).json(etErrPatch);
-
-      // Guard 2: published jobs must have an engagement type set.
-      const effectiveEngagementType =
-        "engagementType" in updates ? updates.engagementType : existingJob?.engagementType;
-      if (
-        ["open", "published"].includes(effectiveStatus as string) &&
-        !["Lite", "Standard"].includes(effectiveEngagementType as string)
-      ) {
-        return res.status(400).json({
-          error: "Engagement Type required",
-          message: "An Engagement Type (Lite or Standard) must be set before publishing a job.",
-        });
-      }
-      const effectiveBillingMode = "billingMode" in updates ? updates.billingMode : existingJob?.billingMode;
-      if (["open", "published"].includes(effectiveStatus as string) &&
-          !["tracked", "guaranteed"].includes(effectiveBillingMode as string)) {
-        return res.status(400).json(billingModeRequiredError());
-      }
-
-      const job = await storage.updateJob(req.params.id, updates);
-      if (!job) {
-        return res.status(404).json({ error: "Job not found" });
-      }
-      res.json(job);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res
-          .status(400)
-          .json({ error: "Validation failed", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update job" });
-    }
-  });
+  registerGenericJobUpdateRoute(app, authenticateJWT, storage);
 
   app.get("/api/clients/:clientId/jobs", async (req, res) => {
     try {
@@ -10918,6 +11034,7 @@ export async function registerRoutes(
       const body = isDraft
         ? normalizeDraftJobBody({ ...req.body, clientId: rawClientId }, null)
         : { ...req.body, clientId: rawClientId, approvalStatus: "pending" };
+      body.budgetCurrency = requireUsdCurrency(body.budgetCurrency);
       console.log("Admin job create - request body:", JSON.stringify(body));
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
@@ -10956,6 +11073,7 @@ export async function registerRoutes(
         .then(({ indexJobListings }) => indexJobListings())
         .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
     } catch (error: any) {
+      if (respondUsdOnly(res, error)) return;
       if (error instanceof z.ZodError) {
         console.error("Admin job create - validation error:", error.errors);
         return res.status(400).json({ error: "Validation failed", details: error.errors });
@@ -10983,6 +11101,16 @@ export async function registerRoutes(
       const updates = insertJobSchema.partial().parse(
         isDraftUpdate ? normalizeDraftJobBody(rest, existingJob as any) : rest,
       );
+      validateUsdJobUpdate(existingJob as any, updates as any);
+      if (Object.prototype.hasOwnProperty.call(updates, "budgetCurrency")) {
+        if (!isUsdCurrency(updates.budgetCurrency)) {
+          // Legacy denominations may be echoed unchanged; do not rewrite them
+          // while applying an unrelated patch.
+          delete (updates as any).budgetCurrency;
+        } else {
+          (updates as any).budgetCurrency = requireUsdCurrency(updates.budgetCurrency);
+        }
+      }
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const adminPatchBillingErr = validateBillingMode(updates.billingMode);
@@ -11023,6 +11151,7 @@ export async function registerRoutes(
         .then(({ indexJobListings }) => indexJobListings())
         .catch((err: any) => console.error("❌ Background job reindex failed:", err.message));
     } catch (error) {
+      if (respondUsdOnly(res, error)) return;
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: error.errors });
       }
@@ -12656,7 +12785,7 @@ export async function registerRoutes(
         profile = await storage.createProfile({
           ...profileImportData,
           userId,
-          hourlyRate: "50.00",
+          hourlyRate: null,
           rateCurrency: "USD",
           availability: "available",
           timezone: "UTC",
@@ -12876,7 +13005,7 @@ export async function registerRoutes(
           bio: "Required. Professional biography or summary (minimum 10 characters, max 2000)",
           location: 'Optional. Geographic location (default: "Global")',
           rateCurrency:
-            'Optional. Currency code: "USD" or "PHP" (default: "USD")',
+            'Optional. Must be "USD" for new rates (default: "USD")',
           availability:
             'Optional. Status: "available", "busy", or "offline" (default: "available")',
           phoneNumber: "Optional. Contact phone number",
@@ -13591,8 +13720,8 @@ export async function registerRoutes(
       if (role === "talent") {
         const profileId = `prof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const insertProfileQuery = `
-          INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, languages, timezone, "created_at", "updated_at")
-          VALUES ($1, $2, $3, $4, 'Global', ARRAY['English'], 'UTC', NOW(), NOW())
+          INSERT INTO profiles (id, "user_id", "first_name", "last_name", location, rate_currency, languages, timezone, "created_at", "updated_at")
+          VALUES ($1, $2, $3, $4, 'Global', 'USD', ARRAY['English'], 'UTC', NOW(), NOW())
         `;
 
         console.log(`👤 Creating talent profile [${requestId}]:`, {
@@ -16729,6 +16858,7 @@ export async function registerRoutes(
             applicationMethod: "built_in_form",
             applyLink: null,
           };
+      body.budgetCurrency = requireUsdCurrency(body.budgetCurrency);
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientCreateBillingErr = validateBillingMode(body.billingMode);
@@ -16755,6 +16885,7 @@ export async function registerRoutes(
       const job = await storage.createJob(validated);
       return res.status(201).json(job);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       if (err instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: err.errors });
       }
@@ -16783,6 +16914,14 @@ export async function registerRoutes(
       const updates = insertJobSchema.partial().parse(
         isDraftUpdate ? normalizeDraftJobBody(rest, existingJob as any) : rest,
       );
+      validateUsdJobUpdate(existingJob as any, updates as any);
+      if (Object.prototype.hasOwnProperty.call(updates, "budgetCurrency")) {
+        if (!isUsdCurrency(updates.budgetCurrency)) {
+          delete (updates as any).budgetCurrency;
+        } else {
+          (updates as any).budgetCurrency = requireUsdCurrency(updates.budgetCurrency);
+        }
+      }
 
       // Guard 1: reject any non-canonical engagement type value before the DB sees it.
       const clientPatchBillingErr = validateBillingMode(updates.billingMode);
@@ -16825,6 +16964,7 @@ export async function registerRoutes(
       if (!job) return res.status(404).json({ error: "Job not found" });
       return res.json(job);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       if (err instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: err.errors });
       }
@@ -21504,16 +21644,13 @@ export async function registerRoutes(
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-      const { submissionId, rate, rateCurrency = "PHP", proposedStartDate, expiresAt, notes } = req.body;
+      const { submissionId, rate, proposedStartDate, expiresAt, notes } = req.body;
+      const rateCurrency = requireUsdCurrency(req.body.rateCurrency);
       if (!submissionId) return res.status(400).json({ error: "submissionId is required" });
       const rateNum = Number(rate);
       if (rate === undefined || rate === null || Number.isNaN(rateNum) || rateNum <= 0) {
         return res.status(400).json({ error: "rate must be a positive number" });
       }
-      if (typeof rateCurrency !== "string" || !/^[A-Z]{3}$/.test(rateCurrency)) {
-        return res.status(400).json({ error: "rateCurrency must be a 3-letter uppercase currency code" });
-      }
-
       // Ownership + submission state (formal pipeline guard)
       const subGuard = await loadClientFormalSubmission(submissionId, userId, {
         extraCols: ", j.engagement_type AS job_engagement_type, j.billing_mode AS job_billing_mode",
@@ -21580,9 +21717,9 @@ export async function registerRoutes(
       if (candResult.rows.length > 0) {
         const prefs = candResult.rows[0].preferences || {};
         const amt = Number(prefs.rateAmount);
-        if (prefs.rateAmount != null && !Number.isNaN(amt) && amt > 0) {
+        if (prefs.rateAmount != null && !Number.isNaN(amt) && amt > 0 && isUsdCurrency(prefs.rateCurrency)) {
           talentExpectedRate = String(prefs.rateAmount);
-          talentExpectedCurrency = prefs.rateCurrency ? String(prefs.rateCurrency) : null;
+          talentExpectedCurrency = BILLING_CURRENCY;
           talentExpectedEngagement = prefs.rateEngagementType ? String(prefs.rateEngagementType) : null;
         }
       }
@@ -21748,6 +21885,7 @@ export async function registerRoutes(
 
       return res.status(201).json(offer);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       console.error("POST /api/client/offers error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -21795,10 +21933,9 @@ export async function registerRoutes(
           (counterRate === undefined || counterRate === null || Number.isNaN(counterRateNum) || counterRateNum <= 0)) {
         return res.status(400).json({ error: "counterRate must be a positive number" });
       }
-      const counterCurrency = counterRateCurrency ?? "PHP";
-      if (action === "counter" && (typeof counterCurrency !== "string" || !/^[A-Z]{3}$/.test(counterCurrency))) {
-        return res.status(400).json({ error: "counterRateCurrency must be a 3-letter uppercase currency code" });
-      }
+      const counterCurrency = action === "counter"
+        ? requireUsdCurrency(counterRateCurrency)
+        : undefined;
       if (action === "counter" && notes !== undefined &&
           (typeof notes !== "string" || notes.length > 5000)) {
         return res.status(400).json({ error: "notes must be no longer than 5000 characters" });
@@ -21823,6 +21960,7 @@ export async function registerRoutes(
       );
       if (!loaded.rows.length) return res.status(404).json({ error: "Talent counter offer not found" });
       const offer = loaded.rows[0];
+      if (action === "counter") requireUsdCurrency(offer.rate_currency);
       const txClient = await pool.connect();
       let responseOffer: any;
       try {
@@ -21845,8 +21983,10 @@ export async function registerRoutes(
               WHERE id = $1`,
             [offer.id],
           );
-          const expectedRate = offer.talent_expected_rate;
-          const expectedCurrency = offer.talent_expected_currency;
+          const expectedRate = isUsdCurrency(offer.talent_expected_currency)
+            ? offer.talent_expected_rate
+            : null;
+          const expectedCurrency = expectedRate ? BILLING_CURRENCY : null;
           const expectedEngagement = offer.talent_expected_engagement;
           const mismatchApplies = expectedRate !== null &&
             expectedCurrency !== null &&
@@ -21920,6 +22060,7 @@ export async function registerRoutes(
       }
       return res.json(responseOffer);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       console.error("PATCH /api/client/offers/:id/respond error:", err);
       return res.status(500).json({ error: "Failed to respond to counter offer" });
     }
@@ -22096,10 +22237,9 @@ export async function registerRoutes(
         (counterRate === undefined || counterRate === null || Number.isNaN(counterRateNum) || counterRateNum <= 0)) {
         return res.status(400).json({ error: "counterRate must be a positive number" });
       }
-      const counterCurrency = counterRateCurrency ?? "PHP";
-      if (action === "counter" && (typeof counterCurrency !== "string" || !/^[A-Z]{3}$/.test(counterCurrency))) {
-        return res.status(400).json({ error: "counterRateCurrency must be a 3-letter uppercase currency code" });
-      }
+      const counterCurrency = action === "counter"
+        ? requireUsdCurrency(counterRateCurrency)
+        : undefined;
       if (action === "counter" && notes !== undefined &&
           (typeof notes !== "string" || notes.length > 5000)) {
         return res.status(400).json({ error: "notes must be no longer than 5000 characters" });
@@ -22113,6 +22253,7 @@ export async function registerRoutes(
       const loaded = await loadTalentOwnedOffer(req, res);
       if (!loaded) return;
       const { offer, linkedUserId } = loaded;
+      if (action === "counter") requireUsdCurrency(offer.rate_currency);
       if (offer.proposer_role === "talent") {
         return res.status(409).json({
           error: "offer_waiting_for_client",
@@ -22150,8 +22291,10 @@ export async function registerRoutes(
         respondedOffer = updated.rows[0];
 
         if (action === "counter") {
-          const expectedRate = offer.talent_expected_rate;
-          const expectedCurrency = offer.talent_expected_currency;
+          const expectedRate = isUsdCurrency(offer.talent_expected_currency)
+            ? offer.talent_expected_rate
+            : null;
+          const expectedCurrency = expectedRate ? BILLING_CURRENCY : null;
           const expectedEngagement = offer.talent_expected_engagement;
           const mismatchApplies =
             expectedRate !== null &&
@@ -22281,6 +22424,7 @@ export async function registerRoutes(
 
       return res.json(respondedOffer);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       console.error("PATCH /api/talent/offers/:id/respond error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -22355,6 +22499,7 @@ export async function registerRoutes(
       if (linked.contract_status !== "signed") {
         return res.status(409).json({ error: "contract_not_active", message: "Billing periods can only be created for signed contracts." });
       }
+      const billingCurrency = requireUsdCurrency(linked.rate_currency);
       if (linked.engagement_type !== "Lite" && linked.engagement_type !== "Standard") {
         return res.status(422).json({ error: "invalid_engagement_type", message: "The linked offer does not have a supported engagement type." });
       }
@@ -22390,7 +22535,7 @@ export async function registerRoutes(
           [
             linked.id, linked.offer_id, periodStart.toISOString().slice(0, 10),
             periodEnd.toISOString().slice(0, 10), talentRate.toFixed(2),
-            linked.rate_currency || "PHP", amounts.standardPeriodHours,
+            billingCurrency, amounts.standardPeriodHours,
             extendedHours.toFixed(2), deductionHours.toFixed(2),
             amounts.hourlyEquivalent.toFixed(4), amounts.adjustedTalentPayout.toFixed(2),
             amounts.commissionRate.toFixed(4), amounts.clientInvoiceAmount.toFixed(2),
@@ -22400,6 +22545,7 @@ export async function registerRoutes(
       });
       return res.status(201).json(inserted);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       const status = err.status || (err.code === "23505" ? 409 : err.code === "22P02" ? 422 : 500);
       console.error("POST billing period error:", err);
       return res.status(status).json({
@@ -22427,6 +22573,7 @@ export async function registerRoutes(
           throw error;
         }
         const period = periodResult.rows[0];
+        const billingCurrency = requireUsdCurrency(period.talent_rate_currency);
         if (!period.client_id) {
           const error = new Error("The linked submission has no client account");
           Object.assign(error, { status: 422 });
@@ -22462,7 +22609,7 @@ export async function registerRoutes(
           [
             period.id, period.hiring_contract_id, period.client_id,
             numberResult.rows[0].invoice_number, period.client_invoice_amount,
-            period.talent_rate_currency, period.commission_rate, dueAt,
+             billingCurrency, period.commission_rate, dueAt,
             req.body.notes?.trim() || null,
           ],
         );
@@ -22474,6 +22621,7 @@ export async function registerRoutes(
       });
       return res.status(201).json(invoice);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       console.error("POST invoice error:", err);
       return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to issue invoice" });
     }
@@ -22561,6 +22709,7 @@ export async function registerRoutes(
           throw error;
         }
         const period = periodResult.rows[0];
+        const billingCurrency = requireUsdCurrency(period.talent_rate_currency);
         if (!period.talent_id) {
           const error = new Error("The linked submission has no talent account");
           Object.assign(error, { status: 422 });
@@ -22616,7 +22765,7 @@ export async function registerRoutes(
            RETURNING *`,
           [
             period.id, period.hiring_contract_id, period.talent_id,
-            period.adjusted_talent_payout, period.talent_rate_currency,
+             period.adjusted_talent_payout, billingCurrency,
             regionConfig.region_code, payoutMethod, scheduledAt,
             req.body.notes?.trim() || null,
           ],
@@ -22629,6 +22778,7 @@ export async function registerRoutes(
       });
       return res.status(201).json(payout);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       console.error("POST payout error:", err);
       return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to create payout" });
     }
@@ -22717,6 +22867,7 @@ export async function registerRoutes(
           throw error;
         }
         const linked = contract.rows[0];
+        const billingCurrency = requireUsdCurrency(linked.rate_currency);
         if (linked.status !== "signed") {
           const error = new Error("A security deposit can only be collected for an active signed contract");
           Object.assign(error, { status: 409 });
@@ -22729,7 +22880,7 @@ export async function registerRoutes(
             `INSERT INTO security_deposits
                (hiring_contract_id, amount, currency, status, held_at)
              VALUES ($1, $2, $3, 'held', NOW()) RETURNING *`,
-            [linked.id, amount, linked.rate_currency || "PHP"],
+             [linked.id, amount, billingCurrency],
           );
           return inserted.rows[0];
         }
@@ -22750,6 +22901,7 @@ export async function registerRoutes(
       });
       return res.status(201).json(result);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       console.error("POST security deposit error:", err);
       return res.status(err.status || 500).json({ error: err.status ? err.message : "Unable to record security deposit" });
     }
@@ -22899,21 +23051,7 @@ export async function registerRoutes(
       const filter = status ? "WHERE ip.status = $1" : "";
       const filterParams = status ? [status] : [];
       const count = await query(`SELECT COUNT(*)::int AS total FROM invoice_periods ip ${filter}`, filterParams);
-      const summary = await query(
-        `SELECT
-           COALESCE(SUM(ip.client_invoice_amount), 0)::numeric AS gtv,
-           COALESCE(SUM(CASE
-             WHEN inv.status IS NULL OR inv.status IN ('draft','sent','overdue')
-             THEN COALESCE(inv.amount, ip.client_invoice_amount) ELSE 0 END), 0)::numeric AS outstanding_invoices,
-           COALESCE(SUM(CASE WHEN p.status IN ('pending','scheduled') THEN p.amount ELSE 0 END), 0)::numeric AS pending_payouts,
-           COUNT(DISTINCT sd.id) FILTER (WHERE sd.status IN ('drawn','suspended'))::int AS deposits_at_risk
-         FROM invoice_periods ip
-         LEFT JOIN LATERAL (SELECT status, amount FROM invoices WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1) inv ON true
-         LEFT JOIN LATERAL (SELECT status, amount FROM payouts WHERE period_id = ip.id ORDER BY created_at DESC LIMIT 1) p ON true
-         LEFT JOIN security_deposits sd ON sd.hiring_contract_id = ip.hiring_contract_id
-         ${filter}`,
-        filterParams,
-      );
+      const summary = await query(ledgerCurrencySummarySql(filter), filterParams);
       const rows = await query(
         `SELECT ip.id, ip.hiring_contract_id, ip.period_start, ip.period_end, ip.status,
                 ip.talent_rate, ip.talent_rate_currency, ip.adjusted_talent_payout,
@@ -22953,7 +23091,7 @@ export async function registerRoutes(
       const total = count.rows[0]?.total ?? 0;
       return res.json({
         page, limit, total, pages: Math.max(1, Math.ceil(total / limit)),
-        summary: summary.rows[0] ?? { gtv: "0", outstanding_invoices: "0", pending_payouts: "0", deposits_at_risk: 0 },
+        summary: buildLedgerCurrencySummary(summary.rows),
         items: rows.rows,
       });
     } catch (err: any) {
@@ -23098,6 +23236,7 @@ export async function registerRoutes(
       });
       return res.status(201).json(contract);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       if (err instanceof ContractError) {
         return res.status(err.status).json(err.body);
       }
@@ -23148,6 +23287,7 @@ export async function registerRoutes(
       });
       return res.json(result);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       if (err instanceof ContractError) {
         return res.status(err.status).json(err.body);
       }
@@ -23190,6 +23330,7 @@ export async function registerRoutes(
       });
       return res.json(result);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       if (err instanceof ContractError) {
         return res.status(err.status).json(err.body);
       }
@@ -23304,6 +23445,7 @@ export async function registerRoutes(
       });
       return res.json(result);
     } catch (err: any) {
+      if (respondUsdOnly(res, err)) return;
       if (err instanceof ContractError) {
         return res.status(err.status).json(err.body);
       }

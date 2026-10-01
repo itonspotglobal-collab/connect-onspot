@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
+import { formatCurrencyAmount } from "@/lib/jobUtils";
 import { Footer } from "@/components/Footer";
 import {
   type CarouselApi,
@@ -2972,7 +2973,7 @@ function JobsSlide({
 
 function jobPay(j: any): string | null {
   if (j.salaryDisplay) return j.salaryDisplay;
-  if (j.budget) return `${j.budgetCurrency ?? "PHP"} ${j.budget}`;
+  if (j.budget) return formatCurrencyAmount(j.budget, j.budgetCurrency || "USD");
   return null;
 }
 
@@ -4525,7 +4526,7 @@ const STATIC_JOBS = [
     title: "Virtual Assistant",
     type: "Full-time",
     loc: "Remote",
-    pay: "PHP 8 – 12",
+    pay: "USD rate TBD",
     id: null,
   },
   {
@@ -4576,7 +4577,7 @@ function OpenJobsSection() {
         title: j.title,
         type: j.engagementType || "Standard",
         loc: j.location || "Remote",
-        pay: j.budget ? `${j.budgetCurrency ?? "PHP"} ${j.budget}` : "",
+        pay: j.budget ? formatCurrencyAmount(j.budget, j.budgetCurrency || "USD") : "",
         id: j.id ?? null,
         isFeatured: j.isFeatured ?? false,
       }));

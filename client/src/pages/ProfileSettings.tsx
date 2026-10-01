@@ -676,6 +676,7 @@ export default function ProfileSettings() {
     resolver: zodResolver(candidateSettingsSchema),
     defaultValues: getDefaultFormValues(),
   });
+  const savedRateCurrency = form.watch("rateCurrency") || "USD";
 
   // Reset form when candidate data loads from server.
   useEffect(() => {
@@ -1199,7 +1200,13 @@ export default function ProfileSettings() {
                             Rate Expectation
                           </FormLabel>
                           <FormControl>
-                            <StyledInput type="number" placeholder="3000" {...field} data-testid="input-rate-amount" />
+                            <StyledInput
+                              type="number"
+                              placeholder="3000"
+                              {...field}
+                              readOnly={savedRateCurrency !== "USD"}
+                              data-testid="input-rate-amount"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1207,19 +1214,18 @@ export default function ProfileSettings() {
                       <FormField control={form.control} name="rateCurrency" render={({ field }) => (
                         <FormItem>
                           <FormLabel className={labelCls}>Currency</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <StyledSelectTrigger data-testid="select-currency">
-                                <SelectValue />
-                              </StyledSelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="USD">USD ($)</SelectItem>
-                              <SelectItem value="PHP">PHP (₱)</SelectItem>
-                              <SelectItem value="EUR">EUR (€)</SelectItem>
-                              <SelectItem value="GBP">GBP (£)</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <StyledInput
+                              value={field.value === "USD" ? "USD ($)" : `Historical currency: ${field.value}`}
+                              readOnly
+                              data-testid="currency-display"
+                            />
+                          </FormControl>
+                          {field.value !== "USD" && (
+                            <p className="text-xs" style={{ color: MUTED }}>
+                              This saved rate is in its original currency and cannot be changed here.
+                            </p>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )} />

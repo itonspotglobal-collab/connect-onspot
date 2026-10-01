@@ -33,6 +33,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "wouter";
 import BespokeTalentBuilder from "@/components/BespokeTalentBuilder";
+import { formatCurrencyAmount } from "@/lib/jobUtils";
 
 interface Profile {
   id: string;
@@ -589,7 +590,7 @@ export default function TalentSearch() {
                         <div className="flex items-center gap-1 text-primary font-medium">
                           <DollarSign className="w-3 h-3" />
                           <span>
-                            {profile.hourlyRate ? `${profile.rateCurrency === "PHP" ? "₱" : "$"}${profile.hourlyRate}/hr` : "Rate not specified"}
+                            {profile.hourlyRate ? `${formatCurrencyAmount(profile.hourlyRate, profile.rateCurrency || "USD")}/hr` : "Rate not specified"}
                           </span>
                         </div>
                         {profile.availability && (

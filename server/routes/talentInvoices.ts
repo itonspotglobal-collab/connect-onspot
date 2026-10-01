@@ -1,5 +1,6 @@
 import type { Express, RequestHandler } from "express";
 import { getClient, query } from "../db.ts";
+import { BILLING_CURRENCY, isUsdCurrency, requireUsdCurrency } from "../../shared/currency.ts";
 
 type Middleware = RequestHandler;
 type Options = {
@@ -13,6 +14,10 @@ type Options = {
 };
 
 export const BILLING_TIME_ZONE = "America/New_York";
+export const billingCurrencyForSource = (sourceCurrency: unknown) => {
+  requireUsdCurrency(sourceCurrency);
+  return BILLING_CURRENCY;
+};
 const DAY_MS = 86_400_000;
 const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const validMoney = (value: unknown) => {
@@ -160,22 +165,33 @@ async function ensureTrackedPeriods(contract: any, startDate: string, through: s
 
 async function applyCreditMemosToDraft(client: any, invoiceId: string, now: Date) {
   const invoiceResult = await client.query(
-    `SELECT id, hiring_contract_id, period_start, talent_id, currency,
-            base_amount, credit_amount, status
-       FROM talent_invoices WHERE id = $1 FOR UPDATE`,
+    `SELECT ti.id, ti.hiring_contract_id, ti.period_start, ti.talent_id, ti.currency,
+            ti.base_amount, ti.credit_amount, ti.status, o.rate_currency AS source_currency
+       FROM talent_invoices ti
+       LEFT JOIN hiring_contracts hc ON hc.id = ti.hiring_contract_id
+       LEFT JOIN offers o ON o.id = hc.offer_id
+      WHERE ti.id = $1 FOR UPDATE OF ti`,
     [invoiceId],
   );
   const invoice = invoiceResult.rows[0];
   if (!invoice || invoice.status !== "draft") return { appliedIds: [] as string[], creditAmount: 0 };
+  if (!isUsdCurrency(invoice.currency) || !isUsdCurrency(invoice.source_currency)) {
+    return { appliedIds: [] as string[], creditAmount: Number(invoice.credit_amount), blockedReason: "unsupported_invoice_currency" };
+  }
+  const currency = billingCurrencyForSource(invoice.currency);
   const memos = await client.query(
     `SELECT cm.id, cm.amount
        FROM talent_credit_memos cm
        JOIN talent_invoices original ON original.id = cm.original_invoice_id
+       JOIN hiring_contracts source_contract ON source_contract.id = original.hiring_contract_id
+       JOIN offers source_offer ON source_offer.id = source_contract.offer_id
       WHERE cm.hiring_contract_id = $1 AND cm.currency = $2
+        AND LOWER(BTRIM(original.currency)) = 'usd'
+        AND LOWER(BTRIM(source_offer.rate_currency)) = 'usd'
         AND original.period_end < $3::date
       ORDER BY cm.created_at, cm.id
       FOR UPDATE OF cm`,
-    [invoice.hiring_contract_id, invoice.currency, invoice.period_start],
+    [invoice.hiring_contract_id, currency, invoice.period_start],
   );
   let creditAmount = Number(invoice.credit_amount);
   const appliedIds: string[] = [];
@@ -237,12 +253,14 @@ async function notifyInvoiceDraft(client: any, invoiceId: string, versionKey: st
 }
 
 async function insertInvoiceDraft(contract: any, period: { start: string; end: string }, startDate: string, now: Date) {
+  const currency = billingCurrencyForSource(contract.rate_currency);
   const client = await getClient();
   try {
     await client.query("BEGIN");
     const contractResult = await client.query(
-      `SELECT id, status, billing_mode, effective_end_date
-         FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
+      `SELECT hc.id, hc.status, hc.billing_mode, hc.effective_end_date, o.rate_currency
+         FROM hiring_contracts hc JOIN offers o ON o.id = hc.offer_id
+        WHERE hc.id = $1 FOR UPDATE OF hc`,
       [contract.id],
     );
     const lockedContract = contractResult.rows[0];
@@ -253,6 +271,7 @@ async function insertInvoiceDraft(contract: any, period: { start: string; end: s
       await client.query("ROLLBACK");
       return false;
     }
+    billingCurrencyForSource(lockedContract.rate_currency);
     const locked = await client.query(
       `SELECT id FROM talent_invoices
         WHERE hiring_contract_id = $1 AND period_start = $2::date AND period_end = $3::date
@@ -297,8 +316,6 @@ async function insertInvoiceDraft(contract: any, period: { start: string; end: s
       }
       amount = guaranteedPeriodAmount(Number(contract.rate), period, startDate);
     }
-    const currency = String(contract.rate_currency || "").trim().toUpperCase();
-    if (!currency) throw new Error(`Contract ${contract.id} has no invoice currency`);
     const currentDate = dateInZone(now);
     const autoSendAt = new Date(now.getTime() + 48 * 60 * 60 * 1000);
     const paymentDate = payoutDateForPeriod(period, currentDate);
@@ -345,11 +362,19 @@ async function insertInvoiceDraft(contract: any, period: { start: string; end: s
 
 async function schedulePayoutIfCovered(client: any, invoiceId: string) {
   const invoiceResult = await client.query(
-    `SELECT * FROM talent_invoices WHERE id = $1 FOR UPDATE`,
+    `SELECT ti.*, o.rate_currency AS source_currency
+       FROM talent_invoices ti
+       LEFT JOIN hiring_contracts hc ON hc.id = ti.hiring_contract_id
+       LEFT JOIN offers o ON o.id = hc.offer_id
+      WHERE ti.id = $1 FOR UPDATE OF ti`,
     [invoiceId],
   );
   const invoice = invoiceResult.rows[0];
   if (!invoice || invoice.status !== "sent") return { scheduled: false, reason: "invoice_not_sent" };
+  if (!isUsdCurrency(invoice.currency) || !isUsdCurrency(invoice.source_currency)) {
+    return { scheduled: false, reason: "unsupported_invoice_currency" };
+  }
+  const currency = billingCurrencyForSource(invoice.currency);
   const exists = await client.query(`SELECT id FROM payouts WHERE talent_invoice_id = $1`, [invoiceId]);
   if (exists.rows.length) return { scheduled: true };
   const depositResult = await client.query(
@@ -358,13 +383,13 @@ async function schedulePayoutIfCovered(client: any, invoiceId: string) {
     [invoice.hiring_contract_id],
   );
   const deposit = depositResult.rows[0];
-  if (!deposit || deposit.currency.toUpperCase() !== invoice.currency.toUpperCase()) {
+  if (!deposit || !isUsdCurrency(deposit.currency)) {
     return { scheduled: false, reason: "held_deposit_missing_or_currency_mismatch" };
   }
   const replenishments = await client.query(
     `SELECT COALESCE(SUM(amount), 0) AS amount FROM security_deposit_replenishments
       WHERE hiring_contract_id = $1 AND currency = $2`,
-    [invoice.hiring_contract_id, invoice.currency],
+    [invoice.hiring_contract_id, currency],
   );
   const heldCoverage = Number(deposit.amount) + Number(replenishments.rows[0]?.amount ?? 0);
   // Invoice.amount is an immutable draft snapshot that already includes all
@@ -374,7 +399,7 @@ async function schedulePayoutIfCovered(client: any, invoiceId: string) {
     `SELECT COALESCE(SUM(amount), 0) AS amount FROM payouts
       WHERE hiring_contract_id = $1 AND currency = $2
         AND status IN ('pending', 'scheduled', 'disbursed', 'failed')`,
-    [invoice.hiring_contract_id, invoice.currency],
+    [invoice.hiring_contract_id, currency],
   );
   if (heldCoverage < Number(outstanding.rows[0]?.amount ?? 0) + payoutAmount) {
     return { scheduled: false, reason: "insufficient_held_deposit" };
@@ -385,7 +410,7 @@ async function schedulePayoutIfCovered(client: any, invoiceId: string) {
          (hiring_contract_id, talent_id, talent_invoice_id, amount, currency, status, payout_due_on)
        VALUES ($1, $2, $3, $4, $5, 'scheduled', $6::date)
        ON CONFLICT (talent_invoice_id) WHERE talent_invoice_id IS NOT NULL DO NOTHING`,
-      [invoice.hiring_contract_id, invoice.talent_id, invoice.id, payoutAmount.toFixed(2), invoice.currency, invoice.payout_due_on],
+      [invoice.hiring_contract_id, invoice.talent_id, invoice.id, payoutAmount.toFixed(2), currency, invoice.payout_due_on],
     );
   }
   return { scheduled: true };
@@ -405,12 +430,14 @@ async function sendInvoice(invoiceId: string, onlyTalentId?: string) {
       return { notFound: true };
     }
     const contractResult = await client.query(
-      `SELECT id, status, billing_mode, effective_end_date FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
+      `SELECT hc.id, hc.status, hc.billing_mode, hc.effective_end_date, o.rate_currency
+         FROM hiring_contracts hc JOIN offers o ON o.id = hc.offer_id
+        WHERE hc.id = $1 FOR UPDATE OF hc`,
       [contractId],
     );
     const contract = contractResult.rows[0];
     const result = await client.query(
-      `SELECT id, status, talent_id, period_start, period_end, timesheet_revision_id
+      `SELECT id, status, talent_id, period_start, period_end, timesheet_revision_id, currency
          FROM talent_invoices WHERE id = $1 FOR UPDATE`,
       [invoiceId],
     );
@@ -425,6 +452,11 @@ async function sendInvoice(invoiceId: string, onlyTalentId?: string) {
         && dateString(invoice.period_end) > dateString(contract.effective_end_date))) {
       await client.query("ROLLBACK");
       return { notSendable: true };
+    }
+    if (invoice.status === "draft"
+      && (!isUsdCurrency(invoice.currency) || !isUsdCurrency(contract.rate_currency))) {
+      await client.query("ROLLBACK");
+      return { notSendable: true, reason: "unsupported_invoice_currency" };
     }
     if (invoice.status === "draft" && contract.billing_mode === "tracked"
       && contract.effective_end_date
@@ -490,7 +522,7 @@ export async function rebuildDraftInvoicesForTermination(
 ) {
   const contractResult = await client.query(
     `SELECT hc.id, hc.status, hc.billing_mode, hc.effective_start_date,
-            hc.billing_activated_at, o.rate, o.engagement_type
+            hc.billing_activated_at, o.rate, o.rate_currency, o.engagement_type
        FROM hiring_contracts hc JOIN offers o ON o.id = hc.offer_id
       WHERE hc.id = $1`,
     [contractId],
@@ -500,6 +532,7 @@ export async function rebuildDraftInvoicesForTermination(
     || !["tracked", "guaranteed"].includes(contract.billing_mode)) {
     throw Object.assign(new Error("The signed contract is not eligible for draft invoice rebuilding"), { code: "terminationDraftInvalidContract" });
   }
+  billingCurrencyForSource(contract.rate_currency);
   const now = new Date();
   const today = dateInZone(now);
   const effectiveStart = contract.effective_start_date
@@ -522,6 +555,7 @@ export async function rebuildDraftInvoicesForTermination(
     [contractId, effectiveEndDate],
   );
   for (const original of drafts.rows) {
+    billingCurrencyForSource(original.currency);
     const originalStart = dateString(original.period_start);
     const originalEnd = dateString(original.period_end);
     if (originalStart > effectiveEndDate) {
@@ -614,7 +648,7 @@ async function reconcileTrackedCorrections(now: Date) {
     `SELECT ti.id AS invoice_id, ti.hiring_contract_id, ti.talent_id, ti.currency,
             ti.period_start, ti.period_end,
             ti.status, ti.base_amount AS original_amount, ti.timesheet_revision_id AS original_revision_id,
-            tp.approved_revision_id AS corrected_revision_id, o.rate, o.engagement_type
+            tp.approved_revision_id AS corrected_revision_id, o.rate, o.rate_currency, o.engagement_type
        FROM talent_invoices ti
        JOIN timesheet_periods tp ON tp.hiring_contract_id = ti.hiring_contract_id
         AND tp.period_start = ti.period_start AND tp.period_end = ti.period_end
@@ -629,6 +663,11 @@ async function reconcileTrackedCorrections(now: Date) {
         )`,
   );
   for (const row of changed.rows) {
+    if (!isUsdCurrency(row.currency) || !isUsdCurrency(row.rate_currency)) {
+      console.error(`Tracked correction blocked for invoice ${row.invoice_id}: non-USD source currency`);
+      continue;
+    }
+    const currency = billingCurrencyForSource(row.rate_currency);
     const client = await getClient();
     try {
       await client.query("BEGIN");
@@ -700,7 +739,7 @@ async function reconcileTrackedCorrections(now: Date) {
           `INSERT INTO talent_credit_memos
              (original_invoice_id, corrected_revision_id, talent_id, hiring_contract_id, currency, amount)
            VALUES ($1,$2,$3,$4,$5,$6)`,
-          [row.invoice_id, correctedRevisionId, row.talent_id, row.hiring_contract_id, row.currency, delta.toFixed(2)],
+          [row.invoice_id, correctedRevisionId, row.talent_id, row.hiring_contract_id, currency, delta.toFixed(2)],
         );
       }
       // Compare the net memo balance with the currently approved revision on
@@ -727,6 +766,9 @@ async function applyAvailableCreditsToDrafts(now: Date) {
     try {
       await client.query("BEGIN");
       const applied = await applyCreditMemosToDraft(client, draft.id, now);
+      if ("blockedReason" in applied) {
+        console.error(`Talent credit application blocked for invoice ${draft.id}: ${applied.blockedReason}`);
+      }
       if (applied.appliedIds.length) {
         await notifyInvoiceDraft(
           client,
@@ -801,29 +843,58 @@ async function generateClientMonthlyInvoices(monthStart: string) {
   const readyClients = await readyClientsForMonth(monthStart);
   if (!readyClients.length) return;
   const result = await query(
-    `SELECT ti.* FROM talent_invoices ti
+    `SELECT ti.*, o.rate_currency AS source_currency
+       FROM talent_invoices ti
+       LEFT JOIN offers o ON o.id = ti.offer_id
       WHERE ti.period_start >= $1::date AND ti.period_start <= $2::date
         AND ti.status = 'sent' AND ti.client_id = ANY($3::varchar[])
       ORDER BY ti.client_id, ti.currency, ti.period_start, ti.id`,
     [monthStart, monthEnd, readyClients],
   );
   const groups = new Map<string, any[]>();
+  const blockedClients = new Map<string, Set<string>>();
   for (const invoice of result.rows) {
-    const key = `${invoice.client_id}|${invoice.currency}`;
+    if (!isUsdCurrency(invoice.currency) || !isUsdCurrency(invoice.source_currency)) {
+      const currencies = blockedClients.get(invoice.client_id) ?? new Set<string>();
+      currencies.add(`invoice=${String(invoice.currency || "missing")}, offer=${String(invoice.source_currency || "missing")}`);
+      blockedClients.set(invoice.client_id, currencies);
+      continue;
+    }
+    const key = invoice.client_id;
     groups.set(key, [...(groups.get(key) ?? []), invoice]);
   }
+  for (const [clientId, currencies] of Array.from(blockedClients.entries())) {
+    console.error(
+      `Monthly Client invoice generation blocked for client ${clientId}, month ${monthStart}: `
+      + `legacy non-USD source invoice currency (${Array.from(currencies).join(", ")})`,
+    );
+    groups.delete(clientId);
+  }
   for (const invoices of Array.from(groups.values())) {
+    const currency = billingCurrencyForSource(invoices[0].source_currency);
+    for (const invoice of invoices) {
+      billingCurrencyForSource(invoice.currency);
+      billingCurrencyForSource(invoice.source_currency);
+    }
     const client = await getClient();
     try {
       await client.query("BEGIN");
       const clientId = invoices[0].client_id;
-      const currency = invoices[0].currency;
       const existing = await client.query(
-        `SELECT id FROM client_monthly_invoices
-          WHERE client_id = $1 AND invoice_month = $2::date AND currency = $3
+        `SELECT id, currency FROM client_monthly_invoices
+          WHERE client_id = $1 AND invoice_month = $2::date
           FOR UPDATE`,
-        [clientId, monthStart, currency],
+        [clientId, monthStart],
       );
+      const legacyStatements = existing.rows.filter((row: any) => !isUsdCurrency(row.currency));
+      if (legacyStatements.length) {
+        await client.query("COMMIT");
+        console.error(
+          `Monthly Client invoice generation blocked for client ${clientId}, month ${monthStart}: `
+          + `existing statement has non-USD currency (${legacyStatements.map((row: any) => row.currency).join(", ")})`,
+        );
+        continue;
+      }
       if (existing.rows.length) { await client.query("COMMIT"); continue; }
       const subtotal = roundMoney(invoices.reduce(
         (sum: number, invoice: any) => sum + roundMoney(Number(invoice.base_amount) * (1 + Number(invoice.commission_rate))),
@@ -857,7 +928,12 @@ async function generateClientMonthlyInvoices(monthStart: string) {
       const creditMemos = await client.query(
         `SELECT cm.id, cm.all_in_amount
            FROM client_credit_memos cm
+           JOIN talent_invoices source_invoice ON source_invoice.id = cm.original_talent_invoice_id
+           JOIN hiring_contracts source_contract ON source_contract.id = source_invoice.hiring_contract_id
+           JOIN offers source_offer ON source_offer.id = source_contract.offer_id
           WHERE cm.client_id = $1 AND cm.currency = $2
+            AND LOWER(BTRIM(source_invoice.currency)) = 'usd'
+            AND LOWER(BTRIM(source_offer.rate_currency)) = 'usd'
             AND (
               (
                 date_trunc('month', cm.period_start)::date = $3::date
@@ -970,6 +1046,10 @@ export async function runTalentInvoiceAutomation(now = new Date()) {
       ORDER BY hc.created_at`,
   );
   for (const contract of contracts.rows) {
+    if (!isUsdCurrency(contract.rate_currency)) {
+      console.error(`Talent invoice generation blocked for contract ${contract.id}: unsupported source currency ${String(contract.rate_currency || "missing")}`);
+      continue;
+    }
     const rate = validMoney(contract.rate);
     if (rate === null || rate <= 0) {
       console.error(`Talent invoice generation blocked for contract ${contract.id}: invalid signed offer rate`);
@@ -1102,7 +1182,12 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
       if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
       const sent = await sendInvoice(req.params.id, talentId);
       if (sent.notFound) return res.status(404).json({ error: "Invoice not found" });
-      if (sent.notSendable) return res.status(409).json({ error: "Invoice cannot be sent after its contract end date" });
+      if (sent.notSendable) return res.status(409).json({
+        error: sent.reason === "unsupported_invoice_currency"
+          ? "Existing non-USD invoices cannot enter new billing workflows"
+          : "Invoice cannot be sent after its contract end date",
+        ...(sent.reason ? { code: sent.reason } : {}),
+      });
       return res.json({ sent: true, payoutScheduled: sent.payout?.scheduled ?? false, payoutBlock: sent.payout?.reason ?? null });
     } catch (error) {
       console.error("POST Talent invoice send failed", error);
@@ -1150,7 +1235,9 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
     try {
       await client.query("BEGIN");
       const own = await client.query(
-        `SELECT hc.id, hc.effective_start_date, hc.billing_activated_at FROM hiring_contracts hc
+        `SELECT hc.id, hc.effective_start_date, hc.billing_activated_at, o.rate_currency
+           FROM hiring_contracts hc
+           JOIN offers o ON o.id = hc.offer_id
           JOIN job_submissions js ON js.id = hc.submission_id
          WHERE hc.id = $1 AND js.client_id = $2 AND hc.status = 'signed'
            AND hc.billing_mode = 'guaranteed' FOR UPDATE OF hc`,
@@ -1159,6 +1246,12 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
       if (!own.rows.length) {
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "Guaranteed contract not found" });
+      }
+      try {
+        billingCurrencyForSource(own.rows[0].rate_currency);
+      } catch (error: any) {
+        await client.query("ROLLBACK");
+        return res.status(error.status ?? 400).json({ error: error.message, code: error.code });
       }
       if (!own.rows[0].effective_start_date || !own.rows[0].billing_activated_at) {
         await client.query("ROLLBACK");
@@ -1241,9 +1334,11 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
       await client.query("BEGIN");
       const invoice = await client.query(
         `SELECT ti.id, ti.hiring_contract_id, ti.client_id, ti.period_start, ti.period_end,
-                ti.currency, ti.status, ti.billing_mode, js.client_id AS contract_client
+                ti.currency, ti.status, ti.billing_mode, js.client_id AS contract_client,
+                o.rate_currency AS source_currency
            FROM talent_invoices ti
            JOIN hiring_contracts hc ON hc.id = ti.hiring_contract_id
+           JOIN offers o ON o.id = hc.offer_id
            JOIN job_submissions js ON js.id = hc.submission_id
           WHERE ti.id = $1 AND ti.client_id = $2 AND js.client_id = $2
             AND ti.billing_mode = 'guaranteed'
@@ -1254,6 +1349,13 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
       if (!source || source.status !== "sent") {
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "Sent Guaranteed Talent invoice not found" });
+      }
+      try {
+        billingCurrencyForSource(source.currency);
+        billingCurrencyForSource(source.source_currency);
+      } catch (error: any) {
+        await client.query("ROLLBACK");
+        return res.status(error.status ?? 400).json({ error: error.message, code: error.code });
       }
       if (new Date() < claimDeadlineForPeriod(dateString(source.period_end))) {
         await client.query("ROLLBACK");
@@ -1332,9 +1434,12 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
     try {
       await client.query("BEGIN");
       const claim = await client.query(
-        `SELECT c.*, ti.currency, ti.base_amount, ti.commission_rate, ti.status AS invoice_status
+        `SELECT c.*, ti.currency, ti.base_amount, ti.commission_rate, ti.status AS invoice_status,
+                o.rate_currency AS source_currency
            FROM client_late_guaranteed_claims c
            JOIN talent_invoices ti ON ti.id = c.original_talent_invoice_id
+           JOIN hiring_contracts hc ON hc.id = ti.hiring_contract_id
+           JOIN offers o ON o.id = hc.offer_id
           WHERE c.id = $1 FOR UPDATE OF c, ti`,
         [req.params.id],
       );
@@ -1347,6 +1452,16 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
         await client.query("ROLLBACK");
         return res.status(409).json({ error: "The original Talent invoice must remain sent" });
       }
+      let creditMemoCurrency: typeof BILLING_CURRENCY | null = null;
+      if (decision === "approve") {
+        try {
+          creditMemoCurrency = billingCurrencyForSource(row.currency);
+          billingCurrencyForSource(row.source_currency);
+        } catch (error: any) {
+          await client.query("ROLLBACK");
+          return res.status(error.status ?? 400).json({ error: error.message, code: error.code });
+        }
+      }
       const saved = await client.query(
         `UPDATE client_late_guaranteed_claims
             SET status = $2, decision_reason = $3, decided_by = $4, decided_at = now()
@@ -1355,6 +1470,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
         [row.id, decision === "approve" ? "approved" : "rejected", reason.trim(), req.user.id],
       );
       if (decision === "approve") {
+        const currency = creditMemoCurrency!;
         const snapshot = await client.query(
           `SELECT l.client_amount
              FROM client_monthly_invoice_lines l
@@ -1374,7 +1490,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
            VALUES ($1,$2,$3,$4,$5,$6::date,$7::date,$8)
            RETURNING id`,
           [row.id, row.hiring_contract_id, row.original_talent_invoice_id, row.client_id,
-            row.currency, row.period_start, row.period_end, allInAmount.toFixed(2)],
+            currency, row.period_start, row.period_end, allInAmount.toFixed(2)],
         );
         // If the original month has a statement still in draft, it is safe to
         // adjust that statement before send. Sent statements are never selected;
@@ -1401,7 +1517,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
                      i.invoice_month, i.created_at
             LIMIT 1
             FOR UPDATE OF i`,
-          [memo.rows[0].id, row.original_talent_invoice_id, row.client_id, row.currency, row.period_start],
+          [memo.rows[0].id, row.original_talent_invoice_id, row.client_id, currency, row.period_start],
         );
         if (draft.rows.length) {
           const available = roundMoney(Number(draft.rows[0].subtotal));
@@ -1569,11 +1685,13 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
             AND (hc.billing_mode IS NULL OR hc.billing_mode NOT IN ('tracked', 'guaranteed')
               OR hc.effective_start_date IS NULL OR hc.billing_activated_at IS NULL
               OR o.rate IS NULL OR o.rate_currency IS NULL
+              OR LOWER(BTRIM(o.rate_currency)) <> 'usd'
               OR (hc.billing_mode = 'tracked' AND o.engagement_type NOT IN ('Standard', 'Lite')))
           ORDER BY hc.created_at`,
       );
       const payoutBlocks = await query(
         `SELECT ti.id AS invoice_id, ti.hiring_contract_id, ti.talent_id, ti.currency,
+                o.rate_currency AS source_currency,
                 ti.amount, d.status AS deposit_status, d.currency AS deposit_currency,
                 d.amount AS deposit_amount,
                 COALESCE((SELECT SUM(r.amount) FROM security_deposit_replenishments r
@@ -1583,6 +1701,8 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
                     AND p.currency = ti.currency
                     AND p.status IN ('pending', 'scheduled', 'disbursed', 'failed')), 0) AS reserved_payouts
            FROM talent_invoices ti
+            LEFT JOIN hiring_contracts hc ON hc.id = ti.hiring_contract_id
+            LEFT JOIN offers o ON o.id = hc.offer_id
            LEFT JOIN security_deposits d ON d.hiring_contract_id = ti.hiring_contract_id
            WHERE ti.status = 'sent'
              AND NOT EXISTS (SELECT 1 FROM payouts p WHERE p.talent_invoice_id = ti.id)
@@ -1592,20 +1712,24 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
         ...row,
         error: !row.billing_mode
           ? "Signed contract has no billing-mode snapshot"
+          : !row.rate_currency
+            ? "Signed offer has no invoice currency"
+            : !isUsdCurrency(row.rate_currency)
+              ? "New Talent invoices require a USD-priced signed offer; existing amounts cannot be converted or relabeled"
             : !row.effective_start_date || !row.billing_activated_at
               ? "Signed contract has no immutable effective start/activation snapshot"
-            : !row.rate_currency
-              ? "Signed offer has no invoice currency"
               : !row.rate || Number(row.rate) <= 0
                 ? "Signed offer has an invalid invoice rate"
                 : "Signed offer has an unsupported engagement type",
       }));
       const blockedPayouts = payoutBlocks.rows.map((row: any) => ({
         ...row,
-        error: row.deposit_status !== "held"
+        error: !isUsdCurrency(row.currency) || !isUsdCurrency(row.source_currency)
+          ? "Payout scheduling is blocked for an existing non-USD invoice"
+          : row.deposit_status !== "held"
           ? "A held security deposit is required before payout scheduling"
-          : String(row.deposit_currency).toUpperCase() !== String(row.currency).toUpperCase()
-            ? "Held deposit currency does not match the Talent invoice"
+          : !isUsdCurrency(row.deposit_currency)
+            ? "A USD-held security deposit is required before new payouts can be scheduled"
             : Number(row.deposit_amount) + Number(row.replenished_amount) < Number(row.reserved_payouts) + Number(row.amount)
               ? "Held deposit does not cover this payout and existing reservations"
               : "Payout scheduling is pending; the automation worker will retry",
@@ -1668,8 +1792,13 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
 
   app.post("/api/admin/security-deposits/:id/replenishments", ...adminAuth, async (req: any, res) => {
     const amount = validMoney(req.body?.amount);
-    const currency = typeof req.body?.currency === "string" ? req.body.currency.trim().toUpperCase() : "";
-    if (amount === null || amount <= 0 || !currency) {
+    let currency: typeof BILLING_CURRENCY;
+    try {
+      currency = requireUsdCurrency(req.body?.currency);
+    } catch (error: any) {
+      return res.status(error.status ?? 400).json({ error: error.message, code: error.code });
+    }
+    if (amount === null || amount <= 0) {
       return res.status(422).json({ error: "A positive amount and currency are required to record a held deposit replenishment" });
     }
     const client = await getClient();
@@ -1684,7 +1813,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "Security deposit not found" });
       }
-      if (deposit.rows[0].status !== "held" || deposit.rows[0].currency.toUpperCase() !== currency) {
+      if (deposit.rows[0].status !== "held" || !isUsdCurrency(deposit.rows[0].currency)) {
         await client.query("ROLLBACK");
         return res.status(409).json({ error: "Replenishment currency must match a currently held security deposit" });
       }

@@ -33,7 +33,7 @@ import {
   copyToClipboard,
   shareNative,
 } from "@/lib/shareUtils";
-import { getTimeAgo, getPublicCompanyName } from "@/lib/jobUtils";
+import { buildRateDisplay, getCurrencySymbol, getTimeAgo, getPublicCompanyName } from "@/lib/jobUtils";
 
 const workCategories = [
   { id: "development", name: "Development & IT", icon: Code, color: "bg-blue-500" },
@@ -81,6 +81,8 @@ export interface JobDetailModalProps {
     experienceLevel: string;
     description: string;
     budget?: string | null;
+    budgetCurrency?: string | null;
+    customCurrencyCode?: string | null;
     salaryDisplay?: string | null;
     responsibilities?: string[] | null;
     requirements?: string[] | null;
@@ -111,8 +113,10 @@ export function JobDetailModal({
 
   const postedAgo = getTimeAgo(job.createdAt);
 
-  const rateDisplay = (job as any).salaryDisplay?.trim()
-    || (job.budget ? `₱${job.budget}` : "Rate TBD");
+  const rateDisplay = job.salaryDisplay?.trim() || job.budget
+    ? buildRateDisplay(job)
+    : "Rate TBD";
+  const currencySymbol = getCurrencySymbol(job.budgetCurrency, job.customCurrencyCode);
 
   const rateLabel = "Monthly rate";
   const skills = job.skillTags || [];
@@ -211,7 +215,7 @@ export function JobDetailModal({
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-3">
-            <span className="text-green-500 text-sm font-bold flex-shrink-0 leading-none">₱</span>
+            <span className="text-green-500 text-sm font-bold flex-shrink-0 leading-none">{currencySymbol}</span>
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                 Salary

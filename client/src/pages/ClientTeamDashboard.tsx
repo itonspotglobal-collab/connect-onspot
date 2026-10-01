@@ -235,11 +235,11 @@ function formatSpendList(spend: Array<{ currency: string; amount: number }>) {
 }
 
 function formatMemberRate(member: TeamMember) {
-  if (member.rate == null || !member.rateCurrency) return "Rate not available";
+  if (member.rate == null) return "Rate not available";
   const period = member.ratePeriod === "hourly"
     ? "hour"
     : `${member.engagementType || "contract"} period`;
-  return `${formatMoney(member.rate, member.rateCurrency)} / ${period}`;
+  return `${formatMoney(member.rate, member.rateCurrency || "USD")} / ${period}`;
 }
 
 function TeamROI({ data }: { data: TeamDashboardData }) {

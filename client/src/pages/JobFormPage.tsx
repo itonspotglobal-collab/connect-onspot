@@ -403,7 +403,7 @@ export default function JobFormPage({ mode = "admin" }: JobFormPageProps) {
   };
 
   const hasMeaningfulDraftData = () => {
-    const ignored = new Set(["", "Remote", "entry", "range", "PHP", "open", "draft"]);
+    const ignored = new Set(["", "Remote", "entry", "range", "USD", "PHP", "open", "draft"]);
     return Object.entries(formData).some(([key, value]) => {
       if (key === "status" || key === "title" || key === "category" || key === "skillTags") {
         // These are represented by the canonical form fields below.
@@ -834,7 +834,8 @@ function buildPayload(formData: JobFormData): any {
     skillTags: formData.requiredSkills.filter((skill) => skill.name.trim()).map((skill) => skill.name.trim()),
     requiresUsTimezoneOverlap: formData.requiresUsTimezoneOverlap,
     requiresFluentEnglish: formData.requiresFluentEnglish,
-    budgetCurrency: formData.currency || "PHP",
+    budgetCurrency: formData.currency || "USD",
+    customCurrencyCode: formData.customCurrencyCode.trim() || null,
     salaryDisplay: formData.salaryDisplay.trim() || null,
     compensationDisplayType: formData.compensationDisplayType,
     contractorEngagementConfirmed: formData.contractorEngagementConfirmed,

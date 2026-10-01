@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, MapPin, Briefcase, DollarSign, Clock, RefreshCw, AlertCircle } from "lucide-react";
 import { getJobFunctionDisplay } from "@shared/jobFunction";
+import { formatCurrencyAmount } from "@/lib/jobUtils";
 
 interface MatchReasons {
   skillOverlap: string[];
@@ -99,7 +100,7 @@ function MatchCard({ match }: { match: MatchedJob }) {
           {job.budget && (
             <span className="flex items-center gap-1">
               <DollarSign className="w-3 h-3" />
-              {Number(job.budget).toLocaleString()} {job.budgetCurrency ?? ""}
+              {formatCurrencyAmount(job.budget, job.budgetCurrency || "USD")}
             </span>
           )}
           {getJobFunctionDisplay(job) && (

@@ -22,6 +22,7 @@ import {
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
 import { formatInterviewTime } from "@/lib/formatInterviewTime";
+import { formatCurrencyAmount } from "@/lib/jobUtils";
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
   CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink, Clock,
@@ -587,10 +588,9 @@ interface TalentOffer {
 
 function formatRate(rate: string | null, currency: string | null, engagement: string | null): string {
   if (!rate) return "—";
-  const amount = parseFloat(rate).toLocaleString();
-  const cur = currency ?? "PHP";
+  const amount = formatCurrencyAmount(rate, currency || "USD");
   const eng = engagement ? ` / ${engagement}` : "";
-  return `${cur} ${amount}${eng}`;
+  return `${amount}${eng}`;
 }
 
 interface OfferCardProps {
@@ -755,7 +755,7 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
               className="rounded-full h-8 text-xs text-amber-700 border-amber-200 hover:bg-amber-50"
               disabled={isBusy}
               onClick={() => {
-                const raw = window.prompt("What rate would you like to propose?");
+                const raw = window.prompt("Enter a new rate in USD. The existing offer amount is not copied.");
                 if (raw === null) return;
                 const nextRate = Number(raw);
                 if (!Number.isFinite(nextRate) || nextRate <= 0) {
@@ -764,7 +764,7 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
                 }
                 onRespond(offer.id, "counter", {
                   counterRate: nextRate,
-                  counterRateCurrency: offer.rateCurrency ?? "PHP",
+                  counterRateCurrency: "USD",
                 });
               }}
             >
@@ -983,7 +983,7 @@ function TalentContractCard({
   if (isLoading || !contract) return null;
 
   const rate = contract.rate
-    ? `${contract.rateCurrency ? `${contract.rateCurrency} ` : ""}${contract.rate}`
+    ? formatCurrencyAmount(contract.rate, contract.rateCurrency || "USD")
     : null;
   return (
     <Card className="border border-indigo-200 bg-indigo-50/50 dark:border-indigo-900/50 dark:bg-indigo-950/20">

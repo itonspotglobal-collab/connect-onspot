@@ -24,6 +24,7 @@ import type { PoolClient } from "pg";
 import { loadAdminFormalSubmission } from "./formalPipelineGuard.js";
 import { computeDepositAmount } from "../lib/billing.js";
 import { query } from "../db.js";
+import { BILLING_CURRENCY, requireUsdCurrency } from "../../shared/currency";
 import {
   notifyClientOfTalentHired,
   notifyTalentOfApplicationStatusChange,
@@ -87,11 +88,12 @@ export async function createHiringContract(params: {
   return withTransaction(async (client) => {
     // Lock the offer row so two concurrent creates serialize on it.
     const offerResult = await client.query(
-      `SELECT id, submission_id, status, billing_mode, proposed_start_date FROM offers WHERE id = $1 FOR UPDATE`,
+      `SELECT id, submission_id, status, billing_mode, proposed_start_date, rate_currency FROM offers WHERE id = $1 FOR UPDATE`,
       [offerId],
     );
     if (offerResult.rows.length === 0) throw new ContractError(404, { error: "Offer not found" });
     const offer = offerResult.rows[0];
+    requireUsdCurrency(offer.rate_currency);
     if (offer.status !== "accepted" && offer.status !== "offer_accepted") {
       throw new ContractError(409, {
         error: "offer_not_accepted",
@@ -245,6 +247,21 @@ export async function updateHiringContract(
       });
     }
 
+    const willBeOnspotSigned = onspotSigned === true || !!contract.onspot_signed_at;
+    const willBeTalentSigned = talentSigned === true || !!contract.talent_signed_at;
+    const fullySigned = willBeOnspotSigned && willBeTalentSigned;
+    const recordingSignature =
+      (onspotSigned === true && !contract.onspot_signed_at) ||
+      (talentSigned === true && !contract.talent_signed_at);
+    let signingCurrency: string | undefined;
+    if (recordingSignature || (fullySigned && contract.status !== "signed")) {
+      const offerCurrency = await client.query(
+        `SELECT rate_currency FROM offers WHERE id = $1`,
+        [contract.offer_id],
+      );
+      signingCurrency = requireUsdCurrency(offerCurrency.rows[0]?.rate_currency);
+    }
+
     const sets: string[] = [];
     const params: any[] = [];
     let p = 1;
@@ -275,9 +292,6 @@ export async function updateHiringContract(
       });
     }
 
-    const willBeOnspotSigned = onspotSigned === true || !!contract.onspot_signed_at;
-    const willBeTalentSigned = talentSigned === true || !!contract.talent_signed_at;
-    const fullySigned = willBeOnspotSigned && willBeTalentSigned;
     if (fullySigned && contract.status !== "signed") {
       sets.push(`status = 'signed'`);
       sets.push(`billing_activated_at = NOW()`);
@@ -330,6 +344,7 @@ export async function updateHiringContract(
       );
       const talentRate = Number(offerForDeposit.rows[0]?.rate);
       if (Number.isFinite(talentRate) && talentRate >= 0) {
+        const depositCurrency = signingCurrency ?? BILLING_CURRENCY;
         await client.query(
           `INSERT INTO security_deposits (hiring_contract_id, amount, currency, status)
            VALUES ($1, $2, $3, 'pending')
@@ -337,7 +352,7 @@ export async function updateHiringContract(
           [
             contract.id,
             computeDepositAmount(talentRate).toFixed(2),
-            offerForDeposit.rows[0]?.rate_currency || "PHP",
+            depositCurrency,
           ],
         );
       }

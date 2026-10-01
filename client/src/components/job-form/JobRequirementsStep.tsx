@@ -15,7 +15,7 @@ import {
   MINIMUM_EDUCATION_OPTIONS,
   SKILL_EXPERIENCE_OPTIONS,
 } from "@/lib/jobConstants";
-import { SUPPORTED_CURRENCIES } from "@/lib/jobUtils";
+import { getEffectiveCurrencyCode } from "@/lib/jobUtils";
 
 interface Props {
   formData: JobFormData;
@@ -322,21 +322,16 @@ export function JobRequirementsStep({ formData, updateField, errors }: Props) {
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="req-currency">Currency</Label>
-            <Select
-              value={formData.currency || "PHP"}
-              onValueChange={(value) => updateField("currency", value)}
+            <div
+              id="req-currency"
+              className="mt-1.5 flex h-10 items-center rounded-md border border-input bg-muted/40 px-3 text-sm"
+              data-testid="job-currency"
             >
-              <SelectTrigger id="req-currency" className="mt-1.5">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SUPPORTED_CURRENCIES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {getEffectiveCurrencyCode(formData.currency, formData.customCurrencyCode)}
+              {formData.currency !== "USD" && (
+                <span className="ml-2 text-xs text-muted-foreground">historical currency</span>
+              )}
+            </div>
           </div>
           <div>
             <Label htmlFor="req-salary">Monthly rate</Label>

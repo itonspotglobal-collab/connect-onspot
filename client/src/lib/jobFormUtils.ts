@@ -127,7 +127,7 @@ export const defaultFormData = {
   hasCommission: false,
   hasEquity: false,
   // Currency
-  currency: "PHP",
+  currency: "USD",
   customCurrencyCode: "",
 };
 
@@ -227,7 +227,7 @@ export function jobToFormData(job: Job): JobFormData {
     hasCommission: (job as any).hasCommission ?? false,
     hasEquity: (job as any).hasEquity ?? false,
     // Currency
-    currency: (job as any).budgetCurrency || "PHP",
+    currency: (job as any).budgetCurrency || "USD",
     customCurrencyCode: (job as any).customCurrencyCode || "",
   };
 }

@@ -23,6 +23,7 @@ import { useClientFavorites } from "@/hooks/useClientFavorites";
 import { getPrivacySafeTalentDisplayName } from "@/lib/formatPublicTalentName";
 import { convertLocalDateTimeToUtc } from "@/lib/formatInterviewTime";
 import { TimezoneSelect } from "@/components/TimezoneSelect";
+import { formatCurrencyAmount } from "@/lib/jobUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,17 +129,12 @@ function getInitials(name?: string | null): string {
 function getResultName(candidate: TalentResult["candidate"]): string {
   return getPrivacySafeTalentDisplayName(candidate);
 }
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: "$", PHP: "\u20b1", EUR: "\u20ac", GBP: "\u00a3", AUD: "A$", CAD: "C$",
-};
-
 function formatRateDisplay(
   amount: string,
   currency: string,
   engagementType?: string | null,
 ): string {
-  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
-  const base = `${symbol}${amount}`;
+  const base = formatCurrencyAmount(amount, currency || "USD");
   return engagementType ? `${base} / ${engagementType}` : base;
 }
 

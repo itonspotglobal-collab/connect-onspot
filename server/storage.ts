@@ -43,6 +43,7 @@ import {
 import { randomUUID } from "crypto";
 import { db, pool, query as dbQuery } from "./db";
 import { eq, ne, and, or, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
+import { BILLING_CURRENCY, isUsdCurrency, requireUsdCurrency } from "../shared/currency";
 import {
   getJobFunctionDisplay,
   getJobFunctionSearchValues,
@@ -54,6 +55,188 @@ import {
   type TalentMatchInput,
   type TalentMatchWithIdentity,
 } from "./services/talentMatchingService";
+
+const hasOwn = (value: object, key: string) =>
+  Object.prototype.hasOwnProperty.call(value, key);
+
+function canonicalDecimal(value: unknown): string | null {
+  if (value == null) return null;
+  const text = String(value).trim();
+  const match = text.match(/^([+-]?)(?:(\d+)(?:\.(\d*))?|\.(\d+))(?:[eE]([+-]?\d+))?$/);
+  if (!match) return null;
+  const sign = match[1] === "-" ? "-" : "";
+  let digits = `${match[2] ?? "0"}${match[3] ?? match[4] ?? ""}`.replace(/^0+/, "");
+  if (!digits) return "0";
+  const exponent = Number(match[5] ?? "0");
+  if (!Number.isSafeInteger(exponent)) return null;
+  let scale = (match[3] ?? match[4] ?? "").length - exponent;
+  while (digits.endsWith("0")) {
+    digits = digits.slice(0, -1);
+    scale -= 1;
+  }
+  return `${sign}${digits}e${-scale}`;
+}
+
+export function sameFinancialValue(left: unknown, right: unknown): boolean {
+  if (left == null || right == null) return left == null && right == null;
+  const leftDecimal = canonicalDecimal(left);
+  const rightDecimal = canonicalDecimal(right);
+  if (leftDecimal !== null && rightDecimal !== null) return leftDecimal === rightDecimal;
+  return String(left) === String(right);
+}
+
+export function sameCurrency(left: unknown, right: unknown): boolean {
+  if (left == null || right == null) return left == null && right == null;
+  return String(left).trim().toUpperCase() === String(right).trim().toUpperCase();
+}
+
+/**
+ * Validates a job's financial patch without re-labeling legacy prices.
+ * A non-USD legacy amount may pass through only when its amount, display and
+ * denomination are genuinely unchanged. Replacing it requires a new USD amount.
+ */
+export function validateUsdJobUpdate(
+  existing: { budget?: unknown; budgetCurrency?: unknown; customCurrencyCode?: unknown; salaryDisplay?: unknown },
+  updates: { budget?: unknown; budgetCurrency?: unknown; customCurrencyCode?: unknown; salaryDisplay?: unknown },
+): void {
+  const hasBudget = hasOwn(updates, "budget");
+  const hasCurrency = hasOwn(updates, "budgetCurrency");
+  const hasCustomCurrency = hasOwn(updates, "customCurrencyCode");
+  const hasSalaryDisplay = hasOwn(updates, "salaryDisplay");
+  const budgetChanged = hasBudget && !sameFinancialValue(existing.budget, updates.budget);
+  const salaryDisplayChanged =
+    hasSalaryDisplay && !sameFinancialValue(existing.salaryDisplay, updates.salaryDisplay);
+  const currencyChanged =
+    (hasCurrency && !sameCurrency(existing.budgetCurrency, updates.budgetCurrency)) ||
+    ((String(existing.budgetCurrency ?? "").trim().toUpperCase() === "OTHER" ||
+      String(hasCurrency ? updates.budgetCurrency : existing.budgetCurrency ?? "").trim().toUpperCase() === "OTHER") &&
+      hasCustomCurrency &&
+      !sameCurrency(existing.customCurrencyCode, updates.customCurrencyCode));
+  if (!hasBudget && !hasCurrency && !hasCustomCurrency && !hasSalaryDisplay) return;
+
+  const proposedCurrency = hasCurrency ? updates.budgetCurrency : existing.budgetCurrency;
+  if (isUsdCurrency(existing.budgetCurrency)) {
+    requireUsdCurrency(proposedCurrency);
+    return;
+  }
+
+  if (!budgetChanged && !salaryDisplayChanged && !currencyChanged) return;
+
+  // A denomination change alone is a relabel, not a new USD price.
+  requireUsdCurrency(proposedCurrency);
+  // Salary text is an independent price snapshot, not derived from budget.
+  // Changing a zero budget must never silently relabel a retained PHP salary.
+  if (String(existing.salaryDisplay ?? "").trim()) {
+    const oldSalary = String(existing.salaryDisplay).trim().replace(/(\d),(?=\d)/g, "$1");
+    const newSalary = String(updates.salaryDisplay ?? "").trim().replace(/(\d),(?=\d)/g, "$1");
+    if (!hasSalaryDisplay || sameFinancialValue(oldSalary, newSalary)) {
+      requireUsdCurrency(existing.budgetCurrency ?? "LEGACY_UNKNOWN");
+    }
+  }
+  if (!hasBudget || !budgetChanged) {
+    if (existing.budget != null || existing.salaryDisplay != null) {
+      requireUsdCurrency(existing.budgetCurrency ?? "LEGACY_UNKNOWN");
+    }
+  } else if (!hasCurrency) {
+    requireUsdCurrency(existing.budgetCurrency ?? "LEGACY_UNKNOWN");
+  } else if (updates.budget == null || String(updates.budget).trim() === "") {
+    requireUsdCurrency(existing.budgetCurrency ?? "LEGACY_UNKNOWN");
+  }
+}
+
+/** As above, for a talent profile hourly rate. */
+export function validateUsdProfileUpdate(
+  existing: { hourlyRate?: unknown; rateCurrency?: unknown },
+  updates: { hourlyRate?: unknown; rateCurrency?: unknown },
+): void {
+  const hasRate = hasOwn(updates, "hourlyRate");
+  const hasCurrency = hasOwn(updates, "rateCurrency");
+  const rateChanged = hasRate && !sameFinancialValue(existing.hourlyRate, updates.hourlyRate);
+  const currencyChanged =
+    hasCurrency && !sameCurrency(existing.rateCurrency, updates.rateCurrency);
+  if (!hasRate && !hasCurrency) return;
+
+  const proposedCurrency = hasCurrency ? updates.rateCurrency : existing.rateCurrency;
+  if (isUsdCurrency(existing.rateCurrency)) {
+    requireUsdCurrency(proposedCurrency);
+    return;
+  }
+  if (!rateChanged && !currencyChanged) return;
+
+  requireUsdCurrency(proposedCurrency);
+  if ((!hasRate || !rateChanged) && existing.hourlyRate != null) {
+    requireUsdCurrency(existing.rateCurrency ?? "LEGACY_UNKNOWN");
+  } else if (rateChanged && !hasCurrency) {
+    requireUsdCurrency(existing.rateCurrency ?? "LEGACY_UNKNOWN");
+  } else if (rateChanged && (updates.hourlyRate == null || String(updates.hourlyRate).trim() === "")) {
+    requireUsdCurrency(existing.rateCurrency ?? "LEGACY_UNKNOWN");
+  }
+}
+
+/**
+ * Candidate preference rates are JSON snapshots. Keep unchanged legacy PHP
+ * expectations intact, but never create or amend one as a new non-USD price.
+ */
+export function validateUsdRatePreferenceUpdate(
+  existing: Record<string, unknown> | null | undefined,
+  incoming: Record<string, unknown> | null | undefined,
+): void {
+  if (!incoming) return;
+  const hasRate = hasOwn(incoming, "rateAmount");
+  const hasCurrency = hasOwn(incoming, "rateCurrency");
+  if (!hasRate && !hasCurrency) return;
+
+  const oldPrefs = existing ?? {};
+  const rateChanged = hasRate && !sameFinancialValue(oldPrefs.rateAmount, incoming.rateAmount);
+  const currencyChanged =
+    hasCurrency && !sameCurrency(oldPrefs.rateCurrency, incoming.rateCurrency);
+  const proposedCurrency = hasCurrency ? incoming.rateCurrency : oldPrefs.rateCurrency;
+
+  if (isUsdCurrency(oldPrefs.rateCurrency)) {
+    requireUsdCurrency(proposedCurrency);
+    return;
+  }
+  if (!rateChanged && !currencyChanged) return;
+
+  requireUsdCurrency(proposedCurrency);
+  if ((!hasRate || !rateChanged) && oldPrefs.rateAmount != null) {
+    requireUsdCurrency(oldPrefs.rateCurrency ?? "LEGACY_UNKNOWN");
+  } else if (rateChanged && !hasCurrency) {
+    requireUsdCurrency(oldPrefs.rateCurrency ?? "LEGACY_UNKNOWN");
+  } else if (rateChanged && (incoming.rateAmount == null || String(incoming.rateAmount).trim() === "")) {
+    requireUsdCurrency(oldPrefs.rateCurrency ?? "LEGACY_UNKNOWN");
+  }
+}
+
+/** Build only intentional, validated rate-preference changes from a profile save. */
+export function buildProfileRatePreferencePatch(
+  existingProfile: { hourlyRate?: unknown; rateCurrency?: unknown } | null | undefined,
+  updatedProfile: { hourlyRate?: unknown; rateCurrency?: unknown },
+  existingPreferences: Record<string, unknown> | null | undefined,
+  incomingRateEngagementType?: unknown,
+): Record<string, unknown> | null {
+  const currentProfileRate = existingProfile?.hourlyRate ?? null;
+  const updatedProfileRate = updatedProfile.hourlyRate ?? null;
+  const rateChanged = !sameFinancialValue(currentProfileRate, updatedProfileRate);
+  const preferences = existingPreferences ?? {};
+  const patch: Record<string, unknown> = {};
+
+  if (rateChanged) {
+    patch.rateAmount = updatedProfileRate == null ? null : String(updatedProfileRate);
+    patch.rateCurrency = requireUsdCurrency(updatedProfile.rateCurrency);
+  }
+
+  if (rateChanged &&
+      typeof incomingRateEngagementType === "string" &&
+      incomingRateEngagementType &&
+      incomingRateEngagementType !== preferences.rateEngagementType) {
+    patch.rateEngagementType = incomingRateEngagementType;
+  }
+
+  validateUsdRatePreferenceUpdate(preferences, patch);
+  if (Object.keys(patch).length === 0) return null;
+  return patch;
+}
 
 // Type for creating user with password
 export interface CreateUserData {
@@ -667,13 +850,14 @@ export class MemStorage implements IStorage {
   }
 
   async createProfile(insertProfile: InsertProfile): Promise<Profile> {
+    const rateCurrency = requireUsdCurrency(insertProfile.rateCurrency);
     const id = randomUUID();
     const now = new Date();
     const profile: Profile = {
       ...insertProfile,
       id,
       location: insertProfile.location ?? "Global",
-      rateCurrency: insertProfile.rateCurrency ?? "USD",
+      rateCurrency,
       availability: insertProfile.availability ?? "available",
       languages: insertProfile.languages ?? ["English"],
       timezone: insertProfile.timezone ?? "UTC",
@@ -696,9 +880,18 @@ export class MemStorage implements IStorage {
     const profile = this.profiles.get(id);
     if (!profile) return undefined;
 
+    validateUsdProfileUpdate(profile, updates);
+    const normalizedUpdates = { ...updates };
+    if (hasOwn(normalizedUpdates, "rateCurrency")) {
+      if (isUsdCurrency(normalizedUpdates.rateCurrency)) {
+        normalizedUpdates.rateCurrency = BILLING_CURRENCY;
+      } else {
+        delete normalizedUpdates.rateCurrency;
+      }
+    }
     const updatedProfile: Profile = {
       ...profile,
-      ...updates,
+      ...normalizedUpdates,
       updatedAt: new Date()
     };
     this.profiles.set(id, updatedProfile);
@@ -854,6 +1047,7 @@ export class MemStorage implements IStorage {
   }
 
   async createJob(insertJob: InsertJob): Promise<Job> {
+    const budgetCurrency = requireUsdCurrency(insertJob.budgetCurrency);
     const id = randomUUID();
     const now = new Date();
     const job = {
@@ -862,7 +1056,7 @@ export class MemStorage implements IStorage {
       company: insertJob.company ?? "OnSpot",
       location: insertJob.location ?? "Remote",
       budget: insertJob.budget ?? null,
-      budgetCurrency: insertJob.budgetCurrency ?? "USD",
+      budgetCurrency,
       duration: insertJob.duration ?? null,
       status: insertJob.status ?? "open",
       proposalCount: 0,
@@ -883,9 +1077,23 @@ export class MemStorage implements IStorage {
     const job = this.jobs.get(id);
     if (!job) return undefined;
 
+    validateUsdJobUpdate(job, updates);
+    const normalizedUpdates = { ...updates };
+    if (hasOwn(normalizedUpdates, "budgetCurrency")) {
+      if (isUsdCurrency(normalizedUpdates.budgetCurrency)) {
+        normalizedUpdates.budgetCurrency = BILLING_CURRENCY;
+      } else {
+        delete normalizedUpdates.budgetCurrency;
+      }
+    }
+    if (String(job.budgetCurrency ?? "").trim().toUpperCase() === "OTHER" &&
+        hasOwn(normalizedUpdates, "customCurrencyCode") &&
+        sameCurrency(job.customCurrencyCode, normalizedUpdates.customCurrencyCode)) {
+      normalizedUpdates.customCurrencyCode = job.customCurrencyCode;
+    }
     const updatedJob: Job = {
       ...job,
-      ...updates,
+      ...normalizedUpdates,
       updatedAt: new Date()
     };
     this.jobs.set(id, updatedJob);
@@ -1085,9 +1293,14 @@ export class MemStorage implements IStorage {
       // Rate: +10 — ratio [0.8, 1.2] + same currency (see ADR for why not simple ≤)
       const candRateRaw = prefs.rateAmount;
       const candRate = candRateRaw != null ? parseFloat(String(candRateRaw)) : null;
-      const candCurrency = (prefs.rateCurrency as string | undefined)?.toUpperCase() ?? 'USD';
-      const jobCurrency = (job.budgetCurrency ?? 'PHP').toUpperCase();
-      if (candRate != null && candRate > 0 && job.budget != null && candCurrency === jobCurrency) {
+      const candCurrency = isUsdCurrency(prefs.rateCurrency)
+        ? BILLING_CURRENCY
+        : (typeof prefs.rateCurrency === "string" ? prefs.rateCurrency.toUpperCase() : null);
+      const jobCurrency = typeof job.budgetCurrency === "string"
+        ? job.budgetCurrency.toUpperCase()
+        : null;
+      if (candRate != null && candRate > 0 && job.budget != null &&
+          candCurrency !== null && jobCurrency !== null && candCurrency === jobCurrency) {
         const jobBudget = parseFloat(String(job.budget));
         if (jobBudget > 0) {
           const ratio = candRate / jobBudget;
@@ -2143,6 +2356,7 @@ export class MemStorage implements IStorage {
     for (let i = 0; i < talentData.length; i++) {
       const talent = talentData[i];
       try {
+        requireUsdCurrency(talent.profile.rateCurrency);
         // Check for duplicate email
         const existingUser = await this.getUserByEmail(talent.user.email!);
         if (existingUser) {
@@ -2256,6 +2470,9 @@ export class MemStorage implements IStorage {
       if (!row.bio || row.bio.trim().length < 10) {
         rowErrors.push("Bio must be at least 10 characters");
       }
+      if (!isUsdCurrency(row.rateCurrency ?? BILLING_CURRENCY)) {
+        rowErrors.push("New talent rates must use USD");
+      }
 
       if (rowErrors.length > 0) {
         errors.push({ rowIndex: i, email: row.email, errors: rowErrors });
@@ -2277,7 +2494,7 @@ export class MemStorage implements IStorage {
         bio: row.bio,
         location: row.location || "Global",
         hourlyRate: row.hourlyRate?.toString(),
-        rateCurrency: row.rateCurrency || "USD",
+        rateCurrency: requireUsdCurrency(row.rateCurrency),
         availability: row.availability || "available",
         phoneNumber: row.phoneNumber,
         languages: row.languages || ["English"],
@@ -2304,6 +2521,7 @@ export class MemStorage implements IStorage {
     const warnings: string[] = [];
 
     try {
+      const rateCurrency = requireUsdCurrency(csvRow.rateCurrency);
       // Check for duplicate email
       const existingUser = await this.getUserByEmail(csvRow.email);
       if (existingUser) {
@@ -2333,7 +2551,7 @@ export class MemStorage implements IStorage {
         bio: csvRow.bio,
         location: csvRow.location || "Global",
         hourlyRate: csvRow.hourlyRate?.toString(),
-        rateCurrency: csvRow.rateCurrency || "USD",
+        rateCurrency,
         availability: csvRow.availability || "available",
         phoneNumber: csvRow.phoneNumber,
         languages: csvRow.languages || ["English"],
@@ -2750,8 +2968,16 @@ export class MemStorage implements IStorage {
   }
 
   async createCandidate(data: InsertCandidate): Promise<Candidate> {
+    const inputPreferences = (data.preferences && typeof data.preferences === "object")
+      ? data.preferences as Record<string, unknown>
+      : {};
+    validateUsdRatePreferenceUpdate({}, inputPreferences);
+    const preferences = { ...inputPreferences };
+    if (hasOwn(preferences, "rateAmount") || hasOwn(preferences, "rateCurrency")) {
+      preferences.rateCurrency = requireUsdCurrency(preferences.rateCurrency);
+    }
     const id = randomUUID();
-    const candidate: Candidate = { ...data, id, createdAt: new Date() } as Candidate;
+    const candidate: Candidate = { ...data, preferences, id, createdAt: new Date() } as Candidate;
     return candidate;
   }
 
@@ -3120,14 +3346,34 @@ export class DbStorage extends MemStorage {
   }
 
   async createJob(insertJob: InsertJob): Promise<Job> {
-    const [job] = await db.insert(jobsTable).values(insertJob).returning();
+    const budgetCurrency = requireUsdCurrency(insertJob.budgetCurrency);
+    const [job] = await db.insert(jobsTable).values({
+      ...insertJob,
+      budgetCurrency,
+    }).returning();
     return job;
   }
 
   async updateJob(id: string, updates: Partial<InsertJob>): Promise<Job | undefined> {
+    const existing = await this.getJob(id);
+    if (!existing) return undefined;
+    validateUsdJobUpdate(existing, updates);
+    const normalizedUpdates = { ...updates };
+    if (hasOwn(normalizedUpdates, "budgetCurrency")) {
+      if (isUsdCurrency(normalizedUpdates.budgetCurrency)) {
+        normalizedUpdates.budgetCurrency = BILLING_CURRENCY;
+      } else {
+        delete normalizedUpdates.budgetCurrency;
+      }
+    }
+    if (String(existing.budgetCurrency ?? "").trim().toUpperCase() === "OTHER" &&
+        hasOwn(normalizedUpdates, "customCurrencyCode") &&
+        sameCurrency(existing.customCurrencyCode, normalizedUpdates.customCurrencyCode)) {
+      normalizedUpdates.customCurrencyCode = existing.customCurrencyCode;
+    }
     const [job] = await db
       .update(jobsTable)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...normalizedUpdates, updatedAt: new Date() })
       .where(eq(jobsTable.id, id))
       .returning();
     return job || undefined;
@@ -3287,7 +3533,17 @@ export class DbStorage extends MemStorage {
   }
 
   async createCandidate(data: InsertCandidate): Promise<Candidate> {
-    const [candidate] = await db.insert(candidatesTable).values(data).returning();
+    const preferences = (data.preferences && typeof data.preferences === "object")
+      ? { ...(data.preferences as Record<string, unknown>) }
+      : {};
+    validateUsdRatePreferenceUpdate({}, preferences);
+    if (hasOwn(preferences, "rateAmount") || hasOwn(preferences, "rateCurrency")) {
+      preferences.rateCurrency = requireUsdCurrency(preferences.rateCurrency);
+    }
+    const [candidate] = await db.insert(candidatesTable).values({
+      ...data,
+      preferences,
+    }).returning();
     return candidate;
   }
 
@@ -3330,7 +3586,26 @@ export class DbStorage extends MemStorage {
   }
 
   async updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined> {
-    const [updated] = await db.update(candidatesTable).set(updates).where(eq(candidatesTable.id, id)).returning();
+    const existing = await this.getCandidate(id);
+    if (!existing) return undefined;
+    let normalizedUpdates = updates;
+    if (updates.preferences && typeof updates.preferences === "object") {
+      const existingPreferences = (existing.preferences && typeof existing.preferences === "object")
+        ? existing.preferences as Record<string, unknown>
+        : {};
+      const updatedPreferences = updates.preferences as Record<string, unknown>;
+      validateUsdRatePreferenceUpdate(existingPreferences, updatedPreferences);
+      const mergedPreferences = { ...existingPreferences, ...updatedPreferences };
+      if (hasOwn(updatedPreferences, "rateCurrency")) {
+        if (isUsdCurrency(mergedPreferences.rateCurrency)) {
+          mergedPreferences.rateCurrency = BILLING_CURRENCY;
+        } else {
+          mergedPreferences.rateCurrency = existingPreferences.rateCurrency;
+        }
+      }
+      normalizedUpdates = { ...updates, preferences: mergedPreferences };
+    }
+    const [updated] = await db.update(candidatesTable).set(normalizedUpdates).where(eq(candidatesTable.id, id)).returning();
     return updated;
   }
 
@@ -3459,27 +3734,6 @@ export class DbStorage extends MemStorage {
     }
     if (filters.maxBudget !== undefined) {
       conditions.push(sqlOp`${jobsTable.budget}::numeric <= ${filters.maxBudget}`);
-    }
-
-    // Minimum salary — server-side, PHP-currency jobs only (non-PHP jobs always pass).
-    // All digit sequences are extracted from salary_display (commas/underscores stripped),
-    // the MAX is taken, and the budget column is also considered as a numeric fallback.
-    // This correctly handles ranges like "30,000 - 50,000" by using the upper bound (50,000).
-    if (filters.minSalary !== undefined) {
-      conditions.push(sqlOp`(
-        upper(COALESCE(${jobsTable.budgetCurrency}, 'PHP')) <> 'PHP'
-        OR GREATEST(
-          COALESCE((
-            SELECT max(m[1]::numeric)
-            FROM regexp_matches(
-              regexp_replace(COALESCE(${jobsTable.salaryDisplay}, ''), '[,_]', '', 'g'),
-              '(\\d+)',
-              'g'
-            ) AS m
-          ), 0),
-          COALESCE(${jobsTable.budget}::numeric, 0)
-        ) >= ${filters.minSalary}
-      )`);
     }
 
     // Location — normalized comparison so "On-site" matches "Onsite", "on site", etc.

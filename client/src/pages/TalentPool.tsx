@@ -63,21 +63,14 @@ import {
   buildClientRecProfile,
   scoreTalentForClient,
 } from "@/lib/clientRecommendations";
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: "$",
-  PHP: "₱",
-  EUR: "€",
-  GBP: "£",
-};
+import { formatCurrencyAmount } from "@/lib/jobUtils";
 
 function formatRateDisplay(
   amount: string,
   currency: string,
   engagementType: string | null | undefined,
 ): string {
-  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
-  const base = `${symbol}${amount}`;
+  const base = formatCurrencyAmount(amount, currency || "USD");
   if (engagementType) return `${base} / ${engagementType}`;
   return base;
 }

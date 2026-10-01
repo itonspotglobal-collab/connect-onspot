@@ -8,29 +8,6 @@ export type SortOption =
 
 // ── Currency helpers ──────────────────────────────────────────────────────────
 
-export type SupportedCurrency =
-  | "PHP"
-  | "USD"
-  | "EUR"
-  | "GBP"
-  | "AUD"
-  | "CAD"
-  | "SGD"
-  | "JPY"
-  | "OTHER";
-
-export const SUPPORTED_CURRENCIES: { value: SupportedCurrency; label: string }[] = [
-  { value: "PHP", label: "PHP — Philippine Peso" },
-  { value: "USD", label: "USD — US Dollar" },
-  { value: "EUR", label: "EUR — Euro" },
-  { value: "GBP", label: "GBP — British Pound" },
-  { value: "AUD", label: "AUD — Australian Dollar" },
-  { value: "CAD", label: "CAD — Canadian Dollar" },
-  { value: "SGD", label: "SGD — Singapore Dollar" },
-  { value: "JPY", label: "JPY — Japanese Yen" },
-  { value: "OTHER", label: "Other" },
-];
-
 export const CURRENCY_SYMBOLS: Record<string, string> = {
   PHP: "₱",
   USD: "$",
@@ -47,7 +24,7 @@ export function getCurrencySymbol(
   currency?: string | null,
   customCurrencyCode?: string | null
 ): string {
-  const code = (currency || "PHP").toUpperCase();
+  const code = (currency || "USD").toUpperCase();
   if (code === "OTHER") return customCurrencyCode?.toUpperCase() || "?";
   return CURRENCY_SYMBOLS[code] || code;
 }
@@ -57,9 +34,22 @@ export function getEffectiveCurrencyCode(
   currency?: string | null,
   customCurrencyCode?: string | null
 ): string {
-  const code = (currency || "PHP").toUpperCase();
-  if (code === "OTHER") return customCurrencyCode?.toUpperCase() || "PHP";
+  const code = (currency || "USD").toUpperCase();
+  if (code === "OTHER") return customCurrencyCode?.toUpperCase() || "OTHER";
   return code;
+}
+
+/** Formats any known or historical currency without assuming non-USD means USD. */
+export function formatCurrencyAmount(
+  amount: string | number,
+  currency?: string | null,
+): string {
+  const code = (currency || "USD").toUpperCase();
+  const value = typeof amount === "number" ? amount : Number(amount.replaceAll(",", ""));
+  if (!Number.isFinite(value)) return `${code} ${amount}`;
+  const formatted = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+  const symbol = CURRENCY_SYMBOLS[code];
+  return symbol ? `${symbol}${formatted}` : `${code} ${formatted}`;
 }
 
 /** Formats a numeric amount using the job's currency */
@@ -97,7 +87,7 @@ export function formatJobSalary(job: {
   }
 
   // 2. Numeric budget fallback
-  const currency = job.budgetCurrency || "PHP";
+  const currency = job.budgetCurrency || "USD";
   const customCode = job.customCurrencyCode;
 
   if (job.budget) {
@@ -128,7 +118,7 @@ export function getJobBadges(job: {
   const badges: JobBadge[] = [];
 
   // Top Paying: only meaningful for PHP jobs (₱50,000+)
-  const currency = (job.budgetCurrency || "PHP").toUpperCase();
+  const currency = (job.budgetCurrency || "USD").toUpperCase();
   if (currency === "PHP") {
     // Try salaryDisplay first (extract first numeric run), then fall back to budget
     let budget = 0;
@@ -334,8 +324,8 @@ export function formatExperienceLevel(level: string): string {
 }
 
 /**
- * Primary rate display — delegates to buildRateDisplayWithCode so all
- * talent-facing salary strings use the same symbol-based, suffix-free format.
+ * Primary rate display — delegates to buildRateDisplayWithCode so talent-facing
+ * salary strings share consistent currency-aware formatting.
  */
 export function buildRateDisplay(job: {
   salaryDisplay?: string | null;
@@ -347,10 +337,45 @@ export function buildRateDisplay(job: {
   return buildRateDisplayWithCode(job);
 }
 
+type ExplicitCurrencyPrefix = {
+  compatibleCodes: string[];
+};
+
+function getExplicitCurrencyPrefix(value: string): ExplicitCurrencyPrefix | null {
+  const match = value.match(/^\s*(US\$|A\$|C\$|S\$|₱|£|€|¥|\$|OTHER|[A-Z]{3})\s*(?=\d)/i);
+  if (!match) return null;
+
+  const label = match[1];
+  const normalized = label.toUpperCase();
+  const aliases: Record<string, string[]> = {
+    "US$": ["USD"],
+    "A$": ["AUD"],
+    "C$": ["CAD"],
+    "S$": ["SGD"],
+    "$": ["USD", "AUD", "CAD", "SGD"],
+    "₱": ["PHP"],
+    "£": ["GBP"],
+    "€": ["EUR"],
+    "¥": ["JPY"],
+    OTHER: ["OTHER"],
+  };
+
+  if (aliases[label] || aliases[normalized]) {
+    return { compatibleCodes: aliases[label] || aliases[normalized] };
+  }
+
+  // Three-letter uppercase prefixes are treated as explicit ISO-style codes.
+  // This allows historical currencies beyond the common display-symbol map.
+  return /^[A-Z]{3}$/.test(normalized)
+    ? { compatibleCodes: [normalized] }
+    : null;
+}
+
 /**
- * Talent-facing rate display — uses the currency symbol (not the ISO code)
- * before each numeric amount and omits any period suffix (/month, /year, etc.).
- * Ranges get the symbol on both values: "$3,100 - $3,300", "₱50,000".
+ * Talent-facing rate display — uses saved currency metadata for unlabelled
+ * amounts, but preserves explicit historical denominations in salaryDisplay.
+ * Unlabelled ranges get the selected symbol on both values and omit period
+ * suffixes (/month, /year, etc.).
  * Descriptive phrases ("Competitive", "Rate TBD") pass through unchanged.
  * Use this everywhere salary is displayed to candidates.
  */
@@ -370,16 +395,42 @@ export function buildRateDisplayWithCode(job: {
     // No digits → descriptive phrase ("Competitive", "Rate TBD") — return as-is
     if (!/\d/.test(display)) return display;
 
-    // Strip any trailing period suffix, then normalise each range part by
-    // removing any leading currency prefix (ISO code or symbol) before the
-    // first digit — handles "USD 3,100", "₱50,000", "A$3,100", "$3,100", etc.
     const withoutSuffix = display
       .replace(/\/(month|year|project|mo)\s*$/i, "")
       .trim();
 
+    // An explicit denomination in the saved salary text is stronger evidence
+    // than missing or conflicting metadata. Keep it instead of silently
+    // relabeling the amount with the default/column currency.
+    const rangeParts = withoutSuffix.split(/\s*[-–—]\s*/);
+    const explicitPrefixes = rangeParts
+      .map((part) => getExplicitCurrencyPrefix(part))
+      .filter((prefix): prefix is ExplicitCurrencyPrefix => prefix !== null);
+    if (explicitPrefixes.length > 0) {
+      const commonCodes = explicitPrefixes.reduce(
+        (codes, prefix) => codes.filter((code) => prefix.compatibleCodes.includes(code)),
+        [...explicitPrefixes[0].compatibleCodes],
+      );
+      const metadataCode = job.budgetCurrency?.trim()
+        ? getEffectiveCurrencyCode(job.budgetCurrency, job.customCurrencyCode)
+        : null;
+      const metadataConflict = Boolean(
+        metadataCode && explicitPrefixes.some((prefix) => !prefix.compatibleCodes.includes(metadataCode)),
+      );
+
+      if (metadataConflict) {
+        return `${display} (currency metadata mismatch: ${metadataCode})`;
+      }
+      if (commonCodes.length === 0) {
+        return `${display} (conflicting currency labels)`;
+      }
+      return withoutSuffix;
+    }
+
+    // No denomination was saved with the text. Metadata is authoritative;
+    // when absent, getCurrencySymbol safely defaults new/missing currencies to USD.
     const stripPrefix = (s: string) => s.replace(/^[^0-9]*/, "").trim();
 
-    const rangeParts = withoutSuffix.split(/\s*[-–—]\s*/);
     if (rangeParts.length >= 2) {
       return `${sym}${stripPrefix(rangeParts[0])} - ${sym}${stripPrefix(rangeParts[1])}`;
     }

@@ -44,7 +44,7 @@ export const profiles = pgTable("profiles", {
   bio: text("bio"),
   location: text("location").default("Global"),
   hourlyRate: decimal("hourly_rate", { precision: 10, scale: 2 }),
-  rateCurrency: text("rate_currency").default("USD"), // USD or PHP
+  rateCurrency: text("rate_currency").default("USD"), // New rates are USD; retain historical currencies.
   availability: text("availability").default("available"), // available, busy, offline
   profilePicture: text("profile_picture"),
   phoneNumber: text("phone_number"),
@@ -196,7 +196,7 @@ export const jobs = pgTable("jobs", {
   engagementType: text("engagement_type"), // Lite | Standard (nullable: unreviewed legacy rows stay NULL)
   billingMode: text("billing_mode"), // tracked | guaranteed; NULL means legacy/unclassified
   budget: decimal("budget", { precision: 10, scale: 2 }),
-  budgetCurrency: text("budget_currency").default("PHP"), // PHP, USD, EUR, etc.
+  budgetCurrency: text("budget_currency").default("USD"), // New pricing is USD; retain historical currencies.
   customCurrencyCode: text("custom_currency_code"), // 3-letter code when budgetCurrency = 'OTHER'
   salaryDisplay: text("salary_display"), // Free-text salary shown publicly, e.g. "$800 - $1,200/month"
   duration: text("duration"), // Less than 1 month, 1-3 months, etc.
@@ -1085,7 +1085,7 @@ export const csvTalentRowSchema = z.object({
     const num = typeof val === 'string' ? parseFloat(val.replace(/[^\d.-]/g, '')) : val;
     return isNaN(num) ? undefined : num;
   }).optional(),
-  rateCurrency: z.enum(["USD", "PHP"]).default("USD").optional(),
+  rateCurrency: z.literal("USD").default("USD").optional(),
   availability: z.enum(["available", "busy", "offline"]).default("available").optional(),
   phoneNumber: z.string().optional(),
   languages: z.string().transform((val) => {
@@ -1637,7 +1637,7 @@ export const offers = pgTable("offers", {
   engagementType:            text("engagement_type").notNull(),
   billingMode:               text("billing_mode"),
   rate:                      decimal("rate", { precision: 12, scale: 2 }).notNull(),
-  rateCurrency:              text("rate_currency").notNull().default("PHP"),
+  rateCurrency:              text("rate_currency").notNull().default("USD"),
   proposedStartDate:         timestamp("proposed_start_date"),
   // 'sent' → 'accepted' | 'declined' | 'countered' | 'withdrawn' | 'expired'
   status:                    text("status").notNull().default("sent"),
@@ -1944,7 +1944,7 @@ export const invoicePeriods = pgTable("invoice_periods", {
   periodStart: date("period_start").notNull(),
   periodEnd: date("period_end").notNull(),
   talentRate: decimal("talent_rate", { precision: 12, scale: 2 }).notNull(),
-  talentRateCurrency: text("talent_rate_currency").notNull().default("PHP"),
+  talentRateCurrency: text("talent_rate_currency").notNull().default("USD"),
   standardPeriodHours: integer("standard_period_hours").notNull(),
   extendedHours: decimal("extended_hours", { precision: 8, scale: 2 }).notNull().default("0"),
   deductionHours: decimal("deduction_hours", { precision: 8, scale: 2 }).notNull().default("0"),
@@ -1990,7 +1990,7 @@ export const invoices = pgTable("invoices", {
   clientId: varchar("client_id").notNull().references(() => users.id),
   invoiceNumber: text("invoice_number").unique(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  currency: text("currency").notNull().default("PHP"),
+  currency: text("currency").notNull().default("USD"),
   commissionRate: decimal("commission_rate", { precision: 5, scale: 4 }).notNull(),
   paymentMethod: text("payment_method"),
   externalRef: text("external_ref"),
@@ -2021,7 +2021,7 @@ export const payouts = pgTable("payouts", {
   hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id, { onDelete: "restrict" }),
   talentId: varchar("talent_id").notNull().references(() => users.id),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  currency: text("currency").notNull().default("PHP"),
+  currency: text("currency").notNull().default("USD"),
   payoutRegion: text("payout_region").references(() => payoutRegionConfigs.regionCode),
   payoutMethod: text("payout_method"),
   externalRef: text("external_ref"),
@@ -2055,7 +2055,7 @@ export const talentInvoices = pgTable("talent_invoices", {
   billingMode: text("billing_mode").notNull(),
   periodStart: date("period_start").notNull(),
   periodEnd: date("period_end").notNull(),
-  currency: text("currency").notNull(),
+  currency: text("currency").notNull().default("USD"),
   monthlyRate: decimal("monthly_rate", { precision: 12, scale: 2 }).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   baseAmount: decimal("base_amount", { precision: 12, scale: 2 }).notNull(),
@@ -2150,7 +2150,7 @@ export const clientMonthlyInvoices = pgTable("client_monthly_invoices", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull().references(() => users.id, { onDelete: "restrict" }),
   invoiceMonth: date("invoice_month").notNull(),
-  currency: text("currency").notNull(),
+  currency: text("currency").notNull().default("USD"),
   subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull(),
   status: text("status").notNull().default("sent"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -2221,7 +2221,7 @@ export const securityDeposits = pgTable("security_deposits", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   hiringContractId: uuid("hiring_contract_id").notNull().unique().references(() => hiringContracts.id, { onDelete: "restrict" }),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  currency: text("currency").notNull().default("PHP"),
+  currency: text("currency").notNull().default("USD"),
   status: text("status").notNull().default("pending"),
   heldAt: timestamp("held_at", { withTimezone: true }),
   drawnAt: timestamp("drawn_at", { withTimezone: true }),
