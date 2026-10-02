@@ -45,6 +45,12 @@ Isolated Vite servers need separate optimizer caches, not just separate ports.
 
 **How to apply:** Give each fixture a unique temporary cache directory through its subprocess configuration, then remove only that directory during teardown. Never repair a frontend cache issue by restarting a backend that performs prohibited database work.
 
+Vite library-mode browser fixtures must explicitly replace Node environment references.
+
+**Why:** A production-mode library build can still retain `process.env.NODE_ENV` in React dependencies; a normal browser has no Node `process` global, so the fixture fails before exercising the application.
+
+**How to apply:** Pin `process.env.NODE_ENV` to production in the fixture build's `define` configuration. Do not add a Node shim to application code or weaken authentication assertions to accommodate the fixture.
+
 Form visibility alone is not proof that a browser fixture successfully hydrated an existing profile.
 
 **Why:** An incorrect response envelope allowed upload tests to pass while the profile silently rendered blank; adding a real edit-and-save assertion exposed the fixture mismatch.

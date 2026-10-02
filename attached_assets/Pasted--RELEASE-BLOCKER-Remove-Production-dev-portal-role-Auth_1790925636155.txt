@@ -1,0 +1,301 @@
+# RELEASE BLOCKER — Remove Production `dev_portal_role` Authentication Bypass
+
+We are addressing ONE release blocker discovered by the MVP release-readiness verification.
+
+This is not a feature task.
+
+Do not modify Priorities 1–6 unless required by this specific authentication correction.
+
+Do not begin a broad security refactor.
+
+---
+
+## Confirmed Finding
+
+Release-readiness inspection found that:
+
+`client/src/components/ProtectedRoute.tsx`
+
+contains logic around lines approximately 22–30 that accepts a browser-controlled:
+
+`dev_portal_role`
+
+before normal authentication checks.
+
+The branch remains present in the fresh production frontend bundle.
+
+This must be investigated and corrected before publication.
+
+Important:
+
+The finding currently establishes a **frontend route-guard bypass**.
+
+It does NOT by itself establish backend/API authorization bypass.
+
+Do not exaggerate the finding.
+
+---
+
+# PHASE 1 — TRACE BEFORE EDITING
+
+Trace every runtime reference to:
+
+`dev_portal_role`
+
+and related development authentication mechanisms.
+
+Search for:
+
+- `dev_portal_role`
+- development login
+- test login
+- auth bypass
+- role override
+- localStorage/sessionStorage role values
+- development portal
+- `ProtectedRoute`
+- role guards
+- Client route guards
+- Talent route guards
+- Admin route guards
+
+Classify each occurrence as:
+
+- development-only
+- test-only
+- production runtime
+- dead code
+
+Determine exactly how the current bypass works.
+
+Report:
+
+```text
+browser-controlled value
+→ ProtectedRoute
+→ role decision
+→ protected frontend route
+```
+
+Also determine whether any backend API uses this browser value for authorization.
+
+Do NOT attempt the bypass against the deployed production application.
+
+---
+
+# PHASE 2 — DETERMINE INTENDED DEVELOPMENT BEHAVIOR
+
+Determine why `dev_portal_role` exists.
+
+Identify whether current developers/tests rely on it.
+
+If development preview legitimately needs a role simulation mechanism, preserve it ONLY in a way that cannot execute in a production build/runtime.
+
+Prefer existing environment/build-mode conventions already used by the application.
+
+Do not introduce another production-accessible bypass.
+
+---
+
+# PHASE 3 — IMPLEMENT MINIMAL FIX
+
+The production application must NEVER trust:
+
+`dev_portal_role`
+
+or another browser-controlled development role override as authentication/authorization.
+
+Production `ProtectedRoute` behavior must derive access from the legitimate authenticated user/session.
+
+Choose the smallest implementation consistent with the existing architecture.
+
+If development-role simulation must remain, guard it so it is provably development-only and excluded/unreachable in production.
+
+Do not weaken backend authorization.
+
+Do not redesign the entire authentication system.
+
+---
+
+# PHASE 4 — BACKEND CONFIRMATION
+
+Trace representative protected APIs for:
+
+- Client
+- Talent
+- Admin
+
+Confirm authorization is based on legitimate server-side authentication/session/user role.
+
+Explicitly determine whether `dev_portal_role` has any influence on backend authorization.
+
+If backend authorization can also be bypassed:
+
+STOP and report that separately as a more severe finding before expanding the implementation.
+
+Do not silently turn this task into a broad auth rewrite.
+
+---
+
+# REQUIRED TESTS
+
+Add/update regression coverage proving:
+
+1. Production-mode `ProtectedRoute` ignores `dev_portal_role`.
+
+2. Setting:
+
+`dev_portal_role=client`
+
+does not authenticate an unauthenticated production-mode user.
+
+3. Setting:
+
+`dev_portal_role=talent`
+
+does not authenticate an unauthenticated production-mode user.
+
+4. Setting:
+
+`dev_portal_role=admin`
+
+does not authenticate an unauthenticated production-mode user.
+
+5. An authenticated Client can access legitimate Client routes.
+
+6. An authenticated Talent can access legitimate Talent routes.
+
+7. An authenticated Admin can access legitimate Admin routes.
+
+8. Authenticated role mismatch is rejected/redirected appropriately.
+
+9. Existing login/logout behavior remains intact.
+
+10. Development simulation, if intentionally preserved, works ONLY in an explicitly development-only environment.
+
+11. Production build contains no executable production path that trusts `dev_portal_role`.
+
+12. Representative protected backend endpoints continue to reject unauthenticated requests.
+
+Do not modify tests merely to conceal an actual authorization failure.
+
+---
+
+# PRODUCTION BUNDLE CHECK
+
+After building, inspect the production artifact.
+
+The preferred result is that development bypass logic is absent entirely.
+
+If the literal `dev_portal_role` remains because of source maps, dead strings, tests, or unrelated non-executable metadata, explain exactly why.
+
+The important requirement is:
+
+> No executable production route-guard path may trust browser-controlled development-role state.
+
+---
+
+# BUILD VERIFICATION
+
+Run:
+
+- TypeScript
+- relevant authentication tests
+- relevant Client/Talent/Admin route tests
+- Priority 6 navigation tests
+- production build
+- `git diff --check`
+
+Also rerun the safe unauthenticated checks against representative:
+
+- Client API
+- Talent API
+- Admin API
+- private object endpoint
+
+Expected:
+
+`401/403` as appropriate.
+
+---
+
+# DO NOT
+
+Do NOT:
+
+- test the bypass against production;
+- create a production backdoor;
+- introduce hardcoded credentials;
+- disable authentication;
+- modify production users;
+- alter customer data;
+- modify financial records;
+- broaden this into a general security audit;
+- automatically fix unrelated test failures;
+- publish the application.
+
+---
+
+# REQUIRED REPORT
+
+Return:
+
+## Root Cause
+
+Explain exactly why browser-controlled `dev_portal_role` could affect `ProtectedRoute`.
+
+## Backend Impact
+
+Use one:
+
+`NO BACKEND AUTHORIZATION IMPACT FOUND`
+
+or:
+
+`BACKEND IMPACT FOUND — FURTHER REVIEW REQUIRED`
+
+Support the conclusion with file/function references.
+
+## Changes
+
+List every modified file.
+
+## Development Behavior
+
+Explain whether the development role simulation was:
+
+`REMOVED`
+
+or:
+
+`PRESERVED AS DEVELOPMENT-ONLY`
+
+and how production execution is prevented.
+
+## Regression Tests
+
+Report all required tests.
+
+## Production Bundle
+
+Explicitly report whether executable production bypass behavior remains.
+
+## Build
+
+Report TypeScript, tests, production build and `git diff --check`.
+
+## Final Status
+
+Use:
+
+`RELEASE BLOCKER RESOLVED`
+
+`PARTIALLY RESOLVED`
+
+or:
+
+`BLOCKED`
+
+Do not publish.
+
+STOP after this report.
