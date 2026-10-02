@@ -1,0 +1,483 @@
+## Priority 3 — Implementation Approval
+
+The Priority 3 audit is approved.
+
+Proceed with **Priority 3 implementation only** using the audit's recommended **Strategy D with B-style legacy preservation**, with the following product decisions now resolved.
+
+Do not proceed to Priority 4.
+
+---
+
+# APPROVED PRODUCT SEMANTICS
+
+## 1. Weekly Hours means RECORDED WORKED HOURS
+
+The Client Team Dashboard's:
+
+- Weekly Hours
+- Hours logged
+- daily activity bars
+- logged-this-week presentation
+
+should represent **recorded work activity**, NOT approved/billable hours.
+
+Do not change this metric to timesheet-approved hours.
+
+Do not use `timesheet_revisions` as the primary source for this dashboard metric.
+
+Approved timesheet revisions remain the billing/invoicing source of truth where already implemented.
+
+The Team Dashboard and Billing intentionally answer different questions:
+
+**Team Dashboard:** How much recorded work/activity does this Talent have?
+
+**Billing:** What reviewed/approved hours are financially billable?
+
+Preserve that distinction.
+
+---
+
+# 2. PRESERVE LEGACY AND MODERN SOURCES SEPARATELY
+
+Do NOT replace `time_entries` globally.
+
+Use source separation.
+
+### Legacy engagement
+
+For verified legacy engagements/contracts:
+
+`legacy contract → time_entries`
+
+Continue using the existing legacy source.
+
+### Modern Tracked engagement
+
+For modern Tracked `hiring_contracts`:
+
+`hiring_contract → clock_sessions`
+
+Use modern recorded clock activity.
+
+### Modern Guaranteed engagement
+
+Guaranteed contracts do not require clock attendance.
+
+Do NOT display `0 hours` in a way that implies the Talent failed to work.
+
+Use an appropriate non-attendance representation such as:
+
+`Not tracked`
+
+or equivalent UI wording consistent with the existing design.
+
+---
+
+# 3. DO NOT DOUBLE COUNT
+
+This is mandatory.
+
+The audit established that modern worked time can have multiple representations:
+
+`clock_session`
+→ `timesheet revision snapshot`
+→ potentially later revision
+→ invoice
+
+These are NOT additive.
+
+For the Team Dashboard recorded-hours metric:
+
+Use the selected recorded-time representation only.
+
+Do NOT add:
+
+`clock_sessions + timesheet_revisions`
+
+Do NOT add:
+
+`clock_sessions + invoice hours`
+
+Do NOT add multiple timesheet revisions.
+
+Legacy and modern sources must remain explicitly separated by engagement provenance.
+
+Do not attempt to detect duplicates by matching timestamps.
+
+---
+
+# 4. MODERN CLOCK SESSION RULES
+
+For modern Tracked contracts, calculate dashboard hours from appropriate completed/effective clock intervals.
+
+Do not unrestrictedly sum all `clock_sessions`.
+
+Correctly handle:
+
+- completed sessions
+- open sessions
+- stale/missed-clock-out sessions
+- reviewed exceptions
+- effective reviewed end times where applicable
+- sessions crossing midnight
+- sessions crossing week boundaries
+- contract start/end boundaries
+
+Open sessions must NOT accumulate unlimited elapsed time into Weekly Hours.
+
+If an open/unresolved session cannot safely contribute a finalized recorded duration, exclude it from the completed-hours total and represent its state separately if the existing UI supports doing so safely.
+
+Do not silently fabricate an end timestamp.
+
+---
+
+# 5. REPORTING TIMEZONE
+
+For Team Dashboard work-activity presentation, use the **contract/work timezone** where the modern contract provides one.
+
+This dashboard represents work activity, not invoice-period accounting.
+
+Do not change existing billing/invoice timezone rules.
+
+Do not change the America/New_York invoice-period behavior discovered during the audit.
+
+For legacy engagements where no equivalent work timezone exists, preserve existing behavior unless there is already a reliable timezone source.
+
+Document the fallback explicitly.
+
+Week boundaries must be deterministic.
+
+The week remains:
+
+`Monday → Sunday`
+
+but intervals must be correctly clipped to the relevant reporting week.
+
+Do not assign an entire cross-boundary session to its start day.
+
+Example:
+
+If a session crosses midnight, allocate the appropriate duration to each day.
+
+If a session crosses Monday 00:00, count only the portion inside the current reporting week.
+
+---
+
+# 6. MODERN LATEST ACTIVITY
+
+For modern Tracked engagements, use modern clock activity for the existing `Last active` concept.
+
+Use appropriate:
+
+`clock_sessions.started_at`
+
+and/or:
+
+`clock_sessions.ended_at`
+
+timestamps.
+
+Do NOT mix unrelated events such as:
+
+- Admin timesheet approval
+- invoice generation
+- contract signing
+
+into `Last active` if that would imply Talent attendance.
+
+Those events are different semantics.
+
+Preserve legacy latest activity for legacy engagements.
+
+---
+
+# 7. ONLINE / AWAY / OFFLINE
+
+Audit the current fallback while implementing.
+
+The audit found that the existing fallback can rely on recent/open legacy entries.
+
+For modern Tracked engagements, update the fallback only if the modern clock state provides an equivalent trustworthy signal.
+
+Do not redesign presence globally.
+
+Do not claim someone is Online merely because historical clock activity exists.
+
+If `profiles.availability` remains the primary explicit status, preserve it.
+
+---
+
+# 8. GUARANTEED CONTRACTS
+
+Guaranteed billing does not require clock attendance.
+
+Therefore do not present missing clock sessions as:
+
+`0 hours`
+
+if that communicates that the Talent performed zero work.
+
+Use a clear non-tracked state such as:
+
+`Not tracked`
+
+for the hours/activity metric where appropriate.
+
+Do not change Guaranteed billing behavior.
+
+---
+
+# 9. DO NOT TOUCH FINANCIAL LOGIC
+
+Do NOT modify:
+
+- Talent invoice calculations
+- approved revision selection
+- timesheet approval logic
+- invoice generation
+- Client monthly statements
+- commissions
+- payouts
+- deposits
+- legacy billing ledger behavior
+
+Priority 3 is a Client Team Dashboard correction.
+
+Do not turn this into a billing refactor.
+
+---
+
+# 10. IMPLEMENTATION SCOPE
+
+Based on the audit, expected files include primarily:
+
+`server/routes.ts`
+
+for the Team Dashboard aggregation/query.
+
+And:
+
+`client/src/pages/ClientTeamDashboard.tsx`
+
+only where necessary for:
+
+- metric semantic clarification
+- Guaranteed `Not tracked` behavior
+- appropriate modern activity/status display
+
+Add dedicated regression tests for:
+
+`GET /api/client/team-dashboard`
+
+Prefer extracting small reusable calculation helpers if necessary for correctness/testability, but do NOT perform unrelated refactoring.
+
+---
+
+# REQUIRED REGRESSION TESTS
+
+Add automated coverage for at least:
+
+1. Legacy engagement + legacy `time_entries`
+   - legacy hours remain correct
+
+2. Modern Tracked engagement + completed `clock_sessions`
+   - modern Weekly Hours appear correctly
+
+3. Modern Tracked engagement with zero completed time
+   - displays zero appropriately
+
+4. Open clock session
+   - does not accumulate unlimited duration
+
+5. Stale/missed-clock-out session
+   - follows existing reviewed exception behavior
+
+6. Submitted but unapproved timesheet
+   - does NOT alter the recorded-hours metric merely because it is unapproved
+
+7. Approved revision differs from raw clock record
+   - dashboard remains recorded-time semantics
+   - billing behavior remains unchanged
+
+8. Multiple timesheet revisions
+   - dashboard does not double count them
+
+9. Mixed legacy + modern Talent
+   - both engagement families display correctly
+   - no cross-source multiplication
+
+10. Midnight-crossing modern session
+    - duration is allocated correctly by day
+
+11. Week-boundary session
+    - only duration inside Monday–Sunday reporting period is counted
+
+12. Work-timezone boundary
+    - calculation uses intended work timezone
+
+13. Contract start/end boundary
+    - inappropriate outside-contract activity is excluded where required
+
+14. Guaranteed contract
+    - shows `Not tracked` or approved equivalent rather than misleading zero attendance
+
+15. Modern latest activity
+    - correct clock-in/out timestamp is used
+
+16. Organization isolation
+    - Client cannot see another organization's Talent/time data
+
+17. Join multiplication
+    - member, daily, and summary totals reconcile exactly
+
+18. Legacy regression
+    - existing legitimate legacy dashboard behavior remains intact
+
+---
+
+# IMPORTANT HISTORICAL OVERLAP RULE
+
+The source audit could not prove that production contains no historical legacy/modern overlap.
+
+Do not invent an overlap rule.
+
+During implementation, use explicit engagement provenance wherever possible:
+
+- legacy contract IDs → legacy source
+- modern hiring contract IDs → modern source
+
+If you discover an actual case where one logical engagement is represented simultaneously in both systems and the application cannot reliably determine precedence:
+
+STOP.
+
+Report the concrete data/model ambiguity before implementing a heuristic.
+
+Do not deduplicate based solely on:
+
+- matching Talent
+- matching Client
+- matching timestamp
+- similar duration
+
+---
+
+# TESTING
+
+After implementation:
+
+Run:
+
+- TypeScript checks
+- relevant unit/integration tests
+- new Client Team Dashboard regression tests
+- production build
+
+Do not modify production financial/time records merely for testing.
+
+Use controlled test fixtures/database data.
+
+If an authenticated test environment is available, verify visually that:
+
+### Legacy Talent
+
+Still shows expected legacy hours.
+
+### Modern Tracked Talent
+
+Shows actual recorded modern hours and modern Last Active.
+
+### Guaranteed Talent
+
+Does not misleadingly display missing clock activity as zero worked hours.
+
+Capture safe screenshots if possible.
+
+If legitimate authenticated test access is unavailable, report visual/E2E verification as BLOCKED rather than fabricating evidence.
+
+---
+
+# REQUIRED COMPLETION REPORT
+
+Return:
+
+## Files Changed
+
+List every changed file and why.
+
+## Final Data Flow
+
+Show:
+
+### Legacy
+
+`legacy contract`
+→ `time_entries`
+→ Team Dashboard recorded hours/activity
+
+### Modern Tracked
+
+`hiring_contract`
+→ `clock_sessions`
+→ completed/effective recorded intervals
+→ Team Dashboard recorded hours/activity
+
+### Modern Guaranteed
+
+`hiring_contract`
+→ Guaranteed mode
+→ `Not tracked`
+
+Correct these flows if implementation details require more precise terminology.
+
+## Weekly Hours Semantics
+
+Explicitly confirm:
+
+`RECORDED HOURS — NOT BILLING-APPROVED HOURS`
+
+## Double-Counting Protection
+
+Explain exactly why the implementation cannot add multiple representations of the same modern work.
+
+## Timezone Behavior
+
+Report:
+
+- reporting timezone source
+- fallback behavior
+- Monday–Sunday calculation
+- midnight clipping
+- week-boundary clipping
+
+## Test Results
+
+Report PASS/FAIL for each newly added regression case.
+
+## Existing Billing Regression
+
+Confirm that no billing/timesheet/invoice calculation logic was modified.
+
+## Runtime Verification
+
+Report separately:
+
+- automated verification
+- authenticated UI verification
+
+Do not combine them.
+
+## Priority 3 Final Status
+
+Use one:
+
+`PASS — COMPLETE`
+
+`IMPLEMENTED — AUTHENTICATED UI VERIFICATION PENDING`
+
+`FAIL`
+
+`BLOCKED`
+
+Do not proceed to Priority 4.
+
+If implementation uncovers a data-model ambiguity requiring a new product decision, stop and report it rather than guessing.

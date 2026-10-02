@@ -55,3 +55,4 @@
 - [Investor request routing](investor-request-routing.md) — owner approved one saved intake and founder notifications for all three CTAs; failed email must never be reported as sent.
 - [Mobile signup failures](mobile-signup-failures.md) — hidden validation errors can look like loops; preserve security rules, honor full retry windows, and check sticky actions against the viewport.
 - [Auth incident release safety](auth-incident-release-safety.md) — an app-only fix does not make restart or Publish database-free; inspect launch side effects separately.
+- [Client Team recorded hours](client-team-recorded-hours.md) — dashboard activity is not billable time; preserve provenance, work-zone weeks, and Guaranteed non-attendance semantics.

@@ -35,6 +35,8 @@ interface TeamMember {
   contractWarning?: string;
   rating: number | null;
   hoursLogged: number;
+  hoursTracking: "tracked" | "not_tracked";
+  incompleteSessionCount?: number;
   weeklyTargetHours: number;
   weeklyActivity: number[];
   rate: number | null;
@@ -175,7 +177,10 @@ function formatActivity(member: TeamMember) {
 
 function TeamMemberCard({ member, onAction }: { member: TeamMember; onAction: (name: string) => void }) {
   const status = statusCopy[member.status];
-  const progress = Math.min((member.hoursLogged / member.weeklyTargetHours) * 100, 100);
+  const tracksHours = member.hoursTracking !== "not_tracked";
+  const progress = member.weeklyTargetHours > 0
+    ? Math.min((member.hoursLogged / member.weeklyTargetHours) * 100, 100)
+    : 0;
   return (
     <Card className="overflow-hidden border-slate-200/80 bg-white shadow-[0_10px_28px_-25px_rgba(15,23,42,0.65)] transition-shadow duration-200 hover:shadow-[0_15px_34px_-24px_rgba(67,56,202,0.35)]">
       <div className="border-b border-slate-100 p-4 sm:p-5">
@@ -202,12 +207,16 @@ function TeamMemberCard({ member, onAction }: { member: TeamMember; onAction: (n
       </div>
       <div className="p-4 sm:p-5">
         <div className="grid grid-cols-2 gap-3">
-          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Latest activity</p><p className="mt-1 text-xs font-medium text-slate-700">{formatActivity(member)}</p></div>
+          <div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Latest activity</p><p className="mt-1 text-xs font-medium text-slate-700">{tracksHours ? formatActivity(member) : "Not tracked"}</p></div>
           <div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Rating</p>{member.rating == null ? <p className="mt-1 text-xs text-slate-500">Not rated</p> : <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-slate-700"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />{member.rating.toFixed(1)} <span className="font-normal text-slate-400">/ 5</span></p>}</div>
         </div>
-        <div className="mt-4 flex items-center justify-between text-[11px]"><span className="font-semibold text-slate-600">Weekly hours</span><span className="font-semibold text-slate-900">{member.hoursLogged} <span className="font-normal text-slate-400">/ {member.weeklyTargetHours}h</span></span></div>
-        <Progress value={progress} className="mt-2 h-1.5 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-indigo-500 [&>div]:to-violet-500" />
-        <ActivityStrip values={member.weeklyActivity} />
+        <div className="mt-4 flex items-center justify-between text-[11px]"><span className="font-semibold text-slate-600">Weekly hours</span><span className="font-semibold text-slate-900">{tracksHours ? <>{member.hoursLogged} <span className="font-normal text-slate-400">/ {member.weeklyTargetHours}h</span></> : "Not tracked"}</span></div>
+        {tracksHours ? <>
+          <Progress value={progress} className="mt-2 h-1.5 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-indigo-500 [&>div]:to-violet-500" />
+          <ActivityStrip values={member.weeklyActivity} />
+          <p className="mt-2 text-[11px] text-slate-500">Recorded hours, not billing-approved hours. Modern days follow the contract&apos;s work timezone (UTC if unavailable); legacy days retain the database reporting timezone.</p>
+          {!!member.incompleteSessionCount && <p className="mt-2 text-[11px] text-amber-700">{member.incompleteSessionCount} open or unresolved session{member.incompleteSessionCount === 1 ? "" : "s"} excluded from hours.</p>}
+        </> : <p className="mt-2 text-[11px] text-slate-500">Guaranteed engagements do not require clock attendance.</p>}
         <div className="mt-4 flex gap-2">
           <a href="/client/timesheets" className="inline-flex flex-1 items-center justify-center rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">View timesheets</a>
           <Button type="button" size="sm" className="flex-1 bg-[#474ead] text-xs text-white hover:bg-[#3e439c]" onClick={() => onAction(member.name)}><MessageSquare className="h-3.5 w-3.5" />Message</Button>
@@ -243,6 +252,7 @@ function formatMemberRate(member: TeamMember) {
 }
 
 function TeamROI({ data }: { data: TeamDashboardData }) {
+  const hasTrackedHours = data.members.some((member) => member.hoursTracking !== "not_tracked");
   const totalSpend = data.roi.totalSpendByCurrency;
   const thisWeekSpend = data.roi.thisWeekSpendByCurrency;
   const totalValue = totalSpend.reduce((sum, item) => sum + item.amount, 0);
@@ -263,7 +273,7 @@ function TeamROI({ data }: { data: TeamDashboardData }) {
             <p className="mt-1 text-xs text-indigo-100">Across this organization&apos;s active engagements</p>
             <div className="mt-7 grid grid-cols-2 gap-4 border-t border-white/15 pt-4">
               <div><p className="text-lg font-semibold">{data.summary.activeProjects}</p><p className="mt-0.5 text-[11px] text-indigo-100">active projects</p></div>
-              <div><p className="text-lg font-semibold">{data.summary.hoursLogged.toFixed(1)}h</p><p className="mt-0.5 text-[11px] text-indigo-100">logged this week</p></div>
+              <div><p className="text-lg font-semibold">{hasTrackedHours ? `${data.summary.hoursLogged.toFixed(1)}h` : "Not tracked"}</p><p className="mt-0.5 text-[11px] text-indigo-100">{hasTrackedHours ? "recorded this week · not billing-approved" : "No clock attendance required"}</p></div>
             </div>
           </div>
         </Card>
@@ -341,12 +351,13 @@ export default function ClientTeamDashboard() {
   }
 
   const spendThisWeek = data.spendByCurrency.map(({ currency, thisWeek }) => ({ currency, amount: thisWeek }));
+  const hasTrackedHours = data.members.some((member) => member.hoursTracking !== "not_tracked");
   const capacityPercent = data.summary.weeklyCapacityHours > 0
     ? Math.round((data.summary.hoursLogged / data.summary.weeklyCapacityHours) * 100)
     : 0;
   const metrics: SummaryMetric[] = [
     { label: "Team members", value: String(data.summary.teamMembers), detail: `${data.summary.activeProjects} active project${data.summary.activeProjects === 1 ? "" : "s"}`, icon: Users, tone: "indigo" },
-    { label: "Hours logged", value: `${data.summary.hoursLogged.toFixed(1)}h`, detail: `${capacityPercent}% of weekly capacity`, icon: Clock3, tone: "blue" },
+    { label: "Hours logged", value: hasTrackedHours ? `${data.summary.hoursLogged.toFixed(1)}h` : data.members.length ? "Not tracked" : "0.0h", detail: hasTrackedHours ? `${capacityPercent}% of tracked weekly capacity · not billing-approved` : data.members.length ? "Guaranteed engagements do not require clock attendance" : "No active tracked engagements", icon: Clock3, tone: "blue" },
     { label: "Spend this week", value: formatSpendList(spendThisWeek), detail: "From organization billing records", icon: Wallet, tone: "violet" },
     { label: "Needs attention", value: String(data.summary.needsAttention), detail: "Contracts ending soon", icon: Activity, tone: "amber" },
   ];
