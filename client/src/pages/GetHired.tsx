@@ -30,8 +30,6 @@ import {
   Briefcase,
   MapPin,
   DollarSign,
-  ExternalLink,
-  Linkedin,
   Plus,
   X,
   Eye,
@@ -83,7 +81,6 @@ export default function GetHired() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string>('');
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoVersion, setPhotoVersion] = useState(0);
@@ -178,17 +175,6 @@ export default function GetHired() {
   });
 
   // Removed duplicate profile mutation - using consolidated system
-
-  // LinkedIn Connect Mutation
-  const linkedinMutation = useMutation({
-    mutationFn: async () => {
-      // In a real app, this would initiate LinkedIn OAuth flow
-      return apiRequest("POST", "/api/linkedin/connect");
-    },
-    onSuccess: () => {
-      setIsLinkedInConnected(true);
-    }
-  });
 
   // Assessment Start Mutation
   const startAssessmentMutation = useMutation({
@@ -380,8 +366,8 @@ export default function GetHired() {
         console.log('Skills updated successfully');
       }
       
-      console.log('Setting current step to 2');
-      setCurrentStep(2);
+      console.log('Opening Documents after saving profile');
+      setCurrentStep(3);
     } catch (error) {
       console.error('Error updating profile:', error);
       alert('Error saving profile: ' + (error as any).message);
@@ -468,14 +454,10 @@ export default function GetHired() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={currentStep.toString()} onValueChange={(value) => setCurrentStep(parseInt(value))}>
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className="grid w-full grid-cols-5 mb-8">
             <TabsTrigger value="1" className="flex items-center gap-2">
               <User className="w-4 h-4" />
               Profile
-            </TabsTrigger>
-            <TabsTrigger value="2" className="flex items-center gap-2">
-              <Linkedin className="w-4 h-4" />
-              LinkedIn
             </TabsTrigger>
             <TabsTrigger value="3" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -716,80 +698,6 @@ export default function GetHired() {
                     </Button>
                   </form>
                 </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* LinkedIn Integration */}
-          <TabsContent value="2" className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Linkedin className="w-5 h-5" />
-                  LinkedIn Profile Integration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {!isLinkedInConnected ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Linkedin className="w-8 h-8 text-blue-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-4">Connect Your LinkedIn Profile</h3>
-                    <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-                      Import your professional experience, education, and recommendations from LinkedIn 
-                      to quickly build your OnSpot profile. This helps clients verify your background 
-                      and increases your credibility.
-                    </p>
-                    <div className="space-y-4">
-                      <div className="grid md:grid-cols-3 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Import work experience</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Verify education</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Import recommendations</span>
-                        </div>
-                      </div>
-                      <Button 
-                        onClick={() => linkedinMutation.mutate()}
-                        className="bg-blue-600 hover:bg-blue-700"
-                        data-testid="button-connect-linkedin"
-                      >
-                        <Linkedin className="w-4 h-4 mr-2" />
-                        Connect with LinkedIn
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
-                      <CheckCircle2 className="w-8 h-8 text-green-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-4 text-green-600">LinkedIn Connected!</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Your LinkedIn profile has been successfully connected and verified.
-                    </p>
-                    <Badge variant="secondary" className="mb-4">
-                      Profile Verified
-                    </Badge>
-                    <div className="flex justify-center gap-4">
-                      <Button variant="outline" size="sm">
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Imported Data
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        View LinkedIn Profile
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>

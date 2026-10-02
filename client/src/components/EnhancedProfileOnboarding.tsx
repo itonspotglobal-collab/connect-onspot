@@ -24,8 +24,6 @@ import {
   Briefcase,
   MapPin,
   DollarSign,
-  ExternalLink,
-  Linkedin,
   Plus,
   X,
   Eye,
@@ -51,7 +49,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { useTalentProfile, profileFormSchema, ProfileFormData } from "@/hooks/useTalentProfile";
-import LinkedInImport from "@/components/LinkedInImport";
 import ResumeParser from "@/components/ResumeParser";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -85,8 +82,8 @@ interface EnhancedProfileOnboardingProps {
 const PROFILE_STEPS: ProfileStep[] = [
   {
     id: "import",
-    title: "Auto-Import",
-    description: "Import from LinkedIn or Resume",
+    title: "Resume Import",
+    description: "Start your profile from a resume",
     icon: <Download className="w-5 h-5" />,
     required: false,
     estimatedTime: "2 min",
@@ -538,18 +535,14 @@ export default function EnhancedProfileOnboarding({
                   <Zap className="w-8 h-8 text-white" />
                 </div>
                 <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-                  Skip the Forms, Import Instantly
+                  Start with Your Resume
                 </CardTitle>
                 <p className="text-muted-foreground text-lg">
-                  Save 15+ minutes by importing your professional data automatically
+                  Use a resume parser to help start your profile, then review and edit your details.
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <LinkedInImport 
-                    onImportComplete={handleImportComplete}
-                    onSkip={() => setCurrentStep(1)}
-                  />
+                <div className="grid grid-cols-1 max-w-2xl mx-auto gap-6">
                   <ResumeParser 
                     onParseComplete={handleImportComplete}
                     onSkip={() => setCurrentStep(1)}

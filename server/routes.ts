@@ -46,6 +46,7 @@ import {
 import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
 import { maskClientTalentName } from "../shared/talentName";
 import { createCandidateMeHandler } from "./lib/candidateMeHandler";
+import { registerDisabledLinkedInImportRoutes } from "./lib/disabledLinkedInImport";
 import {
   createClientTeamDashboardHandler,
 } from "./lib/clientTeamDashboardHandler.js";
@@ -12635,159 +12636,8 @@ export async function registerRoutes(
     }
   });
 
-  // ====== LINKEDIN INTEGRATION ======
-
-  // LinkedIn OAuth Connect - Initiate LinkedIn authentication
-  app.post("/api/linkedin/connect", async (req, res) => {
-    try {
-      // In a real implementation, this would redirect to LinkedIn OAuth
-      // For now, we'll simulate a successful connection
-      const { userId } = req.body;
-
-      if (!userId) {
-        return res.status(400).json({ error: "User ID required" });
-      }
-
-      // Check if user already has LinkedIn profile
-      const existingProfile = await storage.getLinkedinProfileByUserId(userId);
-      if (existingProfile) {
-        return res.json({
-          status: "already_connected",
-          linkedinProfile: existingProfile,
-        });
-      }
-
-      // In production, redirect to LinkedIn OAuth URL
-      // For development, we'll simulate connected state
-      const linkedinProfile = {
-        userId,
-        linkedinId: `linkedin_${userId}_${Date.now()}`,
-        profileUrl: `https://linkedin.com/in/user${userId}`,
-        isVerified: true,
-        lastSync: new Date(),
-        profileData: {
-          firstName: "Sample",
-          lastName: "User",
-          headline: "Professional Title",
-          summary: "Professional summary from LinkedIn",
-          location: "Global",
-          profilePictureUrl: null,
-          experience: [],
-          education: [],
-          skills: ["JavaScript", "React", "Node.js"],
-        },
-      };
-
-      const createdProfile =
-        await storage.createLinkedinProfile(linkedinProfile);
-
-      res.json({
-        status: "connected",
-        linkedinProfile: createdProfile,
-      });
-    } catch (error) {
-      console.error("LinkedIn connect error:", error);
-      res.status(500).json({ error: "Failed to connect LinkedIn" });
-    }
-  });
-
-  // LinkedIn Profile Import - Import data from LinkedIn to OnSpot profile
-  app.post("/api/linkedin/import-profile", async (req, res) => {
-    try {
-      const { userId } = req.body;
-
-      if (!userId) {
-        return res.status(400).json({ error: "User ID required" });
-      }
-
-      // Get LinkedIn profile data
-      const linkedinProfile = await storage.getLinkedinProfileByUserId(userId);
-      if (!linkedinProfile || !linkedinProfile.profileData) {
-        return res
-          .status(404)
-          .json({ error: "LinkedIn profile not found or not connected" });
-      }
-
-      const profileData = linkedinProfile.profileData;
-
-      // Map LinkedIn data to OnSpot profile format
-      const profileImportData = {
-        firstName: profileData.firstName || "",
-        lastName: profileData.lastName || "",
-        title: profileData.headline || "",
-        bio: profileData.summary || "",
-        location: profileData.location || "Global",
-        profilePicture: profileData.profilePictureUrl || null,
-        languages: ["English"],
-      };
-
-      // Get or create user profile
-      let profile = await storage.getProfileByUserId(userId);
-      if (profile) {
-        // Update existing profile with LinkedIn data
-        profile = await storage.updateProfile(profile.id, profileImportData);
-      } else {
-        // Create new profile with LinkedIn data
-        profile = await storage.createProfile({
-          ...profileImportData,
-          userId,
-          hourlyRate: null,
-          rateCurrency: "USD",
-          availability: "available",
-          timezone: "UTC",
-        });
-      }
-
-      // Import skills from LinkedIn
-      if (profileData.skills && Array.isArray(profileData.skills)) {
-        for (const skillName of profileData.skills) {
-          // Check if skill exists
-          let skill = await storage.getSkillByName(skillName);
-          if (!skill) {
-            // Create new skill
-            skill = await storage.createSkill({
-              name: skillName,
-              category: "Technical",
-            });
-          }
-
-          // Add user skill if not already exists
-          const existingUserSkills = await storage.getUserSkills(userId);
-          const hasSkill = existingUserSkills.some(
-            (us) => us.skillId === skill!.id,
-          );
-
-          if (!hasSkill) {
-            await storage.createUserSkill({
-              userId,
-              skillId: skill.id,
-              level: "intermediate",
-              yearsExperience: 2,
-            });
-          }
-        }
-      }
-
-      // Update LinkedIn profile sync timestamp
-      await storage.updateLinkedinProfile(linkedinProfile.id, {
-        lastSync: new Date(),
-      });
-
-      res.json({
-        status: "imported",
-        profile,
-        importedData: {
-          personalInfo: !!profileData.firstName,
-          skills: profileData.skills?.length || 0,
-          experience: profileData.experience?.length || 0,
-          education: profileData.education?.length || 0,
-        },
-      });
-    } catch (error) {
-      console.error("LinkedIn import error:", error);
-      res.status(500).json({ error: "Failed to import LinkedIn profile" });
-    }
-  });
+  // LinkedIn profile import is unavailable; provider-backed sign-in is separate.
+  registerDisabledLinkedInImportRoutes(app);
 
   // Resume Parsing endpoint for auto-import
   app.post("/api/resume/parse", async (req, res) => {
@@ -12850,24 +12700,6 @@ export async function registerRoutes(
         source:  "error",
         error:   "Vanessa Resume Intelligence is temporarily unavailable",
       });
-    }
-  });
-
-  // Get LinkedIn connection status
-  app.get("/api/linkedin/status/:userId", async (req, res) => {
-    try {
-      const linkedinProfile = await storage.getLinkedinProfileByUserId(
-        req.params.userId,
-      );
-
-      res.json({
-        isConnected: !!linkedinProfile,
-        lastSync: linkedinProfile?.lastSync || null,
-        profileUrl: linkedinProfile?.profileUrl || null,
-      });
-    } catch (error) {
-      console.error("LinkedIn status error:", error);
-      res.status(500).json({ error: "Failed to get LinkedIn status" });
     }
   });
 

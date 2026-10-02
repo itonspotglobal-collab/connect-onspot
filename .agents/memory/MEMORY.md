@@ -56,3 +56,4 @@
 - [Mobile signup failures](mobile-signup-failures.md) — hidden validation errors can look like loops; preserve security rules, honor full retry windows, and check sticky actions against the viewport.
 - [Auth incident release safety](auth-incident-release-safety.md) — an app-only fix does not make restart or Publish database-free; inspect launch side effects separately.
 - [Client Team recorded hours](client-team-recorded-hours.md) — dashboard activity is not billable time; preserve provenance, work-zone weeks, and Guaranteed non-attendance semantics.
+- [LinkedIn import safety](linkedin-import-safety.md) — no simulated profile imports; retain sign-in/manual URLs, and require separate review before historical cleanup.

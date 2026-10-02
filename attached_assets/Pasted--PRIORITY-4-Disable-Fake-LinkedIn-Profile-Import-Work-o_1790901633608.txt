@@ -1,0 +1,503 @@
+## PRIORITY 4 — Disable Fake LinkedIn Profile Import
+
+Work on **Priority 4 only**.
+
+Do not proceed to Priority 5.
+
+This is a **small MVP safety/correctness fix**, not a LinkedIn integration project.
+
+---
+
+# Problem
+
+The application currently contains a LinkedIn profile import/connect flow that appears to simulate a real LinkedIn integration.
+
+The existing implementation can write fabricated/sample LinkedIn information into a real Talent profile.
+
+Previous source inspection identified behavior equivalent to:
+
+- simulated LinkedIn OAuth/connect
+- fake/sample LinkedIn profile data
+- `"Sample User"` or equivalent placeholder identity
+- fabricated skills/profile information
+- persistence of that simulated information into the Talent profile
+
+This is unacceptable for the MVP because a user can reasonably believe their real LinkedIn profile was imported when the application actually stores fabricated data.
+
+The immediate Priority 4 objective is:
+
+> **Disable/hide the fake LinkedIn profile import functionality completely until a real provider-backed profile import integration exists.**
+
+Do NOT build real LinkedIn OAuth/profile import as part of this priority.
+
+---
+
+# IMPORTANT DISTINCTION — DO NOT BREAK LINKEDIN SIGN-IN
+
+Before changing anything, determine whether the project has two separate concepts:
+
+### A. LinkedIn authentication/sign-in
+
+For example:
+
+`Sign in with LinkedIn`
+
+through Passport or another provider-backed authentication flow.
+
+### B. LinkedIn profile connect/import
+
+For example:
+
+`Connect LinkedIn`
+
+or:
+
+`Import from LinkedIn`
+
+inside Talent onboarding/profile/Get Hired.
+
+Priority 4 applies to **B only**.
+
+If provider-backed LinkedIn authentication exists separately and is legitimate, DO NOT disable or modify it.
+
+Do not confuse:
+
+`LinkedIn login`
+
+with:
+
+`LinkedIn profile import`
+
+---
+
+# PHASE 1 — AUDIT BEFORE EDITING
+
+First locate every LinkedIn-related implementation in the repository.
+
+Search for terms including:
+
+- `linkedin`
+- `LinkedIn`
+- `/api/linkedin/connect`
+- LinkedIn OAuth
+- LinkedIn Passport strategy
+- LinkedIn profile import
+- LinkedIn profile URL
+- Sample User
+- sample skills
+- fabricated/mock LinkedIn data
+
+Classify every finding as one of:
+
+1. Authentication/sign-in
+2. Profile import/connect
+3. Profile URL field
+4. Display-only functionality
+5. Dead/unused code
+6. Test/mock code
+
+Report the distinction before modifying anything.
+
+---
+
+# PHASE 2 — TRACE THE DANGEROUS FLOW
+
+Trace the current profile import behavior end to end.
+
+For example:
+
+`Talent UI`
+→ `Connect/Import LinkedIn`
+→ `/api/linkedin/connect`
+→ backend handler
+→ fabricated LinkedIn response/data
+→ Talent profile persistence
+
+Correct this flow based on the actual implementation.
+
+Identify exactly:
+
+- which UI exposes the action
+- which API endpoint receives it
+- which backend function creates the fake data
+- which database/profile fields are modified
+- whether skills are created/updated
+- whether name/headline/bio/profile picture/etc. are modified
+- whether existing legitimate Talent data can be overwritten
+
+Do not assume.
+
+Trace the actual code.
+
+---
+
+# PHASE 3 — IMPLEMENT THE MVP STOPGAP
+
+The approved MVP behavior is:
+
+## Remove/hide the LinkedIn profile import action
+
+Users must no longer be presented with a button/action suggesting that the application can import their LinkedIn profile.
+
+Examples include:
+
+- `Connect LinkedIn`
+- `Import from LinkedIn`
+- `Sync LinkedIn`
+- similar profile-import actions
+
+Remove/hide the functionality from all Talent-facing UI locations where it invokes the fake import.
+
+Do not replace it with another fake integration.
+
+Do not display:
+
+`Coming Soon`
+
+unless the existing product design consistently uses that pattern and it adds value.
+
+For the cleanest MVP, simply remove the unavailable action while preserving legitimate manual profile editing.
+
+---
+
+# PHASE 4 — DISABLE THE DANGEROUS BACKEND PATH
+
+Do not rely only on hiding the frontend button.
+
+The fake persistence endpoint must also no longer be capable of writing fabricated profile information.
+
+If:
+
+`POST /api/linkedin/connect`
+
+or an equivalent route is specifically the simulated profile-import endpoint, disable/remove that behavior.
+
+Preferred options, depending on the existing architecture:
+
+### Option A — Remove the route
+
+If nothing legitimate depends on it, remove the fake endpoint entirely.
+
+### Option B — Explicitly return unavailable
+
+If removing it could break compatibility or existing clients, make it return an appropriate non-success response indicating that LinkedIn profile import is unavailable.
+
+For example:
+
+`404`, `410`, or another appropriate application-consistent response.
+
+Do NOT return:
+
+`200 success`
+
+with fake data.
+
+Do NOT persist:
+
+- `"Sample User"`
+- fabricated skills
+- fake headline
+- fake profile picture
+- fake employment data
+- any other simulated LinkedIn information
+
+Choose the smallest approach consistent with the project's routing conventions.
+
+---
+
+# CRITICAL — PRESERVE MANUAL LINKEDIN URL SUPPORT
+
+If Talent profiles currently contain a normal manual field such as:
+
+`LinkedIn URL`
+
+or:
+
+`linkedinUrl`
+
+that simply allows the Talent to paste their real LinkedIn profile URL:
+
+**KEEP IT.**
+
+A manually entered LinkedIn profile URL is not the same thing as fake profile import.
+
+Do not remove legitimate profile fields unnecessarily.
+
+---
+
+# CRITICAL — PRESERVE LEGITIMATE LINKEDIN AUTH
+
+If the application contains legitimate provider-backed LinkedIn authentication/sign-in:
+
+**DO NOT MODIFY IT.**
+
+Do not remove:
+
+- Passport LinkedIn strategy
+- real OAuth login callbacks
+- sign-in routes
+
+unless source tracing proves they are actually part of the fake import rather than authentication.
+
+Priority 4 is about eliminating **fake profile import**, not eliminating LinkedIn from the entire application.
+
+---
+
+# EXISTING CORRUPTED/SAMPLE DATA
+
+Search the source code for the exact fabricated values used by the fake import.
+
+Determine whether there is a reliable way to identify profiles previously modified by this fake integration.
+
+Do NOT automatically delete or overwrite production profile data.
+
+Do NOT assume every profile containing a matching name, skill, headline, or LinkedIn URL came from the fake integration.
+
+If existing corrupted records cannot be identified with certainty, report:
+
+`Historical cleanup requires separate review`
+
+Do not perform speculative cleanup.
+
+If there is a deterministic audit marker specifically proving a profile was populated by the fake import, document it but still do not bulk-clean production data under this task unless explicitly approved.
+
+---
+
+# UX AFTER THE FIX
+
+After implementation, Talent users should still be able to complete their profile/Get Hired flow manually.
+
+Verify that removing LinkedIn import does NOT block:
+
+- profile completion
+- manual personal information
+- skills editing
+- resume upload
+- video introduction
+- portfolio/profile editing
+- manual LinkedIn URL entry, if supported
+- other onboarding/Get Hired steps
+
+There must be no requirement that a Talent connect LinkedIn to proceed.
+
+---
+
+# ERROR / DIRECT-ENDPOINT BEHAVIOR
+
+Test the old fake endpoint directly after the change.
+
+If the route is removed:
+
+Expected:
+
+`404`
+
+or application-equivalent route-not-found behavior.
+
+If deliberately retained as unavailable:
+
+Expected:
+
+a non-success response clearly indicating the integration is unavailable.
+
+The critical requirement is:
+
+> Calling the old endpoint must NEVER mutate Talent profile data or return fabricated LinkedIn profile information.
+
+Verify this explicitly.
+
+---
+
+# REGRESSION TESTS
+
+Add or update tests covering at minimum:
+
+1. Talent-facing fake LinkedIn import action is no longer available.
+
+2. Direct request to the old fake profile-import endpoint cannot persist fake data.
+
+3. `"Sample User"` or equivalent fabricated identity is no longer produced by runtime application code.
+
+4. Fabricated LinkedIn skills are no longer persisted.
+
+5. Existing Talent profile data remains unchanged when the disabled endpoint is called.
+
+6. Manual LinkedIn URL editing still works, if supported.
+
+7. Legitimate LinkedIn authentication/sign-in remains unchanged, if present.
+
+8. Talent can complete relevant profile/Get Hired workflow without LinkedIn import.
+
+9. Other Talent profile fields remain editable.
+
+10. Existing unrelated OAuth/authentication routes still compile and pass their relevant tests.
+
+---
+
+# SOURCE CLEANUP
+
+After disabling the feature, search the runtime source again for:
+
+- `Sample User`
+- fabricated LinkedIn skills
+- fake LinkedIn OAuth comments
+- simulated LinkedIn responses
+- `/api/linkedin/connect`
+
+Remove dead runtime code associated exclusively with the fake import if doing so is safe and small.
+
+Do not remove test fixtures merely because they contain generic sample names unless they belong specifically to this fake integration.
+
+Do not perform unrelated cleanup/refactoring.
+
+---
+
+# BUILD / VERIFICATION
+
+After implementation run:
+
+- TypeScript checks
+- relevant Talent/profile tests
+- relevant authentication tests if LinkedIn auth exists
+- production build
+- `git diff --check`
+
+If an authenticated Talent test session is available, verify in the running UI that:
+
+1. the fake LinkedIn import button/action is gone;
+2. Talent can still manually edit the relevant profile fields;
+3. Get Hired/profile completion remains usable;
+4. manual LinkedIn URL remains available if supported.
+
+Capture safe screenshots if possible.
+
+If authenticated UI access is unavailable, report:
+
+`AUTHENTICATED UI VERIFICATION PENDING`
+
+Do not fabricate screenshots.
+
+---
+
+# DO NOT
+
+Do NOT:
+
+- build real LinkedIn profile OAuth/import
+- obtain LinkedIn API credentials
+- register a new LinkedIn application
+- change LinkedIn developer configuration
+- scrape LinkedIn
+- create a LinkedIn scraper
+- call unofficial LinkedIn APIs
+- create fake LinkedIn data
+- replace the fake integration with different fake data
+- remove legitimate LinkedIn sign-in without evidence
+- remove manual LinkedIn URL fields
+- bulk-delete Talent profile data
+- attempt speculative cleanup of historical profiles
+- modify unrelated Get Hired functionality
+- proceed to Priority 5
+
+---
+
+# REQUIRED COMPLETION REPORT
+
+Return:
+
+## 1. LinkedIn Audit
+
+List each LinkedIn-related feature discovered and classify it as:
+
+- Authentication
+- Profile Import
+- Manual Profile URL
+- Display Only
+- Test/Dead Code
+
+## 2. Dangerous Flow Before Fix
+
+Show:
+
+`UI`
+→ `endpoint`
+→ `fake data generation`
+→ `profile persistence`
+
+Include relevant files/functions.
+
+## 3. Changes Made
+
+List every modified file and explain why.
+
+## 4. Final Behavior
+
+Explicitly confirm:
+
+### Fake profile import
+`DISABLED`
+
+### Fake backend persistence
+`DISABLED`
+
+### Fabricated "Sample User" runtime behavior
+`REMOVED / UNREACHABLE`
+
+### Fabricated skill persistence
+`REMOVED / UNREACHABLE`
+
+### Manual LinkedIn URL
+`PRESERVED / NOT PRESENT`
+
+### Legitimate LinkedIn authentication
+`PRESERVED / NOT PRESENT`
+
+## 5. Historical Data
+
+State whether previously affected records can be identified deterministically.
+
+Use:
+
+`NO AUTOMATIC CLEANUP PERFORMED`
+
+unless explicitly approved otherwise.
+
+## 6. Regression Tests
+
+Report each relevant test as:
+
+`PASS / FAIL`
+
+## 7. Build Verification
+
+Report:
+
+- TypeScript
+- tests
+- production build
+- `git diff --check`
+
+## 8. Runtime/UI Verification
+
+Report separately:
+
+- automated verification
+- authenticated Talent UI verification
+
+## Priority 4 Final Status
+
+Use exactly one:
+
+`PASS — COMPLETE`
+
+`IMPLEMENTED — AUTHENTICATED UI VERIFICATION PENDING`
+
+`FAIL`
+
+`BLOCKED`
+
+Do not proceed to Priority 5.
+
+The objective of Priority 4 is simple:
+
+> **A Talent must never be led to believe their LinkedIn profile was imported when the application actually generated fabricated data.**
