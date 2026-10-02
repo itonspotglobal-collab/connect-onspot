@@ -1,0 +1,592 @@
+## PRIORITY 3 — Client Team Dashboard: Modern Hire Hours & Activity
+
+Work on **Priority 3 only**.
+
+Do not proceed to Priority 4 or any other MVP/security work.
+
+This priority must begin as an **audit and design task, NOT an immediate implementation task**.
+
+Do not modify production code during the first phase.
+
+---
+
+# Problem
+
+The Client Team Dashboard can display modern signed hires, but some dashboard metrics still appear to rely on the legacy time-tracking model.
+
+In particular, weekly hours and recent activity may still read from the legacy:
+
+`time_entries`
+
+while modern billing/time tracking uses data such as:
+
+`clock_sessions`
+
+and/or:
+
+`timesheet_revisions`
+
+This can result in a modern hired Talent appearing correctly on the Client Team Dashboard while showing:
+
+- `0` weekly hours,
+- missing hours,
+- incomplete activity,
+- or inconsistent dashboard information
+
+even when the Talent has legitimate modern clock/timesheet activity.
+
+The objective is to determine the correct source of truth and propose the safest fix.
+
+Do NOT simply replace `time_entries` with another table without tracing the full data model.
+
+---
+
+# PHASE 1 — TRACE THE CLIENT TEAM DASHBOARD
+
+Locate the Client Team Dashboard implementation.
+
+Trace:
+
+`Client Team Dashboard UI`
+→ `frontend query`
+→ `API endpoint`
+→ `backend handler/service`
+→ `database query`
+→ `tables/data sources`
+
+Identify exactly how the following are currently calculated:
+
+1. Team members / hired Talent
+2. Weekly hours
+3. Recent activity
+4. Any displayed work/time status
+5. Any billing-related or engagement-related metrics displayed on the same cards/page
+
+For each metric, identify the exact database source.
+
+Do not infer from naming alone.
+
+---
+
+# PHASE 2 — MAP LEGACY VS MODERN DATA MODELS
+
+Audit the relevant data models.
+
+At minimum inspect:
+
+### Legacy
+
+`time_entries`
+
+and any associated:
+
+- contracts
+- projects
+- user/client/talent relationships
+
+### Modern
+
+Inspect the actual current implementation around:
+
+- `hiring_contracts`
+- `clock_sessions`
+- `timesheet_revisions`
+- invoices
+- billing periods
+- payouts
+
+Include additional tables/services if the source code shows they participate in the modern workflow.
+
+Determine how a modern hire progresses through:
+
+`hiring/offer`
+→ `signed hiring contract`
+→ `clocking`
+→ `timesheet`
+→ `revision/approval`
+→ `invoice/billing`
+→ `payout`
+
+The purpose is to identify which data represents:
+
+- raw worked time
+- submitted time
+- approved/finalized time
+- billable time
+
+These concepts may NOT be equivalent.
+
+---
+
+# PHASE 3 — DETERMINE WHAT "WEEKLY HOURS" SHOULD MEAN
+
+Before changing anything, determine what the Client Team Dashboard's existing UX intends `Weekly Hours` to represent.
+
+Possible interpretations include:
+
+- raw clocked hours
+- completed clock sessions
+- submitted timesheet hours
+- approved timesheet hours
+- billable/finalized hours
+- a combination of legacy and modern sources
+
+Do not choose arbitrarily.
+
+Use:
+
+- current frontend labels
+- backend implementation
+- related billing/timesheet pages
+- comments/documentation
+- existing tests
+- existing user flows
+
+to infer the intended meaning.
+
+Report the evidence.
+
+If the intended semantics are genuinely ambiguous, say so.
+
+---
+
+# PHASE 4 — AUDIT `clock_sessions`
+
+Determine:
+
+- how sessions are associated with Talent
+- how sessions are associated with Client
+- how sessions relate to `hiring_contracts`
+- how duration is calculated
+- how active/open clock sessions are represented
+- how completed sessions are represented
+- whether sessions can be edited
+- whether deleted/invalidated sessions exist
+- how timezone/date boundaries are handled
+- whether sessions are eventually represented in timesheets
+
+Identify whether summing `clock_sessions` directly would be safe.
+
+Specifically investigate whether doing so could:
+
+- include unapproved hours,
+- include currently open sessions,
+- double-count adjusted sessions,
+- disagree with billing,
+- or disagree with timesheets.
+
+---
+
+# PHASE 5 — AUDIT `timesheet_revisions`
+
+Determine exactly what `timesheet_revisions` represents.
+
+Trace:
+
+- how revisions are created
+- whether multiple revisions can exist for one period
+- how the current/latest revision is identified
+- how approved revisions are identified
+- where total hours are stored/calculated
+- whether rejected/superseded revisions remain in the database
+- how revisions connect to `hiring_contracts`
+- how they feed invoices/billing
+
+Do NOT simply SUM all revisions.
+
+Explicitly determine whether doing so would double-count historical/superseded versions.
+
+---
+
+# PHASE 6 — COMPARE WITH BILLING SOURCE OF TRUTH
+
+This is critical.
+
+Trace how the modern billing/invoice system determines hours.
+
+Identify the source used when money is calculated.
+
+Answer:
+
+> What exact record/data source does the system trust when converting worked time into Client billing?
+
+Then compare that with the Client Team Dashboard.
+
+We do not want:
+
+`Dashboard hours = X`
+
+while:
+
+`Billing hours = Y`
+
+for the same Talent/period without a deliberate product reason.
+
+---
+
+# PHASE 7 — AUDIT RECENT ACTIVITY
+
+Separately audit `Recent Activity`.
+
+Do not assume the same solution used for Weekly Hours should automatically be used for activity.
+
+Determine what currently creates activity entries.
+
+Identify whether modern events such as the following are missing:
+
+- Talent clock-in
+- Talent clock-out
+- timesheet submission
+- timesheet approval
+- contract start
+- other relevant modern engagement activity
+
+Determine what "Recent Activity" is intended to represent in the current UI.
+
+Report whether the existing implementation is:
+
+- legacy-only,
+- partially modern,
+- fully modern,
+- or mixed.
+
+---
+
+# PHASE 8 — CHECK FOR MIXED LEGACY/MODERN HIRES
+
+Determine whether the production application can contain BOTH:
+
+- legacy engagements/contracts using `time_entries`
+- modern engagements using `hiring_contracts` + modern time tracking
+
+If both can legitimately coexist, determine how the dashboard can support both without:
+
+- dropping legacy hours,
+- dropping modern hours,
+- double-counting migrated records,
+- or combining incompatible records.
+
+Do not assume all existing data has been migrated.
+
+---
+
+# PHASE 9 — DETERMINE THE CORRECT FIX STRATEGY
+
+After completing the audit, recommend one of these strategies or another evidence-supported strategy:
+
+### Strategy A — Replace legacy source
+
+Use the modern data source exclusively.
+
+Only recommend this if legacy `time_entries` no longer represent legitimate active engagements.
+
+### Strategy B — Merge legacy + modern
+
+Use legacy data for legacy engagements and modern data for modern hiring contracts.
+
+Only recommend this if the systems legitimately coexist and can be reliably distinguished.
+
+### Strategy C — Use canonical timesheet/billing data
+
+Drive dashboard weekly hours from the same finalized source used by modern billing.
+
+This may be preferable if dashboard hours are intended to represent approved/billable hours.
+
+### Strategy D — Different metric semantics
+
+If the dashboard intends to show live/raw worked hours while billing intentionally uses approved hours, document that distinction and recommend the correct raw source.
+
+Do NOT select a strategy based on convenience.
+
+---
+
+# CRITICAL DOUBLE-COUNTING CHECK
+
+Before recommending implementation, explicitly investigate whether the same work can appear in more than one of:
+
+`time_entries`
+
+`clock_sessions`
+
+`timesheet_revisions`
+
+invoice/billing records
+
+Determine whether one record is transformed/copied into another.
+
+If so, document the relationship.
+
+Your proposal must guarantee that the dashboard does not sum two representations of the same work.
+
+---
+
+# DATE / TIMEZONE AUDIT
+
+Because this metric is `Weekly Hours`, determine exactly how the current week is calculated.
+
+Inspect:
+
+- week start day
+- server timezone
+- Client timezone
+- Talent timezone
+- UTC conversion
+- clock-session timestamps
+- timesheet period boundaries
+
+Determine whether the current implementation can incorrectly exclude/include hours around timezone or week boundaries.
+
+Do not redesign timezone behavior yet.
+
+Document any issue discovered.
+
+---
+
+# DATA SAFETY
+
+Do not:
+
+- edit production time records
+- create fake billable hours
+- modify real invoices
+- modify payouts
+- approve real timesheets
+- terminate contracts
+- migrate production data
+- delete legacy records
+
+Read-only production inspection is acceptable if available and authorized.
+
+If test fixtures already exist and can safely be inspected, they may be used as supporting evidence.
+
+---
+
+# TEST COVERAGE AUDIT
+
+Find existing automated tests covering:
+
+- Client Team Dashboard
+- weekly hours
+- `time_entries`
+- `clock_sessions`
+- timesheets
+- revisions
+- billing calculations
+
+Report which relevant cases already have tests.
+
+Identify missing regression tests that would be required before implementing the fix.
+
+At minimum consider future tests for:
+
+1. legacy hire with legacy time
+2. modern hire with modern time
+3. modern hire with zero time
+4. open clock session
+5. submitted but unapproved time
+6. approved/finalized time
+7. multiple timesheet revisions
+8. rejected/superseded revision
+9. mixed legacy + modern hires
+10. week-boundary/timezone case
+
+Do not write the tests yet during this audit phase unless they are strictly non-mutating exploratory tests.
+
+---
+
+# DO NOT IMPLEMENT YET
+
+This is important.
+
+For this first Priority 3 task:
+
+**DO NOT modify the dashboard query yet.**
+
+**DO NOT replace `time_entries` yet.**
+
+**DO NOT merge tables yet.**
+
+**DO NOT change billing logic.**
+
+**DO NOT change clock logic.**
+
+**DO NOT change timesheet logic.**
+
+**DO NOT perform schema migrations.**
+
+We first need to understand the canonical modern data model.
+
+---
+
+# REQUIRED AUDIT REPORT
+
+Return the following report.
+
+## 1. Current Client Team Dashboard Data Flow
+
+Show:
+
+`UI`
+→ `frontend query`
+→ `API`
+→ `backend`
+→ `database`
+
+Include file names and relevant functions.
+
+---
+
+## 2. Current Metric Sources
+
+Provide a table:
+
+| Metric | Current source | Legacy/Modern | Problem |
+|---|---|---|---|
+| Team members | ... | ... | ... |
+| Weekly hours | ... | ... | ... |
+| Recent activity | ... | ... | ... |
+| Other relevant metric | ... | ... | ... |
+
+---
+
+## 3. Modern Time-Tracking Flow
+
+Show the actual discovered flow, for example:
+
+`hiring_contract`
+→ `clock_session`
+→ `timesheet`
+→ `timesheet_revision`
+→ `approval`
+→ `invoice`
+
+Correct this example based on the real implementation.
+
+Explain what each stage represents.
+
+---
+
+## 4. Billing Source of Truth
+
+State exactly:
+
+- which records billing trusts,
+- which hours become billable,
+- and how the total is calculated.
+
+Include file/function references.
+
+---
+
+## 5. `time_entries` Status
+
+Determine whether `time_entries` is:
+
+- actively used by legitimate current workflows,
+- legacy-only but still required for old records,
+- obsolete,
+- or mixed.
+
+Provide evidence.
+
+---
+
+## 6. `clock_sessions` Status
+
+Explain whether it is safe or unsafe to use directly for dashboard weekly hours and why.
+
+---
+
+## 7. `timesheet_revisions` Status
+
+Explain:
+
+- how latest/current revisions are identified,
+- how approval works,
+- and how double-counting revisions is prevented.
+
+---
+
+## 8. Recent Activity Findings
+
+Explain why modern hires currently do or do not appear correctly.
+
+Identify the appropriate modern source/events if a fix is needed.
+
+---
+
+## 9. Double-Counting Risk
+
+Explicitly answer:
+
+> Can the same worked hour exist in multiple tables?
+
+If YES, show the relationship and explain how the proposed dashboard fix will avoid double counting.
+
+If NO, provide evidence supporting that conclusion.
+
+---
+
+## 10. Recommended Fix
+
+Recommend the smallest safe implementation.
+
+Specify:
+
+- files that would need modification
+- queries/services that would change
+- whether legacy fallback remains necessary
+- how modern hours should be calculated
+- how Recent Activity should be calculated
+- how double-counting will be prevented
+
+Do NOT implement it yet.
+
+---
+
+## 11. Required Regression Tests
+
+List the exact automated tests that should be added or updated before considering Priority 3 complete.
+
+---
+
+## 12. Risks / Ambiguities
+
+List anything that still needs a product decision.
+
+Especially flag if the term:
+
+`Weekly Hours`
+
+is ambiguous between:
+
+`clocked hours`
+
+and:
+
+`approved/billable hours`.
+
+---
+
+# FINAL DECISION GATE
+
+Finish with:
+
+### Priority 3 Audit Status
+`COMPLETE` or `BLOCKED`
+
+### Recommended Strategy
+`A — Replace legacy`
+`B — Merge legacy + modern`
+`C — Canonical timesheet/billing source`
+`D — Different metric semantics`
+or another clearly explained strategy.
+
+### Implementation Ready?
+`YES` or `NO`
+
+If YES, provide the proposed minimal implementation plan but **STOP THERE**.
+
+Do not make the implementation changes until I explicitly approve the proposed strategy.
+
+Do not proceed to Priority 4.
