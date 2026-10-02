@@ -1,15 +1,11 @@
 import { 
-  BarChart3, 
-  Briefcase, 
   Calendar,
   Clock3,
-  DollarSign,
   FileText,
   Home, 
   Search, 
   Settings, 
   Users,
-  Target,
   Shield,
   Upload,
   MessageSquare,
@@ -56,16 +52,6 @@ const coreModules = [
     url: "/client/interviews",
     icon: Calendar,
   },
-  {
-    title: "Projects",
-    url: "/projects",
-    icon: Briefcase,
-  },
-  {
-    title: "Performance",
-    url: "/performance",
-    icon: BarChart3,
-  },
 ];
 
 // Management
@@ -74,16 +60,6 @@ const managementItems = [
     title: "Team",
     url: "/clients",
     icon: Users,
-  },
-  {
-    title: "Contracts",
-    url: "/contracts",
-    icon: FileText,
-  },
-  {
-    title: "Payments",
-    url: "/payments",
-    icon: DollarSign,
   },
   {
     title: "Billing",
@@ -104,11 +80,6 @@ const managementItems = [
     title: "Timesheets",
     url: "/client/timesheets",
     icon: Clock3,
-  },
-  {
-    title: "ROI Analytics",
-    url: "/roi",
-    icon: Target,
   },
 ];
 
