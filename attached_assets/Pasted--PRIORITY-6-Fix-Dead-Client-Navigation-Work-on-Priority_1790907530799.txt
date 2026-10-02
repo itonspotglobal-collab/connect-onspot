@@ -1,0 +1,542 @@
+## PRIORITY 6 — Fix Dead Client Navigation
+
+Work on **Priority 6 only**.
+
+This is the final item in the current MVP functional-gap list.
+
+Do not begin security work or unrelated backlog items after completing it.
+
+---
+
+# Problem
+
+Previous source inspection identified Client-facing navigation links pointing to:
+
+`/contracts`
+
+and:
+
+`/payments`
+
+but those destinations appeared to have no corresponding usable Client routes/pages.
+
+This creates dead navigation where authenticated Clients can click a legitimate-looking navigation item and reach:
+
+- a 404,
+- route fallback,
+- blank/unrelated page,
+- or another invalid state.
+
+The objective is:
+
+> **Every visible Client navigation item must lead to an intentional, usable Client destination.**
+
+Do NOT build new Contracts or Payments modules merely to make these links work.
+
+First determine whether these links are:
+
+1. genuinely dead,
+2. stale aliases for functionality that already exists elsewhere,
+3. missing route registrations for existing pages,
+4. or intentionally planned but not yet implemented.
+
+Then apply the smallest correct MVP fix.
+
+---
+
+# PHASE 1 — AUDIT ALL CLIENT NAVIGATION
+
+Before modifying code, identify every navigation surface available to the Client role.
+
+Search for:
+
+- `/contracts`
+- `/payments`
+- `Contracts`
+- `Payments`
+- Client sidebar
+- Client navbar
+- mobile navigation
+- dropdown menus
+- dashboard quick links
+- breadcrumbs
+- CTA buttons
+- `navigate(...)`
+- `<Link>`
+- `<NavLink>`
+- route constants/configuration
+
+Audit all Client-facing navigation, not just one sidebar component.
+
+Produce a map:
+
+```text
+Visible Client navigation item
+→ target path
+→ matching App route/router
+→ destination component
+→ valid/dead
+```
+
+---
+
+# PHASE 2 — TRACE `/contracts`
+
+Search the complete application for:
+
+`/contracts`
+
+Determine:
+
+- where the Client link appears;
+- whether a route exists;
+- whether a page/component already exists;
+- whether a different current page provides the intended contract functionality;
+- whether contract management is now represented through another route such as team/hiring/contract-ending functionality;
+- whether `/contracts` belongs to another role or obsolete architecture.
+
+Do not assume it should simply be deleted until this is established.
+
+If a legitimate current Client destination already provides the intended functionality, determine whether changing the link to that destination would be clearer than removing it.
+
+Do not create a new Contracts page under Priority 6.
+
+---
+
+# PHASE 3 — TRACE `/payments`
+
+Perform the same audit for:
+
+`/payments`
+
+Determine:
+
+- where the link appears;
+- whether a matching Client route exists;
+- whether an existing billing/invoice/payment page is the actual current destination;
+- whether `/payments` is legacy/dead;
+- whether the path belongs to another role;
+- whether there is currently any usable Client financial UI that this navigation item should target.
+
+Be particularly careful here because previous audits established multiple financial paths in the repository.
+
+Do NOT assume that:
+
+`Payments`
+
+means:
+
+`Invoices`
+
+or:
+
+`Billing`
+
+without evidence from the existing Client product flow.
+
+Do not change financial behavior.
+
+---
+
+# PHASE 4 — AUDIT THE CLIENT ROUTER
+
+Trace Client routing in:
+
+`client/src/App.tsx`
+
+and any relevant Client layout/router components.
+
+Produce the current route map for authenticated Clients.
+
+At minimum identify routes for existing functionality such as:
+
+- Client dashboard
+- Team
+- Jobs
+- candidates/applicants if applicable
+- hiring/offers if applicable
+- contract endings
+- invoices/billing if applicable
+- profile/settings
+- other visible Client destinations
+
+Use the actual application routes.
+
+Do not invent paths based on naming conventions.
+
+---
+
+# PHASE 5 — CHOOSE THE SMALLEST FIX
+
+For each dead navigation item, use this decision tree.
+
+## Case A — Exact route exists but outer routing is missing
+
+If an existing legitimate Client page is already implemented and only route mounting is missing:
+
+add the minimal route registration.
+
+Do not duplicate the page.
+
+## Case B — Functionality exists under a different current route
+
+If the intended functionality clearly exists elsewhere:
+
+update the stale link to the legitimate existing destination.
+
+Only do this when product intent is supported by the existing application.
+
+## Case C — No implemented Client functionality exists
+
+Remove the navigation item.
+
+Do not create a placeholder page.
+
+Do not redirect to an unrelated page.
+
+Do not create a fake dashboard.
+
+Do not add:
+
+`Coming Soon`
+
+unless the application already intentionally uses disabled/coming-soon navigation and there is a strong reason to preserve discoverability.
+
+For MVP, prefer removing navigation to unavailable functionality.
+
+---
+
+# IMPORTANT — ROLE ISOLATION
+
+Do not solve a dead Client link by routing Clients to an Admin or Talent page.
+
+Verify that every retained destination is genuinely appropriate for the Client role.
+
+Preserve existing authentication and authorization.
+
+---
+
+# IMPORTANT — DO NOT MODIFY BUSINESS LOGIC
+
+Priority 6 is navigation/routing cleanup.
+
+Do NOT modify:
+
+- contracts
+- contract termination business logic
+- billing calculations
+- invoices
+- payments
+- deposits
+- payouts
+- hiring contracts
+- jobs
+- candidate matching
+- time tracking
+- object storage
+- assessments
+- LinkedIn behavior
+
+If the audit discovers a separate functional defect, document it as an out-of-scope finding.
+
+---
+
+# PHASE 6 — CHECK ALL REFERENCES AFTER THE FIX
+
+After implementing the selected solution, search again for:
+
+`href="/contracts"`
+
+`to="/contracts"`
+
+`navigate("/contracts")`
+
+and equivalent references.
+
+Repeat for:
+
+`/payments`
+
+Explain every remaining occurrence.
+
+A remaining occurrence may be valid if it belongs to:
+
+- Admin
+- Talent
+- another legitimate role
+- tests
+- documentation
+- redirects intentionally retained for backward compatibility
+
+But no visible Client navigation should point to an invalid destination.
+
+---
+
+# OPTIONAL BACKWARD-COMPATIBILITY QUESTION
+
+If `/contracts` or `/payments` may have been externally bookmarked/shared in the past, inspect whether the application has an established pattern for legacy-route redirects.
+
+Do not add redirects automatically.
+
+Only add a redirect if:
+
+1. there is a clearly equivalent modern destination; and
+2. doing so does not misrepresent functionality.
+
+Otherwise allow the normal route-not-found behavior after removing the dead navigation link.
+
+---
+
+# REGRESSION TESTS
+
+Add/update tests covering at minimum:
+
+1. Every visible Client primary navigation destination maps to a valid Client route.
+
+2. No visible Client navigation item targets a known dead route.
+
+3. `/contracts` is either:
+   - valid and intentionally mounted,
+   - redirected to a proven equivalent,
+   - or absent from Client navigation.
+
+4. `/payments` is either:
+   - valid and intentionally mounted,
+   - redirected to a proven equivalent,
+   - or absent from Client navigation.
+
+5. Client contract-ending navigation remains functional.
+
+6. Client Team Dashboard navigation remains functional.
+
+7. Existing Jobs navigation remains functional.
+
+8. Existing Client financial navigation, if any legitimate one exists, remains functional.
+
+9. Mobile/responsive Client navigation matches desktop behavior where applicable.
+
+10. Client cannot gain access to Admin/Talent destinations because of the navigation changes.
+
+11. Priority 3 Team Dashboard routing remains intact.
+
+12. Priority 4/5 Get Hired changes are unaffected where shared routing/layout code is touched.
+
+---
+
+# NAVIGATION CONSISTENCY CHECK
+
+Inspect whether desktop and mobile Client navigation are defined separately.
+
+If they are:
+
+ensure the same dead-link fix is applied consistently.
+
+Do not leave:
+
+`Contracts`
+
+or:
+
+`Payments`
+
+available on mobile while removing it on desktop, or vice versa.
+
+Also inspect active-state matching so changing/removing a destination does not cause another navigation item to appear incorrectly selected.
+
+---
+
+# BUILD / VERIFICATION
+
+After implementation run:
+
+- TypeScript checks
+- relevant routing/navigation tests
+- existing Client tests
+- production build
+- `git diff --check`
+
+If a legitimate authenticated Client test session is available, verify the navigation in the running application.
+
+Click every visible primary Client navigation item.
+
+Confirm:
+
+- correct page loads;
+- Client layout remains present;
+- no 404/fallback;
+- no blank page;
+- active navigation state is correct;
+- browser back/forward behavior remains normal.
+
+Specifically verify:
+
+- Team Dashboard
+- Jobs
+- Contract Endings
+- legitimate financial destination if one remains
+- settings/profile where applicable
+
+Check desktop and responsive/mobile navigation if both exist.
+
+Capture safe screenshots if possible.
+
+If authenticated Client access is unavailable, report:
+
+`AUTHENTICATED CLIENT UI VERIFICATION PENDING`
+
+Do not use a test-login bypass merely to obtain screenshots.
+
+---
+
+# FULL SERVER ACTIVATION
+
+Use the same cautious rule as Priorities 3–5.
+
+Do not restart the full application merely for verification if startup can trigger unrelated:
+
+- migrations
+- invoice automation
+- financial jobs
+- production writes
+
+If runtime activation is unavailable, report that separately.
+
+---
+
+# SOURCE SCOPE
+
+Keep this change small.
+
+Expected changes should normally be limited to:
+
+- Client navigation configuration/component(s)
+- routing configuration only if a legitimate existing page needs mounting
+- focused routing/navigation tests
+
+If implementation starts requiring major new pages, database changes, financial logic, or backend services:
+
+STOP.
+
+That means Priority 6 has expanded beyond the intended MVP fix.
+
+---
+
+# REQUIRED COMPLETION REPORT
+
+Return:
+
+## 1. Client Navigation Audit
+
+Provide:
+
+| Client navigation item | Target | Matching route | Status before fix |
+|---|---|---|---|
+
+Include all visible primary Client navigation items.
+
+---
+
+## 2. `/contracts` Finding
+
+State exactly:
+
+- where the link existed;
+- whether a Client route/page existed;
+- whether equivalent functionality exists elsewhere;
+- final decision:
+  - `REMOVED`
+  - `RETARGETED`
+  - `ROUTE MOUNTED`
+  - or another clearly explained result.
+
+---
+
+## 3. `/payments` Finding
+
+Provide the same analysis and final decision.
+
+---
+
+## 4. Changes Made
+
+List every changed file and why.
+
+---
+
+## 5. Final Client Route Map
+
+Show the resulting legitimate Client navigation:
+
+```text
+Navigation label
+→ path
+→ component/page
+```
+
+---
+
+## 6. Remaining `/contracts` and `/payments` References
+
+List and explain every remaining runtime occurrence.
+
+Explicitly confirm whether any visible Client navigation still points to either path.
+
+---
+
+## 7. Regression Tests
+
+Report each required test as:
+
+`PASS / FAIL / NOT APPLICABLE`
+
+---
+
+## 8. Build Verification
+
+Report:
+
+- TypeScript
+- tests
+- production build
+- `git diff --check`
+
+---
+
+## 9. Runtime Verification
+
+Report separately:
+
+- automated verification
+- authenticated Client desktop navigation
+- authenticated Client responsive/mobile navigation
+- full-server activation
+
+---
+
+## 10. Out-of-Scope Findings
+
+List any other dead Client links or routing inconsistencies discovered.
+
+If another visible Client navigation item is definitively dead and the fix is equally trivial, report it first rather than silently expanding scope.
+
+Do not modify unrelated functionality without approval.
+
+---
+
+# Priority 6 Final Status
+
+Use exactly one:
+
+`PASS — COMPLETE`
+
+`IMPLEMENTED — AUTHENTICATED CLIENT UI VERIFICATION PENDING`
+
+`FAIL`
+
+`BLOCKED`
+
+Do not begin another workstream.
+
+The acceptance principle is:
+
+> **If the application presents a navigation option to a Client, that option must lead to real functionality the Client is authorized to use.**
