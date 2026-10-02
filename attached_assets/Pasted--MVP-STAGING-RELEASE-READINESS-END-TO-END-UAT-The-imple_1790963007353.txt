@@ -1,0 +1,882 @@
+# MVP STAGING RELEASE READINESS / END-TO-END UAT
+
+The implementation phase is now frozen.
+
+Do NOT add features or refactor unrelated code.
+
+The historical provider-continuity investigation concluded:
+
+`MEMORY-ONLY PROVIDER IDENTITIES WERE NEVER DURABLE ACCOUNTS`
+
+and:
+
+`NO HISTORICAL PROVIDER MIGRATION REQUIRED`
+
+Do not build a historical provider migration unless new concrete evidence contradicts that finding.
+
+The objective now is to prove that the complete MVP release candidate works end-to-end in a SAFE STAGING environment.
+
+Do NOT publish production.
+
+Do NOT migrate production.
+
+Do NOT use production customer records as disposable UAT data.
+
+---
+
+# RELEASE CANDIDATE FREEZE
+
+Record before testing:
+
+- branch;
+- exact Git commit SHA;
+- working-tree status;
+- Node/npm versions;
+- deployment/environment identity;
+- database identity;
+- migration state;
+- configured service dependencies.
+
+If the working tree contains uncommitted implementation changes, report them explicitly.
+
+Do not silently change the release candidate during UAT.
+
+If a release-critical defect is discovered:
+
+STOP that affected acceptance test.
+
+Document it.
+
+Only implement a fix after clearly identifying the defect and limiting the change to that defect.
+
+After any fix, establish a NEW release-candidate SHA and rerun affected regression.
+
+---
+
+# PHASE 0 — PROVE THIS IS STAGING
+
+Before migrations or normal application startup, establish that the target is NOT the production database.
+
+Use non-destructive/read-only evidence.
+
+Report:
+
+`STAGING TARGET CONFIRMED`
+
+or:
+
+`TARGET NOT SAFELY IDENTIFIED`
+
+If:
+
+`TARGET NOT SAFELY IDENTIFIED`
+
+STOP.
+
+Do not start the normal application.
+
+Do not run migrations.
+
+Do not continue UAT.
+
+---
+
+# PHASE 1 — BACKUP / RECOVERY POINT
+
+Before applying migration `0033`, establish an approved staging database recovery point.
+
+Record:
+
+- recovery mechanism;
+- timestamp/version where available;
+- application Git SHA;
+- current migration version.
+
+Do not expose credentials.
+
+We need the ability to restore the staging database if migration/UAT fails.
+
+---
+
+# PHASE 2 — READ-ONLY PREFLIGHT
+
+Run the signup-verification preflight against STAGING before migration.
+
+Report counts only for:
+
+- case-insensitive duplicate user emails;
+- duplicate candidate emails;
+- missing/empty emails;
+- candidate-only identities;
+- passwordless candidate identities;
+- broken profile/candidate user links;
+- mismatched linked emails;
+- provider-link conflicts if applicable;
+- other constraints required by migration `0033`.
+
+Do not automatically merge or delete conflicting records.
+
+If the migration assumptions are violated:
+
+STOP before migration and report.
+
+---
+
+# PHASE 3 — CONFIGURATION
+
+Configure/check the STAGING environment for email verification.
+
+Required:
+
+- Microsoft tenant configuration;
+- Microsoft client ID;
+- Microsoft client secret;
+- `TALENT_VERIFICATION_EMAIL_FROM`;
+- `CLIENT_VERIFICATION_EMAIL_FROM`;
+- `EMAIL_VERIFICATION_HMAC_KEY`;
+- explicit verification-email runtime enablement if required by implementation;
+- JWT/session configuration required for staging.
+
+Expected sender mapping:
+
+Talent:
+
+`FindWork@onspotglobal.com`
+
+Client:
+
+`HireTalent@onspotglobal.com`
+
+Never print secret values.
+
+Report only:
+
+`PRESENT`
+
+`MISSING`
+
+`INVALID`
+
+where appropriate.
+
+The HMAC secret must be high entropy and server-only.
+
+Do not put it in:
+
+- source control;
+- browser environment variables;
+- Vite public variables;
+- logs.
+
+If required verification configuration is missing:
+
+STOP before real OTP UAT.
+
+---
+
+# PHASE 4 — MIGRATION 0033
+
+Apply migration `0033_signup_email_verification.sql` ONLY to the confirmed staging database.
+
+Verify migration result.
+
+Check:
+
+- expected tables exist;
+- expected ownership columns exist;
+- expected constraints exist;
+- provider-link primary/unique constraint exists;
+- pending registration structures exist;
+- persistent rate-limit structures exist;
+- historical exemptions were applied according to approved policy;
+- historical users were NOT falsely assigned verification timestamps.
+
+Run migration/idempotency checks consistent with repository migration architecture.
+
+Report exact migration result.
+
+---
+
+# PHASE 5 — SAFE APPLICATION STARTUP
+
+Before startup, inventory known startup side effects.
+
+We previously identified startup paths involving migrations, invoice automation, statement processing, reminders, synchronization, expiry jobs, cleanup, and other timers.
+
+For STAGING:
+
+- ensure external side effects cannot affect production customers;
+- ensure payment operations cannot charge or pay real parties;
+- ensure outbound messages other than explicitly approved UAT messages are disabled/intercepted;
+- ensure scheduled automation uses staging/synthetic records only;
+- ensure production integrations are not mutated unintentionally.
+
+Do NOT assume `RUN_BACKGROUND_JOBS=false` suppresses every startup timer.
+
+Explicitly verify what is disabled.
+
+Then perform a clean staging application start.
+
+Report:
+
+`CLEAN START`
+
+or:
+
+`STARTUP FAILURE`
+
+Include errors/warnings relevant to release readiness.
+
+---
+
+# PHASE 6 — MIGRATION PERSISTENCE / RESTART
+
+After successful startup:
+
+1. Stop the staging application safely.
+2. Start it again.
+3. Confirm migration remains correct.
+4. Confirm historical exemption state remains correct.
+5. Confirm no duplicate migration effects.
+6. Confirm application boots normally after migration.
+
+This is required restart evidence.
+
+---
+
+# PHASE 7 — CLIENT EMAIL VERIFICATION UAT
+
+Use an explicitly approved test recipient inbox.
+
+Do NOT use a real customer's address.
+
+Perform the real staging Client flow:
+
+```text id="ccdf60"
+Client signup
+→ pending registration
+→ no usable credentials
+→ verification email sent by HireTalent@onspotglobal.com
+→ approved inbox receives email
+→ enter actual received OTP
+→ activation commits
+→ credentials issued
+→ Client authenticated
+```
+
+Verify:
+
+- correct sender;
+- correct recipient;
+- actual inbox receipt;
+- six-digit code;
+- code works;
+- account does not exist as usable identity before verification;
+- credentials absent before verification;
+- Client profile created after activation;
+- verified normalized email recorded;
+- professional/Talent verification concepts unaffected;
+- refresh/re-login works.
+
+Do not print the OTP in the final report.
+
+---
+
+# PHASE 8 — TALENT EMAIL VERIFICATION UAT
+
+Use a separate approved Talent test identity/inbox where possible.
+
+Perform:
+
+```text id="onp4gc"
+Talent signup
+→ pending registration
+→ no usable credentials
+→ verification email sent by FindWork@onspotglobal.com
+→ approved inbox receives email
+→ enter actual received OTP
+→ activation commits
+→ user/profile/candidate state complete
+→ user JWT/candidate credential issued as designed
+→ Talent authenticated
+```
+
+Verify:
+
+- correct sender;
+- actual receipt;
+- credentials absent before proof;
+- atomic account records;
+- ownership stored on canonical identity;
+- Talent professional Verified/Vetted state NOT granted;
+- profile/onboarding accessible;
+- logout/login works.
+
+Do not print the OTP.
+
+---
+
+# PHASE 9 — OTP NEGATIVE UAT
+
+Using staging test identities only, verify:
+
+- incorrect OTP rejected;
+- expired OTP rejected where practical using controlled test configuration/time fixture;
+- resend cooldown;
+- resend generates new generation;
+- old OTP rejected after resend;
+- new OTP succeeds;
+- consumed OTP cannot activate again;
+- change-email invalidates previous challenge;
+- email A code cannot activate email B;
+- browser cannot mark itself verified;
+- direct activation endpoint cannot bypass verification.
+
+Do not intentionally trigger abusive volumes against Graph.
+
+Rate-limit extremes may remain automated rather than sending large numbers of real emails.
+
+---
+
+# PHASE 10 — GRAPH RUNTIME VERIFICATION
+
+Record separately:
+
+### Talent sender
+
+`FindWork@onspotglobal.com`
+
+- Graph authentication: PASS/FAIL
+- send authorization: PASS/FAIL
+- actual inbox receipt: PASS/FAIL
+
+### Client sender
+
+`HireTalent@onspotglobal.com`
+
+- Graph authentication: PASS/FAIL
+- send authorization: PASS/FAIL
+- actual inbox receipt: PASS/FAIL
+
+Do not mark Graph runtime PASS unless actual approved inbox receipt occurs.
+
+---
+
+# PHASE 11 — PROVIDER AUTHENTICATION
+
+Do not create a historical migration.
+
+Verify in staging:
+
+### New provider identity
+
+Unknown provider subject:
+
+```text id="flghsr"
+provider callback
+→ no normal authenticated account
+→ verification required
+→ ownership proof
+→ durable provider link
+→ authenticated identity
+```
+
+Where live provider callbacks cannot safely be exercised, use the strongest approved staging fixture plus clearly mark:
+
+`LIVE PROVIDER CALLBACK PENDING`
+
+### Restart continuity
+
+For a newly verified provider-linked staging account:
+
+1. establish durable provider link;
+2. restart application;
+3. resolve same provider subject;
+4. confirm same user;
+5. confirm no duplicate account.
+
+### Historical password account
+
+Verify a grandfathered staging historical account can still authenticate without being falsely marked inbox-verified.
+
+---
+
+# PHASE 12 — PRIORITY 1 UAT — CONTRACT ENDINGS
+
+Use approved disposable Client/Talent contract data.
+
+Client:
+
+- authenticated Client can open Contract End Requests;
+- valid role-specific data loads;
+- permitted action succeeds;
+- persistence survives reload.
+
+Talent:
+
+- authenticated Talent can open Contract End Requests;
+- valid role-specific data loads;
+- permitted action succeeds;
+- persistence survives reload.
+
+Cross-role:
+
+- Client cannot access Talent-only behavior;
+- Talent cannot access Client-only behavior;
+- unauthenticated requests rejected.
+
+Do not mutate production contracts.
+
+---
+
+# PHASE 13 — PRIORITY 2 — OBJECT STORAGE
+
+Perform actual staging storage round-trip:
+
+```text id="cpiglg"
+authenticated test user
+→ upload known test file
+→ private object stored
+→ permanent reference persisted
+→ retrieve through authorized application path
+→ byte/content comparison
+```
+
+Verify:
+
+- object exists;
+- private ownership;
+- owner can retrieve;
+- unrelated identity cannot retrieve;
+- retrieved bytes equal uploaded bytes.
+
+Do not expose signed URLs or credentials.
+
+Report:
+
+`OBJECT STORAGE RUNTIME PASS`
+
+only if round-trip succeeds.
+
+---
+
+# PHASE 14 — PRIORITY 3 — CLIENT TEAM DASHBOARD
+
+Use controlled staging engagements representing:
+
+- legacy engagement;
+- modern Tracked engagement;
+- modern Guaranteed engagement.
+
+Verify authenticated Client UI:
+
+Legacy:
+- recorded time appears from legacy source.
+
+Modern Tracked:
+- completed/effective clock intervals produce recorded weekly hours;
+- open/unresolved intervals are not fabricated;
+- activity displays correctly;
+- timezone/week behavior matches implemented contract/work-timezone semantics.
+
+Modern Guaranteed:
+- displays Not tracked where designed.
+
+Verify no timesheet-revision/invoice double counting.
+
+---
+
+# PHASE 15 — PRIORITY 4 — LINKEDIN IMPORT
+
+Authenticated Talent UI:
+
+- fake LinkedIn profile import absent;
+- old import endpoints return retired/unavailable behavior;
+- no fabricated Sample User/profile/skills;
+- legitimate provider sign-in remains separate;
+- manual LinkedIn URL/profile editing remains usable.
+
+---
+
+# PHASE 16 — PRIORITY 5 — GET HIRED
+
+Authenticated Talent UAT:
+
+Resume:
+
+```text id="uzn1tm"
+select valid file
+→ upload private object
+→ persist reference
+→ success shown only after persistence
+→ reload
+→ document remains
+→ authorized view/download succeeds
+```
+
+Test a valid supported resume type.
+
+Where safe, test validation failure for unsupported/oversized file.
+
+Assessment:
+
+- no fabricated 92%;
+- no fake March 2024 result;
+- no Top 10% fake result;
+- truthful unavailable state shown;
+- user can continue;
+- continuing creates no assessment result.
+
+---
+
+# PHASE 17 — PRIORITY 6 — CLIENT NAVIGATION
+
+Authenticated Client desktop AND mobile UAT.
+
+Verify every visible retained navigation item reaches its intended destination.
+
+Confirm removed entries remain absent:
+
+- Contracts;
+- Payments;
+- Projects;
+- Performance;
+- ROI Analytics.
+
+Confirm retained working destinations include appropriate Client routes such as:
+
+- Dashboard;
+- Find Talent;
+- Messages;
+- Interviews;
+- Team;
+- Billing;
+- Monthly Invoices;
+- Contract End Requests;
+- Timesheets;
+- Client Profile;
+- Settings;
+
+plus applicable organization destinations.
+
+Check active-state behavior and browser history.
+
+---
+
+# PHASE 18 — AUTHORIZATION / ROLE ISOLATION
+
+Using approved staging Client, Talent, and Admin identities, test representative protected APIs and pages.
+
+Verify:
+
+- unauthenticated rejected;
+- Client cannot use Talent-only API;
+- Talent cannot use Client-only API;
+- non-Admin cannot use Admin API;
+- private objects enforce ownership;
+- browser storage values cannot change server authorization;
+- verification state cannot be forged client-side.
+
+Do not run destructive Admin operations merely to test authorization.
+
+---
+
+# PHASE 19 — DATABASE-CONNECTED REGRESSION
+
+Now that an approved isolated staging database exists, run the previously blocked database-connected test suites using the staging/test-safe execution method.
+
+Prefer a dedicated disposable clone/test DB if suites mutate heavily.
+
+Do NOT run destructive automated tests against shared staging records if they cannot isolate their data.
+
+Report:
+
+- total passed;
+- failed;
+- skipped;
+- blocked.
+
+No blocked suite may be counted as pass.
+
+Classify every failure:
+
+`NEW REGRESSION`
+
+`PRE-EXISTING`
+
+`ENVIRONMENTAL`
+
+`UNKNOWN`
+
+A release-critical NEW REGRESSION blocks release.
+
+---
+
+# PHASE 20 — COMPLETE AUTOMATED REGRESSION
+
+Run the complete practical release suite:
+
+- TypeScript;
+- Client units;
+- server units;
+- DB-connected safe suites;
+- complete controlled browser suite;
+- signup verification;
+- auth;
+- provider auth;
+- contract endings;
+- Team Dashboard;
+- LinkedIn removal;
+- Get Hired;
+- navigation;
+- object storage;
+- invitation/application continuation;
+- production build;
+- artifact inspection;
+- `git diff --check`.
+
+Do not hide failures through retries.
+
+If a flaky test passes on retry, report both the initial failure and retry result.
+
+---
+
+# PHASE 21 — KNOWN PRE-EXISTING FAILURES
+
+Re-evaluate—not automatically waive—the known items:
+
+- Client/Talent name-format assertions;
+- invitation CTA browser tests;
+- Client Profile navigation expectation if still present;
+- message/navigation browser tests;
+- server file-load environment failures;
+- admin-auth-check workflow;
+- any composer observation previously classified UNKNOWN.
+
+For each determine whether it affects an MVP user path.
+
+Do not change tests merely to obtain green totals.
+
+---
+
+# PHASE 22 — CLIENT DASHBOARD PROTOTYPE CHECK
+
+The Client Dashboard was previously reported to contain prototype/mock data.
+
+Inspect the authenticated staging Dashboard.
+
+Determine whether a real Client could reasonably interpret displayed values as actual operational/account data.
+
+If clearly marked demo/placeholder and acceptable by current product intent, report that.
+
+If mock values are presented as real Client business data, classify:
+
+`RELEASE DECISION REQUIRED`
+
+Do not silently replace the dashboard in this UAT task.
+
+---
+
+# PHASE 23 — PAYMENT / STRIPE CHECK
+
+Determine whether payment/checkout functionality is part of the intended MVP launch.
+
+Check staging configuration presence and safe behavior.
+
+Do NOT make real charges.
+
+If payment functionality is user-visible but cannot function because required Stripe configuration is absent, report it as a release concern.
+
+Do not expose Stripe secrets.
+
+---
+
+# PHASE 24 — POST-RESTART PERSISTENCE
+
+Restart the staging application after creating UAT data.
+
+Verify:
+
+- verified Client remains valid;
+- verified Talent remains valid;
+- ownership state persists;
+- pending/consumed challenges behave correctly;
+- uploaded object references still work;
+- provider links persist;
+- contract-ending state persists;
+- dashboard data remains correct;
+- no duplicate account/profile/candidate creation.
+
+---
+
+# PHASE 25 — ROLLBACK TEST
+
+Before production publication, demonstrate the staging rollback procedure.
+
+We need BOTH:
+
+### Application rollback
+
+Ability to return to the previous known-good application revision.
+
+### Database recovery
+
+Ability to restore/recover from migration `0033` or otherwise execute the approved forward/rollback recovery strategy.
+
+Do not destructively test rollback on production.
+
+Record:
+
+- previous application revision;
+- candidate revision;
+- DB recovery point;
+- rollback steps;
+- validation after rollback/recovery.
+
+If database recovery cannot be demonstrated, report:
+
+`ROLLBACK NOT VERIFIED`
+
+---
+
+# RELEASE CRITERIA
+
+Do NOT call the release ready merely because automated tests pass.
+
+For:
+
+`READY TO PUBLISH`
+
+all release-critical items must have positive evidence, including:
+
+- staging target confirmed;
+- migration successful;
+- clean startup/restart;
+- real Client OTP receipt + activation;
+- real Talent OTP receipt + activation;
+- Graph runtime verified for both senders;
+- authenticated Client/Talent access;
+- storage runtime round-trip;
+- Priority 1 authenticated UAT;
+- Priority 3 authenticated UAT;
+- Priority 4 authenticated UAT;
+- Priority 5 authenticated storage UAT;
+- Priority 6 desktop/mobile authenticated UAT;
+- role isolation;
+- release-critical DB regression;
+- no unresolved release-critical new regression;
+- rollback/recovery verified.
+
+If only a genuinely external/manual production-only check remains, use:
+
+`CONDITIONALLY READY — MANUAL VERIFICATION REQUIRED`
+
+Otherwise:
+
+`NOT READY TO PUBLISH`
+
+---
+
+# REQUIRED FINAL REPORT
+
+## Release Candidate
+
+SHA/environment/DB identity without secrets.
+
+## Staging Safety
+
+How staging isolation was established.
+
+## Backup / Recovery Point
+
+Evidence.
+
+## Migration 0033
+
+Preflight and migration result.
+
+## Startup / Restart
+
+Result and side-effect controls.
+
+## Email Verification UAT
+
+Separate Client and Talent results.
+
+## Graph Runtime
+
+Separate sender/auth/send/receipt results.
+
+## Provider Authentication
+
+New-provider and restart results.
+
+## Priority 1
+
+Authenticated Client/Talent contract-ending result.
+
+## Priority 2
+
+Graph + object-storage runtime result.
+
+## Priority 3
+
+Legacy/Tracked/Guaranteed result.
+
+## Priority 4
+
+LinkedIn-removal authenticated result.
+
+## Priority 5
+
+Real Get Hired upload/persist/reload/download + assessment result.
+
+## Priority 6
+
+Desktop/mobile Client navigation result.
+
+## Authorization
+
+Cross-role result.
+
+## Database Regression
+
+Counts and failures.
+
+## Full Regression
+
+Counts and classifications.
+
+## Client Dashboard Prototype
+
+Release impact.
+
+## Payments
+
+Release impact.
+
+## Persistence After Restart
+
+Result.
+
+## Rollback
+
+Application + DB recovery result.
+
+## Remaining Issues
+
+Only genuine remaining issues.
+
+## Final Release Decision
+
+Use exactly one:
+
+`READY TO PUBLISH`
+
+`CONDITIONALLY READY — MANUAL VERIFICATION REQUIRED`
+
+`NOT READY TO PUBLISH`
+
+Do not publish automatically.
+
+STOP after the report.
