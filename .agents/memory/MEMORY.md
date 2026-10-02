@@ -59,3 +59,4 @@
 - [LinkedIn import safety](linkedin-import-safety.md) — no simulated profile imports; retain sign-in/manual URLs, and require separate review before historical cleanup.
 - [Get Hired truthfulness](get-hired-data-truthfulness.md) — success requires real uploaded/persisted data; assessment schemas or prototype results are not a functioning result source.
 - [Client navigation availability](client-navigation-availability.md) — hide unavailable Client navigation; preserve planned routes and do not equate Contracts/Payments with other financial flows.
+- [Isolated server test boundaries](isolated-test-boundaries.md) — inspect transitive imports; denying SQL alone does not isolate memory stores or auth initialization.

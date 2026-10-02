@@ -86,6 +86,12 @@ async function routeApi(route: Route): Promise<void> {
   if (request.method() === "GET" && path === "/api/talent/applications") {
     return fulfillJson(route, []);
   }
+  if (request.method() === "POST" && (
+    path === "/api/talent/notifications/hired-popup/claim" ||
+    path === "/api/notifications/hired-popup/claim"
+  )) {
+    return fulfillJson(route, null);
+  }
   if (request.method() === "GET" && path === "/api/profiles/user/client-interview-details") {
     return fulfillJson(route, { profileCompletion: 100 });
   }

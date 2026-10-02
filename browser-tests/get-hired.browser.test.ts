@@ -163,6 +163,35 @@ async function fixture(options: { uploadFails?: boolean; saveFails?: boolean; vi
   return { context, page, upload, requests, counts: () => ({ uploads, saves, downloads }) };
 }
 
+test("signed-out Get Hired requires legitimate authentication without a mock login", async () => {
+  const context = await browser.newContext({ serviceWorkers: "block" });
+  const page = await context.newPage();
+  const mutations: string[] = [];
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.origin !== baseUrl) return route.abort();
+    if (url.pathname.startsWith("/api/")) {
+      if (request.method() !== "GET") mutations.push(url.pathname);
+      return route.fulfill({ status: 401, contentType: "application/json", body: '{"error":"Unauthorized"}' });
+    }
+    return route.continue();
+  });
+  try {
+    await page.goto(`${baseUrl}/__get-hired`);
+    await page.getByRole("heading", { name: "Authentication Required", exact: true }).waitFor();
+    await page.getByText("Please log in to access the Get Hired page and create your talent profile.", { exact: true }).waitFor();
+    assert.equal(await page.getByTestId("button-test-login").count(), 0);
+    assert.equal(await page.getByRole("button", { name: /Test Login/i }).count(), 0);
+    assert.deepEqual(await page.evaluate(() => ({
+      user: localStorage.getItem("onspot_user"),
+      token: localStorage.getItem("onspot_jwt_token"),
+      candidateToken: localStorage.getItem("talent_profile_token"),
+    })), { user: null, token: null, candidateToken: null });
+    assert.deepEqual(mutations, [], "signed-out rendering must not create a mock session or user");
+  } finally { await context.close(); }
+});
+
 for (const video of [false, true]) {
   test(`confirmed ${video ? "video" : "resume"} upload survives reload and uses authenticated private retrieval`, async () => {
     const f = await fixture({ video });

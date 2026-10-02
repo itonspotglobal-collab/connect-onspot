@@ -1,0 +1,233 @@
+# RELEASE READINESS — APPLY THREE DIAGNOSED CORRECTIONS
+
+The previous diagnostic pass is approved.
+
+Implement ONLY the three demonstrated corrections below.
+
+Do not expand scope.
+
+Do not publish.
+
+Do not begin a broader security audit.
+
+---
+
+# 1 — REMOVE GET HIRED TEST LOGIN
+
+Remove the obsolete production-visible Test Login functionality from:
+
+`client/src/pages/GetHired.tsx`
+
+Remove:
+
+- the visible Test Login button;
+- its mock-user browser-storage handler;
+- its development/test explanation;
+- any imports/state/helpers used exclusively by this control.
+
+Do NOT modify legitimate Get Hired authentication.
+
+Do NOT modify `/api/dev/login` as part of this task.
+
+Do NOT introduce a replacement mock login.
+
+After removal, an unauthenticated production Get Hired visitor should follow the legitimate authentication flow only.
+
+Search the production runtime source afterward for the removed Test Login text/handler and explain any remaining occurrence.
+
+---
+
+# 2 — UPDATE STALE ADMIN APPROVAL TEST
+
+Update:
+
+`browser-tests/admin-talent-vetted.browser.test.ts`
+
+to reflect the CURRENT legitimate approval workflow:
+
+`Approve Job & Email Client`
+
+Do not restore the obsolete:
+
+`Approve this job?`
+
+dialog merely to satisfy the old test.
+
+Update the fixture so the composer-context endpoint returns the actual current response contract containing the required recipient/sender information.
+
+Preserve meaningful assertions around:
+
+- rich job-description rendering;
+- opening approval workflow;
+- correct composer;
+- Cancel;
+- cancellation does NOT transition/approve the job;
+- test-send behavior where applicable;
+- final approval behavior where appropriate.
+
+Reuse the current application/API contract demonstrated by:
+
+`admin-client-email-composer.browser.test.ts`
+
+Do not weaken assertions unnecessarily.
+
+---
+
+# 3 — FIX TALENT INTERVIEW FIXTURE CONTRACT
+
+Update:
+
+`browser-tests/interview-details.browser.test.ts`
+
+so:
+
+`POST /api/talent/notifications/hired-popup/claim`
+
+returns:
+
+`null`
+
+when there is no notification to claim.
+
+Do NOT change `NotificationBell` merely to accommodate the invalid `[]` fixture.
+
+Preserve the existing interview assertions for:
+
+- accessible card selection;
+- keyboard access;
+- details rendering;
+- dialog focus;
+- closing/reopening;
+- missing meeting-link fallback.
+
+The objective is to make the fixture represent the actual API contract.
+
+---
+
+# REGRESSION VERIFICATION
+
+After implementing these three corrections, rerun:
+
+1. Get Hired relevant unit/browser tests.
+2. Priority 4 LinkedIn tests.
+3. Priority 5 Get Hired tests.
+4. ProtectedRoute production guard tests.
+5. Admin Talent approval test.
+6. Admin Client email composer test.
+7. Talent interview details test.
+8. Notification-related tests.
+9. Priority 6 navigation tests.
+10. Complete controlled browser suite.
+11. Complete practical Client unit suite.
+12. Safe isolated server suites that do not require an uncertified database.
+13. TypeScript.
+14. Production build.
+15. `git diff --check`.
+
+Do not start the full database-writing application solely for this verification.
+
+---
+
+# IMPORTANT TEST POLICY
+
+Do not:
+
+- delete failing tests;
+- skip tests merely to obtain green results;
+- weaken assertions unrelated to the diagnosed stale behavior;
+- change application behavior to satisfy an invalid fixture;
+- hide newly discovered failures.
+
+If new failures appear, classify and report them.
+
+---
+
+# PRODUCTION ARTIFACT CHECK
+
+Inspect the fresh production build.
+
+Confirm:
+
+- Get Hired Test Login UI is absent;
+- its mock-user click handler is absent/unreachable;
+- `dev_portal_role` remains absent from executable authorization decisions;
+- Priority 4 fake LinkedIn import remains absent;
+- Priority 5 fake assessment result remains absent.
+
+Do not treat source inspection alone as authenticated UAT.
+
+---
+
+# REQUIRED REPORT
+
+## Changes
+
+List every changed application/test file.
+
+## Test Login
+
+Confirm:
+
+`REMOVED FROM PRODUCTION UI`
+
+and explain the resulting signed-out Get Hired behavior.
+
+## Admin Approval Test
+
+Confirm the fixture now represents the current composer API/UI contract.
+
+Report whether the full test passes.
+
+## Talent Interview Test
+
+Confirm the no-notification response is `null`.
+
+Report whether the unchanged substantive interview assertions pass.
+
+## Regression Results
+
+Provide:
+
+- total passed;
+- total failed;
+- total skipped;
+- any blocked DB-connected suites separately.
+
+Do not combine BLOCKED with PASS.
+
+## Build
+
+Report:
+
+- TypeScript;
+- production build;
+- `git diff --check`;
+- production artifact inspection.
+
+## Remaining Failures
+
+Classify each as:
+
+`NEW REGRESSION`
+
+`PRE-EXISTING`
+
+`ENVIRONMENTAL`
+
+`UNKNOWN`
+
+## Final Status
+
+Use:
+
+`CORRECTIONS COMPLETE`
+
+`PARTIALLY COMPLETE`
+
+or:
+
+`BLOCKED`
+
+Do not publish.
+
+STOP after reporting.

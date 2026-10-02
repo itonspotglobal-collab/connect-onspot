@@ -17,6 +17,7 @@ interface FixtureState {
   listRequestUrls: string[];
   talentItems?: FixtureTalent[];
   jobItems?: Record<string, unknown>[];
+  jobDecisionRequests?: string[];
 }
 
 interface FixtureTalent {
@@ -198,6 +199,40 @@ async function routeApi(route: Route, state: FixtureState): Promise<void> {
       meta: { page: 1, pageSize: 25, total: state.jobItems.length, totalPages: 1 },
       stats: { total: state.jobItems.length, pending: state.jobItems.length, approved: 0, rejected: 0 },
     });
+  }
+  const emailContext = path.match(/^\/api\/admin\/jobs\/([^/]+)\/client-email\/context$/);
+  if (request.method() === "GET" && emailContext && state.jobItems) {
+    const job = state.jobItems.find((item) => item.id === emailContext[1]);
+    if (!job) return fulfillJson(route, { error: "Job not found" }, 404);
+    return fulfillJson(route, {
+      jobId: job.id,
+      jobTitle: job.title,
+      approvalStatus: job.approvalStatus,
+      recipient: { name: job.clientContactName, email: "client-owner@example.test" },
+      sender: { name: "OnSpot Hire Talent", email: "hiretalent@onspotglobal.com" },
+    });
+  }
+  const approvalTemplate = {
+    id: "rich-text-approval-template", name: "Job approved",
+    subject: "Your {{job_title}} job is approved",
+    bodyHtml: "<p>Hi {{client_first_name}}, your {{job_title}} job is approved.</p>",
+    category: "job_approved", isDefault: true,
+  };
+  if (request.method() === "GET" && path === "/api/admin/email-templates")
+    return fulfillJson(route, [approvalTemplate]);
+  if (request.method() === "GET" && path === `/api/admin/email-templates/${approvalTemplate.id}`)
+    return fulfillJson(route, approvalTemplate);
+  if (request.method() === "GET" && /\/client-email\/history$/.test(path))
+    return fulfillJson(route, []);
+  if (request.method() === "POST" && /\/client-email\/preview$/.test(path)) {
+    const { subject, bodyHtml } = request.postDataJSON();
+    return fulfillJson(route, { subject, bodyHtml });
+  }
+  if (request.method() === "POST" && /\/(?:approve-with-email|approve|reject|unapprove)$/.test(path)) {
+    (state.jobDecisionRequests ??= []).push(path);
+    // This test cancels both decisions. An accidental decision must fail,
+    // not be disguised by the shared-chrome empty-array fallback.
+    return fulfillJson(route, { error: "Unexpected job decision in cancellation test" }, 500);
   }
 
   if (request.method() === "GET" && path === "/api/admin/talent") {
@@ -606,7 +641,7 @@ test("admin talent list keeps Vetted sorting through filters and pagination", as
 });
 
 test("admin pending approval details render rich job descriptions safely", async () => {
-  const { page } = await newAdminFindWorkPage();
+  const { page, state } = await newAdminFindWorkPage();
   try {
     await page.getByRole("button", { name: "Pending Approvals", exact: true }).click();
     await page.getByText("Customer Success Manager", { exact: true }).waitFor();
@@ -629,11 +664,24 @@ test("admin pending approval details render rich job descriptions safely", async
 
     await page.getByRole("button", { name: "View Details", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Approve", exact: true }).click();
-    await page.getByRole("dialog").filter({ hasText: "Approve this job?" }).getByRole("button", { name: "Cancel", exact: true }).click();
+    const composer = page.getByTestId("client-email-composer");
+    await composer.getByRole("heading", { name: "Approve Job & Email Client", exact: true }).waitFor();
+    await composer.getByText("client-owner@example.test", { exact: true }).waitFor();
+    assert.equal(state.jobItems?.[0].approvalStatus, "pending", "opening must not approve the job");
+    assert.deepEqual(state.jobDecisionRequests ?? [], []);
+    await composer.getByTestId("client-email-cancel").click();
+    await composer.waitFor({ state: "hidden" });
+    assert.equal(state.jobItems?.[0].approvalStatus, "pending", "cancel must not approve the job");
+    assert.deepEqual(state.jobDecisionRequests ?? [], [], "cancel must not submit a job decision");
 
     await page.getByRole("button", { name: "View Details", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Decline", exact: true }).click();
     await page.getByRole("dialog").filter({ hasText: "Decline Job Request" }).getByRole("button", { name: "Cancel", exact: true }).click();
+    assert.equal(state.jobItems?.[0].approvalStatus, "pending");
+    assert.deepEqual(state.jobDecisionRequests ?? [], [], "decline cancellation must not submit a job decision");
+
+    // Test-send and final approval are covered separately by the unchanged
+    // admin-client-email-composer suite, including its no-transition checks.
   } finally {
     await page.context().close();
   }

@@ -358,29 +358,6 @@ export default function GetHired() {
           <p className="text-muted-foreground mb-6">
             Please log in to access the Get Hired page and create your talent profile.
           </p>
-          <div className="space-y-4">
-            <button
-              onClick={() => {
-                // Create test authentication for development
-                const testUser = {
-                  id: '1',
-                  username: 'testuser',
-                  email: 'talent@test.com',
-                  role: 'talent',
-                  userType: 'talent' as const
-                };
-                localStorage.setItem('onspot_user', JSON.stringify(testUser));
-                window.location.reload();
-              }}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-6 py-3 rounded-md font-medium"
-              data-testid="button-test-login"
-            >
-              🧪 Test Login (Development Only)
-            </button>
-            <p className="text-xs text-muted-foreground">
-              This test login is for development purposes. In production, users would log in through the normal authentication flow.
-            </p>
-          </div>
         </div>
       </div>
     );
