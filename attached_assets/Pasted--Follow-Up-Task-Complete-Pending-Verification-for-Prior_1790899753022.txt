@@ -1,0 +1,634 @@
+## Follow-Up Task — Complete Pending Verification for Priority 1 and Priority 2
+
+Continue from the work already completed for **Priority 1 and Priority 2**.
+
+This is a **verification-only follow-up**.
+
+Do NOT proceed to Priority 3 yet.
+
+Do NOT make additional code changes unless runtime testing reveals a genuine defect in the implementation. If a defect is discovered, report it first before changing anything.
+
+Do NOT weaken authentication, create authentication bypasses, create public test endpoints, fabricate test data/results, or expose secrets just to complete these tests.
+
+---
+
+# CURRENT STATE
+
+## Priority 1 — Contract Ending Routes
+
+The routing fix has already been implemented in:
+
+`client/src/App.tsx`
+
+with:
+
+```tsx
+<Route path="/talent/contract-endings" component={TalentRouter} />
+<Route path="/client/contract-endings" component={ClientRouter} />
+```
+
+Already verified:
+
+- TypeScript: PASS
+- Production build: PASS
+- Whitespace check: PASS
+- Client outer routing: implemented
+- Talent outer routing: implemented
+- Existing nested `ContractEndings` routes remain intact
+- Backend endpoints exist and are protected
+- Unauthenticated API requests return 401
+- No termination business logic was modified
+
+Still NOT verified:
+
+- authenticated Client page
+- authenticated Talent page
+- real eligible contract loading
+- real Client termination request
+- real Talent termination request
+- persistence of those requests
+- authenticated screenshots
+- authenticated cross-role negative tests
+
+Therefore Priority 1 is currently:
+
+`FIX IMPLEMENTED — E2E ACCEPTANCE PENDING`
+
+Do not call Priority 1 fully PASS until the remaining tests are genuinely completed.
+
+---
+
+# PRIORITY 1 — COMPLETE AUTHENTICATED E2E VERIFICATION
+
+Use only legitimate test accounts and test contracts that are safe to modify.
+
+Do NOT terminate a real customer's active production contract merely to complete this test.
+
+If suitable test accounts/contracts do not exist, report:
+
+`BLOCKED — suitable authenticated test account/contract unavailable`
+
+Do not create fake evidence.
+
+## A. Client Test
+
+Using an authenticated **Client test account**:
+
+Navigate to:
+
+`/client/contract-endings`
+
+Verify:
+
+1. The page loads successfully.
+2. It does not hit NotFound/404.
+3. The Client layout is correct.
+4. Authentication remains enforced.
+5. Eligible contracts load from the real backend.
+6. Existing termination requests load correctly.
+
+Then, using a contract explicitly safe for testing:
+
+Submit a real termination request.
+
+Verify the frontend uses:
+
+`POST /api/client/hiring-contracts/:id/termination-requests`
+
+Confirm:
+
+- request reaches the real backend
+- HTTP response indicates success
+- request is actually persisted
+- UI reflects the persisted request
+- refreshing/reloading does not make the request disappear
+
+Do not treat a successful toast alone as proof of persistence.
+
+### Evidence
+
+Capture a screenshot of the authenticated Client contract-ending page.
+
+If safe and possible, capture the state after the test termination request appears in the UI.
+
+Do not expose sensitive customer information in screenshots. Redact or avoid unnecessary PII.
+
+---
+
+## B. Talent Test
+
+Using an authenticated **Talent test account**:
+
+Navigate to:
+
+`/talent/contract-endings`
+
+Verify:
+
+1. The page loads successfully.
+2. It does not hit NotFound/404.
+3. The Talent layout/authentication behavior is correct.
+4. Eligible contracts load from the real backend.
+5. Existing termination requests load correctly.
+
+Then, using a contract explicitly safe for testing:
+
+Submit a real termination request.
+
+Verify the frontend uses:
+
+`POST /api/talent/hiring-contracts/:id/termination-requests`
+
+Confirm:
+
+- request reaches the real backend
+- HTTP response indicates success
+- request is actually persisted
+- UI reflects the persisted request
+- refreshing/reloading preserves the displayed persisted state
+
+### Evidence
+
+Capture a screenshot of the authenticated Talent contract-ending page.
+
+If safe and possible, capture the submitted test request appearing in the UI.
+
+Do not expose unnecessary PII.
+
+---
+
+# C. Priority 1 Access-Control Regression Tests
+
+Using legitimate authenticated test accounts, verify:
+
+### Client account
+
+A Client can access:
+
+`/client/contract-endings`
+
+but cannot use Talent termination functionality to bypass role restrictions.
+
+Test the relevant Talent API using the Client session.
+
+Expected result:
+
+`403` or the application's appropriate role-denied response.
+
+### Talent account
+
+A Talent can access:
+
+`/talent/contract-endings`
+
+but cannot use Client termination functionality to bypass role restrictions.
+
+Test the relevant Client API using the Talent session.
+
+Expected result:
+
+`403` or the application's appropriate role-denied response.
+
+### Unauthenticated
+
+Confirm protected APIs still reject unauthenticated requests.
+
+### Admin
+
+Confirm:
+
+`/admin/contract-endings`
+
+continues functioning as before.
+
+Do not modify any role/authorization logic as part of these tests.
+
+---
+
+# PRIORITY 1 ACCEPTANCE CRITERIA
+
+Only mark Priority 1:
+
+`PASS — COMPLETE`
+
+when BOTH Client and Talent authenticated E2E tests succeed.
+
+Otherwise use:
+
+`FIX IMPLEMENTED — E2E ACCEPTANCE PENDING`
+
+or:
+
+`BLOCKED`
+
+and state exactly what remains unavailable.
+
+---
+
+# PRIORITY 2 — COMPLETE PRODUCTION INTEGRATION VERIFICATION
+
+Priority 2 currently has:
+
+### Microsoft Graph
+
+Configuration presence: confirmed  
+Real send: NOT TESTED  
+Real receipt: NOT TESTED
+
+Current status:
+
+`INCONCLUSIVE`
+
+### Object Storage
+
+Configuration presence: confirmed  
+Real upload: NOT TESTED  
+Real retrieval: NOT TESTED
+
+Current status:
+
+`INCONCLUSIVE`
+
+The previous tests correctly stopped because the production endpoints returned `401` without an authenticated session.
+
+Continue using legitimate authenticated access.
+
+Do NOT bypass authentication.
+
+---
+
+# SECURITY RULES FOR PRIORITY 2
+
+Never print or expose:
+
+- passwords
+- session cookies
+- JWTs
+- access tokens
+- refresh tokens
+- Microsoft client secrets
+- authorization headers
+- storage credentials
+- private keys
+- signed upload/download URLs containing credentials
+- Replit Secret values
+
+If configuration needs to be checked, report only:
+
+`PRESENT`
+
+or:
+
+`MISSING`
+
+Do not report its actual value.
+
+Do not ask me to paste credentials, JWTs, cookies, Graph secrets, storage secrets, or signed URLs into chat.
+
+---
+
+# A. MICROSOFT GRAPH REAL EMAIL TEST
+
+Use the application's **existing Microsoft Graph email implementation**.
+
+Do not create a second test email implementation.
+
+Do not use a mock mailer.
+
+Do not call a token-acquisition test a successful email test.
+
+## Approved test recipient
+
+A real test inbox must be used whose receipt can actually be checked.
+
+If no approved inbox is currently available, STOP this portion and report:
+
+`INCONCLUSIVE — approved test inbox required`
+
+Do not send test messages to arbitrary production users.
+
+## Test
+
+Send a harmless email such as:
+
+Subject:
+
+`OnSpot Production Email Verification`
+
+Body:
+
+`This is an automated production integration verification test. No action is required.`
+
+Include a timestamp if useful.
+
+Verify:
+
+### Step 1 — Application
+
+The request successfully enters the application's existing email service.
+
+### Step 2 — Microsoft Graph
+
+Microsoft Graph accepts the send operation.
+
+### Step 3 — Mailbox
+
+The destination mailbox actually receives the message.
+
+The previous "connection test" only proving token acquisition is NOT sufficient.
+
+## PASS requirement
+
+Only mark Microsoft Graph:
+
+`PASS`
+
+when the email is actually received.
+
+If Graph accepts the send but mailbox receipt cannot be checked:
+
+`INCONCLUSIVE — send accepted, receipt not independently verified`
+
+If Graph rejects the request:
+
+`FAIL — Microsoft Graph email delivery failed`
+
+If configuration is missing:
+
+`FAIL — Microsoft Graph email not fully configured`
+
+---
+
+# B. OBJECT STORAGE REAL TEST
+
+Use the application's **existing production object-storage implementation**.
+
+Do not create a separate storage implementation.
+
+Do not modify a real user's resume/video/profile merely to complete this test if a standalone test object can safely be used.
+
+Create a harmless temporary file:
+
+`onspot-storage-verification.txt`
+
+Contents:
+
+`OnSpot production object storage verification test.`
+
+Include a timestamp if helpful.
+
+## Required flow
+
+Test:
+
+`application`
+→ `existing upload endpoint/service`
+→ `production object storage`
+→ `stored object`
+→ `existing retrieval mechanism`
+→ `download/read file`
+
+Verify:
+
+1. upload request succeeds
+2. actual bytes are uploaded
+3. object exists
+4. object can be retrieved
+5. retrieved contents match the original test file
+
+Do not call this PASS just because an upload URL was generated.
+
+Do not expose the signed upload URL in the final report.
+
+## Cleanup
+
+The previous audit found there may be no generic cleanup endpoint for standalone test objects.
+
+Therefore:
+
+Do NOT modify production code merely to add a cleanup endpoint.
+
+If the test object cannot safely be deleted using existing supported functionality:
+
+- use an obvious verification filename
+- keep it small
+- document that the temporary verification object remains
+- report its safe/non-secret identifier if appropriate
+
+Do not delete or modify real user files.
+
+## PASS requirement
+
+Only mark Object Storage:
+
+`PASS`
+
+when:
+
+`UPLOAD → STORE → RETRIEVE → CONTENT MATCH`
+
+all succeed.
+
+---
+
+# C. Verify User-Facing Failure Behavior
+
+Do not intentionally break production configuration.
+
+Use source tracing and any naturally occurring test failures to determine what happens when these integrations fail.
+
+For Microsoft Graph, verify whether failures affecting things such as:
+
+- interview confirmations
+- interview notifications
+- offer notifications
+
+are:
+
+- shown to the user,
+- logged only,
+- silently ignored,
+- or handled another way.
+
+For object storage, inspect relevant workflows including:
+
+- resume uploads
+- video introductions
+- candidate media/documents
+
+Determine whether upload/storage failures produce a visible user error.
+
+This is an audit finding.
+
+Do NOT redesign error handling during this task.
+
+---
+
+# DO NOT CHANGE CODE UNLESS A REAL DEFECT IS FOUND
+
+The default expectation for this follow-up is:
+
+`0 additional production code changes`
+
+If runtime testing exposes a genuine defect, STOP before fixing it and report:
+
+### Defect discovered
+
+- exact failing behavior
+- affected Priority
+- frontend/backend location
+- expected behavior
+- actual behavior
+- runtime evidence
+- proposed minimal fix
+
+Wait for approval before changing unrelated or significant behavior.
+
+A tiny correction directly required for the existing intended behavior may be proposed, but do not silently expand scope.
+
+---
+
+# REQUIRED FINAL REPORT
+
+Return one consolidated report.
+
+## Priority 1 — Contract Ending Routes
+
+### Implementation
+
+`PASS / FAIL`
+
+### Client E2E
+
+- authenticated page: PASS / FAIL / BLOCKED
+- eligible contracts loaded: PASS / FAIL / BLOCKED
+- termination submitted: PASS / FAIL / BLOCKED
+- backend persisted request: PASS / FAIL / BLOCKED
+- persisted state survives reload: PASS / FAIL / BLOCKED
+- screenshot: `<evidence>`
+
+### Talent E2E
+
+- authenticated page: PASS / FAIL / BLOCKED
+- eligible contracts loaded: PASS / FAIL / BLOCKED
+- termination submitted: PASS / FAIL / BLOCKED
+- backend persisted request: PASS / FAIL / BLOCKED
+- persisted state survives reload: PASS / FAIL / BLOCKED
+- screenshot: `<evidence>`
+
+### Access control
+
+- unauthenticated protection: PASS / FAIL
+- Client → Talent API denied: PASS / FAIL / BLOCKED
+- Talent → Client API denied: PASS / FAIL / BLOCKED
+- Admin regression: PASS / FAIL / BLOCKED
+
+### Priority 1 Final Status
+
+Use exactly one:
+
+`PASS — COMPLETE`
+
+`FIX IMPLEMENTED — E2E ACCEPTANCE PENDING`
+
+`FAIL`
+
+`BLOCKED`
+
+Explain why.
+
+---
+
+# Priority 2 — Microsoft Graph
+
+### Configuration
+
+`PRESENT / MISSING`
+
+Do not display values.
+
+### Real send
+
+`PASS / FAIL / INCONCLUSIVE`
+
+### Real mailbox receipt
+
+`PASS / FAIL / INCONCLUSIVE`
+
+### Evidence
+
+Provide safe evidence:
+
+- timestamp
+- subject
+- redacted recipient if needed
+- send result
+- receipt result
+- screenshot if available
+
+Do not include secrets/tokens.
+
+### Microsoft Graph Final Status
+
+`PASS / FAIL / INCONCLUSIVE`
+
+---
+
+# Priority 2 — Object Storage
+
+### Configuration
+
+`PRESENT / MISSING`
+
+### Upload
+
+`PASS / FAIL / INCONCLUSIVE`
+
+### Retrieval
+
+`PASS / FAIL / INCONCLUSIVE`
+
+### Content Match
+
+`PASS / FAIL / INCONCLUSIVE`
+
+### Evidence
+
+Provide:
+
+- timestamp
+- safe test filename
+- upload result
+- retrieval result
+- content comparison
+- whether temporary object was cleaned up
+
+Do not provide signed URLs or credentials.
+
+### Object Storage Final Status
+
+`PASS / FAIL / INCONCLUSIVE`
+
+---
+
+# Overall Gate Before Priority 3
+
+Finish by reporting:
+
+**Priority 1:** `<status>`
+
+**Priority 2 — Microsoft Graph:** `<status>`
+
+**Priority 2 — Object Storage:** `<status>`
+
+Then state whether the remaining items are:
+
+- actual implementation defects,
+- missing production configuration,
+- or verification blocked only by unavailable test credentials/accounts/inbox/contracts.
+
+Do not proceed to Priority 3 automatically.
+
+Do not convert BLOCKED or INCONCLUSIVE results into PASS.
+
+The purpose of this follow-up is to establish trustworthy runtime evidence for Priorities 1 and 2 before continuing.
