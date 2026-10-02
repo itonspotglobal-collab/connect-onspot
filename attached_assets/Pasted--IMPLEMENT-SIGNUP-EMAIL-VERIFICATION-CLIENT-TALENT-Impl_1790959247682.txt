@@ -1,0 +1,932 @@
+# IMPLEMENT SIGNUP EMAIL VERIFICATION — CLIENT + TALENT
+
+Implement the approved signup email-ownership verification architecture from the completed audit.
+
+The objective is a production-ready signup system where new Client and Talent users cannot receive usable application credentials until they prove access to their email inbox.
+
+This is an approved feature implementation.
+
+Do NOT publish automatically.
+
+Do NOT use production customer data for testing.
+
+Do NOT send real verification emails until explicitly performing approved UAT.
+
+Do NOT broaden this into a general authentication/security rewrite.
+
+---
+
+# APPROVED PRODUCT DECISIONS
+
+## New accounts
+
+New Client/Talent identities must prove email ownership before receiving usable application credentials.
+
+This applies to normal new signup and other new-account/first-credential paths identified by the audit.
+
+Do not silently exempt provider/Admin/import-created identities unless trustworthy verified-email evidence is explicitly established and validated by the application.
+
+For the current MVP, use the OnSpot email-verification flow.
+
+## Existing accounts
+
+Grandfather established historical authenticated users.
+
+Do NOT:
+
+- lock existing established users out;
+- revoke existing sessions merely because this feature launches;
+- falsely populate `email_verified_at` for historical users who never completed inbox verification.
+
+Historical established accounts may have an explicit grandfathered exemption.
+
+Passwordless/unclaimed imported Talent identities must prove inbox ownership before establishing credentials for the first time.
+
+---
+
+# REQUIRED EMAIL SENDERS
+
+Server-controlled mapping:
+
+Talent:
+
+`FindWork@onspotglobal.com`
+
+Client:
+
+`HireTalent@onspotglobal.com`
+
+Use environment/configuration variables consistent with repository conventions.
+
+Preferred names if no better convention exists:
+
+`TALENT_VERIFICATION_EMAIL_FROM`
+
+`CLIENT_VERIFICATION_EMAIL_FROM`
+
+Also require a dedicated secret such as:
+
+`EMAIL_VERIFICATION_HMAC_KEY`
+
+Do NOT hardcode sender selection in browser code.
+
+Do NOT allow the browser to provide or override the sender.
+
+Do NOT silently fall back to an unrelated sender if verification sender configuration is missing.
+
+---
+
+# CORE ARCHITECTURE
+
+Implement:
+
+```text
+Signup details
+→ validate
+→ create pending registration
+→ generate verification OTP
+→ send verification email
+→ user enters OTP
+→ server verifies OTP
+→ atomic account activation
+→ create role records
+→ record verified email
+→ consume challenge
+→ COMMIT
+→ issue authentication token(s)
+→ continue onboarding
+```
+
+No usable Client/Talent account credential may be issued before successful verification for new identities covered by this policy.
+
+---
+
+# 1 — DATABASE / SCHEMA
+
+Create an additive migration for the approved verification architecture.
+
+Implement a pending-registration/challenge model containing the minimum required fields from the audit, including:
+
+- random registration/challenge identifier;
+- bound normalized email;
+- validated role;
+- validated registration fields required for activation;
+- password HASH only;
+- opaque pending capability binding/hash where applicable;
+- verification-code HMAC;
+- code generation;
+- code expiry;
+- incorrect-attempt counter;
+- resend timing;
+- delivery state;
+- purpose;
+- creation timestamp;
+- pending-registration expiry;
+- superseded/consumed timestamps where appropriate;
+- validated continuation/invitation context where required.
+
+Never persist the plaintext password.
+
+Never persist the plaintext OTP.
+
+Never log either.
+
+---
+
+# 2 — EMAIL OWNERSHIP STATE
+
+Implement distinct email-ownership state.
+
+At minimum support the concepts:
+
+- verified timestamp;
+- exact normalized verified email;
+- whether verification is required versus historical/grandfathered access.
+
+IMPORTANT:
+
+Establish ONE authoritative ownership source for a normal user-linked identity.
+
+For a normal Talent that has a `users` identity plus candidate/profile records:
+
+`users`
+
+should be the canonical source of email ownership unless the existing schema makes this demonstrably unsafe.
+
+Do NOT duplicate mutable verification state across `users` and `candidates` in a way that can disagree.
+
+Candidate-only ownership state may exist only where a legitimate authentication identity has no linked `users` record.
+
+Document the invariant in code/tests.
+
+Verification of email ownership must NOT grant Talent professional:
+
+- Verified;
+- Vetted;
+- identity-review;
+
+status.
+
+Those concepts remain separate.
+
+---
+
+# 3 — OTP GENERATION
+
+Generate a six-digit numeric code using cryptographically secure randomness.
+
+Preserve leading zeros.
+
+Example:
+
+`004271`
+
+Never use `Math.random()`.
+
+Store only an HMAC representation using the dedicated verification secret.
+
+Bind the HMAC to sufficient context to prevent substitution, including:
+
+- registration ID;
+- normalized email;
+- role;
+- purpose;
+- generation;
+- code.
+
+Recommended algorithm:
+
+HMAC-SHA-256.
+
+Never put plaintext OTPs in:
+
+- database logs;
+- request logs;
+- console logs;
+- analytics;
+- error messages;
+- email delivery ledger bodies;
+- tracing.
+
+---
+
+# 4 — EXPIRY AND ABUSE CONTROLS
+
+Implement the audited defaults unless an existing repository convention provides a stronger compatible setting:
+
+- OTP expiry: 10 minutes.
+- Pending registration lifetime: 24 hours.
+- Incorrect attempts: maximum 5 per code generation.
+- Resend cooldown: 60 seconds.
+- Start/send/resend normalized-email budget: 5/hour and 10/day.
+- Existing signup IP budget: preserve 10/hour where currently configured.
+- Additional resend IP budget: 20/hour.
+- Verification IP budget: 50 attempts/15 minutes.
+- Verification email budget: 20 attempts/hour across generations.
+
+Rate limiting that must work across production instances should use persistent/shared state rather than relying exclusively on process-local memory.
+
+Use existing infrastructure where appropriate rather than inventing unnecessary parallel systems.
+
+Ensure counters/resend reservations/consumption are concurrency-safe.
+
+---
+
+# 5 — START SIGNUP
+
+Modify the canonical:
+
+`POST /api/signup`
+
+behavior.
+
+For a new normal registration it must NO LONGER:
+
+- immediately create the usable user;
+- immediately create usable role credentials;
+- immediately issue the user JWT;
+- immediately issue the candidate JWT.
+
+Instead:
+
+1. Normalize and validate signup information.
+2. Validate Client/Talent role.
+3. Apply password requirements.
+4. Handle duplicate-account behavior without unsafe enumeration.
+5. Store pending registration.
+6. Generate OTP.
+7. Select server-controlled sender from role.
+8. Attempt Graph delivery.
+9. Record honest delivery state.
+10. Return pending verification information.
+
+Successful start should conceptually return:
+
+`202 Accepted`
+
+with only safe information such as:
+
+- challenge identifier;
+- masked destination;
+- expiration timing;
+- resend timing.
+
+Do not return OTP/HMAC/password hash.
+
+Do not claim account creation.
+
+---
+
+# 6 — GRAPH VERIFICATION EMAIL
+
+Reuse:
+
+`server/services/microsoftGraphEmailService.ts`
+
+where safe.
+
+Create a dedicated verification-email wrapper/template.
+
+The wrapper MUST inspect the existing `{ success, error }` result.
+
+Do not interpret a swallowed/caught Graph error as successful delivery.
+
+Use appropriate OnSpot branding.
+
+The email should clearly contain:
+
+- six-digit verification code;
+- short expiration statement;
+- notice that the code should not be shared;
+- context indicating Client or Talent signup where appropriate.
+
+Do not put passwords or unnecessary personal information in the email.
+
+Graph acceptance means only accepted for sending.
+
+It does NOT mean:
+
+- delivered;
+- inbox received;
+- email ownership verified.
+
+Only successful OTP submission establishes ownership.
+
+---
+
+# 7 — VERIFY ENDPOINT
+
+Implement an endpoint equivalent to:
+
+`POST /api/signup/verify`
+
+Request should contain only the required challenge/code information.
+
+Email and role must come from trusted pending-registration state—not browser claims.
+
+Verify:
+
+- pending capability;
+- challenge exists;
+- correct purpose;
+- not expired;
+- not superseded;
+- not consumed;
+- attempts remain;
+- HMAC matches;
+- bound email/role/generation match.
+
+Incorrect attempts must increment atomically.
+
+Do not expose whether a guessed code was “close.”
+
+---
+
+# 8 — ATOMIC ACCOUNT ACTIVATION
+
+Successful OTP verification must activate the account transactionally.
+
+Within ONE transaction:
+
+1. Lock/validate pending registration.
+2. Recheck email/username/account conflicts.
+3. Create the real `users` record.
+4. Create required role-specific records.
+5. For Client, create required Client profile state.
+6. For Talent, create/link required profile and candidate state.
+7. Record ownership of the exact normalized email.
+8. Consume the verification challenge.
+9. Commit.
+
+If any required activation write fails:
+
+ROLL BACK THE ENTIRE ACTIVATION.
+
+Do not preserve the existing normal-Talent behavior where candidate creation may fail while signup still reports success.
+
+Issue JWT/session/candidate credentials only AFTER successful commit.
+
+---
+
+# 9 — RESEND
+
+Implement an endpoint equivalent to:
+
+`POST /api/signup/resend`
+
+Requirements:
+
+- pending capability required;
+- server obtains email/role from pending registration;
+- enforce cooldown;
+- enforce shared budgets;
+- create a new generation;
+- invalidate/supersede old code;
+- generate new secure OTP;
+- send from correct role sender;
+- record honest send state.
+
+After successful resend:
+
+OLD CODE MUST FAIL.
+
+---
+
+# 10 — STATUS / REFRESH RECOVERY
+
+Implement a safe status operation equivalent to:
+
+`GET /api/signup/status`
+
+using an opaque HttpOnly same-site pending-registration capability/cookie if consistent with the final design.
+
+It may expose:
+
+- pending state;
+- masked email;
+- expiry;
+- resend timing;
+- send-failure/retry state.
+
+It must NOT expose:
+
+- password hash;
+- OTP;
+- OTP HMAC;
+- exact internal account-existence state;
+- privileged registration metadata.
+
+Refreshing the browser must NOT:
+
+- lose a valid pending signup unnecessarily;
+- create an account;
+- mark the email verified.
+
+---
+
+# 11 — CHANGE EMAIL
+
+If the user changes their signup email:
+
+- invalidate/supersede the old challenge;
+- normalize and validate the new email;
+- create a new bound challenge;
+- require verification of the new address.
+
+Verification for email A can never activate registration for email B.
+
+---
+
+# 12 — FRONTEND
+
+Update all relevant normal signup entry points:
+
+- `/signup/client`
+- `/signup/talent`
+- navigation signup dialog
+- Talent signup-from-application flow
+
+Implement a proper verification step.
+
+UX should include:
+
+```text
+Signup details
+→ “Check your email”
+→ six-digit code input
+→ Verify
+→ successful account creation
+```
+
+Support:
+
+- paste;
+- leading zeros;
+- mobile numeric input;
+- expiration message;
+- resend countdown;
+- resend;
+- incorrect code;
+- expired code;
+- attempt limit;
+- send failure;
+- retry;
+- change email;
+- refresh recovery.
+
+Never show:
+
+`Email verified`
+
+until the server confirms activation.
+
+Never use browser/localStorage flags as verification authority.
+
+---
+
+# 13 — LEGACY `/signup`
+
+Audit actual runtime consumers first.
+
+Do NOT leave legacy:
+
+`POST /signup`
+
+as an unverified account-creation bypass.
+
+Choose the smallest safe solution:
+
+A. route it through the same pending-registration service;
+
+or
+
+B. retire it if there are provably no legitimate production consumers.
+
+Do NOT create a second independent verification implementation.
+
+Document the decision and evidence.
+
+---
+
+# 14 — TALENT FIRST-CREDENTIAL PATHS
+
+The audit identified:
+
+- `/api/talent-auth/set-password`
+- `/api/candidates/setup-password`
+
+as paths capable of establishing credentials without inbox proof.
+
+For new/passwordless/unclaimed Talent identities, these must not bypass the approved ownership requirement.
+
+Integrate them with the same verification ownership policy.
+
+Do NOT break established historical Talent accounts that already possess legitimate password authentication.
+
+Do NOT trust a browser-supplied candidate ID alone to claim an identity.
+
+Do not silently attach an arbitrary candidate to a newly verified email.
+
+Add ownership/linking tests.
+
+---
+
+# 15 — ADMIN / CSV IMPORTS
+
+Admin-created or CSV-imported Talent/Client profile records may exist before ownership proof.
+
+That is acceptable only if they do NOT become a usable end-user credential identity until ownership is established.
+
+Preserve legitimate administrative import workflows.
+
+Do not require an Admin performing an import to enter the imported person's OTP.
+
+Instead:
+
+```text
+Admin/import creates inactive/unclaimed identity
+→ user later claims account
+→ inbox verification
+→ credential activation
+```
+
+where appropriate to the existing architecture.
+
+Do not modify historical established users.
+
+---
+
+# 16 — PROVIDER AUTHENTICATION
+
+Preserve legitimate Google/LinkedIn/Replit provider login for established historical accounts.
+
+For NEW identities, do not assume email ownership merely from the email string returned by the provider.
+
+Until the application explicitly validates trustworthy provider verified-email evidence:
+
+```text
+new provider identity
+→ pending ownership state
+→ OnSpot inbox verification
+→ account activation
+```
+
+Do not restore fake LinkedIn profile import.
+
+Do not silently link an existing account solely because provider email text matches.
+
+If implementing this safely would require a much broader provider-auth rewrite, STOP that subsection and report the blocker rather than weakening verification.
+
+---
+
+# 17 — INVITATIONS / APPLICATION CONTINUATION
+
+Preserve:
+
+- organization invitation context;
+- Talent application continuation;
+- account-first application drafts.
+
+But possession of an invitation/application token is NOT email ownership.
+
+Account activation still requires verification.
+
+After activation, existing authorization rules must still validate:
+
+- identity;
+- email where applicable;
+- role;
+- invitation/application ownership;
+- expiry/status.
+
+Do not create organization membership before appropriate authenticated acceptance.
+
+---
+
+# 18 — EXISTING USER MIGRATION
+
+Implement the approved historical policy.
+
+Before migration/enforcement, run a READ-ONLY preflight against the target test/staging dataset for:
+
+- case-insensitive duplicate emails;
+- candidate-only identities;
+- users linked to multiple candidate/profile identities;
+- passwordless imported profiles;
+- unusual null/empty emails;
+- other conflicts relevant to the new constraints.
+
+Do NOT automatically merge conflicting historical identities.
+
+Do NOT mark historical users as verified without proof.
+
+Represent grandfathered access explicitly.
+
+Migration must be additive.
+
+Do not apply the migration to production during this task.
+
+---
+
+# 19 — TRANSACTION / CONCURRENCY TESTS
+
+Test at minimum:
+
+- two simultaneous correct verification submissions;
+- correct + incorrect simultaneous submissions;
+- simultaneous resend and verification;
+- duplicate signup races;
+- username race;
+- email race;
+- consumed challenge replay;
+- activation transaction failure halfway through;
+- Graph send failure;
+- resend Graph failure;
+- stale generation;
+- expired pending registration.
+
+Expected:
+
+Exactly one valid account activation.
+
+No partial user/profile/candidate creation.
+
+No duplicate usable credentials.
+
+---
+
+# 20 — REQUIRED AUTOMATED TESTS
+
+At minimum verify:
+
+1. Talent signup selects Talent sender.
+2. Client signup selects Client sender.
+3. Browser cannot control sender.
+4. Valid OTP activates correct email.
+5. Incorrect OTP fails.
+6. Expired OTP fails.
+7. Used OTP cannot replay.
+8. Resend invalidates old OTP.
+9. Attempt limit works.
+10. Cooldown works.
+11. Email rate limit works.
+12. IP rate limit works.
+13. Email A cannot activate email B.
+14. Talent challenge cannot activate unrelated Client registration.
+15. Browser cannot self-mark verified.
+16. Graph failure never claims verification/account success.
+17. Duplicate signup cannot overwrite existing account.
+18. Existing established users continue to authenticate.
+19. Historical users are not falsely marked verified.
+20. Passwordless imported Talent requires verification before first credential activation.
+21. Normal Talent activation creates all required records atomically.
+22. Normal Client activation creates all required records atomically.
+23. User JWT issued only after commit.
+24. Candidate JWT issued only after commit.
+25. Failed activation produces no partial account.
+26. Legacy `/signup` cannot bypass verification.
+27. Talent first-password routes cannot bypass verification.
+28. Admin/import records cannot become new usable credentials without approved ownership path.
+29. Provider-created new identity cannot bypass approved policy.
+30. Invitation continuation still works.
+31. Application continuation still works.
+32. Refresh restores pending verification safely.
+33. Change-email invalidates old challenge.
+34. OTP plaintext absent from persisted data.
+35. OTP plaintext absent from production logs.
+36. Verification does not grant professional Verified/Vetted status.
+37. Production sender configuration cannot be overridden from browser input.
+
+Do not weaken existing authentication tests to accommodate the feature.
+
+---
+
+# 21 — REGRESSION
+
+After implementation run all SAFE automated coverage available without pointing uncontrolled automation at production.
+
+At minimum:
+
+- TypeScript;
+- signup/authentication tests;
+- Client authentication;
+- Talent authentication;
+- provider auth;
+- invitation tests;
+- application-continuation tests;
+- Get Hired tests;
+- Priority 4 LinkedIn tests;
+- Priority 5 upload tests;
+- Priority 6 navigation tests;
+- Team Dashboard tests;
+- contract-ending tests;
+- storage/auth tests;
+- controlled browser suite;
+- safe server suites;
+- production build;
+- `git diff --check`.
+
+Report database-connected suites separately if still blocked.
+
+Do not describe blocked tests as passed.
+
+---
+
+# 22 — PRODUCTION BUILD INSPECTION
+
+Confirm the fresh production build contains:
+
+- no Test Login control;
+- no `dev_portal_role` authorization read;
+- no fake LinkedIn import;
+- no fake assessment result;
+- no client-side OTP verification authority;
+- no verification sender override;
+- no OTP/HMAC secret;
+- no Graph secret.
+
+---
+
+# 23 — GRAPH CONFIGURATION
+
+After implementation report presence only for:
+
+- Microsoft tenant/client/secret;
+- Talent verification sender;
+- Client verification sender;
+- verification HMAC key.
+
+Never print values.
+
+Do not claim Graph runtime PASS from configuration presence.
+
+---
+
+# 24 — REAL EMAIL UAT
+
+Do NOT perform this unless the environment and recipient inboxes are explicitly approved for real verification testing.
+
+Runtime PASS eventually requires:
+
+### Talent
+
+```text
+real Talent signup
+→ FindWork@onspotglobal.com sends code
+→ approved inbox receives it
+→ code entered
+→ account activated
+→ Talent login/access works
+```
+
+### Client
+
+```text
+real Client signup
+→ HireTalent@onspotglobal.com sends code
+→ approved inbox receives it
+→ code entered
+→ account activated
+→ Client login/access works
+```
+
+Actual inbox receipt is required.
+
+Graph token acquisition or mocked send is insufficient.
+
+---
+
+# 25 — DO NOT PUBLISH
+
+This implementation does NOT authorize production publication.
+
+Do not:
+
+- publish;
+- migrate production;
+- restart a production process merely for verification;
+- create customer accounts;
+- send test codes to customer addresses;
+- mutate contracts/invoices/payouts;
+- bypass authentication.
+
+---
+
+# REQUIRED FINAL REPORT
+
+## Architecture Implemented
+
+Describe the final signup/verification flow.
+
+## Schema / Migration
+
+List additions and preflight results.
+
+## Canonical Ownership Invariant
+
+Explain exactly where email ownership lives for:
+
+- normal Client;
+- normal Talent;
+- candidate-only identity;
+- historical grandfathered identity.
+
+## Changed Files
+
+List every changed file.
+
+## Client Verification
+
+Report implementation and automated results.
+
+## Talent Verification
+
+Report implementation and automated results.
+
+## Alternate Account Paths
+
+Report separately:
+
+- legacy `/signup`;
+- first-password Talent routes;
+- provider signup;
+- Admin-created users;
+- CSV imports;
+- invitations;
+- application continuation.
+
+For each use:
+
+`PROTECTED`
+
+`GRANDFATHERED`
+
+`BLOCKED`
+
+or:
+
+`NOT APPLICABLE`
+
+with explanation.
+
+## Graph Integration
+
+Report:
+
+- sender selection;
+- error propagation;
+- configuration presence;
+- actual delivery status separately.
+
+## Abuse Controls
+
+Report implemented expiry, attempts, cooldown, and limits.
+
+## Transaction / Concurrency
+
+Report exact tests and results.
+
+## Automated Verification
+
+Report:
+
+- passed;
+- failed;
+- skipped;
+- blocked;
+
+separately.
+
+## Regression Findings
+
+Classify failures:
+
+`NEW REGRESSION`
+
+`PRE-EXISTING`
+
+`ENVIRONMENTAL`
+
+`UNKNOWN`
+
+## Production Build
+
+Report artifact inspection.
+
+## Remaining UAT
+
+List only verification that genuinely requires approved runtime/staging resources.
+
+## Implementation Status
+
+Use exactly one:
+
+`IMPLEMENTED — RUNTIME UAT PENDING`
+
+`PARTIALLY IMPLEMENTED — BLOCKERS REMAIN`
+
+`IMPLEMENTATION FAILED`
+
+Do not use `READY TO PUBLISH`.
+
+STOP after the report.
