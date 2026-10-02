@@ -39,6 +39,9 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"), // From Replit Auth  
   profileImageUrl: varchar("profile_image_url"), // From Replit Auth
   passwordHash: text("password_hash"), // For email/password auth (nullable for OAuth users)
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  emailVerifiedEmail: text("email_verified_email"),
+  emailVerificationRequired: boolean("email_verification_required").notNull().default(true),
   company: text("company"), // Company name for clients and potentially talents
   role: text("role").notNull().default("client"), // client, talent, admin
   replitId: text("replit_id").unique(), // For Replit Auth integration
@@ -743,6 +746,44 @@ export const posts = pgTable("posts", {
 });
 
 // Insert schemas and types
+// Dedicated pending identity state. None of these records are usable accounts.
+export const pendingRegistrations = pgTable("pending_registrations", {
+  id: uuid("id").primaryKey(),
+  capabilityHash: text("capability_hash").notNull(),
+  email: text("email").notNull(), role: text("role").notNull(), purpose: text("purpose").notNull(),
+  firstName: text("first_name").notNull(), lastName: text("last_name").notNull(),
+  username: text("username").notNull(), company: text("company"), passwordHash: text("password_hash"),
+  context: jsonb("context").notNull().default({}),
+  codeHmac: text("code_hmac").notNull(), generation: integer("generation").notNull().default(1),
+  incorrectAttempts: integer("incorrect_attempts").notNull().default(0),
+  codeExpiresAt: timestamp("code_expires_at", { withTimezone: true }).notNull(),
+  resendAvailableAt: timestamp("resend_available_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  deliveryStatus: text("delivery_status").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
+}, t => [
+  index("pending_registrations_capability_idx").on(t.capabilityHash, t.createdAt.desc()),
+  index("pending_registrations_expiry_idx").on(t.expiresAt),
+  index("pending_registrations_email_idx").on(t.email),
+  check("pending_registrations_role_check", sql`${t.role} IN ('client','talent')`),
+  check("pending_registrations_purpose_check", sql`${t.purpose} IN ('signup','talent_claim','provider')`),
+  check("pending_registrations_incorrect_attempts_check", sql`${t.incorrectAttempts} BETWEEN 0 AND 5`),
+  check("pending_registrations_delivery_status_check", sql`${t.deliveryStatus} IN ('sending','accepted','failed')`),
+]);
+export const signupVerificationLimits = pgTable("signup_verification_limits", {
+  bucket: text("bucket").primaryKey(), used: integer("used").notNull().default(0),
+  resetsAt: timestamp("resets_at", { withTimezone: true }).notNull(),
+});
+export const authProviderLinks = pgTable("auth_provider_links", {
+  provider: text("provider").notNull(), subject: text("subject").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+}, t => [
+  primaryKey({ columns: [t.provider, t.subject] }),
+  check("auth_provider_links_provider_check", sql`${t.provider} IN ('google','linkedin','replit')`),
+]);
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   email: true,
@@ -1359,6 +1400,11 @@ export const candidates = pgTable("candidates", {
   displayName: text("display_name"),
   // Auth — bcrypt hash, nullable until candidate sets a password
   passwordHash: text("password_hash"),
+  // Candidate-only authentication: ignored whenever userId is non-null.
+  // users is the ONLY ownership authority for linked Talent.
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  emailVerifiedEmail: text("email_verified_email"),
+  emailVerificationRequired: boolean("email_verification_required").notNull().default(true),
   // Verified status — admin-confirmed identity and certifications (prerequisite for Vetted).
   // Canonical three-tier model: No Classification → Verified → Vetted.
   // Mechanism values: 'manual_admin' | 'grandfathered_pre_verified'
@@ -1393,8 +1439,15 @@ export const candidates = pgTable("candidates", {
 export const insertCandidateSchema = createInsertSchema(candidates).omit({
   id: true,
   createdAt: true,
+  passwordHash: true,
+  userId: true,
+  emailVerifiedAt: true,
+  emailVerifiedEmail: true,
+  emailVerificationRequired: true,
 });
-export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
+// Internal writers can set auth fields; the public validator above cannot.
+export type InsertCandidate = z.infer<typeof insertCandidateSchema> & Partial<Pick<Candidate,
+  "passwordHash" | "userId" | "emailVerifiedAt" | "emailVerifiedEmail" | "emailVerificationRequired">>;
 export type Candidate = typeof candidates.$inferSelect;
 
 // Inquiries — client service inquiry + payment flow

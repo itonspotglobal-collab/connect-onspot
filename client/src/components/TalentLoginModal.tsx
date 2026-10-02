@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { signupRetryDelayMs } from "@/lib/signupRetry";
 import { queryClient } from "@/lib/queryClient";
 import { decodeBase64UrlJson } from "@/lib/talentToken";
+import { SignupEmailVerification } from "@/components/SignupEmailVerification";
+import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
 
 // ─── Talent Auth State ─────────────────────────────────────────────────────────
 
@@ -144,6 +146,7 @@ export function TalentLoginModal({
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [pendingVerification, setPendingVerification] = useState<SignupPendingState | null>(null);
   const [retrySeconds, setRetrySeconds] = useState(0);
   const retryUntil = useRef(0);
   const requestPending = useRef(false);
@@ -159,6 +162,15 @@ export function TalentLoginModal({
     const interval = window.setInterval(updateCooldown, 1000);
     return () => window.clearInterval(interval);
   }, [retrySeconds > 0]);
+
+  useEffect(() => {
+    if (!open || mode !== "set-password") return;
+    let active = true;
+    void signupStatus().then((pending) => {
+      if (active && pending?.role === "talent") setPendingVerification(pending);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [open, mode]);
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -274,17 +286,23 @@ export function TalentLoginModal({
       if (profileId) {
         res = await fetch("/api/talent-auth/set-password", {
           method: "POST",
+          credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, candidateId: profileId, password }),
         });
       } else {
         res = await fetch("/api/candidates/setup-password", {
           method: "POST",
+          credentials: "same-origin",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, newPassword: password }),
         });
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (isSignupPending(data)) {
+        setPendingVerification(data);
+        return;
+      }
       if (!res.ok) {
         const msg = data.error === "password_exists"
           ? "A password already exists. Please sign in or use Forgot Password."
@@ -293,24 +311,7 @@ export function TalentLoginModal({
         toast({ title: "Failed", description: msg, variant: "destructive" });
         return;
       }
-      // Both endpoints return token + candidate info (slightly different shapes)
-      const candidateId = data.candidateId || data.candidate?.id;
-      const fullName = data.candidate?.fullName || email;
-      const auth: TalentAuthState = {
-        token: data.token,
-        candidateId,
-        email,
-        fullName,
-      };
-      if (!await activateTalentSession(auth, refreshAuth)) {
-        const message = "We couldn't verify the signed-in Talent account. Please try again.";
-        setErrorMessage(message);
-        toast({ title: "Account verification failed", description: message, variant: "destructive" });
-        return;
-      }
-      onSuccess(auth);
-      onClose();
-      toast({ title: "Password set", description: "You're now signed in to your profile." });
+      setErrorMessage("Password setup requires email verification. No credentials were activated.");
     } catch {
       const message = "Could not reach the server. Please try again.";
       setErrorMessage(message);
@@ -324,7 +325,7 @@ export function TalentLoginModal({
   return (
     <Dialog open={open} onOpenChange={(v) => {
       if (v || requestPending.current) return;
-      setShowPw(false); setMode("login"); setEmail(""); setPassword(""); setConfirmPassword(""); setErrorMessage("");
+      setShowPw(false); setMode("login"); setEmail(""); setPassword(""); setConfirmPassword(""); setErrorMessage(""); setPendingVerification(null);
       onClose();
     }}>
       <DialogContent className="sm:max-w-md">
@@ -337,7 +338,34 @@ export function TalentLoginModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form className="space-y-4 pt-2" noValidate onSubmit={(event) => {
+        {pendingVerification ? (
+          <SignupEmailVerification
+            pending={pendingVerification}
+            testPrefix="talent-password-verification"
+            onVerified={async (data) => {
+              const candidateId = data.candidateId || data.candidate?.id;
+              const token = data.talentToken || data.token;
+              const auth: TalentAuthState = {
+                token,
+                candidateId,
+                email: data.user?.email || email,
+                fullName: data.user?.fullName || `${data.user?.first_name ?? ""} ${data.user?.last_name ?? ""}`.trim() || email,
+              };
+              if (!token || !candidateId || !await activateTalentSession(auth, refreshAuth)) {
+                setErrorMessage("We couldn't verify the activated Talent account. Please try again.");
+                return;
+              }
+              setPendingVerification(null);
+              onSuccess(auth);
+              onClose();
+              toast({ title: "Email verified", description: "Your Talent account is active." });
+            }}
+            onChangeEmail={() => {
+              setPendingVerification(null);
+              setErrorMessage("");
+            }}
+          />
+        ) : <form className="space-y-4 pt-2" noValidate onSubmit={(event) => {
           if (mode === "login") void handleLogin(event);
           else {
             event.preventDefault();
@@ -450,7 +478,7 @@ export function TalentLoginModal({
               ? "Only the profile owner can sign in. Your email must match this candidate profile."
               : "Enter your registered email and password to access your Talent Account."}
           </p>
-        </form>
+        </form>}
       </DialogContent>
     </Dialog>
   );

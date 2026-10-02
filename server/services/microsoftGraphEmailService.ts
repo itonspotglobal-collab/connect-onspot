@@ -111,6 +111,8 @@ export interface SendEmailOptions {
   replyTo?: string;    // override reply-to address
   /** Sender mailbox — must be a key in ALLOWED_SENDERS; ignored/defaulted if not in the allowlist. */
   senderEmail?: string;
+  /** Signup codes must never appear in provider error logs/response text. */
+  redactErrors?: boolean;
 }
 
 export interface SendEmailResult {
@@ -253,6 +255,7 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
 
     return { success: true };
   } catch (err: any) {
+    if (opts.redactErrors) return { success: false, error: "Email delivery failed" };
     console.error("[microsoftGraphEmailService] sendApplicantEmail error:", err.message);
     return { success: false, error: err.message };
   }

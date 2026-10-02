@@ -11,6 +11,8 @@ import { Loader2, AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 import { saveTalentAuth } from "@/components/TalentLoginModal";
 import { PASSWORD_POLICY_HINT, validatePasswordStrength } from "@shared/passwordPolicy";
 import { signupRetryDelayMs } from "@/lib/signupRetry";
+import { SignupEmailVerification } from "@/components/SignupEmailVerification";
+import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface PrefillData {
@@ -62,7 +64,10 @@ export default function TalentSignupFromApplication() {
   // Parse URL params
   const searchParams = new URLSearchParams(window.location.search);
   const applicationToken = searchParams.get("applicationToken") ?? "";
-  const returnTo = searchParams.get("returnTo") ?? "";
+  const requestedReturnTo = searchParams.get("returnTo") ?? "";
+  const returnTo = requestedReturnTo.startsWith("/") && !requestedReturnTo.startsWith("//")
+    ? requestedReturnTo
+    : "";
   const talentSignInUrl = (() => {
     const params = new URLSearchParams({
       portal: "talent",
@@ -86,6 +91,8 @@ export default function TalentSignupFromApplication() {
   const [prefill, setPrefill] = useState<PrefillData | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [accountCreated, setAccountCreated] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<SignupPendingState | null>(null);
+  const [allowEmailChange, setAllowEmailChange] = useState(false);
   const [linkRecovery, setLinkRecovery] = useState<{ token: string; submissionId: string } | null>(null);
   const [retryAt, setRetryAt] = useState(0);
   const [retrySeconds, setRetrySeconds] = useState(0);
@@ -178,6 +185,17 @@ export default function TalentSignupFromApplication() {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void signupStatus().then((pending) => {
+      if (active && pending?.role === "talent") {
+        setPendingVerification(pending);
+        setStage("ready");
+      }
+    }).catch(() => undefined);
+    return () => { active = false; };
   }, []);
 
   const setField = (k: keyof typeof form, v: string) => {
@@ -297,10 +315,10 @@ export default function TalentSignupFromApplication() {
 
     submissionInFlight.current = true;
     setStage("submitting");
-    let recoveryForAttempt: { token: string; submissionId: string } | null = null;
     try {
       const signupRes = await fetch("/api/signup", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           first_name: values.firstName,
@@ -308,11 +326,19 @@ export default function TalentSignupFromApplication() {
           email: values.email,
           password: values.password,
           role: "talent",
+          username: values.email.split("@")[0],
+          ...(returnTo.startsWith("/") && !returnTo.startsWith("//") ? { returnTo } : {}),
         }),
       });
 
+      const signupData = await signupRes.json().catch(() => ({}));
+      if (isSignupPending(signupData)) {
+        setPendingVerification(signupData);
+        setStage("ready");
+        return;
+      }
       if (!signupRes.ok) {
-        const err = (await signupRes.json().catch(() => ({}))) ?? {};
+        const err = signupData ?? {};
         if (signupRes.status === 429) {
           const now = Date.now();
           const delayMs = signupRetryDelayMs(
@@ -327,59 +353,49 @@ export default function TalentSignupFromApplication() {
         throw new Error(serverMessage);
       }
 
-      // A confirmed signup response must never be posted again, even if parsing,
-      // storage, or application linking fails afterward.
-      accountCreatedRef.current = true;
-      setAccountCreated(true);
-      const signupData = await signupRes.json();
-      const authToken: string | undefined = signupData.token;
-      const hasTalentAuth = Boolean(signupData.talentToken && signupData.candidateId);
-      if (!authToken || !signupData.user || !hasTalentAuth) {
-        setSubmitError("Your account was created, but automatic sign-in could not be completed. Please sign in to continue. Your entered details are still here.");
-        setStage("ready");
-        return;
-      }
+      // A 201 without a successful OTP verification is not accepted as signup completion.
+      throw new Error("Signup did not return a pending email verification challenge. Please try again.");
 
-      const fullName = `${values.firstName} ${values.lastName}`;
-      recoveryForAttempt = isAccountFirstMode ? null : { token: authToken, submissionId: prefill!.submissionId };
-      if (recoveryForAttempt) setLinkRecovery(recoveryForAttempt);
-      localStorage.setItem("onspot_jwt_token", authToken);
-      localStorage.setItem("onspot_user", JSON.stringify(signupData.user));
-      saveTalentAuth({
-        token: signupData.talentToken,
-        candidateId: signupData.candidateId,
-        email: values.email,
-        fullName,
-      });
-      sessionStorage.setItem("onspot_new_talent_welcome", "1");
-      sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
-
-      if (isAccountFirstMode) {
-        toast({
-          title: "🎉 Account created!",
-          description: "Your Talent account is ready. Review and submit your application below.",
-          duration: 6000,
-        });
-        navigate(returnTo);
-        return;
-      }
-
-      await linkApplication(recoveryForAttempt!, signupData.candidateId);
     } catch (err: any) {
-      if (accountCreatedRef.current) {
-        if (recoveryForAttempt) {
-          setSubmitError(
-            `Your account was created, but the application could not be linked: ${err.message || "Please try again."} You can retry linking below or sign in; your application details are still here.`,
-          );
-        } else {
-          setSubmitError("Your account was created, but automatic sign-in could not be completed. Please sign in to continue. Your entered details are still here.");
-        }
-      } else {
-        setSubmitError(err.message || "Registration failed. Please try again.");
-      }
+      setSubmitError(err.message || "Registration failed. Please try again.");
       setStage("ready");
     } finally {
       submissionInFlight.current = false;
+    }
+  };
+
+  const finishVerifiedSignup = async (signupData: any) => {
+    const authToken: string | undefined = signupData.token;
+    const hasTalentAuth = Boolean(signupData.talentToken && signupData.candidateId);
+    if (!authToken || !signupData.user || !hasTalentAuth) {
+      accountCreatedRef.current = true;
+      setAccountCreated(true);
+      setSubmitError("Your account is active, but automatic sign-in could not be completed. Please sign in to continue.");
+      setPendingVerification(null);
+      setStage("ready");
+      return;
+    }
+    accountCreatedRef.current = true;
+    setAccountCreated(true);
+    const fullName = `${form.firstName} ${form.lastName}`;
+    const recovery = isAccountFirstMode ? null : { token: authToken, submissionId: prefill!.submissionId };
+    if (recovery) setLinkRecovery(recovery);
+    localStorage.setItem("onspot_jwt_token", authToken);
+    localStorage.setItem("onspot_user", JSON.stringify(signupData.user));
+    saveTalentAuth({ token: signupData.talentToken, candidateId: signupData.candidateId, email: signupData.user.email || form.email, fullName });
+    sessionStorage.setItem("onspot_new_talent_welcome", "1");
+    sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
+    setPendingVerification(null);
+    if (isAccountFirstMode) {
+      toast({ title: "Account verified", description: "Your Talent account is ready. Continue to your saved application.", duration: 6000 });
+      navigate(returnTo);
+      return;
+    }
+    try {
+      await linkApplication(recovery!, signupData.candidateId);
+    } catch (err: any) {
+      setSubmitError(`Your account is active, but the application could not be linked: ${err.message || "Please try again."} You can retry linking below.`);
+      setStage("ready");
     }
   };
 
@@ -465,6 +481,19 @@ export default function TalentSignupFromApplication() {
 
         <Card>
           <CardContent className="pt-6">
+            {pendingVerification ? (
+              <SignupEmailVerification
+                pending={pendingVerification}
+                testPrefix="application-verification"
+                onVerified={finishVerifiedSignup}
+                onChangeEmail={() => {
+                  setPendingVerification(null);
+                  setAllowEmailChange(true);
+                  setSubmitError("");
+                  setStage("ready");
+                }}
+              />
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* First + Last */}
               <div className="grid gap-4 sm:grid-cols-2">
@@ -503,7 +532,7 @@ export default function TalentSignupFromApplication() {
                 <Label htmlFor="email">
                   Email Address <span className="text-red-500">*</span>
                 </Label>
-                {isAccountFirstMode ? (
+                {isAccountFirstMode || allowEmailChange ? (
                   <Input
                     id="email"
                     name="email"
@@ -632,6 +661,7 @@ export default function TalentSignupFromApplication() {
                 </p>
               </div>
             </form>
+            )}
           </CardContent>
         </Card>
       </div>

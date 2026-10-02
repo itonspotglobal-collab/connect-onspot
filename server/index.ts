@@ -712,6 +712,10 @@ app.use((req, res, next) => {
     if (process.env.SENTRY_DSN && status >= 500) {
       // Redact sensitive fields from request body before sending to Sentry
       const sanitizedBody = req.body ? { ...req.body } : {};
+      // Verification OTPs/pending capabilities must never enter telemetry.
+      for (const field of ["code", "otp", "challengeId", "capability", "password", "newPassword", "temporaryPassword"]) {
+        delete sanitizedBody[field];
+      }
       if (sanitizedBody.password) delete sanitizedBody.password;
       if (sanitizedBody.token) delete sanitizedBody.token;
       if (sanitizedBody.secret) delete sanitizedBody.secret;

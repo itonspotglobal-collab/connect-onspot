@@ -1,5 +1,5 @@
 import * as client from "openid-client";
-import { Strategy, type VerifyFunction } from "openid-client/passport";
+import { Strategy, type VerifyFunctionWithRequest } from "openid-client/passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
 
@@ -9,6 +9,29 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import { query } from "./db";
+import { findOwnedProviderAccount } from "./services/providerEmailOwnership";
+import { hasEmailOwnership } from "./lib/emailOwnership";
+import { signupVerificationRuntime } from "./services/signupVerificationRuntime";
+import { pendingSignupCapability, setPendingSignupCapability } from "./routes/signupVerification";
+import type { Request } from "express";
+
+async function providerAccountOrPending(
+  req: Request, provider: "google" | "linkedin" | "replit", subject: string,
+  email: string, firstName: string, lastName: string,
+) {
+  const account = await findOwnedProviderAccount(query, provider, subject);
+  if (account) return account;
+  const result = await signupVerificationRuntime.start({
+    email, first_name: firstName || "OnSpot", last_name: lastName || "Member",
+    role: provider === "linkedin" ? "talent" : "client",
+  }, req.ip ?? "unknown", pendingSignupCapability(req),
+  { purpose: "provider", provider: { provider, subject } });
+  if (req.res) setPendingSignupCapability(req.res, result.capability);
+  // No Passport identity/session is returned until proof. The signup screen
+  // restores this capability through the same status API as password signup.
+  return null;
+}
 
 if (!process.env.REPLIT_DOMAINS) {
   throw new Error("Environment variable REPLIT_DOMAINS not provided");
@@ -80,14 +103,20 @@ export async function setupAuth(app: Express) {
 
   const config = await getOidcConfig();
 
-  const verify: VerifyFunction = async (
+  const verify: VerifyFunctionWithRequest = async (
+    req,
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
+    const claims = tokens.claims() as any;
+    try {
+      const account = await providerAccountOrPending(req, "replit", claims.sub,
+        claims.email, claims.first_name, claims.last_name);
+      if (!account) return verified(null, false);
+      const user = { user: account, provider: "replit" };
+      updateUserSession(user, tokens);
+      verified(null, user);
+    } catch { verified(null, false); }
   };
 
   for (const domain of process.env
@@ -96,6 +125,7 @@ export async function setupAuth(app: Express) {
       {
         name: `replitauth:${domain}`,
         config,
+        passReqToCallback: true,
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`,
       },
@@ -116,7 +146,7 @@ export async function setupAuth(app: Express) {
   app.get("/api/callback", (req, res, next) => {
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+        failureRedirect: "/signup/client?verification=pending",
     })(req, res, next);
   });
 
@@ -180,7 +210,12 @@ async function setupOAuthStrategies(app: Express) {
       }
 
       // Fetch user from storage
-      const user = await storage.getUser(id);
+      const persisted = await query("SELECT * FROM users WHERE id = $1", [id]);
+      const row = persisted.rows[0];
+      const user = row ? {
+        id: row.id, email: row.email, role: row.role, firstName: row.first_name,
+        lastName: row.last_name, profileImageUrl: row.profile_image_url,
+      } : await storage.getUser(id);
       if (!user) {
         console.warn(`⚠️ User not found in storage: ${id}`);
         return cb(null, null);
@@ -210,7 +245,8 @@ async function setupOAuthStrategies(app: Express) {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: callbackUrl,
-    }, async (accessToken, refreshToken, profile, done) => {
+      passReqToCallback: true,
+    }, async (req, accessToken, refreshToken, profile, done) => {
       try {
         console.log('Google OAuth callback triggered for profile:', profile.id);
         
@@ -232,7 +268,9 @@ async function setupOAuthStrategies(app: Express) {
         };
 
         console.log('Creating/updating user with Google OAuth data:', { email: userData.email, id: userData.id });
-        const user = await storage.upsertUser(userData);
+        const user = await providerAccountOrPending(req, "google", profile.id,
+          email, userData.firstName, userData.lastName);
+        if (!user) return done(null, false);
         return done(null, { user, accessToken, provider: 'google' });
       } catch (error) {
         console.error('Google OAuth error:', error);
@@ -250,7 +288,7 @@ async function setupOAuthStrategies(app: Express) {
 
     app.get('/api/auth/google/callback',
       passport.authenticate('google', { 
-        failureRedirect: '/?error=oauth&provider=google&message=Google authentication failed'
+        failureRedirect: '/signup/client?verification=pending'
       }),
       (req, res) => {
         console.log('Google OAuth successful, redirecting to home');
@@ -272,7 +310,8 @@ async function setupOAuthStrategies(app: Express) {
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
       callbackURL: callbackUrl,
       scope: ['r_liteprofile', 'r_emailaddress'],
-    }, async (accessToken, refreshToken, profile, done) => {
+      passReqToCallback: true,
+    }, async (req, accessToken, refreshToken, profile, done) => {
       try {
         console.log('LinkedIn OAuth callback triggered for profile:', profile.id);
         
@@ -294,7 +333,9 @@ async function setupOAuthStrategies(app: Express) {
         };
 
         console.log('Creating/updating user with LinkedIn OAuth data:', { email: userData.email, id: userData.id });
-        const user = await storage.upsertUser(userData);
+        const user = await providerAccountOrPending(req, "linkedin", profile.id,
+          email, userData.firstName, userData.lastName);
+        if (!user) return done(null, false);
         return done(null, { user, accessToken, provider: 'linkedin' });
       } catch (error) {
         console.error('LinkedIn OAuth error:', error);
@@ -312,7 +353,7 @@ async function setupOAuthStrategies(app: Express) {
 
     app.get('/api/auth/linkedin/callback',
       passport.authenticate('linkedin', { 
-        failureRedirect: '/?error=oauth&provider=linkedin&message=LinkedIn authentication failed'
+        failureRedirect: '/signup/talent?verification=pending'
       }),
       (req, res) => {
         console.log('LinkedIn OAuth successful, redirecting to home');
@@ -335,6 +376,12 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (!sessionUser) {
     console.log('Authentication check failed: no user in session');
     return res.status(401).json({ message: "No user in session", code: "NO_USER" });
+  }
+  const identityId = sessionUser.user?.id ?? sessionUser.claims?.sub;
+  if (sessionUser.provider !== "dev" || process.env.NODE_ENV === "production") {
+    if (!identityId || !await hasEmailOwnership(query, { userId: identityId })) {
+      return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
+    }
   }
 
   // Handle OAuth users (Google/LinkedIn) - they have {user, provider} structure

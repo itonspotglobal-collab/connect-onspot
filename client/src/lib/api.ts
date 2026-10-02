@@ -134,6 +134,7 @@ export const authAPI = {
     last_name: string;
     role: "client" | "talent";
     company?: string;
+    returnTo?: string;
   }) => {
     try {
       const response = await api.post("/api/signup", userData);
@@ -142,7 +143,11 @@ export const authAPI = {
       const payload = response.data && typeof response.data === "object" && !Array.isArray(response.data)
         ? response.data
         : {};
-      return { ...payload, accountCreated: response.status === 201 || payload.accountCreated === true };
+      return {
+        ...payload,
+        httpStatus: response.status,
+        accountCreated: response.status === 201 || payload.accountCreated === true,
+      };
     } catch (error) {
       // Axios errors include the submitted password in config.data.
       console.warn("Signup request failed", {

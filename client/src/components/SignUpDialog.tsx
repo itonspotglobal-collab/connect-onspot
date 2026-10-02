@@ -21,6 +21,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PASSWORD_POLICY_HINT, validatePasswordStrength } from "@shared/passwordPolicy";
 import { signupRetryDelayMs } from "@/lib/signupRetry";
 import { saveTalentAuth } from "@/components/TalentLoginModal";
+import { SignupEmailVerification } from "@/components/SignupEmailVerification";
+import { SignupPendingState, isSignupPending, signupStatus, safeSignupReturnTo as safeReturnPath } from "@/lib/signupVerification";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import "./SignUpDialog.css";
 
@@ -78,12 +80,26 @@ export function SignUpDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<{ title: string; message: string } | null>(null);
   const [accountCreated, setAccountCreated] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<SignupPendingState | null>(null);
   const [retryAt, setRetryAt] = useState(0);
   const [retrySeconds, setRetrySeconds] = useState(0);
   const submissionInFlight = useRef(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   useAuth(); // Keep context available for potential future use
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    void signupStatus().then((pending) => {
+      if (active && pending) {
+        setPendingVerification(pending);
+        setUserType(pending.role);
+        setCurrentStep("signup");
+      }
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [open]);
 
   useEffect(() => {
     if (!retryAt) {
@@ -125,6 +141,38 @@ export function SignUpDialog({
     setShowPassword(false);
     setSubmitError(null);
     setAccountCreated(false);
+    setPendingVerification(null);
+  };
+
+  const completeVerifiedSignup = async (signupResponse: any) => {
+    const accountType = pendingVerification?.role ?? userType;
+    if (!accountType) {
+      showSignupError("Verification complete", "Your account is active. Please use the sign-in link to continue.");
+      setAccountCreated(true);
+      return;
+    }
+    const safeReturnTo = safeReturnPath(signupResponse.returnTo) ?? safeReturnPath(returnTo) ?? "/hire-talent";
+    const hasTalentSession = accountType !== "talent"
+      || Boolean(signupResponse.talentToken && signupResponse.candidateId);
+    if (signupResponse.token && signupResponse.user && hasTalentSession) {
+      localStorage.setItem("onspot_jwt_token", signupResponse.token);
+      localStorage.setItem("onspot_user", JSON.stringify(signupResponse.user));
+      if (accountType === "talent" && signupResponse.talentToken && signupResponse.candidateId) {
+        saveTalentAuth({
+          token: signupResponse.talentToken,
+          candidateId: signupResponse.candidateId,
+          email: signupResponse.user.email ?? formData.email,
+          fullName: `${signupResponse.user.first_name ?? formData.firstName} ${signupResponse.user.last_name ?? formData.lastName}`.trim(),
+        });
+      }
+      toast({ title: "Account verified", description: `Welcome to your OnSpot ${accountType} portal.` });
+      setOpen(false);
+      resetDialog();
+      window.location.href = accountType === "talent" ? (safeReturnPath(signupResponse.returnTo) ?? "/get-hired") : safeReturnTo;
+    } else {
+      setAccountCreated(true);
+      showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,9 +231,9 @@ export function SignUpDialog({
 
     submissionInFlight.current = true;
     setIsLoading(true);
-    let created = false;
     try {
       const signupData = {
+        returnTo: safeReturnPath(returnTo) ?? undefined,
         email: values.email,
         username: values.email.split("@")[0],
         password: values.password,
@@ -193,61 +241,31 @@ export function SignUpDialog({
         last_name: values.lastName,
         role: userType,
         ...(userType === "client" && { company: values.company }),
+        ...(returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? { returnTo } : {}),
       };
 
       const signupResponse = await authAPI.signup(signupData);
-      if (signupResponse?.accountCreated || signupResponse?.success) {
-        created = true;
-        setAccountCreated(true);
+      if (isSignupPending(signupResponse)) {
+        setPendingVerification(signupResponse);
+        setAccountCreated(false);
+        return;
       }
-
-      if (signupResponse?.success) {
-        const accountType = userType === "client" ? "Client" : "Talent";
-
-        const hasTalentSession = userType !== "talent"
-          || Boolean(signupResponse.talentToken && signupResponse.candidateId);
-        if (signupResponse.token && signupResponse.user && hasTalentSession) {
-          localStorage.setItem("onspot_jwt_token", signupResponse.token);
-          localStorage.setItem("onspot_user", JSON.stringify(signupResponse.user));
-          if (userType === "talent" && signupResponse.talentToken && signupResponse.candidateId) {
-            saveTalentAuth({
-              token: signupResponse.talentToken,
-              candidateId: signupResponse.candidateId,
-              email: values.email,
-              fullName: `${values.firstName} ${values.lastName}`,
-            });
-          }
-
-          toast({ title: "Logged In Successfully", description: `Welcome to your OnSpot ${accountType.toLowerCase()} portal!` });
-
-          setOpen(false);
-          resetDialog();
-
-          if (userType === "talent") {
-            window.location.href = "/get-hired";
-          } else {
-            window.location.href = returnTo || "/hire-talent";
-          }
-        } else {
-          showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
-        }
-      } else if (created) {
-        showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
-      } else {
-        showSignupError("Account creation failed", signupResponse?.message || "Failed to create account. Please try again.");
-      }
+      showSignupError(
+        "Verification required",
+        "Signup did not return a pending email-verification challenge. No credentials were saved. Please try again.",
+      );
     } catch (error: any) {
       const status = error.response?.status;
       const body = error.response?.data;
+      if (isSignupPending(body)) {
+        setPendingVerification(body);
+        setAccountCreated(false);
+        return;
+      }
       const serverMessage = typeof body?.message === "string" ? body.message
         : typeof body?.error === "string" ? body.error
         : typeof body === "string" ? body : "";
-      if (created || error.accountCreated || error.response?.accountCreated || body?.accountCreated
-        || status === 201 || error.status === 201) {
-        created = true;
-        setAccountCreated(true);
-        showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
-      } else if (status === 429) {
+      if (status === 429) {
         const now = Date.now();
         const delayMs = signupRetryDelayMs(error.response?.headers?.["retry-after"] ?? body?.retryAfter, now);
         setRetrySeconds(Math.ceil(delayMs / 1000));
@@ -452,6 +470,18 @@ export function SignUpDialog({
             {/* ── Signup form step ── */}
             {currentStep === "signup" && (
               <>
+                {pendingVerification ? (
+                  <SignupEmailVerification
+                    pending={pendingVerification}
+                    dark
+                    onVerified={completeVerifiedSignup}
+                    onChangeEmail={() => {
+                      setPendingVerification(null);
+                      setAccountCreated(false);
+                      setSubmitError(null);
+                    }}
+                  />
+                ) : <>
                 {/* Social signup buttons */}
                 <div className="space-y-2 mb-3">
                   {isFirebaseAvailable() && (
@@ -623,12 +653,13 @@ export function SignUpDialog({
                     </Label>
                   </div>
                 </form>
+                </>}
               </>
             )}
           </div>
 
           {/* ── Sticky footer — CTA always visible, never scrolls away ── */}
-          {currentStep === "signup" && (
+          {currentStep === "signup" && !pendingVerification && (
             <div
               className="shrink-0 px-6 py-4 border-t border-white/10"
               style={{ background: "linear-gradient(to bottom, transparent, #1a1a4e 20%)" }}

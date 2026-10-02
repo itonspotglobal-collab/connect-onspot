@@ -731,6 +731,9 @@ export class MemStorage implements IStorage {
       lastName: (insertUser as any).lastName || null,
       profileImageUrl: (insertUser as any).profileImageUrl || null,
       passwordHash: (insertUser as any).passwordHash || null,
+      emailVerifiedAt: null,
+      emailVerifiedEmail: null,
+      emailVerificationRequired: true,
       replitId: insertUser.replitId || null,
       stripeAccountId: insertUser.stripeAccountId || null,
       createdAt: now,
@@ -777,6 +780,9 @@ export class MemStorage implements IStorage {
         lastName: userData.lastName || null,
         profileImageUrl: userData.profileImageUrl || null,
         passwordHash: null, // OAuth users don't have passwords
+        emailVerifiedAt: null,
+        emailVerifiedEmail: null,
+        emailVerificationRequired: true,
         role: userData.role || "client",
         replitId: userData.replitId || null,
         stripeAccountId: userData.stripeAccountId || null,
@@ -801,6 +807,9 @@ export class MemStorage implements IStorage {
       lastName: userData.lastName,
       profileImageUrl: null,
       passwordHash: userData.password, // Password is already hashed by caller
+      emailVerifiedAt: null,
+      emailVerifiedEmail: null,
+      emailVerificationRequired: true,
       company: userData.company || null, // Store company field for clients
       role: userData.role,
       replitId: null, // Only for OAuth users

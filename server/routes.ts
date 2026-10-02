@@ -47,6 +47,9 @@ import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/cli
 import { maskClientTalentName } from "../shared/talentName";
 import { createCandidateMeHandler } from "./lib/candidateMeHandler";
 import { registerDisabledLinkedInImportRoutes } from "./lib/disabledLinkedInImport";
+import { hasEmailOwnership } from "./lib/emailOwnership";
+import { registerSignupVerificationRoutes } from "./routes/signupVerification";
+import { signupVerificationRuntime } from "./services/signupVerificationRuntime";
 import {
   createClientTeamDashboardHandler,
 } from "./lib/clientTeamDashboardHandler.js";
@@ -637,6 +640,10 @@ const authenticateJWT = async (
 
     // Verify and decode JWT
     const decoded = jwt.verify(token, jwtSecret) as any;
+    if (!await hasEmailOwnership(query, decoded.type === "candidate"
+      ? { candidateId: decoded.candidateId } : { userId: decoded.userId })) {
+      return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED", message: "Verify your email before signing in." });
+    }
 
     // ── Talent candidate token (type: "candidate") ──────────────────────────
     // Talent users log in through the talent portal which issues a candidate JWT
@@ -788,6 +795,9 @@ const authenticateTalentJWT = async (req: Request, res: Response, next: NextFunc
     const decoded = jwt.verify(token, jwtSecret) as any;
     if (decoded.type !== "candidate" || !decoded.candidateId) {
       return res.status(401).json({ error: "Invalid talent token" });
+    }
+    if (!await hasEmailOwnership(query, { candidateId: decoded.candidateId })) {
+      return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
     }
     (req as any).talentAuth = { candidateId: decoded.candidateId, email: decoded.email };
     next();
@@ -1023,6 +1033,9 @@ const authenticateAdminFlexible = async (
         }
       }
       const decoded = jwt.verify(bearerToken, jwtSecret) as JWTPayload;
+      if (!await hasEmailOwnership(query, { userId: decoded.userId })) {
+        return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
+      }
       if (!decoded.userId || !decoded.email || !decoded.role) {
         return res.status(401).json({ error: "Invalid token", message: "Token missing required claims" });
       }
@@ -3729,7 +3742,10 @@ export async function registerRoutes(
   );
 
   // JWT-based signup route
-  app.post("/api/signup", signupLimiter, async (req: Request, res: Response) => {
+  registerSignupVerificationRoutes(app, signupVerificationRuntime);
+  // Retired immediate-activation implementation. Not registered; the shared
+  // pending service above owns both signup paths and both first-password paths.
+  if (false) app.post("/api/signup", signupLimiter, async (req: Request, res: Response) => {
     try {
       const {
         email: rawEmail,
@@ -4178,6 +4194,9 @@ export async function registerRoutes(
 
       // Verify password
       console.log(`🔐 Verifying password [${requestId}]`);
+      if (!await hasEmailOwnership(query, { userId: user.id })) {
+        return res.status(403).json({ success: false, error: "EMAIL_VERIFICATION_REQUIRED" });
+      }
       const isPasswordValid = await verifyPassword(
         password,
         user.password_hash,
@@ -7097,7 +7116,7 @@ export async function registerRoutes(
    */
   app.post("/api/candidates/account-setup", async (req, res) => {
     try {
-      const { email, candidateId, profileData } = req.body as {
+      const { email, candidateId, profileData: unsafeProfileData } = req.body as {
         email: string;
         candidateId?: string;
         profileData?: Record<string, unknown>;
@@ -7107,6 +7126,8 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Valid email is required" });
       }
 
+      const { insertCandidateSchema: publicCandidateSchema } = await import("@shared/schema");
+      const profileData = unsafeProfileData ? publicCandidateSchema.partial().parse(unsafeProfileData) : undefined;
       const existing = await storage.getCandidateByEmail(email);
 
       if (existing) {
@@ -7139,6 +7160,10 @@ export async function registerRoutes(
 
       // No existing record — update the pending candidate or create new
       if (candidateId) {
+        // An arbitrary public ID is not permission to rewrite an identity's
+        // email. First claims use the pending verification service instead.
+        return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED", message: "Verify your email to claim a profile." });
+        /* Retired email-rebinding branch; intentionally unreachable.
         const updated = await storage.updateCandidate(candidateId, {
           email,
           accountCreated: true,
@@ -7151,6 +7176,7 @@ export async function registerRoutes(
           message: "Account details saved to your profile.",
           candidate: updated,
         });
+        */
       }
 
       // Create brand new candidate record
@@ -7259,6 +7285,9 @@ export async function registerRoutes(
             console.log(`🔍 [talent-auth/login]: Email found in users table (role=${userRow.role})`);
 
             if (userRow.role === "talent") {
+              if (!await hasEmailOwnership(query, { userId: userRow.id })) {
+                return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
+              }
               // This is a legitimate Talent account that predates the candidates
               // auto-creation fix (or whose candidates row failed to create).
               // Verify their password then auto-create the candidates record.
@@ -7318,6 +7347,9 @@ export async function registerRoutes(
           candidateEmail: candidate.email,
         });
       }
+      if (!await hasEmailOwnership(query, { candidateId: candidate.id })) {
+        return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
+      }
       const valid = await verifyPassword(password, candidate.passwordHash);
       if (!valid) {
         return res.status(401).json({ error: "Invalid email or password" });
@@ -7352,7 +7384,7 @@ export async function registerRoutes(
    * POST /api/talent-auth/set-password
    * First-time password setup for a candidate (requires knowing their email + candidateId).
    */
-  app.post("/api/talent-auth/set-password", async (req, res) => {
+  if (false) app.post("/api/talent-auth/set-password", async (req, res) => {
     try {
       const { email, candidateId, password } = req.body as {
         email?: string;
@@ -7395,7 +7427,7 @@ export async function registerRoutes(
    * Allows an existing candidate with NULL password_hash to set a password for the first time.
    * Does NOT require knowing candidateId — only email + chosen password.
    */
-  app.post("/api/candidates/setup-password", async (req, res) => {
+  if (false) app.post("/api/candidates/setup-password", async (req, res) => {
     try {
       const { email, newPassword } = req.body as { email?: string; newPassword?: string };
       if (!email || !newPassword) {
@@ -7975,6 +8007,10 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid or expired token" });
       }
 
+      if (!await hasEmailOwnership(query, decoded.type === "candidate"
+        ? { candidateId: decoded.candidateId } : { userId: decoded.userId })) {
+        return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
+      }
       const profileId = req.params.id;
       const isTalentOwner = decoded.type === "candidate" && decoded.candidateId === profileId;
       // Admins must have talent_acquisition sub-role (or NULL = super-admin) to edit candidate profiles.
@@ -13273,6 +13309,9 @@ export async function registerRoutes(
         role: user.role,
       };
 
+      if (!await hasEmailOwnership(query, { userId: user.id })) {
+        return res.status(403).json({ success: false, error: "EMAIL_VERIFICATION_REQUIRED" });
+      }
       const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: "7d" });
 
       console.log(`🔍 Debug [${requestId}]: JWT signed = true`);
@@ -13330,7 +13369,7 @@ export async function registerRoutes(
   });
 
   // Production signup route (without /api prefix)
-  app.post("/signup", signupLimiter, async (req: Request, res: Response) => {
+  if (false) app.post("/signup", signupLimiter, async (req: Request, res: Response) => {
     try {
       const {
         email,

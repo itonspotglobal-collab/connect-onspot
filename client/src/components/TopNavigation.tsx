@@ -69,6 +69,8 @@ import { useUnreadNotificationsCount } from "@/hooks/useUnreadNotificationsCount
 import { NotificationBell } from "@/components/NotificationBell";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
+import { SignupEmailVerification } from "@/components/SignupEmailVerification";
+import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
 
 // Set to true when the Amazing page is ready to launch
 const SHOW_AMAZING_NAV = false;
@@ -123,6 +125,7 @@ export function TopNavigation() {
   const [showSignupConfirm, setShowSignupConfirm] = useState(false);
   const [signinLoading, setSigninLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
+  const [signupPending, setSignupPending] = useState<SignupPendingState | null>(null);
   const [rateLimitCountdown, setRateLimitCountdown] = useState<number>(0);
   const [talentAuth, setTalentAuth] = useState<TalentAuthState | null>(() => loadTalentAuth());
   const [talentDropdownOpen, setTalentDropdownOpen] = useState(false);
@@ -152,6 +155,19 @@ export function TopNavigation() {
   const navRef = useRef<HTMLElement>(null);
   const navLinksRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!showPortal || modalStep !== "signup") return;
+    let active = true;
+    void signupStatus().then((pending) => {
+      if (active && pending) {
+        setSignupPending(pending);
+        setSignupRole(pending.role);
+        setSignupEmail(pending.maskedEmail);
+      }
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [showPortal, modalStep]);
 
   // ── Admin: submitted-application badge count ──────────────────────────────
   const { data: jobAppSummary } = useQuery<{ total: number; byStatus: Record<string, number> }>({
@@ -2631,7 +2647,40 @@ export function TopNavigation() {
 
                   {/* ── Form body — two-column grid, no internal scroll on normal viewports ── */}
                   <div className="px-6 pb-5">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {signupPending ? (
+                      <SignupEmailVerification
+                        pending={signupPending}
+                        testPrefix="navigation-verification"
+                        onVerified={async (data) => {
+                          const role = signupPending.role;
+                          const email = data.user?.email ?? signupEmail;
+                          if (!data.token || !data.user || (role === "talent" && (!data.talentToken || !data.candidateId))) {
+                            toast({ variant: "destructive", title: "Account active", description: "Your account is active. Please sign in to continue." });
+                            setSignupPending(null);
+                            setModalStep("signin");
+                            setSigninEmail(email);
+                            return;
+                          }
+                          localStorage.setItem("onspot_jwt_token", data.token);
+                          localStorage.setItem("onspot_user", JSON.stringify(data.user));
+                          if (role === "talent") {
+                            const auth: TalentAuthState = {
+                              token: data.talentToken,
+                              candidateId: data.candidateId,
+                              email,
+                              fullName: `${data.user.first_name ?? signupFirstName} ${data.user.last_name ?? signupLastName}`.trim(),
+                            };
+                            saveTalentAuth(auth);
+                            setTalentAuth(auth);
+                          }
+                          setSignupPending(null);
+                          setShowPortal(false);
+                          await refreshAuth();
+                          navigate(role === "client" ? "/client-profile" : data.candidateId ? `/talent-profile/${data.candidateId}` : "/find-best-matches");
+                        }}
+                        onChangeEmail={() => setSignupPending(null)}
+                      />
+                    ) : <div className="grid grid-cols-2 gap-x-4 gap-y-3">
 
                       {/* Row 1: First Name | Last Name */}
                       <div className="space-y-1">
@@ -2718,68 +2767,31 @@ export function TopNavigation() {
                             const capturedEmail = signupEmail;
                             const capturedPassword = signupPassword;
                             const capturedRole = signupRole;
-                            const capturedFirstName = signupFirstName;
-                            const capturedLastName = signupLastName;
                             setSignupLoading(true);
                             try {
                               const res = await fetch("/api/signup", {
                                 method: "POST",
+                                credentials: "same-origin",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
                                   email: capturedEmail,
+                                  username: capturedEmail.split("@")[0],
                                   password: capturedPassword,
                                   first_name: signupFirstName,
                                   last_name: signupLastName,
                                   role: capturedRole,
                                 }),
                               });
-                              const data = await res.json();
-                              if (data.success) {
-                                // Store JWT token + user so AuthContext picks it up
-                                if (data.token) {
-                                  localStorage.setItem("onspot_jwt_token", data.token);
-                                }
-                                if (data.user) {
-                                  localStorage.setItem("onspot_user", JSON.stringify(data.user));
-                                }
-                                // Reset all signup form states so they don't linger
-                                setSignupFirstName("");
-                                setSignupLastName("");
-                                setSignupEmail("");
-                                setSignupPassword("");
-                                setSignupConfirmPassword("");
-                                setSignupRole(null);
-                                // Reset visibility states back to defaults
-                                setShowSignupPassword(false);
-                                setShowSignupConfirm(false);
-                                // Pre-seed the signin email so if the user logs out and returns,
-                                // their email is already filled in
-                                setSigninEmail(capturedEmail);
-                                setShowPortal(false);
-                                setModalStep("signin");
-                                // Sync AuthContext state immediately (no page reload needed)
-                                await refreshAuth();
-                                // Talent signup: save candidate JWT + redirect to their own profile page.
-                                // The signup endpoint now creates a candidates record and issues a
-                                // talent-specific JWT alongside the general one.
-                                if (capturedRole === "talent" && data.talentToken && data.candidateId) {
-                                  const talentAuthData: TalentAuthState = {
-                                    token: data.talentToken,
-                                    candidateId: data.candidateId,
-                                    email: capturedEmail,
-                                    fullName: `${capturedFirstName} ${capturedLastName}`.trim(),
-                                  };
-                                  saveTalentAuth(talentAuthData);
-                                  setTalentAuth(talentAuthData);
-                                }
-                                if (capturedRole === "client") {
-                                  navigate("/client-profile");
-                                } else if (capturedRole === "talent" && data.candidateId) {
-                                  navigate(`/talent-profile/${data.candidateId}`);
-                                } else {
-                                  navigate("/find-best-matches");
-                                }
-                              } else if (res.status === 409) {
+                              const data = await res.json().catch(() => ({}));
+                              if (isSignupPending(data)) {
+                                setSignupPending(data);
+                                return;
+                              }
+                              if (res.status === 201 || data.success) {
+                                toast({ variant: "destructive", title: "Verification required", description: "This signup response did not include a pending verification challenge. No credentials were saved." });
+                                return;
+                              }
+                              if (res.status === 409) {
                                 toast({ variant: "destructive", title: "Account already exists", description: "An account with this email already exists. Please sign in instead." });
                                 setSigninEmail(capturedEmail);
                                 setModalStep("signin");
@@ -2815,7 +2827,7 @@ export function TopNavigation() {
                         </p>
                       </div>
 
-                    </div>
+                    </div>}
                   </div>
                 </div>
               </div>
