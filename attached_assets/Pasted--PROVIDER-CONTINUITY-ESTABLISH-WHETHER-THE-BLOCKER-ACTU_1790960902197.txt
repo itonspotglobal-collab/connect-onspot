@@ -1,0 +1,302 @@
+# PROVIDER CONTINUITY — ESTABLISH WHETHER THE BLOCKER ACTUALLY EXISTS
+
+Do NOT repeat the signup email-verification implementation report.
+
+The email-verification implementation is already accepted.
+
+This task concerns ONLY this remaining statement:
+
+> `Memory-only historical provider accounts — BLOCKED`
+
+Before designing or implementing another authentication change, determine whether there are ACTUAL persistent historical accounts that require provider-continuity migration/recovery.
+
+This is a READ-ONLY investigation.
+
+Do NOT modify source code.
+
+Do NOT modify database data.
+
+Do NOT run migrations.
+
+Do NOT publish.
+
+Do NOT send emails.
+
+Do NOT authenticate against production providers.
+
+---
+
+# QUESTION TO ANSWER
+
+We need a concrete answer to:
+
+> Are there existing persisted Client/Talent accounts whose legitimate historical Google, LinkedIn, or Replit provider authentication would stop working after the new verification rollout because their provider linkage existed only in process memory?
+
+Do not answer theoretically.
+
+Establish what the current persistent data and historical code can actually support.
+
+---
+
+# 1 — EXPLAIN THE MEMORY-ONLY BEHAVIOR
+
+Trace the historical provider implementation before the email-verification changes.
+
+For each:
+
+- Google
+- LinkedIn
+- Replit OIDC
+
+Show:
+
+```text id="vukj2s"
+provider callback
+→ lookup
+→ upsert/create method
+→ actual storage implementation
+→ persisted or memory-only
+→ behavior after process restart
+```
+
+Explicitly identify which historical methods inherited in-memory behavior.
+
+Explain whether a provider-created account that existed ONLY there would already have disappeared after any normal application restart/deployment.
+
+---
+
+# 2 — IDENTIFY DURABLE HISTORICAL EVIDENCE
+
+Inspect the current persistent schema and, ONLY if the target database is positively identified as approved for read-only inspection, query it READ-ONLY.
+
+Do not query an unidentified database.
+
+Look for durable evidence such as:
+
+- persisted `users`;
+- Client profiles;
+- Talent profiles;
+- candidates;
+- provider IDs/subjects;
+- provider email;
+- auth-provider fields;
+- historical external identity records;
+- sessions if persistently stored;
+- provider-linked metadata;
+- timestamps that can establish historical account existence.
+
+Do not expose personal email addresses or user names in the report.
+
+Report counts/categories only.
+
+---
+
+# 3 — DO NOT EQUATE EMAIL WITH PROVIDER IDENTITY
+
+A persisted user with:
+
+`someone@example.com`
+
+does NOT prove that the user historically authenticated through Google/LinkedIn/Replit.
+
+Do not infer provider linkage from matching email alone.
+
+Only count an account as durably provider-linked when there is actual persistent evidence.
+
+---
+
+# 4 — DETERMINE WHETHER MEMORY-ONLY IDENTITIES ARE MIGRATABLE
+
+For an identity that existed only in an in-memory map, determine whether any durable information exists from which its provider subject can be reconstructed safely.
+
+If no durable provider subject exists, say:
+
+`NOT SAFELY MIGRATABLE`
+
+Do NOT propose deriving provider subjects from:
+
+- email;
+- name;
+- role;
+- profile;
+- candidate ID.
+
+---
+
+# 5 — ASSESS REAL USER IMPACT
+
+Classify the situation into ONE of these:
+
+### A — REAL PERSISTED CONTINUITY BLOCKER
+
+There are durable historical accounts with sufficient provider evidence, and the new implementation would break legitimate provider continuity unless migrated/fixed.
+
+### B — HISTORICAL PROVIDER ACCOUNTS EXIST, BUT LINKAGE CANNOT BE PROVEN
+
+Persisted users exist that may have used providers, but there is no durable evidence sufficient to automatically establish provider linkage.
+
+These users need a safe recovery/verification path rather than automatic migration.
+
+### C — MEMORY-ONLY PROVIDER IDENTITIES WERE NEVER DURABLE ACCOUNTS
+
+Historical provider-created identities lived only in process memory and would already have disappeared on restart. There is no durable provider identity to migrate.
+
+Existing persisted password/JWT accounts remain separate.
+
+### D — INCONCLUSIVE
+
+Required evidence cannot safely be obtained.
+
+Do not choose D merely because production cannot be mutated. This investigation should be read-only.
+
+---
+
+# 6 — CHECK CURRENT NEW-PROVIDER BEHAVIOR
+
+Separately confirm that AFTER the new verification implementation:
+
+```text id="28cvr6"
+unknown provider subject
+→ cannot receive normal application session
+→ pending ownership verification
+→ OTP proof
+→ durable provider-subject link
+→ authenticated account
+```
+
+This must remain true regardless of historical findings.
+
+---
+
+# 7 — EXISTING PERSISTED ACCOUNTS
+
+Confirm that normal established historical password accounts remain grandfathered and usable.
+
+Do not mark them inbox-verified.
+
+Do not change their credentials.
+
+Do not revoke sessions.
+
+---
+
+# 8 — PROVIDER IDENTITY TABLE
+
+Inspect the new provider identity-link schema introduced by migration `0033`.
+
+Report:
+
+- unique constraints;
+- provider + subject uniqueness;
+- user linkage;
+- whether it supports durable restart-safe identity after a newly verified provider signup;
+- whether concurrent callbacks can create duplicate links.
+
+Do not run the migration against production.
+
+---
+
+# 9 — RESULTING RECOMMENDATION
+
+Based on evidence, recommend ONE:
+
+### `PROVIDER MIGRATION REQUIRED`
+
+Only if durable historical provider identity evidence exists and can be migrated safely.
+
+### `VERIFICATION RECOVERY REQUIRED`
+
+If persisted accounts may need provider access but historical provider identity cannot safely be reconstructed.
+
+### `NO HISTORICAL PROVIDER MIGRATION REQUIRED`
+
+If the old provider identities were genuinely memory-only and therefore never durable across restarts.
+
+New provider signups must still use the new verification/durable-link system.
+
+### `BLOCKED — EVIDENCE UNAVAILABLE`
+
+Only if the necessary read-only evidence genuinely cannot be obtained safely.
+
+---
+
+# IMPORTANT
+
+Do NOT implement anything in this task.
+
+We are trying to determine whether the previously reported blocker is:
+
+- a real migration requirement;
+- a recovery UX requirement;
+- historical technical debt that cannot represent durable accounts;
+- or genuinely unresolved.
+
+Do not turn theoretical risk into a release blocker without evidence.
+
+---
+
+# REQUIRED REPORT
+
+## Historical Provider Architecture
+
+Google / LinkedIn / Replit separately.
+
+## What Was Actually Persistent
+
+List persistent versus memory-only identity information.
+
+## Read-Only Data Evidence
+
+Counts/categories only.
+
+No PII.
+
+If database inspection could not safely be performed, say why.
+
+## Restart Behavior
+
+Explain what happened historically after process restart.
+
+## Migratability
+
+State whether historical provider subjects can actually be reconstructed.
+
+## Current New-Provider Protection
+
+Confirm whether the new OTP/durable-link path is enforced.
+
+## Historical Password Accounts
+
+Confirm grandfathering behavior.
+
+## Provider Identity Schema
+
+Report whether new verified provider identities are restart-safe.
+
+## Impact Classification
+
+Use exactly one:
+
+`REAL PERSISTED CONTINUITY BLOCKER`
+
+`HISTORICAL PROVIDER ACCOUNTS EXIST, BUT LINKAGE CANNOT BE PROVEN`
+
+`MEMORY-ONLY PROVIDER IDENTITIES WERE NEVER DURABLE ACCOUNTS`
+
+`INCONCLUSIVE`
+
+## Recommendation
+
+Use exactly one:
+
+`PROVIDER MIGRATION REQUIRED`
+
+`VERIFICATION RECOVERY REQUIRED`
+
+`NO HISTORICAL PROVIDER MIGRATION REQUIRED`
+
+`BLOCKED — EVIDENCE UNAVAILABLE`
+
+Do not modify code.
+
+STOP after the report.

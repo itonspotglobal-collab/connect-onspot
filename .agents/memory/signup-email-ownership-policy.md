@@ -21,8 +21,8 @@ The proposed Talent and Client sender identities do not establish Graph authoriz
 
 **How to apply:** Confirm mailbox authorization separately; never send audit emails or claim successful delivery from configuration, token acquisition, or Graph acceptance alone.
 
-Historical provider identities need trustworthy prior-account evidence. An inherited memory-only user store can make a first-time provider and a historical provider look identical after restart; provider email presence is not a safe substitute.
+Historical provider continuity requires durable provider-subject evidence. Neither matching email nor the existence of an old memory-only implementation establishes an affected persisted account.
 
-**Why:** The ownership implementation encountered provider callbacks that used an inherited memory store rather than persistent identity links. Exempting every returned provider profile would defeat the new-account policy.
+**Why:** An earlier architecture-only assessment raised a continuity blocker without demonstrating persisted affected accounts. The owner requires evidence of actual account impact before migration or recovery work.
 
-**How to apply:** Validate historical provider continuity on approved staging data before enabling the rollout. If continuity requires broader persistence changes, report that blocker rather than silently grandfathering new identities or silently forcing old users through a new activation policy.
+**How to apply:** Positively identify the approved database, then inspect actual provider-subject fields, identity links, and serialized authenticated sessions using counts only. Memory-only records disappear on normal restarts; absent durable identity evidence, do not invent a historical migration requirement. Never reconstruct provider subjects from email, name, role, or profile information.
