@@ -1,0 +1,526 @@
+# SET UP SAFE MVP STAGING ENVIRONMENT
+
+The release-readiness run stopped correctly because:
+
+`TARGET NOT SAFELY IDENTIFIED`
+
+No dedicated staging database or staging application environment is currently established.
+
+This task is now ENVIRONMENT SETUP—not application feature development.
+
+Do NOT publish production.
+
+Do NOT migrate production.
+
+Do NOT modify production customer data.
+
+Do NOT reuse the production database as staging.
+
+Do NOT run the full UAT yet.
+
+---
+
+# OBJECTIVE
+
+Establish a positively identifiable, isolated staging environment suitable for:
+
+- migration `0033`;
+- full application startup/restart;
+- Client/Talent email-verification UAT;
+- Microsoft Graph testing;
+- object-storage UAT;
+- authenticated Priorities 1–6 UAT;
+- safe database-connected regression;
+- rollback/recovery testing.
+
+The staging environment must be distinguishable from production before any migration executes.
+
+---
+
+# 1 — DETERMINE AVAILABLE REPLIT STAGING OPTIONS
+
+Inspect the current Replit project/deployment configuration.
+
+Determine the safest supported approach for creating:
+
+1. a staging application environment;
+2. a dedicated staging PostgreSQL database;
+3. staging-specific secrets/environment variables;
+4. staging deployment URL/domain if supported.
+
+Do not guess.
+
+Do not modify production while investigating.
+
+Prefer a separate deployment/environment with a separate database.
+
+If Replit cannot automatically provision the required isolated resources safely, STOP and report the exact manual actions required from the project owner.
+
+---
+
+# 2 — DATABASE ISOLATION
+
+The staging application MUST NOT use the production `DATABASE_URL`.
+
+Establish a dedicated staging PostgreSQL database.
+
+The database must be positively identifiable.
+
+Use an explicit staging configuration such as:
+
+`STAGING_DATABASE_URL`
+
+if compatible with the application/environment architecture.
+
+Do not alter application code merely to force that exact variable name if Replit's environment configuration provides a cleaner isolation mechanism.
+
+The critical invariant is:
+
+```text
+staging application
+→ staging database
+
+production application
+→ production database
+```
+
+Never:
+
+```text
+staging application
+→ production database
+```
+
+---
+
+# 3 — TEST DATABASE SEPARATION
+
+Keep disposable automated testing separate from long-lived staging.
+
+Where signup verification/database tests require:
+
+`SIGNUP_VERIFICATION_TEST_DATABASE_URL`
+
+configure/use a disposable database that satisfies the repository's safety checks.
+
+Do NOT point:
+
+`SIGNUP_VERIFICATION_TEST_DATABASE_URL`
+
+to:
+
+- production;
+- shared staging;
+- customer data.
+
+Preferred model:
+
+```text
+Production DB
+    separate
+
+Staging DB
+    separate
+
+Disposable automated-test DB
+    separate
+```
+
+---
+
+# 4 — STAGING IDENTITY GUARD
+
+Before any migration or application startup capable of writing data, establish a reliable way to prove the database is staging.
+
+Use multiple signals where practical:
+
+- environment designation;
+- database host/project/branch identity;
+- database name;
+- explicit staging marker/config;
+- deployment identity.
+
+Do not rely only on a variable called:
+
+`NODE_ENV=development`
+
+or:
+
+`NODE_ENV=production`.
+
+A staging deployment may still run a production build.
+
+Report the exact non-secret evidence used to distinguish staging from production.
+
+---
+
+# 5 — RECOVERY POINT
+
+Before migration `0033`, establish a staging recovery point.
+
+Use the database provider's supported backup/branch/snapshot/recovery mechanism where available.
+
+Record non-secret:
+
+- recovery identifier;
+- timestamp;
+- database identity;
+- current migration state;
+- release candidate Git SHA.
+
+Candidate SHA currently expected:
+
+`2c7288f5cf3eda96d95f8f50add235a30b5013c1`
+
+Verify rather than assuming it remains current.
+
+Do not create or alter production backups as part of this task.
+
+---
+
+# 6 — STAGING SECRETS
+
+Prepare staging-only configuration for signup verification.
+
+Required:
+
+`TALENT_VERIFICATION_EMAIL_FROM`
+
+Expected value:
+
+`FindWork@onspotglobal.com`
+
+`CLIENT_VERIFICATION_EMAIL_FROM`
+
+Expected value:
+
+`HireTalent@onspotglobal.com`
+
+`EMAIL_VERIFICATION_HMAC_KEY`
+
+The HMAC key must be newly generated high-entropy server-side secret material.
+
+Never:
+
+- print it;
+- commit it;
+- place it in browser code;
+- expose it through `VITE_*`;
+- include it in reports.
+
+Also identify the implementation's explicit verification-email delivery enablement setting, if any.
+
+Do not enable real delivery until approved UAT recipients are ready.
+
+---
+
+# 7 — MICROSOFT GRAPH
+
+Staging may use the existing Graph application only if doing so is operationally approved and cannot expose secrets or send uncontrolled messages.
+
+Confirm presence only for:
+
+- tenant;
+- client ID;
+- client secret.
+
+Do NOT send an email yet.
+
+Determine whether Graph configuration permits the staging application to request sending as:
+
+- `FindWork@onspotglobal.com`
+- `HireTalent@onspotglobal.com`
+
+Actual authorization/delivery will be tested later.
+
+---
+
+# 8 — UAT RECIPIENT SAFETY
+
+Real verification UAT must use explicitly approved inboxes controlled by the project team.
+
+Do not use:
+
+- production customers;
+- random addresses;
+- existing customer emails.
+
+Prepare for at least:
+
+- one Client test recipient;
+- one Talent test recipient.
+
+Do not include their addresses in the final report unless necessary.
+
+Do not send anything during environment setup.
+
+---
+
+# 9 — OBJECT STORAGE ISOLATION
+
+Determine whether staging currently shares production object storage.
+
+For UAT we must avoid:
+
+- overwriting production objects;
+- exposing production private objects;
+- changing production ACLs.
+
+Prefer:
+
+- separate staging bucket/container;
+
+or, if the infrastructure intentionally shares a provider:
+
+- an isolated staging namespace with demonstrably safe ownership/path separation.
+
+Report the arrangement.
+
+Do not upload UAT objects yet.
+
+---
+
+# 10 — PAYMENT SAFETY
+
+Determine whether staging could access real Stripe/payment operations.
+
+During UAT:
+
+- no real customer charge;
+- no payout;
+- no production invoice mutation;
+- no live payment-method attachment.
+
+Use Stripe test mode if payments are tested.
+
+If staging cannot be safely isolated from live payment effects:
+
+disable payment execution for staging and report it.
+
+---
+
+# 11 — EMAIL / EXTERNAL SIDE-EFFECT SAFETY
+
+Inventory application startup side effects relevant to staging.
+
+Previously identified examples include:
+
+- invoice automation;
+- statements;
+- payout scheduling;
+- due-invoice sending;
+- offer reminders;
+- offer expiry;
+- invitation expiry;
+- GHL sync;
+- automatic job approval;
+- Talent promotion;
+- cleanup processes;
+- scheduled timers.
+
+Determine exactly which operate on staging data and which call external services.
+
+Do NOT assume:
+
+`RUN_BACKGROUND_JOBS=false`
+
+disables all of them.
+
+Establish staging-safe controls.
+
+Desired state:
+
+```text
+database side effects
+→ staging records only
+
+payments
+→ test/disabled
+
+email
+→ disabled except explicit UAT verification sends
+
+external CRM/sync
+→ test/disabled where appropriate
+
+production customer effects
+→ impossible
+```
+
+Do not start normal staging application until this is established.
+
+---
+
+# 12 — STAGING DATA
+
+Do not copy unnecessary production PII into staging.
+
+Create synthetic UAT data sufficient for:
+
+- Client account;
+- Talent account;
+- Admin account if required;
+- legacy engagement;
+- modern Tracked engagement;
+- modern Guaranteed engagement;
+- disposable contract-ending scenario;
+- invitation scenario;
+- application-continuation scenario;
+- object-storage ownership test.
+
+If production-like structure is required, use sanitized/non-customer fixtures.
+
+Do not create these records until staging DB isolation is proven.
+
+---
+
+# 13 — ADMIN AUTH WORKFLOW
+
+Determine what target/environment the existing:
+
+`admin-auth-check`
+
+workflow expects.
+
+Do not execute write requests against production.
+
+Prepare a safe staging configuration so it can later be rerun against staging.
+
+Do not weaken the workflow.
+
+---
+
+# 14 — APPLICATION CODE
+
+Do not change business/application code merely to make staging setup easier unless absolutely required for safe environment separation.
+
+If a small environment-safety guard is genuinely required, STOP first and report:
+
+- why;
+- exact file;
+- exact proposed behavior;
+- production impact.
+
+Do not silently introduce application changes during environment setup.
+
+---
+
+# 15 — DO NOT RUN MIGRATION/UAT YET
+
+This task ends once the environment is ready.
+
+Do NOT yet:
+
+- apply migration `0033`;
+- run normal signup UAT;
+- send verification codes;
+- run destructive DB regression;
+- run contract-ending actions;
+- upload storage objects;
+- test Stripe;
+- publish.
+
+Those belong to the next release-readiness run.
+
+---
+
+# REQUIRED REPORT
+
+## Staging Application
+
+Report:
+
+`ESTABLISHED`
+
+`MANUAL ACTION REQUIRED`
+
+or:
+
+`BLOCKED`
+
+Include non-secret environment/deployment identity.
+
+## Staging Database
+
+Report:
+
+`ESTABLISHED`
+
+`MANUAL ACTION REQUIRED`
+
+or:
+
+`BLOCKED`
+
+Show non-secret evidence that it is different from production.
+
+## Disposable Test Database
+
+Report status separately.
+
+## Recovery Point
+
+Report status and non-secret identifier.
+
+## Verification Configuration
+
+Report presence only:
+
+- Talent sender;
+- Client sender;
+- HMAC secret;
+- delivery enablement.
+
+## Graph Configuration
+
+Presence and staging suitability only.
+
+No send claim.
+
+## Object Storage Isolation
+
+Explain staging isolation.
+
+## Payment Isolation
+
+Explain test/disabled state.
+
+## External Side Effects
+
+List what is disabled, intercepted, test-mode, or staging-only.
+
+## UAT Test Data
+
+Report whether safe synthetic fixtures can be created.
+
+## Admin Auth Workflow
+
+Report whether it can safely target staging.
+
+## Manual Actions Required From Owner
+
+Provide exact Replit UI steps ONLY for actions that cannot safely be completed automatically.
+
+Never request secret values in chat.
+
+## Code Changes
+
+Expected:
+
+`NONE`
+
+If not none, explain why and STOP before making them unless explicitly approved.
+
+## Environment Readiness
+
+Use exactly one:
+
+`STAGING READY FOR MIGRATION/UAT`
+
+`STAGING SETUP REQUIRES OWNER ACTION`
+
+`STAGING SETUP BLOCKED`
+
+Do not run migration or UAT.
+
+STOP after the report.

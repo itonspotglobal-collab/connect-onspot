@@ -54,7 +54,7 @@
 - [Account-count audit](account-counter-audit.md) — candidate registration flags can be set without an auth account; verify sign-in evidence before public counting.
 - [Investor request routing](investor-request-routing.md) — owner approved one saved intake and founder notifications for all three CTAs; failed email must never be reported as sent.
 - [Mobile signup failures](mobile-signup-failures.md) — hidden validation errors can look like loops; preserve security rules, honor full retry windows, and check sticky actions against the viewport.
-- [Auth incident release safety](auth-incident-release-safety.md) — an app-only fix does not make restart or Publish database-free; inspect launch side effects separately.
+- [Release and staging safety](auth-incident-release-safety.md) — inspect launch side effects; staging needs a separate project, database, storage, and disposable test database.
 - [Client Team recorded hours](client-team-recorded-hours.md) — dashboard activity is not billable time; preserve provenance, work-zone weeks, and Guaranteed non-attendance semantics.
 - [LinkedIn import safety](linkedin-import-safety.md) — no simulated profile imports; retain sign-in/manual URLs, and require separate review before historical cleanup.
 - [Get Hired truthfulness](get-hired-data-truthfulness.md) — success requires real uploaded/persisted data; assessment schemas or prototype results are not a functioning result source.
