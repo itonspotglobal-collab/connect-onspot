@@ -1,0 +1,539 @@
+# SIGNUP EMAIL VERIFICATION — AUDIT & IMPLEMENTATION PLAN ONLY
+
+We want to add email ownership verification during account creation for both Talent and Client users.
+
+This is a NEW explicitly approved signup requirement.
+
+Do NOT implement it yet.
+
+First audit the existing authentication/registration/email architecture and return the smallest safe implementation plan.
+
+Do NOT publish.
+
+Do NOT modify application code, schema, migrations, or production data during this audit.
+
+---
+
+# PRODUCT REQUIREMENT
+
+A user should not be able to complete normal Client or Talent account registration using an email address they cannot access.
+
+Use email verification for the MVP rather than SMS/mobile verification.
+
+Proposed role-specific senders:
+
+Talent:
+
+`FindWork@onspotglobal.com`
+
+Client:
+
+`HireTalent@onspotglobal.com`
+
+These are proposed sender identities only.
+
+Do NOT assume Microsoft Graph is authorized to send from either mailbox merely because the addresses exist.
+
+Do NOT expose Microsoft Graph credentials.
+
+---
+
+# DESIRED USER EXPERIENCE
+
+Target flow:
+
+```text
+User enters signup details
+→ email submitted
+→ server creates verification challenge
+→ server generates verification code
+→ Microsoft Graph sends code
+→ user enters code
+→ server validates code
+→ email becomes verified
+→ account registration/activation completes
+```
+
+The exact architecture may differ if the existing registration system requires it.
+
+Prefer preventing final usable-account activation until email ownership is verified.
+
+Do not implement frontend-only verification.
+
+---
+
+# PHASE 1 — TRACE ALL REGISTRATION FLOWS
+
+Identify every way a new user/account can currently be created.
+
+At minimum investigate:
+
+- Talent signup
+- Client signup
+- normal email/password signup
+- LinkedIn/provider authentication
+- invitations
+- Admin-created users
+- organization invitations
+- `/api/dev/login`
+- development/test account creation
+- any legacy registration endpoints
+- any onboarding flow that creates a user automatically
+
+For each, document:
+
+```text
+UI
+→ API endpoint
+→ validation
+→ user creation
+→ authentication/session issuance
+→ profile creation
+→ onboarding
+```
+
+Identify exactly when the `users` record is currently created.
+
+Identify whether registration immediately creates a JWT/session.
+
+---
+
+# PHASE 2 — AUDIT EXISTING VERIFICATION SUPPORT
+
+Search the repository/schema for existing concepts such as:
+
+- email verification
+- `email_verified`
+- `verified_at`
+- verification token
+- verification code
+- OTP
+- confirmation token
+- pending signup
+- password reset token
+- invitation token
+- expiry fields
+- resend logic
+- Graph verification templates
+
+Do not assume these exist.
+
+Report what can safely be reused versus what would need to be added.
+
+---
+
+# PHASE 3 — AUDIT MICROSOFT GRAPH EMAIL
+
+Trace the existing Graph implementation.
+
+Determine:
+
+- current sender configuration;
+- whether multiple sender identities are already supported;
+- whether sender address is server-controlled;
+- how Graph access tokens are acquired;
+- current email helper/template architecture;
+- current error handling;
+- whether Graph failure propagates to callers;
+- whether verification email could safely use the existing helper.
+
+Do NOT send email during this audit.
+
+Do NOT expose:
+
+- tenant IDs if sensitive;
+- client secrets;
+- access tokens;
+- signed credentials.
+
+For configuration report only:
+
+`PRESENT`
+
+`MISSING`
+
+or:
+
+`NOT REQUIRED`
+
+Determine what configuration would be required for:
+
+Talent sender:
+`FindWork@onspotglobal.com`
+
+Client sender:
+`HireTalent@onspotglobal.com`
+
+Do not hardcode sender addresses into browser code.
+
+---
+
+# PHASE 4 — PROPOSE SERVER-SIDE VERIFICATION MODEL
+
+Design the smallest robust implementation consistent with the existing architecture.
+
+Preferred properties:
+
+### Verification code
+
+Use a cryptographically secure random code.
+
+A six-digit numeric code is acceptable for UX provided rate limiting and expiry are enforced.
+
+Example presentation:
+
+`123456`
+
+Do NOT store the plaintext verification code persistently.
+
+Store a secure hash/HMAC representation suitable for verification.
+
+Never log the plaintext code in production.
+
+### Expiration
+
+Recommended default:
+
+`10 minutes`
+
+Determine whether the repository already has conventions that suggest another value.
+
+### Single use
+
+Successful verification must invalidate/consume the challenge.
+
+### Resend
+
+A resend should invalidate or supersede the previous active code.
+
+Recommend an appropriate resend cooldown.
+
+### Attempts
+
+Recommend a maximum number of incorrect verification attempts.
+
+After the limit, require a new code.
+
+### Rate limiting
+
+Consider limits by:
+
+- email;
+- IP/request source where supported;
+- verification challenge;
+- resend frequency.
+
+Use existing rate-limit infrastructure if present.
+
+Do not invent an entirely separate framework if the application already has one.
+
+---
+
+# PHASE 5 — DETERMINE ACCOUNT-CREATION STRATEGY
+
+Compare the safest implementation against the current architecture.
+
+Possible models include:
+
+### Model A — Pending registration before `users`
+
+Store a short-lived pending registration/challenge.
+
+Create the real user only after successful email verification.
+
+### Model B — Unverified user
+
+Create the user first with something equivalent to:
+
+`email_verified_at = NULL`
+
+but do NOT allow normal authenticated application access until verification succeeds.
+
+### Model C — Existing architecture-specific approach
+
+If the repository already has a safer established pattern, describe it.
+
+Recommend ONE model based on the actual application.
+
+Do not choose solely from theoretical preference.
+
+Explain implications for:
+
+- duplicate emails;
+- abandoned signups;
+- profile creation;
+- organization creation;
+- sessions/JWTs;
+- invitations;
+- provider sign-in;
+- existing users.
+
+---
+
+# PHASE 6 — ROLE-SPECIFIC SENDERS
+
+Determine how the backend should select the sender.
+
+Desired mapping:
+
+```text
+Talent
+→ FindWork@onspotglobal.com
+
+Client
+→ HireTalent@onspotglobal.com
+```
+
+The CLIENT must not be allowed to submit an arbitrary sender address.
+
+Role/signup type must determine the server-controlled sender.
+
+Propose environment configuration names rather than hardcoding production addresses throughout the code.
+
+For example, if consistent with existing conventions:
+
+`TALENT_VERIFICATION_EMAIL_FROM`
+
+`CLIENT_VERIFICATION_EMAIL_FROM`
+
+These are examples only.
+
+Use repository conventions where possible.
+
+---
+
+# PHASE 7 — API DESIGN
+
+Propose the exact endpoints or modifications needed.
+
+Conceptually we need operations equivalent to:
+
+```text
+Start registration / send verification
+Verify code
+Resend code
+Complete registration
+```
+
+But reuse existing registration endpoints if cleaner.
+
+For every proposed endpoint report:
+
+- method;
+- path;
+- authentication requirement;
+- request fields;
+- response behavior;
+- rate limiting;
+- database writes.
+
+Do NOT return information that unnecessarily reveals whether arbitrary emails already have accounts.
+
+Consider enumeration resistance where appropriate.
+
+---
+
+# PHASE 8 — FRONTEND UX
+
+Identify the existing Client and Talent signup components that would change.
+
+Propose UX for:
+
+1. Enter email/signup details.
+2. Send code.
+3. Verification-code screen.
+4. Resend cooldown.
+5. Incorrect code.
+6. Expired code.
+7. Graph/send failure.
+8. Successful verification.
+9. Continue registration/onboarding.
+
+The UI must NOT claim:
+
+`Email verified`
+
+until the SERVER confirms verification.
+
+Refreshing the browser must not turn an unverified signup into a verified one.
+
+---
+
+# PHASE 9 — EXISTING USERS
+
+Determine how this feature should affect existing users.
+
+Default expectation:
+
+Do NOT suddenly lock existing production users out merely because historical accounts do not have the new verification state.
+
+Recommend an explicit migration/backfill policy.
+
+Do not mutate existing users during this audit.
+
+---
+
+# PHASE 10 — PROVIDER AUTHENTICATION
+
+Determine how provider-backed authentication such as legitimate LinkedIn login should interact with this feature.
+
+Do not assume a third-party provider's email is verified unless the provider integration/API contract explicitly establishes that property and the application consumes it correctly.
+
+Report the recommended behavior.
+
+Do not change Priority 4's removal of fake LinkedIn profile import.
+
+---
+
+# PHASE 11 — SECURITY / ABUSE CASES
+
+This is a scoped verification-feature review, NOT a broad security audit.
+
+Address only issues necessary for this feature:
+
+- brute-force OTP attempts;
+- resend abuse/email bombing;
+- user enumeration;
+- replay;
+- expired codes;
+- multiple active codes;
+- email changed after verification;
+- race conditions;
+- verification of one email followed by registration with another;
+- plaintext OTP logging/storage;
+- arbitrary sender manipulation.
+
+---
+
+# PHASE 12 — TEST PLAN
+
+Provide automated tests for the proposed implementation.
+
+At minimum:
+
+1. Talent verification uses Talent sender.
+2. Client verification uses Client sender.
+3. Server—not browser—chooses sender.
+4. Valid code verifies correct email.
+5. Incorrect code fails.
+6. Expired code fails.
+7. Used code cannot be replayed.
+8. New resend invalidates/supersedes old code.
+9. Attempt limit works.
+10. Resend cooldown works.
+11. Rate limit works.
+12. Code for email A cannot verify email B.
+13. Code for Talent registration cannot improperly verify unrelated Client registration.
+14. Browser cannot mark itself verified.
+15. Graph send failure does not claim success.
+16. Duplicate-registration behavior remains correct.
+17. Existing users remain usable according to approved migration policy.
+18. Production logs do not expose plaintext OTP.
+
+Also define the real UAT requirement:
+
+```text
+Talent signup
+→ real verification email from FindWork@onspotglobal.com
+→ inbox receives code
+→ code verifies
+→ registration completes
+```
+
+and:
+
+```text
+Client signup
+→ real verification email from HireTalent@onspotglobal.com
+→ inbox receives code
+→ code verifies
+→ registration completes
+```
+
+Actual inbox receipt is required before this feature receives runtime PASS.
+
+---
+
+# REQUIRED REPORT
+
+Return:
+
+## Current Registration Architecture
+
+Document Client and Talent flows.
+
+## Existing Verification Infrastructure
+
+State what already exists.
+
+## Microsoft Graph Reuse
+
+Explain what can be reused and required sender configuration.
+
+## Recommended Data Model
+
+Recommend the specific model/schema based on the existing application.
+
+## Recommended API Flow
+
+Provide proposed endpoints/changes.
+
+## Client Signup Flow
+
+Show final intended sequence.
+
+## Talent Signup Flow
+
+Show final intended sequence.
+
+## Existing User Policy
+
+Recommend migration/backfill behavior.
+
+## Provider Authentication Policy
+
+Explain treatment of provider-backed signups.
+
+## Abuse Controls
+
+Specify expiration, attempts, resend cooldown, and rate-limit strategy.
+
+## Files Expected to Change
+
+List likely application/schema/test files.
+
+## Migration Required
+
+Use:
+
+`YES`
+
+or:
+
+`NO`
+
+Explain why.
+
+## Risks / Open Decisions
+
+Only list decisions that genuinely require product approval.
+
+## Implementation Recommendation
+
+Use:
+
+`READY TO IMPLEMENT`
+
+or:
+
+`BLOCKED — DECISION/PREREQUISITE REQUIRED`
+
+Do NOT implement.
+
+Do NOT run migrations.
+
+Do NOT send verification emails.
+
+Do NOT publish.
+
+STOP after the audit report.
