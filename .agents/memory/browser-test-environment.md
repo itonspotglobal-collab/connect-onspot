@@ -7,7 +7,13 @@ Browser regression tests can run against an isolated Vite frontend with API rout
 
 **Why:** The repository's cached Playwright binaries may be present while the container lacks libraries such as libglib, and enabling cartographer outside the normal Replit runtime can fail during transforms.
 
-**How to apply:** Keep browser tests independent of live database data by mocking only the relevant API contracts. Set `BROWSER_BASE_URL` when using an already-running app, and provide `PLAYWRIGHT_EXECUTABLE_PATH` only when the host supplies a compatible browser.
+**How to apply:** Keep browser tests independent of live database data by mocking only the relevant API contracts. Only set `BROWSER_BASE_URL` to a dedicated fixture target, never a customer-facing deployment. Provide `PLAYWRIGHT_EXECUTABLE_PATH` only when the host supplies a compatible browser.
+
+Credential-scrubbed child environments still need browser-specific runtime configuration.
+
+**Why:** Removing inherited configuration made an installed browser appear missing; selecting its cache explicitly then exposed missing native-library search paths. These were test-environment failures, not application regressions.
+
+**How to apply:** Configure a compatible host-wrapped browser or its cache/native-library requirements separately from application credentials. Do not restore production secrets merely to make fixture tests launch. Record failed setup attempts separately from substantive browser assertions.
 
 When validating a new browser suite, run it by file as well as through the package-wide glob. The suites each manage their own Vite lifecycle, and the aggregate command can expose unrelated teardown/timing failures even when the changed suite is green.
 

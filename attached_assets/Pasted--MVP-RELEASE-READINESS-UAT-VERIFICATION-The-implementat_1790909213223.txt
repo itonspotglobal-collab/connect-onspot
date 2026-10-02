@@ -1,0 +1,660 @@
+# MVP RELEASE READINESS / UAT VERIFICATION
+
+The implementation pass for Priorities 1–6 is complete.
+
+We are now performing a **release-readiness verification pass before publishing the application**.
+
+This is NOT Priority 7.
+
+Do not implement new features.
+
+Do not begin the separate security workstream.
+
+Do not automatically fix defects discovered during this verification.
+
+If a test exposes a defect:
+
+1. document it;
+2. classify its severity;
+3. provide reproduction steps;
+4. identify the likely source;
+5. STOP before modifying application code unless explicitly approved.
+
+The objective is to determine whether the current combined application is ready to publish.
+
+---
+
+# CRITICAL SAFETY RULE
+
+Prefer a safe staging/development deployment using test accounts and test data.
+
+Do NOT:
+
+- terminate real customer contracts;
+- modify real financial records;
+- generate real payouts;
+- alter real invoices;
+- upload test files into customer accounts;
+- send test emails to arbitrary real users;
+- bypass authentication;
+- disable authorization;
+- use development-login bypasses as evidence of production authentication;
+- fabricate screenshots or verification;
+- treat configuration presence as runtime proof.
+
+If safe prerequisites are unavailable, report the affected check as:
+
+`BLOCKED`
+
+Do not manufacture a PASS.
+
+---
+
+# PHASE 1 — RELEASE BASELINE
+
+Before runtime testing, report:
+
+- current Git branch;
+- current commit SHA;
+- working-tree status;
+- uncommitted changes;
+- relevant environment;
+- Node/runtime version;
+- database/environment target;
+- whether this is development, staging, or production.
+
+Do NOT print secret values.
+
+For secrets/configuration report only:
+
+`PRESENT`
+
+`MISSING`
+
+or:
+
+`NOT REQUIRED`
+
+Never expose credentials, tokens, signed URLs, connection strings, API keys, or passwords.
+
+---
+
+# PHASE 2 — REVIEW THE COMBINED DIFF
+
+Review the combined changes from Priorities 1–6.
+
+Confirm that there are no obvious:
+
+- debug statements;
+- fake/sample user data;
+- temporary auth bypasses;
+- hardcoded test credentials;
+- temporary development routes;
+- fake success responses;
+- accidental public storage permissions;
+- commented-out critical behavior;
+- unresolved merge conflict markers;
+- TODO hacks required for these six priorities.
+
+Also inspect `.agents/memory`.
+
+Report whether `.agents/memory/*` is Git-tracked and whether these files are intentionally part of the application repository.
+
+Do NOT delete them automatically.
+
+---
+
+# PHASE 3 — FULL AUTOMATED REGRESSION
+
+Run the complete practical automated verification suite, not only the tests added for individual priorities.
+
+At minimum run:
+
+- TypeScript checks;
+- full relevant unit tests;
+- integration tests;
+- Client tests;
+- Talent tests;
+- profile/Get Hired tests;
+- Team Dashboard tests;
+- contract termination tests;
+- object-storage/media tests;
+- authentication tests;
+- billing/invoice tests;
+- navigation tests;
+- browser tests that can safely run against controlled fixtures;
+- production build;
+- `git diff --check`.
+
+If the repository provides a canonical full-test command, run it.
+
+Do not silently ignore failing tests.
+
+For every failure classify:
+
+`NEW REGRESSION`
+
+`PRE-EXISTING`
+
+`ENVIRONMENTAL`
+
+or:
+
+`UNKNOWN`
+
+Provide evidence for the classification.
+
+Do not modify tests simply to obtain green results.
+
+---
+
+# PHASE 4 — SAFE FULL APPLICATION STARTUP
+
+Determine what standard application startup performs BEFORE starting it.
+
+Specifically inspect whether startup can trigger:
+
+- database migrations;
+- invoice generation;
+- statement generation;
+- payout scheduling;
+- email automation;
+- cleanup jobs;
+- financial automation;
+- production writes.
+
+Report those effects.
+
+If a safe staging/test environment is available, start the full application there.
+
+If the only available target is production and startup may perform consequential writes:
+
+STOP and report the risk rather than starting it merely for verification.
+
+Do not treat an isolated handler test as full-runtime verification.
+
+---
+
+# PHASE 5 — AUTHENTICATION SMOKE TEST
+
+Using legitimate approved test accounts if available, verify:
+
+### Client
+
+- login succeeds;
+- Client layout loads;
+- organization context loads;
+- logout works.
+
+### Talent
+
+- login succeeds;
+- Talent layout/profile loads;
+- Get Hired loads;
+- logout works.
+
+### Admin
+
+If an approved Admin test account exists:
+
+- login succeeds;
+- Admin layout loads.
+
+Do not create production accounts without explicit approval.
+
+Do not use authentication bypasses.
+
+---
+
+# PHASE 6 — PRIORITY 1 UAT: CONTRACT ENDINGS
+
+Use explicitly safe test contracts only.
+
+## Client
+
+Verify:
+
+1. `/client/contract-endings` loads authenticated.
+2. Eligible active contract appears.
+3. Existing termination requests load.
+4. Submit a safe termination request.
+5. Response succeeds.
+6. Reload.
+7. Request persists.
+8. Effective-end/proration information is consistent with existing business rules.
+
+## Talent
+
+Perform the equivalent verification at:
+
+`/talent/contract-endings`
+
+## Authorization
+
+Verify:
+
+- Client cannot perform Talent-only operation;
+- Talent cannot perform Client-only operation;
+- unrelated users cannot access another contract;
+- unauthenticated requests are rejected.
+
+Do NOT modify a real customer contract.
+
+If no approved disposable contract exists:
+
+`BLOCKED — SAFE TEST CONTRACT REQUIRED`
+
+---
+
+# PHASE 7 — PRIORITY 2 UAT: MICROSOFT GRAPH EMAIL
+
+Configuration presence alone is NOT sufficient.
+
+Use an approved test recipient inbox.
+
+Trigger a legitimate low-risk application email flow or approved test-email mechanism.
+
+Verify:
+
+1. application initiates Graph send;
+2. Graph accepts the request;
+3. no application send error occurs;
+4. email arrives in the intended inbox;
+5. sender is correct;
+6. recipient is correct;
+7. subject/body correspond to the intended application event.
+
+Do not expose access tokens.
+
+Do not send to arbitrary customers.
+
+Required result:
+
+`PASS — RECEIPT CONFIRMED`
+
+or:
+
+`BLOCKED/FAIL`
+
+A token acquisition test alone is not PASS.
+
+---
+
+# PHASE 8 — PRIORITY 2/5 UAT: OBJECT STORAGE
+
+Use a harmless uniquely identifiable test document through an approved Talent test account.
+
+Verify the complete chain:
+
+```text
+Authenticated Talent
+→ upload bytes
+→ private object stored
+→ canonical object reference returned
+→ profile/document reference persisted
+→ reload
+→ document remains visible
+→ authenticated retrieval
+→ downloaded/retrieved bytes match original
+```
+
+Also verify:
+
+- another user cannot retrieve the object;
+- invalid upload receives appropriate failure;
+- failed persistence does not create fake UI success.
+
+Clean up the test object/profile reference afterward ONLY if a safe supported cleanup mechanism exists.
+
+Do not invent a cleanup operation.
+
+If no safe real storage test can be performed:
+
+`BLOCKED — LIVE STORAGE VERIFICATION REQUIRED`
+
+---
+
+# PHASE 9 — PRIORITY 3 UAT: CLIENT TEAM DASHBOARD
+
+Using controlled test engagements, verify the authenticated Client Team Dashboard.
+
+Test:
+
+### Legacy Talent
+
+- appears;
+- legacy recorded hours display correctly.
+
+### Modern Tracked Talent
+
+- appears;
+- completed modern clock activity contributes to Weekly Hours;
+- Last Active reflects legitimate modern clock activity;
+- no timesheet/invoice double-counting occurs.
+
+### Modern Guaranteed Talent
+
+- appears;
+- displays `Not tracked` rather than misleading zero attendance.
+
+Verify:
+
+- Monday–Sunday behavior;
+- daily totals;
+- member totals;
+- dashboard summary totals;
+- organization isolation.
+
+Do not modify financial records merely to construct test data.
+
+---
+
+# PHASE 10 — PRIORITY 4 UAT: LINKEDIN
+
+Using an authenticated Talent test account:
+
+Verify:
+
+- fake LinkedIn Import/Connect action is absent;
+- Get Hired does not require LinkedIn import;
+- manual profile editing still works;
+- manual LinkedIn URL remains available if supported.
+
+Directly verify the retired fake import endpoints return the intended unavailable response and do not mutate the Talent profile.
+
+Do NOT test real LinkedIn provider authentication unless approved credentials/test flow already exist.
+
+Do not change provider configuration.
+
+---
+
+# PHASE 11 — PRIORITY 5 UAT: GET HIRED
+
+Verify authenticated Get Hired behavior.
+
+## Profile
+
+- legitimate profile save works;
+- progression to Documents works.
+
+## Documents
+
+- actual resume upload succeeds;
+- reference persists;
+- reload preserves document;
+- View/Download works;
+- validation errors display correctly;
+- failure does not falsely show success.
+
+## Assessment
+
+Verify:
+
+- no `92%` fake result;
+- no March 2024 fake completion date;
+- no fake Top 10% ranking;
+- unavailable/optional state is truthful;
+- Continue to Matching does not persist a fake assessment result.
+
+## Priority 4 regression
+
+Verify fake LinkedIn import remains absent.
+
+---
+
+# PHASE 12 — PRIORITY 6 UAT: CLIENT NAVIGATION
+
+Using an authenticated Client account, click every visible primary navigation destination.
+
+Verify desktop and responsive/mobile behavior.
+
+Expected retained navigation includes the currently approved working destinations such as:
+
+- Dashboard
+- Find/Hire Talent
+- Messages
+- Interviews
+- Team
+- Billing
+- Monthly Invoices
+- Contract End Requests
+- Timesheets
+- Client Profile
+- Settings
+- organization destinations where applicable
+
+Verify:
+
+- page loads;
+- Client layout remains;
+- active state works;
+- browser back/forward works;
+- no 404;
+- no blank destination.
+
+Confirm these are NOT visible in Client navigation:
+
+- Contracts
+- Payments
+- Projects
+- Performance
+- ROI Analytics
+
+Do not delete their retained underlying placeholder routes.
+
+---
+
+# PHASE 13 — CROSS-ROLE REGRESSION
+
+Perform safe authorization checks.
+
+Verify at minimum:
+
+- Client cannot access Talent-only protected functionality;
+- Talent cannot access Client-only protected functionality;
+- ordinary users cannot access Admin-only functionality;
+- unauthenticated protected API requests receive appropriate rejection.
+
+This is regression verification only.
+
+Do not begin a broader security audit.
+
+---
+
+# PHASE 14 — DATA PERSISTENCE / RELOAD
+
+For safe test data created during UAT, verify persistence after browser reload/re-login where appropriate.
+
+At minimum:
+
+- Get Hired uploaded document;
+- profile changes;
+- contract-ending request if safe;
+- any other intentionally persisted test action.
+
+A UI-only optimistic state is not sufficient evidence.
+
+---
+
+# PHASE 15 — ERROR EXPERIENCE
+
+For safe failure cases verify the application does not claim success.
+
+At minimum:
+
+- invalid upload;
+- unauthorized object retrieval;
+- retired LinkedIn import endpoint;
+- unauthenticated protected endpoint.
+
+If Graph delivery can be safely forced to fail without changing production configuration, observe behavior.
+
+Do NOT intentionally break production secrets/configuration merely to test errors.
+
+---
+
+# PHASE 16 — PRODUCTION BUILD ARTIFACT
+
+Verify a fresh production build from the exact release candidate commit.
+
+Confirm:
+
+- build completes;
+- expected frontend/backend artifacts exist;
+- no test fixture is required at runtime;
+- no development authentication bypass is required;
+- application can boot in the safe target environment.
+
+---
+
+# RELEASE BLOCKERS
+
+Treat any of the following as a release blocker:
+
+### BLOCKER
+
+- production build fails;
+- application cannot start safely;
+- authentication is broken;
+- authorization regression exposes another user's data;
+- uploaded files cannot be persisted/retrieved;
+- fake LinkedIn data can still be written;
+- fake assessment result still appears;
+- contract-ending operation corrupts or misattributes data;
+- Team Dashboard materially double-counts modern work;
+- critical navigation leads to broken application state.
+
+### HIGH
+
+Report separately for review before publishing:
+
+- required transactional email cannot be delivered;
+- major Client/Talent workflow cannot complete;
+- persistence works only optimistically until reload;
+- major role workflow is inaccessible.
+
+Do not automatically decide to publish around a BLOCKER/HIGH finding.
+
+---
+
+# REQUIRED FINAL REPORT
+
+Return one release-readiness report.
+
+## A. Release Candidate
+
+- branch
+- commit
+- environment
+- working-tree status
+
+## B. Automated Verification
+
+| Check | Result |
+|---|---|
+| TypeScript | |
+| Full relevant tests | |
+| Browser tests | |
+| Production build | |
+| git diff --check | |
+
+Include total tests passed/failed/skipped.
+
+## C. Priority Verification
+
+| Priority | Automated | Authenticated/runtime | Result |
+|---|---|---|---|
+| 1 Contract Endings | | | |
+| 2 Graph Email | | | |
+| 2 Object Storage | | | |
+| 3 Team Dashboard | | | |
+| 4 LinkedIn Stopgap | | | |
+| 5 Get Hired | | | |
+| 6 Client Navigation | | | |
+
+Use:
+
+`PASS`
+
+`FAIL`
+
+`BLOCKED`
+
+`PENDING`
+
+Do not convert BLOCKED/PENDING into PASS.
+
+## D. Cross-Role Verification
+
+Report Client/Talent/Admin isolation results.
+
+## E. Persistence Verification
+
+Report which actions survived reload/re-login.
+
+## F. External Integrations
+
+### Microsoft Graph
+`PASS / FAIL / BLOCKED`
+
+Include whether actual inbox receipt was confirmed.
+
+### Object Storage
+`PASS / FAIL / BLOCKED`
+
+Include whether actual bytes were uploaded and retrieved successfully.
+
+## G. Known Issues
+
+Separate:
+
+- release blockers;
+- high-priority issues;
+- non-blocking backlog;
+- previously known unrelated issues.
+
+## H. Production Startup Risks
+
+List anything startup/deployment may execute:
+
+- migrations
+- invoice automation
+- payout jobs
+- scheduled jobs
+- other writes
+
+## I. Rollback Readiness
+
+Determine the existing deployment rollback mechanism.
+
+Report whether the previous known-good deployment/revision can be restored.
+
+Do NOT execute rollback.
+
+Do not invent a rollback mechanism if none exists.
+
+## J. Release Decision
+
+Use exactly one:
+
+### `READY TO PUBLISH`
+
+Only if all required release-critical verification actually passed.
+
+### `CONDITIONALLY READY — MANUAL VERIFICATION REQUIRED`
+
+Use when code/build/testing is healthy but specific external/authenticated verification remains unavailable.
+
+List the exact remaining manual checks.
+
+### `NOT READY TO PUBLISH`
+
+Use if a blocker or unresolved high-severity defect exists.
+
+Do not publish automatically.
+
+Do not modify code automatically.
+
+Do not proceed into security work.
+
+STOP after producing the release-readiness report.
