@@ -106,8 +106,16 @@ import Papa from "papaparse";
 import jwt from "jsonwebtoken";
 import { query, db, pool, getClient } from "./db.ts";
 import { and, eq, desc, sql as sqlOp } from "drizzle-orm";
-import { ObjectStorageService, objectStorageClient } from "./objectStorage";
-import { setObjectAclPolicy } from "./objectAcl";
+import {
+  ObjectNotFoundError,
+  ObjectStorageService,
+  objectStorageClient,
+} from "./objectStorage";
+import { getObjectAclPolicy, setObjectAclPolicy } from "./objectAcl";
+import {
+  createTalentDocumentUrlHandler,
+  TalentDocumentObjectNotFoundError,
+} from "./lib/talentDocumentUrlHandler.js";
 import { v4 as uuidv4 } from "uuid";
 import { randomUUID, randomBytes, createHash } from "crypto";
 import {
@@ -5871,59 +5879,63 @@ export async function registerRoutes(
       if (!email) return res.status(401).json({ error: "Authentication required" });
 
       const row = await query(
-        `SELECT resume_url AS "resumeUrl", video_intro_url AS "videoIntroUrl"
+        `SELECT resume_url AS "resumeUrl", resume_file_name AS "resumeFileName",
+                video_intro_url AS "videoIntroUrl", video_intro_file_name AS "videoIntroFileName"
          FROM candidates WHERE lower(email) = lower($1) LIMIT 1`,
         [email],
       );
       const resumeUrl: string | null = row.rows[0]?.resumeUrl ?? null;
+      const resumeFileName: string | null = row.rows[0]?.resumeFileName ?? null;
       const videoIntroUrl: string | null = row.rows[0]?.videoIntroUrl ?? null;
-      res.json({ hasResume: !!resumeUrl, resumeUrl, hasVideoIntro: !!videoIntroUrl, videoIntroUrl });
+      const videoIntroFileName: string | null = row.rows[0]?.videoIntroFileName ?? null;
+      res.json({
+        hasResume: !!resumeUrl,
+        resumeUrl,
+        resumeFileName,
+        hasVideoIntro: !!videoIntroUrl,
+        videoIntroUrl,
+        videoIntroFileName,
+      });
     } catch (error) {
       handleRouteError(error, req, res, "Get talent resume status", 500);
     }
   });
 
   // PATCH /api/talent/me/resume-url - Persist a resume URL (from presigned-URL upload) to the candidate profile
-  app.patch("/api/talent/me/resume-url", authenticateJWT, async (req: any, res) => {
+  const readTalentDocumentObjectPolicy = async (fileUrl: string) => {
+    const objectStorageService = new ObjectStorageService();
+    let objectFile;
     try {
-      const email = req.user?.email;
-      if (!email) return res.status(401).json({ error: "Authentication required" });
-      const { fileUrl, fileName } = req.body;
-      if (!fileUrl) return res.status(400).json({ error: "fileUrl is required" });
-      const result = await query(
-        `UPDATE candidates SET resume_url = $1, resume_file_name = $2, updated_at = NOW()
-         WHERE lower(email) = lower($3)`,
-        [fileUrl, fileName ?? null, email],
-      );
-      if ((result.rowCount ?? 0) === 0) {
-        return res.status(404).json({ error: "Candidate profile not found — please complete your profile setup first." });
-      }
-      res.json({ success: true, resumeUrl: fileUrl, resumeFileName: fileName ?? null });
+      objectFile = await objectStorageService.getObjectEntityFile(fileUrl);
     } catch (error) {
-      handleRouteError(error, req, res, "Update talent resume URL", 500);
+      if (error instanceof ObjectNotFoundError) {
+        throw new TalentDocumentObjectNotFoundError();
+      }
+      throw error;
     }
-  });
+    return getObjectAclPolicy(objectFile);
+  };
+
+  app.patch(
+    "/api/talent/me/resume-url",
+    authenticateJWT,
+    createTalentDocumentUrlHandler({
+      query,
+      readObjectPolicy: readTalentDocumentObjectPolicy,
+      kind: "resume",
+    }),
+  );
 
   // PATCH /api/talent/me/video-intro-url - Persist a video intro URL (from presigned-URL upload) to the candidate profile
-  app.patch("/api/talent/me/video-intro-url", authenticateJWT, async (req: any, res) => {
-    try {
-      const email = req.user?.email;
-      if (!email) return res.status(401).json({ error: "Authentication required" });
-      const { fileUrl, fileName } = req.body;
-      if (!fileUrl) return res.status(400).json({ error: "fileUrl is required" });
-      const result = await query(
-        `UPDATE candidates SET video_intro_url = $1, video_intro_file_name = $2, updated_at = NOW()
-         WHERE lower(email) = lower($3)`,
-        [fileUrl, fileName ?? null, email],
-      );
-      if ((result.rowCount ?? 0) === 0) {
-        return res.status(404).json({ error: "Candidate profile not found — please complete your profile setup first." });
-      }
-      res.json({ success: true, videoIntroUrl: fileUrl, videoIntroFileName: fileName ?? null });
-    } catch (error) {
-      handleRouteError(error, req, res, "Update talent video intro URL", 500);
-    }
-  });
+  app.patch(
+    "/api/talent/me/video-intro-url",
+    authenticateJWT,
+    createTalentDocumentUrlHandler({
+      query,
+      readObjectPolicy: readTalentDocumentObjectPolicy,
+      kind: "videoIntro",
+    }),
+  );
 
   // ====== USERS ======
   app.get(

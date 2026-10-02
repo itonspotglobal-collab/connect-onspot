@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { applyResumeToCandidate } from "@/lib/applyResumeToCandidate";
 import type { ResumeReviewField } from "@/lib/applyResumeToCandidate";
 import { ResumeImportReviewPanel } from "@/components/ResumeImportReviewPanel";
-import { authAPI } from "@/lib/api";
+import api, { authAPI } from "@/lib/api";
+import { GetHiredAssessment } from "@/components/GetHiredAssessment";
+import { getHiredFileRules, getHiredRetrievalPath, persistGetHiredDocument, validateGetHiredFile } from "@/lib/getHiredDocuments";
+import type { GetHiredDocumentType, GetHiredUploadResult } from "@/lib/getHiredDocuments";
 import { useTalentProfile } from "@/hooks/useTalentProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { 
   User,
   Upload,
@@ -26,7 +28,6 @@ import {
   CheckCircle2,
   Clock,
   Star,
-  Award,
   Briefcase,
   MapPin,
   DollarSign,
@@ -49,23 +50,6 @@ import { useToast } from "@/hooks/use-toast";
 
 // Using consolidated profile form schema from hook
 // Removed duplicate schema definition
-
-interface AssessmentQuestion {
-  id: string;
-  question: string;
-  type: "multiple_choice" | "text" | "rating";
-  options?: string[];
-  required: boolean;
-}
-
-interface Assessment {
-  id: number;
-  type: string;
-  title: string;
-  description: string;
-  questions: AssessmentQuestion[];
-  duration: number;
-}
 
 interface JobApplication {
   id: string;
@@ -163,11 +147,6 @@ export default function GetHired() {
 
   // Removed duplicate profile queries - using consolidated system
 
-  // Fetch assessments
-  const { data: assessments = [] } = useQuery<Assessment[]>({
-    queryKey: ["/api/assessments"]
-  });
-
   // Fetch job applications
   const { data: jobApplications = [] } = useQuery<JobApplication[]>({
     queryKey: ["/api/job-applications"],
@@ -176,72 +155,27 @@ export default function GetHired() {
 
   // Removed duplicate profile mutation - using consolidated system
 
-  // Assessment Start Mutation
-  const startAssessmentMutation = useMutation({
-    mutationFn: async (assessmentId: number) => {
-      return apiRequest("POST", `/api/assessments/${assessmentId}/start`);
-    }
-  });
-
   // Removed duplicate profile completion calculation - using consolidated system
 
   // Skills management - using consolidated system from hook
 
   // File upload handlers
-  const handleResumeUpload = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload");
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL
-    };
-  };
+  const handleUploadComplete = async (result: GetHiredUploadResult, type: GetHiredDocumentType) => {
+      // Reject persistence errors back to ObjectUploader. It announces success only
+      // after this callback resolves; never add an unconfirmed document to the UI.
+      const { document } = await persistGetHiredDocument(result, type, authAPI.patch);
+      addDocument(document);
+      const file = result.successful![0];
 
-  const handleUploadComplete = async (result: any, type: string) => {
-    if (result.successful && result.successful.length > 0) {
-      const file = result.successful[0];
-      const fileUrl: string = file.uploadURL || file.response?.uploadURL;
-      const fileName: string = file.name;
-
-      // Optimistically update local state so the UI responds immediately
-      const newDocument = {
-        id: Math.random().toString(),
-        type: type as any,
-        fileName,
-        fileUrl,
-        createdAt: new Date().toISOString(),
-      };
-      addDocument(newDocument);
-
-      let saveSucceeded = false;
-      try {
-        // Persist to candidates table (source of truth)
-        const endpoint = type === "video_intro"
-          ? "/api/talent/me/video-intro-url"
-          : "/api/talent/me/resume-url";
-        await authAPI.patch(endpoint, { fileUrl, fileName });
-        saveSucceeded = true;
-
-        // Invalidate ALL candidate query-key variants so TalentProfile and
-        // ProfileSettings reflect the new resume immediately without a hard refresh.
-        // Use the prefix form (no candidateId) so we don't need to resolve it here.
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] }),
-          queryClient.invalidateQueries({ queryKey: ["/api/candidates"] }),
-          queryClient.invalidateQueries({ queryKey: ["candidate-profile"] }),
-        ]);
-      } catch (saveErr: any) {
-        console.error("Failed to persist uploaded file to candidate profile:", saveErr);
-        toast({
-          title: "Upload Error",
-          description: "File uploaded but could not be saved to your profile. Please try again.",
-          variant: "destructive",
-        });
-      }
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/talent/me/resume-status"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/candidates"] }),
+        queryClient.invalidateQueries({ queryKey: ["candidate-profile"] }),
+      ]).catch((error) => console.warn("Could not refresh saved document status:", error));
 
       // Run Vanessa resume analysis only after a confirmed successful save.
       // ObjectUploader passes `data` (the original File) in the successful result.
-      if (saveSucceeded && type === "resume" && file.data instanceof File) {
+      if (type === "resume" && file.data instanceof File) {
         try {
           // Resolve candidateId + token from whichever auth session is active.
           //
@@ -302,6 +236,29 @@ export default function GetHired() {
           console.warn("Resume analysis failed (non-fatal):", analysisErr);
         }
       }
+  };
+
+  const openDocument = async (document: { fileUrl: string; fileName: string }, preview: boolean) => {
+    // Fetch with the same JWT interceptor as uploads. Never navigate directly to
+    // private /objects paths or publish a storage/signed URL.
+    const previewWindow = preview ? window.open("about:blank", "_blank") : null;
+    if (previewWindow) previewWindow.opener = null;
+    try {
+      const response = await api.get(getHiredRetrievalPath(document.fileUrl), { responseType: "blob" });
+      const objectUrl = URL.createObjectURL(response.data);
+      if (previewWindow) {
+        previewWindow.location.href = objectUrl;
+      } else {
+        const link = window.document.createElement("a");
+        link.href = objectUrl;
+        link.download = document.fileName;
+        link.click();
+      }
+      // Keep the blob alive long enough for the browser to load it.
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      previewWindow?.close();
+      toast({ title: "Document unavailable", description: "Could not retrieve this private document. Please try again.", variant: "destructive" });
     }
   };
 
@@ -727,8 +684,9 @@ export default function GetHired() {
                       </p>
                       <ObjectUploader
                         maxNumberOfFiles={1}
-                        maxFileSize={10485760}
-                        onGetUploadParameters={handleResumeUpload}
+                        maxFileSize={getHiredFileRules("resume").maxSize}
+                        accept={getHiredFileRules("resume").accept}
+                        validateFile={(file) => validateGetHiredFile(file, "resume")}
                         onComplete={(result) => handleUploadComplete(result, "resume")}
                       >
                         <div className="flex items-center gap-2">
@@ -745,17 +703,17 @@ export default function GetHired() {
                             <FileText className="w-5 h-5 text-muted-foreground" />
                             <div>
                               <p className="font-medium">{doc.fileName}</p>
-                              <p className="text-xs text-muted-foreground">
+                              {doc.createdAt && <p className="text-xs text-muted-foreground">
                                 Uploaded {new Date(doc.createdAt).toLocaleDateString()}
-                              </p>
+                              </p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => openDocument(doc, true)}>
                               <Eye className="w-4 h-4 mr-1" />
                               View
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => openDocument(doc, false)}>
                               <Download className="w-4 h-4 mr-1" />
                               Download
                             </Button>
@@ -785,12 +743,13 @@ export default function GetHired() {
                       <Play className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                       <h4 className="font-medium mb-2">Upload Video Introduction</h4>
                       <p className="text-sm text-muted-foreground mb-4">
-                        MP4, MOV, AVI (Max 100MB, 60-90 seconds)
+                        MP4, MOV, AVI, WebM (Max 100MB, 60-90 seconds recommended)
                       </p>
                       <ObjectUploader
                         maxNumberOfFiles={1}
-                        maxFileSize={104857600}
-                        onGetUploadParameters={handleResumeUpload}
+                        maxFileSize={getHiredFileRules("video_intro").maxSize}
+                        accept={getHiredFileRules("video_intro").accept}
+                        validateFile={(file) => validateGetHiredFile(file, "video_intro")}
                         onComplete={(result) => handleUploadComplete(result, "video_intro")}
                       >
                         <div className="flex items-center gap-2">
@@ -807,17 +766,17 @@ export default function GetHired() {
                             <Play className="w-5 h-5 text-muted-foreground" />
                             <div>
                               <p className="font-medium">{doc.fileName}</p>
-                              <p className="text-xs text-muted-foreground">
+                              {doc.createdAt && <p className="text-xs text-muted-foreground">
                                 Uploaded {new Date(doc.createdAt).toLocaleDateString()}
-                              </p>
+                              </p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => openDocument(doc, true)}>
                               <Play className="w-4 h-4 mr-1" />
                               Preview
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => openDocument(doc, false)}>
                               <Download className="w-4 h-4 mr-1" />
                               Download
                             </Button>
@@ -833,137 +792,7 @@ export default function GetHired() {
 
           {/* Assessments */}
           <TabsContent value="4" className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="w-5 h-5" />
-                  Skills & Personality Assessments
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-8">
-                  Complete assessments to showcase your skills and work style to potential clients.
-                </p>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Writing Assessment */}
-                  <Card className="border-2">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">Writing Assessment</h3>
-                            <p className="text-sm text-muted-foreground">30 minutes</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline">Recommended</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Demonstrate your written communication skills through various writing exercises.
-                      </p>
-                      <div className="space-y-2 mb-6">
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Grammar & spelling</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Clarity & coherence</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Professional tone</span>
-                        </div>
-                      </div>
-                      <Button 
-                        className="w-full"
-                        onClick={() => startAssessmentMutation.mutate(1)}
-                        data-testid="button-start-writing-assessment"
-                      >
-                        <Clock className="w-4 h-4 mr-2" />
-                        Start Assessment
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  {/* DISC Assessment */}
-                  <Card className="border-2">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <Brain className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">DISC Profile Assessment</h3>
-                            <p className="text-sm text-muted-foreground">15 minutes</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline">Popular</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Discover your work style and communication preferences to help clients understand how you collaborate.
-                      </p>
-                      <div className="space-y-2 mb-6">
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Work style preferences</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Communication style</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <span>Team collaboration</span>
-                        </div>
-                      </div>
-                      <Button 
-                        className="w-full"
-                        onClick={() => startAssessmentMutation.mutate(2)}
-                        data-testid="button-start-disc-assessment"
-                      >
-                        <Brain className="w-4 h-4 mr-2" />
-                        Start Assessment
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Completed Assessments */}
-                <Separator className="my-8" />
-                <div>
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <Award className="w-5 h-5" />
-                    Completed Assessments
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">Technical Skills Assessment</p>
-                          <p className="text-sm text-muted-foreground">Completed on March 15, 2024</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-green-600">92%</p>
-                        <p className="text-xs text-muted-foreground">Top 10%</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <GetHiredAssessment onContinue={() => setCurrentStep(5)} />
           </TabsContent>
 
           {/* Smart Job Matching */}

@@ -34,9 +34,6 @@ const { appliedFields, parseError } = await applyResumeToCandidate({ file, candi
 2. ProfileSettings → `uploadResume` — same
 3. FindBestMatches — parser extracts workHistory/education/certifications/languages into profile state; all included in PATCH payload at submission; DB hydration also reads these fields from existing candidate
 
-## Entry points NOT yet updated
-- GetHired → uses Uppy direct-to-S3; no File object accessible in handleUploadComplete in current architecture; left as future work
-
 ## Vanessa-specific rules
 - System prompt lives entirely in `vanessaResumeAnalyzer.ts` — do NOT use the Assistants API or the normal chat system prompt
 - Confidence thresholds: >= 0.80 = auto-fill empty fields; 0.60–0.79 = corroborated fields only; < 0.60 = suppress

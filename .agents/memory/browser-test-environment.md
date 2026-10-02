@@ -38,3 +38,9 @@ Isolated Vite servers need separate optimizer caches, not just separate ports.
 **Why:** Parallel browser fixtures sharing the running preview's cache produced stale dependency hashes, blank lazy-navigation pages, and `Outdated Optimize Dep` responses even when form checks passed.
 
 **How to apply:** Give each fixture a unique temporary cache directory through its subprocess configuration, then remove only that directory during teardown. Never repair a frontend cache issue by restarting a backend that performs prohibited database work.
+
+Form visibility alone is not proof that a browser fixture successfully hydrated an existing profile.
+
+**Why:** An incorrect response envelope allowed upload tests to pass while the profile silently rendered blank; adding a real edit-and-save assertion exposed the fixture mismatch.
+
+**How to apply:** Assert a known server-provided value before editing or submitting. Match the endpoint's actual resource envelope: HTTP-client transport unwrapping does not necessarily unwrap nested resource data.

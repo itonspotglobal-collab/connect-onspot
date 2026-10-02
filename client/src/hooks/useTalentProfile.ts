@@ -114,7 +114,7 @@ export function useTalentProfile() {
   });
 
   // ---- Fetch resume status (replaces legacy /api/documents) ----
-  const { data: resumeStatusData } = useQuery<{ hasResume: boolean; resumeUrl: string | null; hasVideoIntro: boolean; videoIntroUrl: string | null } | null>({
+  const { data: resumeStatusData } = useQuery<{ hasResume: boolean; resumeUrl: string | null; resumeFileName?: string | null; hasVideoIntro: boolean; videoIntroUrl: string | null; videoIntroFileName?: string | null } | null>({
     queryKey: ["/api/talent/me/resume-status"],
     queryFn: async () => {
       if (!user || user.role !== "talent") return null;
@@ -173,10 +173,10 @@ export function useTalentProfile() {
   const documents = useMemo<Document[]>(() => {
     const serverDocs: Document[] = [];
     if (resumeStatusData?.hasResume && resumeStatusData.resumeUrl) {
-      serverDocs.push({ id: "resume", type: "resume", fileName: "resume", fileUrl: resumeStatusData.resumeUrl, createdAt: "" });
+      serverDocs.push({ id: "resume", type: "resume", fileName: resumeStatusData.resumeFileName || "Resume", fileUrl: resumeStatusData.resumeUrl, createdAt: "" });
     }
     if (resumeStatusData?.hasVideoIntro && resumeStatusData.videoIntroUrl) {
-      serverDocs.push({ id: "video_intro", type: "video_intro", fileName: "video-intro", fileUrl: resumeStatusData.videoIntroUrl, createdAt: "" });
+      serverDocs.push({ id: "video_intro", type: "video_intro", fileName: resumeStatusData.videoIntroFileName || "Video introduction", fileUrl: resumeStatusData.videoIntroUrl, createdAt: "" });
     }
     // Optimistic local additions — keep only types not yet confirmed by the server
     const serverTypes = new Set(serverDocs.map((d) => d.type));

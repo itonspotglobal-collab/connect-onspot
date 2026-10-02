@@ -57,3 +57,4 @@
 - [Auth incident release safety](auth-incident-release-safety.md) — an app-only fix does not make restart or Publish database-free; inspect launch side effects separately.
 - [Client Team recorded hours](client-team-recorded-hours.md) — dashboard activity is not billable time; preserve provenance, work-zone weeks, and Guaranteed non-attendance semantics.
 - [LinkedIn import safety](linkedin-import-safety.md) — no simulated profile imports; retain sign-in/manual URLs, and require separate review before historical cleanup.
+- [Get Hired truthfulness](get-hired-data-truthfulness.md) — success requires real uploaded/persisted data; assessment schemas or prototype results are not a functioning result source.

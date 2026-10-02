@@ -1,0 +1,604 @@
+## PRIORITY 5 — Get Hired Wizard: Object Storage Upload + Fake Assessment Result
+
+Work on **Priority 5 only**.
+
+Do not proceed to Priority 6.
+
+This priority addresses two known Get Hired correctness issues:
+
+1. The Get Hired wizard appears to use an incorrect/outdated object-upload API path.
+2. The Get Hired assessment UI contains fabricated assessment data, previously identified as approximately **92%** with a **March 2024** completion/result date.
+
+The objective is to make both behaviors truthful and functional without redesigning the entire Get Hired flow.
+
+---
+
+# PART A — AUDIT THE GET HIRED FLOW FIRST
+
+Before editing, trace the current Get Hired wizard end to end.
+
+Locate:
+
+`client/src/pages/GetHired.tsx`
+
+and every component, hook, endpoint, storage helper, and backend route used by it.
+
+Document the current wizard steps after the Priority 4 LinkedIn removal.
+
+Determine exactly how the following currently work:
+
+- profile completion
+- documents/resume upload
+- video upload, if part of this flow
+- skills
+- assessment
+- final completion/submission
+
+Do not assume the old step numbering is still correct after Priority 4.
+
+---
+
+# PART B — AUDIT OBJECT STORAGE IMPLEMENTATION
+
+Search the repository for all current object-storage upload implementations.
+
+At minimum inspect references to:
+
+- `/api/objects/upload`
+- `/api/object-storage/upload`
+- `/api/object-storage/upload-url`
+- `/api/objects/uploads/:id`
+- `ObjectUploader`
+- signed upload URLs
+- object storage helpers/services
+- resume/CV upload
+- candidate documents
+- profile documents
+- video uploads
+
+Determine which endpoint/pattern is the **canonical current upload implementation**.
+
+Previous inspection suggested Get Hired may use:
+
+`/api/objects/upload`
+
+while other application code uses something like:
+
+`/api/object-storage/upload-url`
+
+Do not blindly replace the string based on this prompt.
+
+Verify the actual current backend routes and expected request/response contracts.
+
+---
+
+# PART C — TRACE THE BROKEN GET HIRED UPLOAD
+
+Trace the current Get Hired document upload flow:
+
+`Get Hired UI`
+→ upload handler
+→ upload API request
+→ signed/direct upload
+→ object storage
+→ persistence of resulting object reference
+→ later retrieval/download
+
+Determine:
+
+1. Which endpoint Get Hired currently calls.
+2. Whether that endpoint actually exists.
+3. What payload it sends.
+4. What response shape it expects.
+5. Whether it uploads bytes directly or requests a signed upload URL.
+6. Where the final object path/reference is persisted.
+7. How ownership/access is enforced.
+8. How the uploaded document is retrieved later.
+9. Whether Get Hired duplicates an existing working uploader elsewhere in the application.
+
+---
+
+# PART D — FIX THE UPLOAD USING THE EXISTING CANONICAL PATTERN
+
+Once the canonical application upload pattern is identified, update Get Hired to use it.
+
+Prefer **reusing the existing working uploader/helper/component** rather than introducing another object-storage implementation.
+
+Do not:
+
+- create another storage subsystem
+- introduce a temporary local-file fallback
+- Base64-store files in the database
+- bypass authentication
+- weaken ownership/access controls
+- create fake upload success
+- hardcode storage URLs
+- expose signed URLs permanently
+- change production storage configuration
+
+The Get Hired upload must use the same legitimate storage infrastructure already used elsewhere in the application.
+
+---
+
+# UPLOAD SUCCESS SEMANTICS
+
+Do not mark a document uploaded merely because a signed upload URL was generated.
+
+Success should mean the required upload operation actually completed and the application has the correct persistent object reference needed by the existing workflow.
+
+If persistence is a separate step, ensure that step succeeds before presenting final success.
+
+On failure:
+
+- show appropriate existing UI error feedback
+- do not advance the wizard as though upload succeeded
+- do not persist a fake object reference
+
+---
+
+# FILE VALIDATION
+
+Preserve existing application validation rules where available.
+
+Determine existing accepted:
+
+- file types
+- size limits
+- resume/document categories
+
+Do not invent substantially different restrictions unless the current Get Hired implementation is clearly incorrect.
+
+If the canonical uploader already handles validation, reuse it.
+
+---
+
+# OWNERSHIP / RETRIEVAL
+
+Verify that a Talent cannot use this change to access another user's uploaded object.
+
+Preserve existing authenticated ownership rules.
+
+After upload, verify the resulting object can be retrieved through the intended authorized retrieval path.
+
+Do not expose private storage objects publicly merely to make the wizard work.
+
+---
+
+# PART E — AUDIT THE ASSESSMENT UI
+
+Now separately trace the Get Hired assessment section.
+
+Search for:
+
+- `92`
+- `92%`
+- `March`
+- `2024`
+- assessment
+- assessment score
+- completed assessment
+- assessment result
+- test result
+- hardcoded dates
+- mock assessment data
+- placeholder assessment data
+
+Identify exactly where the displayed assessment result comes from.
+
+Determine whether there is currently a real backend assessment system.
+
+Trace any discovered flow:
+
+`Get Hired`
+→ assessment API
+→ database
+→ result
+
+or establish clearly that no real assessment result source exists.
+
+Do not infer that an assessment integration exists merely because the UI contains assessment terminology.
+
+---
+
+# PART F — REMOVE FABRICATED ASSESSMENT DATA
+
+The Get Hired UI must never present a fabricated score/date as if the Talent actually completed an assessment.
+
+Remove any runtime hardcoded result such as:
+
+`92%`
+
+and:
+
+`March 2024`
+
+or equivalent fake completion data.
+
+Also search for other hardcoded assessment:
+
+- scores
+- dates
+- pass/fail states
+- completion claims
+- rankings
+- certificates
+
+that are presented as real user-specific results.
+
+Remove or disable fabricated states.
+
+---
+
+# ASSESSMENT BEHAVIOR DECISION
+
+Use this decision tree.
+
+## Case A — A real assessment backend exists
+
+If the application has a legitimate assessment/result source:
+
+Wire the Get Hired assessment display to the real authenticated Talent result.
+
+Handle:
+
+- no assessment
+- pending assessment
+- completed assessment
+- failed API request
+
+truthfully.
+
+Do not fabricate fallback results.
+
+## Case B — Assessment functionality exists but no result exists yet
+
+Display an honest state such as:
+
+`Not completed`
+
+or existing product-equivalent wording.
+
+Do not display a fake score/date.
+
+## Case C — No real assessment system exists
+
+Remove/disable the misleading completed-result presentation.
+
+If the assessment is optional for MVP, allow the user to continue without pretending they completed it.
+
+If the existing wizard currently requires the fake assessment state to advance, correct that requirement so fabricated data is not necessary.
+
+Do not build a new assessment platform under Priority 5.
+
+---
+
+# IMPORTANT — DO NOT INVENT PRODUCT REQUIREMENTS
+
+Do not decide that Talent must pass an assessment unless the existing real application logic establishes that requirement.
+
+Do not invent:
+
+- minimum passing score
+- retake rules
+- certification
+- expiry
+- rankings
+
+Priority 5 is about truthful display and working uploads.
+
+---
+
+# PART G — GET HIRED COMPLETION
+
+After both fixes, verify that the Talent can still progress through Get Hired.
+
+The wizard must not depend on:
+
+- the removed LinkedIn import from Priority 4
+- a fake assessment result
+- fake upload success
+
+Trace the completion condition.
+
+Ensure the wizard only considers actual required persisted data when determining completion.
+
+Do not mark a Talent Get Hired-complete based on fabricated values.
+
+---
+
+# REGRESSION TESTS — OBJECT STORAGE
+
+Add/update tests covering at minimum:
+
+1. Get Hired uses the canonical object-storage upload mechanism.
+
+2. The obsolete/wrong `/api/objects/upload` path is no longer used by Get Hired if confirmed incorrect.
+
+3. Successful upload produces the expected persistent object reference.
+
+4. Upload failure does not show success.
+
+5. Upload failure does not incorrectly advance the wizard.
+
+6. Invalid file type/size follows existing validation.
+
+7. Authenticated ownership/access behavior remains intact.
+
+8. Uploaded object uses the intended private retrieval mechanism.
+
+9. Existing uploader/storage behavior elsewhere remains unchanged.
+
+10. No fake object-storage URL/reference is generated.
+
+---
+
+# REGRESSION TESTS — ASSESSMENT
+
+Add/update tests covering at minimum:
+
+11. Hardcoded `92%` user result is absent from runtime Get Hired code.
+
+12. Hardcoded March 2024 result/completion date is absent.
+
+13. No fabricated completed assessment is shown when no real result exists.
+
+14. No-assessment state is truthful.
+
+15. A real assessment result is displayed only if backed by a real authenticated data source, if such a source exists.
+
+16. Assessment API failure does not fall back to fake success/result data.
+
+17. Get Hired can proceed according to legitimate existing requirements without relying on fake assessment data.
+
+---
+
+# REGRESSION TESTS — PRIORITY 4
+
+Because Priority 4 changed the same Get Hired page, explicitly verify:
+
+18. Fake LinkedIn import remains absent.
+
+19. Get Hired does not regain a dependency on LinkedIn.
+
+20. Manual profile completion still works.
+
+Do not reimplement or otherwise alter Priority 4.
+
+---
+
+# SOURCE SEARCH AFTER IMPLEMENTATION
+
+After the fix, search relevant runtime source for:
+
+`/api/objects/upload`
+
+`92%`
+
+`March 2024`
+
+`Sample User`
+
+and the removed LinkedIn import calls.
+
+Explain every remaining occurrence.
+
+A remaining occurrence is acceptable only if it belongs to:
+
+- legitimate unrelated functionality
+- documentation
+- test fixtures
+- historical migrations
+
+Do not leave a misleading runtime occurrence unexplained.
+
+---
+
+# DO NOT MODIFY UNRELATED STORAGE FLOWS
+
+Do not refactor every uploader in the application.
+
+If you discover other broken storage callers outside Get Hired:
+
+document them separately.
+
+Do not expand Priority 5 unless Get Hired directly depends on them.
+
+---
+
+# NO PRODUCTION DATA MUTATION FOR TESTING
+
+Do not upload arbitrary test files into production user accounts.
+
+Do not modify real Talent profiles merely to prove the fix.
+
+Use:
+
+- controlled automated tests
+- isolated storage fixtures/mocks consistent with existing test architecture
+- an explicitly approved test account/environment if one already exists
+
+If real authenticated runtime testing is unavailable, report it as pending.
+
+---
+
+# BUILD / VERIFICATION
+
+After implementation run:
+
+- TypeScript checks
+- relevant Get Hired tests
+- relevant object-storage tests
+- relevant profile-completion tests
+- production build
+- `git diff --check`
+
+If an authenticated Talent test session is legitimately available, verify:
+
+### Documents
+
+1. Open Get Hired.
+2. Upload a safe test resume/document.
+3. Confirm upload completes.
+4. Confirm the wizard shows the actual uploaded file.
+5. Reload.
+6. Confirm the persisted document remains.
+7. Confirm authorized retrieval works.
+
+### Failure behavior
+
+8. Trigger a safe invalid-file validation case.
+9. Confirm the UI reports failure and does not falsely advance.
+
+### Assessment
+
+10. Confirm no fake 92% result appears.
+11. Confirm no fake March 2024 completion date appears.
+12. Confirm the actual assessment/no-assessment state is truthful.
+
+### Priority 4 regression
+
+13. Confirm fake LinkedIn import remains absent.
+
+Capture safe screenshots if possible.
+
+If legitimate authenticated access/storage testing is unavailable:
+
+report:
+
+`AUTHENTICATED UI/STORAGE VERIFICATION PENDING`
+
+Do not fabricate evidence.
+
+---
+
+# SERVER ACTIVATION
+
+Do not restart the full production server merely to obtain verification if normal startup can trigger unrelated migrations, invoice automation, financial jobs, or other writes.
+
+Use the same cautious approach established in Priorities 3 and 4.
+
+If full-runtime activation cannot safely be performed, report it separately.
+
+---
+
+# REQUIRED COMPLETION REPORT
+
+Return the following.
+
+## 1. Get Hired Audit
+
+Show the current wizard steps and relevant data flow.
+
+## 2. Object Storage Before Fix
+
+Show:
+
+`Get Hired`
+→ old upload caller
+→ endpoint
+→ why it was incorrect or inconsistent
+
+## 3. Canonical Storage Flow
+
+Show the existing legitimate application flow that was selected.
+
+For example:
+
+`Get Hired`
+→ request upload URL
+→ upload bytes
+→ persistent object reference
+→ authorized retrieval
+
+Correct this based on the actual implementation.
+
+## 4. Upload Changes
+
+List every changed file.
+
+Explain:
+
+- endpoint/helper used
+- upload success semantics
+- persistence
+- retrieval
+- error handling
+- validation
+
+## 5. Assessment Audit
+
+State whether a real assessment backend exists.
+
+Show where the previous score/date originated.
+
+## 6. Assessment Final Behavior
+
+Explicitly report:
+
+### Hardcoded 92% result
+`REMOVED / NOT FOUND`
+
+### Hardcoded March 2024 date
+`REMOVED / NOT FOUND`
+
+### Real assessment source
+`CONNECTED / EXISTS BUT NOT USED / NOT PRESENT`
+
+### No-result behavior
+Describe exactly what the Talent sees.
+
+## 7. Get Hired Completion
+
+Explain how completion/advancement now works without:
+
+- LinkedIn fake import
+- fake assessment result
+- fake upload success
+
+## 8. Regression Tests
+
+Report each required case as:
+
+`PASS / FAIL / NOT APPLICABLE`
+
+## 9. Build Verification
+
+Report:
+
+- TypeScript
+- relevant tests
+- production build
+- `git diff --check`
+
+## 10. Runtime Verification
+
+Report separately:
+
+- automated verification
+- authenticated Talent UI verification
+- actual object-storage upload/retrieval verification
+- full-server activation
+
+Do not combine these statuses.
+
+## 11. Out-of-Scope Findings
+
+List any other storage/Get Hired problems discovered but intentionally not changed.
+
+## Priority 5 Final Status
+
+Use exactly one:
+
+`PASS — COMPLETE`
+
+`IMPLEMENTED — AUTHENTICATED UI/STORAGE VERIFICATION PENDING`
+
+`FAIL`
+
+`BLOCKED`
+
+Do not proceed to Priority 6.
+
+The acceptance principle is:
+
+> **Get Hired must never claim that a document upload or assessment succeeded unless the application has real data supporting that claim.**

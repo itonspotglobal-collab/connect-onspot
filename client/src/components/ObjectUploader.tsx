@@ -7,11 +7,13 @@ import api, { authAPI } from "@/lib/api";
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
-  onGetUploadParameters: () => Promise<{
+  onGetUploadParameters?: () => Promise<{
     method: "POST" | "PUT";
     url: string;
   }>;
-  onComplete?: (result: any) => void;
+  onComplete?: (result: any) => void | Promise<void>;
+  accept?: string;
+  validateFile?: (file: File) => void;
   buttonClassName?: string;
   children: ReactNode;
   enableTalentImport?: boolean;
@@ -25,6 +27,8 @@ export function ObjectUploader({
   onComplete,
   buttonClassName,
   children,
+  accept = ".pdf,.doc,.docx,.csv,.mp4,.mov,.avi,.webm",
+  validateFile,
   enableTalentImport = false,
   importType = "resume",
 }: ObjectUploaderProps) {
@@ -58,6 +62,18 @@ export function ObjectUploader({
       return;
     }
 
+    try {
+      validateFile?.(file);
+    } catch (error) {
+      toast({
+        title: "Invalid File",
+        description: error instanceof Error ? error.message : "Choose a supported file.",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -72,11 +88,11 @@ export function ObjectUploader({
       // Upload directly to backend (which handles object storage)
       const uploadResponse = await authAPI.post("/api/object-storage/upload", formData);
 
-      if (!uploadResponse?.data?.success) {
-        throw new Error(uploadResponse?.data?.error || "Upload failed");
+      if (!uploadResponse?.success || typeof uploadResponse.fileUrl !== "string" || !uploadResponse.fileUrl) {
+        throw new Error(uploadResponse?.error || "Upload failed");
       }
 
-      const fileUrl = uploadResponse.data.fileUrl;
+      const fileUrl = uploadResponse.fileUrl;
       console.log("🎉 File uploaded successfully! Path:", fileUrl);
 
       // Optional: import talent profile data from file
@@ -117,11 +133,6 @@ export function ObjectUploader({
             variant: "destructive",
           });
         }
-      } else {
-        toast({
-          title: "Upload Successful",
-          description: `${file.name} uploaded successfully.`,
-        });
       }
 
       if (onComplete) {
@@ -139,6 +150,14 @@ export function ObjectUploader({
           ],
           failed: [],
           importResult,
+        });
+      }
+      // Callers may need to persist the uploaded reference. A rejected callback
+      // must reach the error state, never a premature success announcement.
+      if (!enableTalentImport) {
+        toast({
+          title: "Upload Successful",
+          description: `${file.name} uploaded successfully.`,
         });
       }
     } catch (error: any) {
@@ -164,7 +183,7 @@ export function ObjectUploader({
         style={{ display: "none" }}
         onChange={handleFileSelection}
         multiple={maxNumberOfFiles > 1}
-        accept=".pdf,.doc,.docx,.csv,.mp4,.mov,.avi,.webm"
+        accept={accept}
       />
 
       <Button
