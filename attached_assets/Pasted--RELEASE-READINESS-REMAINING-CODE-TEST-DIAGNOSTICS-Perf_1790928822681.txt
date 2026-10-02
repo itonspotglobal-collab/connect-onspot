@@ -1,0 +1,307 @@
+# RELEASE READINESS — REMAINING CODE/TEST DIAGNOSTICS
+
+Perform a diagnostic pass on THREE remaining release-readiness findings.
+
+Do NOT modify application code or tests yet.
+
+Do NOT publish.
+
+Do NOT begin a broad security audit.
+
+The three findings are:
+
+1. Production-visible Get Hired `Test Login` control.
+2. UNKNOWN Admin approval dialog browser-test failure.
+3. UNKNOWN Talent interview details browser-test failure.
+
+The objective is to determine whether each finding represents:
+
+- an actual release defect;
+- development-only behavior accidentally visible in production;
+- a stale test;
+- a fixture problem;
+- a selector problem;
+- or another environmental/testing issue.
+
+STOP after diagnosis and recommendations.
+
+---
+
+# FINDING 1 — GET HIRED `TEST LOGIN`
+
+Locate the exact Get Hired Test Login implementation.
+
+Trace:
+
+```text
+visible control
+→ click handler
+→ endpoint/auth mechanism
+→ user/session/token creation
+→ resulting permissions
+```
+
+Determine:
+
+- which component renders it;
+- under what conditions it renders;
+- whether it appears in a production build;
+- whether it appears in deployed production runtime;
+- whether it invokes `/api/dev/login` or another mechanism;
+- whether the backend endpoint rejects production;
+- whether clicking it in production could create/authenticate a mock user;
+- whether it can affect Client/Talent/Admin role state;
+- whether it is necessary for any legitimate production workflow.
+
+Do NOT attempt a login bypass against production.
+
+Use source inspection and safe isolated production-build fixtures.
+
+Explicitly distinguish:
+
+`VISIBLE`
+
+from:
+
+`FUNCTIONAL`.
+
+A visible but server-disabled test control is still a production UX issue, but it is different from an authentication bypass.
+
+Return one classification:
+
+`RELEASE BLOCKER`
+
+`SHOULD REMOVE BEFORE RELEASE`
+
+`NON-BLOCKING`
+
+or:
+
+`INCONCLUSIVE`
+
+Provide evidence.
+
+---
+
+# FINDING 2 — ADMIN APPROVAL DIALOG FAILURE
+
+Reproduce the previously failing Admin approval browser test in the controlled fixture environment.
+
+The previous symptom was approximately:
+
+> expected dialog Cancel control could not be found after rich-description assertions succeeded.
+
+Trace:
+
+- test setup;
+- Admin fixture/authentication;
+- action opening the dialog;
+- actual rendered dialog;
+- expected dialog;
+- title;
+- description;
+- controls/buttons;
+- selectors;
+- dialog state.
+
+Determine whether:
+
+A. the application dialog is broken;
+
+B. the Cancel action was intentionally renamed/removed;
+
+C. the test expects stale UI;
+
+D. the selector is ambiguous/wrong;
+
+E. fixture state differs from production behavior;
+
+F. another actual defect exists.
+
+Do NOT change the test merely to make it green.
+
+If possible, capture the actual rendered DOM/state in the isolated test environment.
+
+Return:
+
+`APPLICATION DEFECT`
+
+`STALE TEST`
+
+`FIXTURE/SELECTOR ISSUE`
+
+`ENVIRONMENTAL`
+
+or:
+
+`INCONCLUSIVE`.
+
+---
+
+# FINDING 3 — TALENT INTERVIEW DETAILS FAILURE
+
+Reproduce the previously failing Talent interview browser test.
+
+Previous symptom:
+
+> expected interview details card could not be found; meeting-link assertions were never reached.
+
+Trace:
+
+```text
+Talent fixture
+→ authentication state
+→ interview API fixture
+→ interview list
+→ selection/navigation
+→ details rendering
+```
+
+Determine whether:
+
+- fixture data matches the current API contract;
+- Talent ownership/visibility filtering excludes the fixture;
+- route changed;
+- component changed;
+- selector is stale;
+- details genuinely fail to render;
+- meeting link behavior is affected.
+
+Again, do NOT change code or tests yet.
+
+Return:
+
+`APPLICATION DEFECT`
+
+`STALE TEST`
+
+`FIXTURE/SELECTOR ISSUE`
+
+`ENVIRONMENTAL`
+
+or:
+
+`INCONCLUSIVE`.
+
+---
+
+# BASELINE COMPARISON
+
+Where useful, compare the failing test behavior against the pre-Priority candidate/baseline revision.
+
+The purpose is to establish whether the behavior is:
+
+`NEW REGRESSION`
+
+or:
+
+`PRE-EXISTING`.
+
+Do not restore old behavior merely because an old test expects it.
+
+Approved Priority 1–6 product decisions take precedence over stale expectations.
+
+---
+
+# NO PRODUCTION MUTATION
+
+Do not:
+
+- modify production users;
+- create production mock users;
+- approve production jobs;
+- modify production interviews;
+- change contracts;
+- change invoices;
+- change payouts;
+- upload production files;
+- test authentication bypasses against production.
+
+Use isolated fixtures/source inspection.
+
+---
+
+# REQUIRED REPORT
+
+## 1. Test Login
+
+Report:
+
+- source/component;
+- visibility condition;
+- production-build visibility;
+- backend action;
+- production backend behavior;
+- actual security impact;
+- UX impact;
+- whether removal is recommended.
+
+Classification:
+
+`RELEASE BLOCKER`
+
+`SHOULD REMOVE BEFORE RELEASE`
+
+`NON-BLOCKING`
+
+or:
+
+`INCONCLUSIVE`
+
+---
+
+## 2. Admin Approval Failure
+
+Report:
+
+- exact reproduction;
+- expected behavior;
+- actual behavior;
+- baseline comparison;
+- root cause.
+
+Classification:
+
+`APPLICATION DEFECT`
+
+`STALE TEST`
+
+`FIXTURE/SELECTOR ISSUE`
+
+`ENVIRONMENTAL`
+
+or:
+
+`INCONCLUSIVE`
+
+---
+
+## 3. Talent Interview Failure
+
+Provide the same analysis and classification.
+
+---
+
+## 4. Recommended Changes
+
+For each finding, describe the smallest proposed correction if one is needed.
+
+Do NOT implement it.
+
+---
+
+## 5. Release Impact
+
+Return:
+
+### `NO NEW RELEASE BLOCKER FOUND`
+
+or:
+
+### `RELEASE BLOCKER FOUND`
+
+If a blocker exists, identify exactly which finding causes it.
+
+Do not publish.
+
+STOP after the diagnostic report.

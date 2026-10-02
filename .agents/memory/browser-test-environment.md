@@ -56,3 +56,9 @@ Form visibility alone is not proof that a browser fixture successfully hydrated 
 **Why:** An incorrect response envelope allowed upload tests to pass while the profile silently rendered blank; adding a real edit-and-save assertion exposed the fixture mismatch.
 
 **How to apply:** Assert a known server-provided value before editing or submitting. Match the endpoint's actual resource envelope: HTTP-client transport unwrapping does not necessarily unwrap nested resource data.
+
+Do not fulfill unexpected fixture API requests with a successful empty array.
+
+**Why:** An empty array is truthy and can be mistaken for an event-claim object, opening a fabricated modal. That modal makes an otherwise-rendered card unavailable to accessibility selectors. Object endpoints can also crash when a list-shaped fallback omits required nested fields.
+
+**How to apply:** Explicitly model each endpoint's response, including its actual no-event value, and fail unexpected requests. Inspect modal and accessibility state before changing a missing-card selector. Keep diagnostic response overrides temporary until a test correction is authorized.
