@@ -17,9 +17,9 @@ An earlier no-publish/no-migration report is a time-specific observation, not ev
 
 Separate preparation of production environment settings from activation in the running deployment.
 
-**Why:** Replit's documented production-secret flow requires republishing for saved settings to take effect. Configuration read-back alone does not demonstrate that an existing production process has received the new values.
+**Why:** Replit's documented production-secret flow requires republishing for saved settings to take effect. Configuration read-back alone does not demonstrate that an existing production process has received the new values. Publishing-only production secrets are separate from workspace/project Secrets, so a missing key in the project secret inventory does not prove that an owner-saved production override is missing.
 
-**How to apply:** Report saved configuration and live runtime readiness separately. When republishing is not authorized, prepare only approved settings and do not claim signup restoration; keep verification delivery disabled until transport and recipient approval are established.
+**How to apply:** Report saved configuration and live runtime readiness separately. Do not ask an owner to re-enter an already saved Publishing-only secret solely because project secret inventory reports it absent. Confirm activation through safe runtime evidence. When republishing is not authorized, prepare only approved settings and do not claim signup restoration; keep verification delivery disabled until transport and recipient approval are established.
 
 ## Staging isolation policy
 
