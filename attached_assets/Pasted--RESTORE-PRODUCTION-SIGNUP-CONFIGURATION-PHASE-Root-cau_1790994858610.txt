@@ -1,0 +1,369 @@
+# RESTORE PRODUCTION SIGNUP — CONFIGURATION PHASE
+
+Root cause has been confirmed:
+
+`POST /api/signup → 503 VERIFICATION_NOT_CONFIGURED`
+
+Production already contains migration:
+
+`0033_signup_email_verification`
+
+The production schema is compatible.
+
+The failure occurs because required verification runtime configuration is incomplete.
+
+This task is CONFIGURATION PREPARATION and controlled validation.
+
+Do NOT change application source code.
+
+Do NOT run another migration.
+
+Do NOT publish/redeploy unless explicitly required and approved.
+
+Do NOT bypass verification.
+
+Do NOT restore immediate/unverified signup.
+
+Do NOT create customer accounts.
+
+Do NOT send verification messages to customer addresses.
+
+---
+
+# OBJECTIVE
+
+Safely prepare the production email-verification runtime so new Client and Talent registration can ultimately function.
+
+Required server-controlled sender mapping:
+
+Talent:
+
+`FindWork@onspotglobal.com`
+
+Client:
+
+`HireTalent@onspotglobal.com`
+
+Required dedicated HMAC secret:
+
+`EMAIL_VERIFICATION_HMAC_KEY`
+
+Real verification delivery must remain disabled until transport authorization is established.
+
+---
+
+# 1 — VERIFY CURRENT PRODUCTION STATE
+
+Before changing configuration, confirm presence/status only:
+
+- `MICROSOFT_TENANT_ID`
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+- `TALENT_VERIFICATION_EMAIL_FROM`
+- `CLIENT_VERIFICATION_EMAIL_FROM`
+- `EMAIL_VERIFICATION_HMAC_KEY`
+- `SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED`
+
+Never print secret values.
+
+Confirm production still returns:
+
+`VERIFICATION_NOT_CONFIGURED`
+
+because configuration is incomplete.
+
+Do not create another signup request merely to establish this if existing logs are sufficient.
+
+---
+
+# 2 — CONFIGURE ROLE SENDERS
+
+Configure production server environment:
+
+`TALENT_VERIFICATION_EMAIL_FROM=FindWork@onspotglobal.com`
+
+`CLIENT_VERIFICATION_EMAIL_FROM=HireTalent@onspotglobal.com`
+
+These must be server-only configuration.
+
+Do not expose them as browser-controlled parameters.
+
+Confirm the application recognizes both exact sender identities.
+
+---
+
+# 3 — CREATE HMAC SECRET
+
+Generate a NEW cryptographically secure, high-entropy secret suitable for HMAC-SHA-256.
+
+Store it directly in the production Replit Secrets/environment system as:
+
+`EMAIL_VERIFICATION_HMAC_KEY`
+
+Requirements:
+
+- at least the implementation's required entropy/length;
+- cryptographically random;
+- server-only;
+- never printed;
+- never committed;
+- never returned in logs;
+- never placed in frontend/Vite configuration.
+
+Do not include the generated value in the final report.
+
+If available tooling cannot securely write the secret without exposing it through chat/output:
+
+STOP and provide exact owner UI steps instead.
+
+Do not ask the owner to paste the value into chat.
+
+---
+
+# 4 — KEEP DELIVERY DISABLED
+
+Set or preserve:
+
+`SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED=false`
+
+at this stage.
+
+Do NOT enable real signup email delivery yet.
+
+The objective is first to remove uncertainty around runtime configuration and transport authorization.
+
+---
+
+# 5 — VERIFY CONFIGURATION GUARD
+
+Without exposing secrets, determine whether the runtime configuration guard would now pass with:
+
+- Graph tenant present;
+- Graph client ID present;
+- Graph client secret present;
+- Talent sender correct;
+- Client sender correct;
+- valid HMAC secret present.
+
+Do not perform an end-user signup yet.
+
+Report:
+
+`VERIFICATION RUNTIME CONFIGURED`
+
+or:
+
+`VERIFICATION CONFIGURATION STILL INCOMPLETE`
+
+Remember that disabled delivery is intentionally separate from base runtime configuration.
+
+---
+
+# 6 — GRAPH AUTHENTICATION
+
+Perform only the minimum safe Graph transport check needed to establish that the configured application credentials can authenticate.
+
+Do not send email yet.
+
+Report:
+
+`GRAPH AUTH PASS`
+
+or:
+
+`GRAPH AUTH FAIL`
+
+Do not expose access tokens.
+
+Token acquisition alone does NOT establish sender authorization.
+
+---
+
+# 7 — DETERMINE MAILBOX SEND AUTHORIZATION SAFELY
+
+Determine whether the Microsoft application has permission/configuration to send as:
+
+- `FindWork@onspotglobal.com`
+- `HireTalent@onspotglobal.com`
+
+Prefer non-delivery administrative/configuration evidence where available.
+
+If actual send authorization cannot be established without sending a message, report:
+
+`LIVE SEND TEST REQUIRED`
+
+Do not invent PASS.
+
+---
+
+# 8 — APPROVED TEST RECIPIENT REQUIREMENT
+
+Before any actual send, require explicitly approved project-team test recipient inboxes.
+
+Do not use:
+
+- customers;
+- random addresses;
+- imported Talent addresses;
+- existing Client addresses.
+
+At least one controlled inbox is needed for Client verification and one for Talent verification. The same team-controlled inbox may be used for both if product testing permits.
+
+Do not send anything in this task unless such recipients were already explicitly approved.
+
+---
+
+# 9 — NO ACCOUNT ACTIVATION YET
+
+Do not:
+
+- create pending production registrations;
+- create Client/Talent users;
+- verify OTP;
+- create provider links;
+- modify historical accounts.
+
+This task ends before real signup UAT.
+
+---
+
+# 10 — PRODUCTION STARTUP / RESTART SAFETY
+
+Determine whether changing these environment values requires:
+
+- process restart;
+- deployment restart;
+- republish;
+- no restart.
+
+Remember that the production start command runs:
+
+`dist/run-migrations.js`
+
+before:
+
+`dist/index.js`.
+
+No migration is currently expected after `0033`, but do not trigger startup blindly.
+
+Before any required restart, enumerate pending migrations.
+
+If ANY unapplied migration exists:
+
+STOP.
+
+Do not restart.
+
+If restart is required and no pending migration exists, report that fact and request explicit approval rather than restarting automatically.
+
+---
+
+# 11 — CONFIRM NO SOURCE CHANGE
+
+Expected:
+
+`SOURCE CODE CHANGES: NONE`
+
+If source changes appear necessary, STOP and explain why.
+
+Do not implement them.
+
+---
+
+# REQUIRED REPORT
+
+## Production Configuration Before
+
+Presence/status only.
+
+## Configuration Actions
+
+State which non-secret settings were configured.
+
+For secret:
+
+`HMAC SECRET CONFIGURED`
+
+or:
+
+`OWNER ACTION REQUIRED`
+
+Never show the value.
+
+## Delivery State
+
+Must remain:
+
+`DISABLED`
+
+unless explicit approved real-email UAT was separately authorized.
+
+## Runtime Guard
+
+Use:
+
+`PASS`
+
+or:
+
+`FAIL`
+
+## Graph Authentication
+
+Use:
+
+`PASS`
+
+`FAIL`
+
+or:
+
+`NOT TESTED`
+
+## Sender Authorization
+
+Talent and Client separately:
+
+`CONFIRMED`
+
+`LIVE SEND TEST REQUIRED`
+
+`FAILED`
+
+or:
+
+`UNKNOWN`
+
+## Pending Migrations
+
+List migration identifiers only.
+
+If none:
+
+`NONE`
+
+## Restart Requirement
+
+State whether configuration becomes effective without restart.
+
+Do not restart automatically.
+
+## Source Changes
+
+Expected:
+
+`NONE`
+
+## Next Action
+
+Use exactly one:
+
+`READY FOR CONTROLLED CLIENT/TALENT EMAIL UAT`
+
+`OWNER CONFIGURATION ACTION REQUIRED`
+
+`GRAPH/SENDER CONFIGURATION BLOCKED`
+
+`CONFIGURATION INCOMPLETE`
+
+STOP after the report.

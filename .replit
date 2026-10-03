@@ -84,3 +84,8 @@ APPLICATION_EMAIL_FROM_NAME = "OnSpot Talent"
 APPLICATION_EMAIL_REPLY_TO = "careers@onspotglobal.com"
 PUBLIC_APP_URL = "https://talent.onspotglobal.com"
 VITE_HOW_IT_WORKS_ENABLED = "true"
+
+[userenv.production]
+CLIENT_VERIFICATION_EMAIL_FROM = "HireTalent@onspotglobal.com"
+SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED = "false"
+TALENT_VERIFICATION_EMAIL_FROM = "FindWork@onspotglobal.com"

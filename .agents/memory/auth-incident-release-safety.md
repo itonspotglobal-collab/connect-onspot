@@ -15,6 +15,12 @@ An earlier no-publish/no-migration report is a time-specific observation, not ev
 
 **How to apply:** During production incident diagnosis, reconcile publication records, timestamped runtime logs, and the positively identified production migration ledger before claiming that pending code or schema is still absent. Do not attribute a publication to a person without evidence.
 
+Separate preparation of production environment settings from activation in the running deployment.
+
+**Why:** Replit's documented production-secret flow requires republishing for saved settings to take effect. Configuration read-back alone does not demonstrate that an existing production process has received the new values.
+
+**How to apply:** Report saved configuration and live runtime readiness separately. When republishing is not authorized, prepare only approved settings and do not claim signup restoration; keep verification delivery disabled until transport and recipient approval are established.
+
 ## Staging isolation policy
 
 Use a separate staging project with its own PostgreSQL database, project-owned object-storage bucket, and server secrets. Keep destructive automated testing on a third, disposable database rather than long-lived staging.
