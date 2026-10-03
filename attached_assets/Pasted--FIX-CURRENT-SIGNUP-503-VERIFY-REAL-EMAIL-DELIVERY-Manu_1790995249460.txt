@@ -1,0 +1,509 @@
+# FIX CURRENT SIGNUP 503 + VERIFY REAL EMAIL DELIVERY
+
+Manual testing still confirms:
+
+`POST /api/signup → HTTP 503`
+
+on the current Talent signup page.
+
+Previous production diagnostics established the exact root cause:
+
+`VERIFICATION_NOT_CONFIGURED`
+
+The current production schema already contains migration:
+
+`0033_signup_email_verification`
+
+Database connectivity is healthy.
+
+The failure occurs before database access or Microsoft Graph because required verification runtime configuration is incomplete.
+
+This task is now authorized to COMPLETE the required configuration and verify the real email-verification flow using APPROVED TEST RECIPIENTS ONLY.
+
+Do NOT change signup business logic.
+
+Do NOT bypass email verification.
+
+Do NOT restore unverified account creation.
+
+Do NOT run another schema migration.
+
+Do NOT send test emails to customers.
+
+Do NOT publish application code unless a source-code defect is independently demonstrated.
+
+---
+
+# TARGET OUTCOME
+
+Both flows must work end-to-end:
+
+```text
+Talent signup
+→ pending registration
+→ email from FindWork@onspotglobal.com
+→ inbox actually receives OTP
+→ correct OTP accepted
+→ Talent account atomically activated
+→ login/access works
+```
+
+and:
+
+```text
+Client signup
+→ pending registration
+→ email from HireTalent@onspotglobal.com
+→ inbox actually receives OTP
+→ correct OTP accepted
+→ Client account atomically activated
+→ login/access works
+```
+
+A successful Graph token request alone is NOT sufficient.
+
+A successful `sendMail` response alone is NOT sufficient.
+
+Actual approved inbox receipt is required.
+
+---
+
+# 1 — RECONFIRM CURRENT FAILURE
+
+Using existing logs where possible, confirm the current signup failure remains:
+
+`503 VERIFICATION_NOT_CONFIGURED`
+
+Do not generate repeated signup requests unnecessarily.
+
+Report the exact missing prerequisites.
+
+---
+
+# 2 — CONFIGURE REQUIRED SENDERS
+
+Configure the server/runtime environment with:
+
+`TALENT_VERIFICATION_EMAIL_FROM=FindWork@onspotglobal.com`
+
+`CLIENT_VERIFICATION_EMAIL_FROM=HireTalent@onspotglobal.com`
+
+Confirm these match the server's sender allowlist exactly.
+
+The browser must not be able to override either value.
+
+---
+
+# 3 — CONFIGURE HMAC SECRET
+
+Generate a new cryptographically secure, high-entropy server-side secret for:
+
+`EMAIL_VERIFICATION_HMAC_KEY`
+
+Requirements:
+
+- cryptographically random;
+- at least the implementation's required minimum;
+- suitable for HMAC-SHA-256;
+- stored only in Replit Secrets/environment;
+- never printed;
+- never written into source;
+- never committed;
+- never included in final report;
+- never exposed through frontend/Vite variables.
+
+If the available environment cannot securely create/store the value without exposing it in output:
+
+STOP and give the project owner exact Replit UI steps.
+
+Do not ask the owner to paste the secret into chat.
+
+---
+
+# 4 — VERIFY MICROSOFT GRAPH CONFIGURATION
+
+Confirm presence only for:
+
+- `MICROSOFT_TENANT_ID`
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+
+Never display values.
+
+Acquire a Graph access token using the existing application flow.
+
+Report only:
+
+`GRAPH AUTH PASS`
+
+or:
+
+`GRAPH AUTH FAIL`
+
+Never display the token.
+
+---
+
+# 5 — VERIFY BOTH SENDER MAILBOXES
+
+The required senders are:
+
+### Talent
+
+`FindWork@onspotglobal.com`
+
+### Client
+
+`HireTalent@onspotglobal.com`
+
+Verify that the Microsoft Graph application is authorized to send through BOTH mailboxes.
+
+Do not infer this merely because the addresses appear in an application allowlist.
+
+We need actual Microsoft-side authorization.
+
+If authorization cannot be proven without an actual send, proceed only using explicitly approved UAT recipient inboxes.
+
+---
+
+# 6 — APPROVED TEST RECIPIENTS ONLY
+
+Before enabling delivery, establish controlled test recipient inboxes owned/controlled by the project team.
+
+Do NOT use:
+
+- customer addresses;
+- random email addresses;
+- imported Talent addresses;
+- existing Client customer addresses.
+
+If approved test inboxes are not available:
+
+STOP.
+
+Report:
+
+`APPROVED TEST INBOX REQUIRED`
+
+Do not enable unrestricted delivery merely to test it.
+
+---
+
+# 7 — ENABLE VERIFICATION DELIVERY
+
+Once:
+
+- HMAC is configured;
+- both senders are configured;
+- Graph credentials are present;
+- approved test inboxes are established;
+
+set:
+
+`SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED=true`
+
+only in the runtime where this controlled test is authorized.
+
+If changing environment configuration requires a restart, FIRST inspect pending migrations.
+
+There should be no unexpected unapplied migration.
+
+If any pending migration exists:
+
+STOP.
+
+Do not restart.
+
+Remember that production startup automatically executes migrations.
+
+---
+
+# 8 — TALENT REAL EMAIL TEST
+
+Using an approved Talent test email address that is not an existing account, perform the actual signup flow through the application.
+
+Verify:
+
+1. `POST /api/signup` no longer returns `VERIFICATION_NOT_CONFIGURED`.
+2. Response enters pending-verification state.
+3. No active Talent account exists before OTP proof.
+4. Verification email is sent from:
+
+`FindWork@onspotglobal.com`
+
+5. Approved recipient inbox ACTUALLY receives it.
+6. Email contains a six-digit OTP.
+7. Email contains appropriate expiration/security wording.
+8. Enter the received OTP through the normal UI.
+9. Verification succeeds.
+10. User/profile/candidate activation commits atomically.
+11. Credentials are issued only after commit.
+12. Talent becomes authenticated.
+13. Talent can access expected authenticated area.
+14. Logout works.
+15. Login again works.
+16. Reload/persistence works.
+17. Email ownership is recorded.
+18. Professional Talent Verified/Vetted status is NOT granted merely by email verification.
+
+Never include the OTP in the report.
+
+---
+
+# 9 — CLIENT REAL EMAIL TEST
+
+Using an approved Client test email address that is not an existing account, perform the normal Client signup.
+
+Verify:
+
+1. Initial signup enters pending verification.
+2. No usable Client account exists before proof.
+3. Email is sent from:
+
+`HireTalent@onspotglobal.com`
+
+4. Approved inbox ACTUALLY receives it.
+5. Enter the received OTP through normal UI.
+6. Verification succeeds.
+7. User + required Client profile activation commits.
+8. Credentials are issued after commit.
+9. Client authenticated area works.
+10. Logout/login works.
+11. Reload/persistence works.
+12. Email ownership is recorded correctly.
+
+Never include the OTP in the report.
+
+---
+
+# 10 — WRONG CODE CHECK
+
+For a disposable approved test challenge, verify one incorrect OTP is rejected.
+
+Do NOT intentionally exhaust all attempts.
+
+Do NOT trigger excessive email sends.
+
+Confirm rejection does not activate the account.
+
+---
+
+# 11 — RESEND CHECK
+
+For a controlled test challenge:
+
+1. Request resend after allowed cooldown.
+2. Confirm another verification email actually arrives.
+3. Confirm old OTP no longer works.
+4. Confirm latest OTP works.
+
+Do not expose either code.
+
+---
+
+# 12 — DELIVERY FAILURE BEHAVIOR
+
+Confirm from existing automated coverage/code plus controlled runtime evidence that a Graph delivery failure does NOT:
+
+- activate account;
+- issue JWT;
+- mark email verified.
+
+Do not deliberately break production Graph credentials merely to test this.
+
+---
+
+# 13 — CHECK EXISTING HISTORICAL USERS
+
+Do NOT modify historical users.
+
+After enabling verification, verify with an approved established test account if available that historical/grandfathered password authentication still works.
+
+Do not mark that account inbox-verified merely because it logs in.
+
+If no approved historical test credential exists, report this check as pending rather than creating or resetting one.
+
+---
+
+# 14 — INVESTIGATE EXISTING EMAIL_VERIFICATION_REQUIRED 403s
+
+Previous production logs contained:
+
+`EMAIL_VERIFICATION_REQUIRED`
+
+on authenticated Talent endpoints.
+
+Now determine from sanitized evidence whether those 403s correspond to:
+
+- new identities that legitimately require verification;
+- imported/passwordless identities requiring first claim;
+- established historical password users that should be grandfathered;
+- unknown.
+
+Do not expose PII.
+
+If established historical password-bearing users are incorrectly receiving 403:
+
+classify:
+
+`NEW AUTH REGRESSION`
+
+and STOP before claiming signup work fully complete.
+
+Do not weaken verification globally.
+
+---
+
+# 15 — VERIFY CLIENT + TALENT UI ERROR HANDLING
+
+Once signup succeeds, confirm the generic Server Error message is no longer shown for normal signup.
+
+For legitimate verification errors, UI should communicate appropriate states such as:
+
+- check your email;
+- invalid code;
+- expired code;
+- resend cooldown;
+- delivery failure.
+
+Do not expose internal exception details.
+
+---
+
+# 16 — SOURCE CODE
+
+Expected source-code changes:
+
+`NONE`
+
+This should be a configuration/runtime enablement task.
+
+If real testing reveals a genuine source defect:
+
+STOP.
+
+Report:
+
+- exact defect;
+- affected file;
+- evidence;
+- minimum proposed fix.
+
+Do not silently modify code while performing runtime enablement.
+
+---
+
+# 17 — PRODUCTION SAFETY
+
+Do NOT:
+
+- create customer accounts;
+- use customer inboxes;
+- alter existing user credentials;
+- delete accounts;
+- modify contracts;
+- modify invoices;
+- run payouts;
+- perform Stripe charges;
+- alter production business records unrelated to controlled signup UAT.
+
+Only controlled test registration records are authorized.
+
+---
+
+# REQUIRED FINAL REPORT
+
+## Configuration
+
+Report presence/status only for:
+
+- Graph tenant/client/secret;
+- Talent sender;
+- Client sender;
+- HMAC secret;
+- delivery enablement.
+
+Never show secrets.
+
+## Runtime Guard
+
+Report:
+
+`PASS`
+
+or:
+
+`FAIL`
+
+## Talent Sender
+
+Report:
+
+- Graph auth;
+- send authorization;
+- actual inbox receipt.
+
+## Client Sender
+
+Report:
+
+- Graph auth;
+- send authorization;
+- actual inbox receipt.
+
+## Talent Signup
+
+Report each:
+
+- pending registration;
+- receipt;
+- OTP verification;
+- atomic activation;
+- authenticated access;
+- logout/login;
+- persistence;
+- professional verification unchanged.
+
+## Client Signup
+
+Report each equivalent result.
+
+## Wrong OTP
+
+PASS/FAIL.
+
+## Resend
+
+PASS/FAIL including old-code invalidation and actual receipt.
+
+## Historical Account Regression
+
+PASS/PENDING/FAIL.
+
+## Existing 403 Investigation
+
+Classify affected account category without PII.
+
+## Source Changes
+
+Expected:
+
+`NONE`
+
+## Remaining Issues
+
+List only genuine unresolved signup/email-verification issues.
+
+## Final Signup Status
+
+Use exactly one:
+
+`CLIENT AND TALENT SIGNUP FULLY OPERATIONAL`
+
+`SIGNUP PARTIALLY OPERATIONAL — ISSUES REMAIN`
+
+`SIGNUP STILL UNAVAILABLE`
+
+Do not publish application code automatically.
+
+STOP after the report.
