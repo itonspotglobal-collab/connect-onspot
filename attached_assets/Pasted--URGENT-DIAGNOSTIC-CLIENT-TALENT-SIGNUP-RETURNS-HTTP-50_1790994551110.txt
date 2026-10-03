@@ -1,0 +1,431 @@
+# URGENT DIAGNOSTIC — CLIENT/TALENT SIGNUP RETURNS HTTP 503
+
+A real manual test of the currently published application was performed from both desktop and mobile.
+
+Talent signup returns:
+
+`HTTP 503 Service Unavailable`
+
+The UI displays:
+
+`Server error — Our servers are experiencing issues. Your details are still here; please try again in a few moments.`
+
+The browser console confirms the signup POST receives status `503`.
+
+The tested account does NOT appear to exist in the checked users database.
+
+A similar failure occurs during account creation on both mobile and desktop.
+
+This task is DIAGNOSTIC FIRST.
+
+Do NOT publish.
+
+Do NOT migrate production.
+
+Do NOT restart the production application.
+
+Do NOT create the test account manually.
+
+Do NOT modify production data.
+
+Do NOT send verification emails.
+
+Do NOT change source code until the exact 503 path is established.
+
+---
+
+# 1 — IDENTIFY THE EXACT REQUEST
+
+Determine the exact API endpoint receiving the failed signup POST.
+
+Confirm whether the published frontend is calling:
+
+`POST /api/signup`
+
+legacy:
+
+`POST /signup`
+
+or another endpoint.
+
+Report:
+
+- request path;
+- frontend function initiating it;
+- backend route handling it;
+- response status;
+- safe response body/error code if available.
+
+Do not expose the user's password or other submitted secrets.
+
+---
+
+# 2 — TRACE EVERY 503 RETURN PATH
+
+Starting from the actual signup route, enumerate every code path capable of returning:
+
+`503`
+
+Include direct responses and errors translated into 503 by middleware.
+
+For each path report:
+
+```text
+condition
+→ service/component
+→ HTTP status
+→ safe public error
+```
+
+Pay special attention to the new signup-verification implementation.
+
+Do not guess from the browser's generic error message.
+
+---
+
+# 3 — CHECK DEPLOYED FRONTEND/BACKEND COMPATIBILITY
+
+Determine the exact revision currently serving:
+
+`connect.onspotglobal.com`
+
+Compare it with the current repository implementation.
+
+Establish separately:
+
+- frontend revision;
+- backend/server revision;
+- schema/migration state.
+
+Determine whether the published system is currently in a mixed state such as:
+
+```text
+new verification-aware frontend
++
+new verification backend
++
+old database schema
+```
+
+or:
+
+```text
+new frontend
++
+old backend
+```
+
+or another incompatible combination.
+
+Do not publish anything to correct it yet.
+
+---
+
+# 4 — CHECK MIGRATION 0033 DEPENDENCY
+
+The email-verification implementation introduced:
+
+`0033_signup_email_verification.sql`
+
+Production was previously reported NOT to contain its new ownership columns or `auth_provider_links`.
+
+Read the current signup code and determine whether `POST /api/signup` now requires any `0033` tables/columns BEFORE it can return a pending-registration response.
+
+Check specifically for dependencies on:
+
+- `pending_registrations`;
+- `signup_verification_limits`;
+- verification ownership columns;
+- `auth_provider_links`;
+- any other migration-0033 schema.
+
+Then READ-ONLY inspect the production schema if the target can be positively identified.
+
+Do not apply the migration.
+
+Report:
+
+`SCHEMA COMPATIBLE`
+
+or:
+
+`SCHEMA MISMATCH`
+
+with exact missing structures.
+
+---
+
+# 5 — CHECK VERIFICATION CONFIGURATION
+
+Check presence only—never values—for:
+
+- `MICROSOFT_TENANT_ID`
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+- `TALENT_VERIFICATION_EMAIL_FROM`
+- `CLIENT_VERIFICATION_EMAIL_FROM`
+- `EMAIL_VERIFICATION_HMAC_KEY`
+- `SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED`
+
+For each report:
+
+`PRESENT`
+
+`MISSING`
+
+and, for delivery enablement:
+
+`ENABLED`
+
+`DISABLED`
+
+or:
+
+`MISSING`
+
+Then trace what the signup service does when each required value is missing.
+
+Determine whether missing:
+
+`EMAIL_VERIFICATION_HMAC_KEY`
+
+alone causes the observed 503.
+
+Determine whether missing role sender causes 503.
+
+Determine whether disabled verification delivery causes 503.
+
+Do not configure anything yet.
+
+---
+
+# 6 — CHECK DATABASE CONNECTION
+
+Because 503 may represent an unavailable dependency, verify READ-ONLY:
+
+- application DB connectivity;
+- connection-pool health where observable;
+- whether normal non-signup DB-backed endpoints work;
+- whether signup fails before or after acquiring DB access.
+
+Do not perform database writes.
+
+---
+
+# 7 — CHECK MICROSOFT GRAPH INVOLVEMENT
+
+Determine whether the failed request reached Graph at all.
+
+Establish:
+
+```text
+signup request
+→ pending registration attempt
+→ OTP generation
+→ Graph send attempt?
+```
+
+Report one:
+
+`GRAPH NOT REACHED`
+
+`GRAPH REACHED — FAILED`
+
+`GRAPH REACHED — ACCEPTED`
+
+`UNKNOWN`
+
+Do not send a test email.
+
+Do not make a new Graph request.
+
+Use existing logs/evidence only.
+
+---
+
+# 8 — INSPECT SERVER LOGS
+
+Inspect server/deployment logs corresponding to the manual signup failure.
+
+Use the timestamp/request path to narrow the search.
+
+Look for:
+
+- verification runtime configuration errors;
+- missing HMAC secret;
+- missing sender;
+- missing table/column;
+- PostgreSQL errors;
+- Graph errors;
+- startup/runtime mismatch;
+- unhandled exceptions.
+
+Do NOT reproduce:
+
+- password;
+- OTP;
+- Graph secret;
+- JWT/session secret;
+- database URL;
+- full personal email.
+
+Redact sensitive data.
+
+We need the server-side root cause, not merely the browser 503.
+
+---
+
+# 9 — CLIENT VS TALENT
+
+The user reports account creation failure during testing.
+
+Determine whether:
+
+- Talent signup fails;
+- Client signup fails;
+- both fail for the same root cause.
+
+Do not create accounts to test this if existing logs/code inspection can establish the answer.
+
+---
+
+# 10 — DUPLICATE ACCOUNT CHECK
+
+Confirm how the current backend responds when:
+
+- email already exists;
+- username already exists.
+
+Establish the expected HTTP statuses.
+
+Confirm whether either duplicate condition could legitimately produce the observed 503.
+
+Do not expose existing user PII.
+
+---
+
+# 11 — CHECK WHETHER FAILURE IS EXPECTED FROM OUR RELEASE STATE
+
+We deliberately did NOT authorize:
+
+- production migration `0033`;
+- production verification configuration;
+- production verification-email enablement.
+
+Determine whether the current published application's signup path nevertheless contains the new verification implementation.
+
+If yes, explain how the unpublished/unmigrated/unconfigured release state became visible to the published application.
+
+This is important.
+
+Possibilities may include:
+
+- deployment shares workspace source/build unexpectedly;
+- deployment was updated;
+- backend is using current workspace code;
+- frontend/backend revisions differ;
+- another mechanism.
+
+Use evidence.
+
+Do not speculate.
+
+---
+
+# 12 — NO FIX YET
+
+Even if the cause looks obvious, do NOT:
+
+- add secrets;
+- enable email;
+- migrate production;
+- change status codes;
+- restore immediate account creation;
+- bypass OTP;
+- fall back to unverified signup;
+- manually create accounts;
+- publish/redeploy.
+
+We first need a clean diagnosis.
+
+---
+
+# REQUIRED REPORT
+
+## Failed Request
+
+Exact endpoint/status.
+
+## Published Revision
+
+Frontend/backend/schema state.
+
+## 503 Source
+
+Exact code path producing 503.
+
+## Server Log Evidence
+
+Sanitized relevant error.
+
+## Database
+
+Connectivity and schema compatibility.
+
+## Migration 0033
+
+Whether signup currently requires it and whether production has it.
+
+## Verification Configuration
+
+Presence/status only.
+
+## Graph
+
+Whether Graph was reached.
+
+## Client vs Talent
+
+Whether same root cause affects both.
+
+## Duplicate Account Behavior
+
+Expected duplicate response versus observed 503.
+
+## Root Cause
+
+Use one:
+
+`MISSING VERIFICATION CONFIGURATION`
+
+`DATABASE SCHEMA MISMATCH`
+
+`GRAPH DELIVERY FAILURE`
+
+`DATABASE AVAILABILITY FAILURE`
+
+`DEPLOYMENT VERSION MISMATCH`
+
+`MULTIPLE CONDITIONS`
+
+`UNKNOWN — MORE EVIDENCE REQUIRED`
+
+## Production Impact
+
+State whether NEW Client/Talent registrations are currently unavailable.
+
+## Safest Fix
+
+Describe the minimum fix, but DO NOT execute it.
+
+## Status
+
+Use exactly one:
+
+`ROOT CAUSE CONFIRMED — FIX APPROVAL REQUIRED`
+
+`ROOT CAUSE PARTIALLY CONFIRMED`
+
+`ROOT CAUSE UNKNOWN`
+
+STOP after the report.

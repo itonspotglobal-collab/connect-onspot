@@ -9,6 +9,12 @@ During an incident that prohibits migrations, do not treat server startup or ord
 
 **How to apply:** Inspect the actual launch path before restarting or recommending publication. Use isolated frontend fixtures and dependency-injected backend checks when startup is prohibited. Report release safety separately from code compatibility, and do not bypass migration safeguards, alter the ledger, or promote unrelated pending changes without explicit approval.
 
+An earlier no-publish/no-migration report is a time-specific observation, not evidence that the live release remains unchanged.
+
+**Why:** Publication can happen between Agent turns, and a deployment's launch command can apply pending migrations even when the preceding conversation did not authorize those migrations.
+
+**How to apply:** During production incident diagnosis, reconcile publication records, timestamped runtime logs, and the positively identified production migration ledger before claiming that pending code or schema is still absent. Do not attribute a publication to a person without evidence.
+
 ## Staging isolation policy
 
 Use a separate staging project with its own PostgreSQL database, project-owned object-storage bucket, and server secrets. Keep destructive automated testing on a third, disposable database rather than long-lived staging.
