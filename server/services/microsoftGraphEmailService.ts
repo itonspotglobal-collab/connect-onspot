@@ -24,6 +24,7 @@ import {
   renderApplicantEmail,
   renderBrandedEmailLayout,
 } from "./emailVariableResolver";
+import { SignupGraphError, signupErrorDiagnostic } from "../lib/signupErrorDiagnostic";
 
 /**
  * Server-side allowlist of permitted sender mailboxes.
@@ -44,7 +45,7 @@ interface TokenCache {
 let _tokenCache: TokenCache | null = null;
 
 /** Fetch (or return cached) OAuth2 client_credentials access token from Microsoft identity platform. */
-async function getAccessToken(): Promise<string> {
+async function getAccessToken(redactErrors = false): Promise<string> {
   const now = Date.now();
   if (_tokenCache && _tokenCache.expiresAt > now + 60_000) {
     return _tokenCache.accessToken;
@@ -76,6 +77,7 @@ async function getAccessToken(): Promise<string> {
 
   if (!res.ok) {
     const text = await res.text();
+    if (redactErrors) throw new SignupGraphError("token", res.status, text);
     // Strip any credential echoes from the error body before logging/throwing
     const safe = text.replace(clientSecret, "[REDACTED]").slice(0, 500);
     throw new Error(`Microsoft Graph token fetch failed (${res.status}): ${safe}`);
@@ -212,7 +214,7 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
       "OnSpot Careers";
     const replyTo = opts.replyTo ?? process.env.APPLICATION_EMAIL_REPLY_TO ?? fromAddress;
 
-    const accessToken = await getAccessToken();
+    const accessToken = await getAccessToken(opts.redactErrors);
 
     const messagePayload: Record<string, any> = {
       subject: opts.subject,
@@ -250,12 +252,19 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
 
     if (!res.ok) {
       const text = await res.text();
+      if (opts.redactErrors) throw new SignupGraphError("sendMail", res.status, text);
       throw new Error(`Graph /sendMail failed (${res.status}): ${text.slice(0, 400)}`);
     }
 
+    if (opts.redactErrors) console.info("[signup-verification] GRAPH_ACCEPTED", {
+      stage: "sendMail", httpStatus: res.status,
+    });
     return { success: true };
   } catch (err: any) {
-    if (opts.redactErrors) return { success: false, error: "Email delivery failed" };
+    if (opts.redactErrors) {
+      console.error("[signup-verification] EMAIL_SEND_FAILED", signupErrorDiagnostic(err));
+      return { success: false, error: "Email delivery failed" };
+    }
     console.error("[microsoftGraphEmailService] sendApplicantEmail error:", err.message);
     return { success: false, error: err.message };
   }

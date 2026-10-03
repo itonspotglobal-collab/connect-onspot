@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { SignupError, SignupVerificationService } from "../services/signupVerificationService";
+import { signupErrorDiagnostic } from "../lib/signupErrorDiagnostic";
 
 export const PENDING_SIGNUP_COOKIE = "onspot_pending_signup";
 export function pendingSignupCapability(req: Request): string {
@@ -31,6 +32,7 @@ export function createSignupVerificationHandlers(service: SignupVerificationServ
             ...(error.retryAfter && { retryAfter: error.retryAfter }) });
         } else {
           // Never log request bodies, raw SQL errors/parameters, password or OTP.
+          console.error("[signup-verification] VERIFICATION_UNAVAILABLE", signupErrorDiagnostic(error));
           res.status(503).json({ success: false, error: "VERIFICATION_UNAVAILABLE", message: "Signup is temporarily unavailable. Please try again." });
         }
       }

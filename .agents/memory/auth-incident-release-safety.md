@@ -28,3 +28,9 @@ Use a separate staging project with its own PostgreSQL database, project-owned o
 **Why:** The owner explicitly requires production, staging, and disposable-test data separation. A development label alone does not establish safe staging, and shared external credentials can affect real parties even when database records are isolated.
 
 **How to apply:** Establish independent project/database identity, recovery evidence, and external-side-effect controls before application startup or migration. Keep real verification delivery disabled until approved team recipients and delivery restrictions are established. Never substitute production connections or the legacy Neon connection for an unprovisioned staging target.
+
+Keep authentication incident work limited to the requested login, signup verification, configuration, and runtime failures; do not expand it into a general MVP audit.
+
+**Why:** The owner repeatedly requires targeted authentication repairs without unrelated feature work or production changes.
+
+**How to apply:** Request controlled credentials, approved test recipients and inbox OTPs when needed. Disposable-fixture results are not proof that real historical login or Microsoft Graph delivery works.

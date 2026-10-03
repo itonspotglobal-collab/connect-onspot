@@ -13,6 +13,7 @@ const configured = (): NodeJS.ProcessEnv => ({
   MICROSOFT_CLIENT_SECRET: "synthetic-client-secret",
   CLIENT_VERIFICATION_EMAIL_FROM: "HireTalent@onspotglobal.com",
   TALENT_VERIFICATION_EMAIL_FROM: "FindWork@onspotglobal.com",
+  SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED: "true",
 });
 
 function failure(env: NodeJS.ProcessEnv) {
@@ -24,20 +25,35 @@ function failure(env: NodeJS.ProcessEnv) {
       && error.message === "Email verification is temporarily unavailable.",
   );
   assert.equal(logs.length, 1);
-  return logs[0];
+  const statuses = logs[0][1] as Record<string, unknown>;
+  assert.deepEqual(Object.keys(statuses), [
+    "EMAIL_VERIFICATION_HMAC_KEY", "JWT_SECRET", "MICROSOFT_TENANT_ID", "MICROSOFT_CLIENT_ID",
+    "MICROSOFT_CLIENT_SECRET", "CLIENT_VERIFICATION_EMAIL_FROM", "TALENT_VERIFICATION_EMAIL_FROM",
+    "SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED",
+  ]);
+  for (const status of Object.values(statuses)) {
+    assert.ok(["valid", "present", "missing", "too-short", "invalid", true, false].includes(status as any));
+  }
+  return [logs[0][0], Object.fromEntries(Object.entries(statuses)
+    .filter(([, status]) => ["missing", "too-short", "invalid"].includes(String(status))))];
 }
 
-test("valid development and production configurations pass without logging", () => {
+test("valid development and production configurations log only the eight safe statuses", () => {
   for (const NODE_ENV of ["development", "production"]) {
-    let calls = 0;
-    assertSignupVerificationConfigured({ ...configured(), NODE_ENV }, () => calls++);
-    assert.equal(calls, 0);
+    const logs: unknown[][] = [];
+    assertSignupVerificationConfigured({ ...configured(), NODE_ENV }, (...args) => logs.push(args));
+    assert.deepEqual(logs, [["[signup-verification] CONFIGURATION", {
+      EMAIL_VERIFICATION_HMAC_KEY: "valid", JWT_SECRET: "present",
+      MICROSOFT_TENANT_ID: "present", MICROSOFT_CLIENT_ID: "present", MICROSOFT_CLIENT_SECRET: "present",
+      CLIENT_VERIFICATION_EMAIL_FROM: "valid", TALENT_VERIFICATION_EMAIL_FROM: "valid",
+      SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED: true,
+    }]]);
   }
 });
 
 test("all missing prerequisites are reported together using only allowed statuses", () => {
   assert.deepEqual(failure({}), [
-    "[signup-verification] VERIFICATION_NOT_CONFIGURED",
+    "[signup-verification] CONFIGURATION",
     {
       EMAIL_VERIFICATION_HMAC_KEY: "missing",
       JWT_SECRET: "missing",
@@ -61,7 +77,7 @@ test("HMAC diagnostics distinguish missing and too short without disclosing valu
     { EMAIL_VERIFICATION_HMAC_KEY: "missing" });
   const shortKey = "x".repeat(31);
   const log = failure({ ...configured(), EMAIL_VERIFICATION_HMAC_KEY: shortKey });
-  assert.deepEqual(log[1], { EMAIL_VERIFICATION_HMAC_KEY: "too short" });
+  assert.deepEqual(log[1], { EMAIL_VERIFICATION_HMAC_KEY: "too-short" });
   assert.ok(!JSON.stringify(log).includes(shortKey));
   assert.ok(!JSON.stringify(log).includes("31"));
   assertSignupVerificationConfigured({ ...configured(), EMAIL_VERIFICATION_HMAC_KEY: "x".repeat(32) });

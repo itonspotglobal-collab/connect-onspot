@@ -1,0 +1,128 @@
+FIX THE AUTH REGRESSION NOW. DO NOT RUN ANOTHER GENERAL AUDIT.
+Signup and existing Client/Talent login are currently failing after the signup-email-verification / migration-0033 changes.
+We need to restore working authentication immediately while preserving email verification for new registrations.
+Current observed symptoms:
+- POST /api/signup → 503
+- some requests → 502 Bad Gateway
+- existing Talent login is failing
+- existing Client login is failing
+- /api/signup/status 404 with no pending signup may be expected and is not the primary issue.
+1. Reproduce using DEVELOPMENT first
+Do not publish.
+Restart the development server and inspect the server-side logs, not only browser console output.
+Test:
+- /api/health
+- /api/ready
+- existing Client login
+- existing Talent login
+- one new Talent signup
+- one new Client signup
+For every failed request, report the actual backend error/error code and originating source location.
+2. Specifically inspect the migration-0033 authentication regression
+Trace all checks involving:
+- email_verification_required
+- email_verified_at
+- email_verified_email
+- EMAIL_VERIFICATION_REQUIRED
+- pending_registrations
+- candidate authentication
+- user authentication
+- JWT issuance
+Compare those checks against the intended historical-account policy:
+Existing established accounts must remain able to log in. They must NOT be retroactively blocked merely because email_verified_at is NULL.
+Email verification is mandatory for new registrations, but historical established Client/Talent accounts were explicitly supposed to be grandfathered.
+If migration 0033 or subsequent auth code incorrectly treats historical users as requiring verification, fix that regression now.
+Do NOT mass-mark historical accounts as email verified.
+Do NOT delete accounts.
+Do NOT bypass verification for genuinely new registrations.
+3. Diagnose signup 503 precisely
+The code currently throws VERIFICATION_NOT_CONFIGURED before database access when one of its configuration prerequisites fails.
+Print a safe server-side diagnostic containing ONLY:
+EMAIL_VERIFICATION_HMAC_KEY: valid / missing / too-short
+JWT_SECRET: present / missing
+MICROSOFT_TENANT_ID: present / missing
+MICROSOFT_CLIENT_ID: present / missing
+MICROSOFT_CLIENT_SECRET: present / missing
+CLIENT_VERIFICATION_EMAIL_FROM: valid / invalid
+TALENT_VERIFICATION_EMAIL_FROM: valid / invalid
+SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED: true / false
+
+NEVER print any secret value.
+Do not tell me again merely that VERIFICATION_NOT_CONFIGURED occurred. Identify the exact failed prerequisite from the running development process.
+Fix environment/configuration wiring if the value exists in Replit but is not reaching the development process.
+4. Then exercise the database path
+Once assertConfigured() passes, perform a new signup using a synthetic/test email.
+Confirm:
+POST /api/signup
+→ database connection
+→ signup_verification_limits
+→ pending_registrations
+→ OTP generation
+→ Graph send
+→ HTTP 202
+If it fails after configuration passes, capture the actual server exception class/message and source location, while redacting email/password/OTP/secrets.
+Do not hide the useful server diagnostic behind VERIFICATION_UNAVAILABLE.
+5. Verify Graph email
+Confirm the runtime is using:
+Talent sender:
+FindWork@onspotglobal.com
+Client sender:
+HireTalent@onspotglobal.com
+With delivery enabled in DEVELOPMENT, send verification only to the approved test recipient used for this test.
+Confirm whether Microsoft Graph accepted or rejected the send.
+If rejected, report the sanitized Graph HTTP status/error code.
+6. Check the 502 errors
+Determine why the development application is intermittently returning 502 Bad Gateway.
+Check whether the Node process:
+- crashed,
+- restarted,
+- exited because of migration/startup logic,
+- lost DB connectivity,
+- or threw an unhandled exception.
+Fix a concrete regression if found.
+7. Required acceptance criteria
+Do not stop at “tests passed.”
+Development must demonstrate:
+- existing historical Client can log in
+- existing historical Talent can log in
+- new Talent signup returns 202 pending verification
+- Talent verification email is accepted by Graph
+- correct Talent OTP activates account
+- activated Talent can log in
+- new Client signup returns 202 pending verification
+- Client verification email is accepted by Graph
+- correct Client OTP activates account
+- activated Client can log in
+- wrong OTP is rejected
+- no password/OTP/HMAC/JWT/Graph secret appears in logs
+Do not modify or migrate production while diagnosing this.
+Do not create another migration unless a concrete schema defect is demonstrated.
+Do not roll back migration 0033 blindly.
+Do not disable email verification.
+Do not change unrelated MVP features.
+At completion give me only:
+ROOT CAUSE:
+
+EXISTING CLIENT LOGIN: PASS/FAIL
+EXISTING TALENT LOGIN: PASS/FAIL
+
+SIGNUP CONFIG GUARD: PASS/FAIL
+FAILED CONFIG ITEM: <name or NONE>
+
+DATABASE SIGNUP PATH: PASS/FAIL
+TALENT GRAPH SEND: PASS/FAIL
+CLIENT GRAPH SEND: PASS/FAIL
+
+TALENT SIGNUP + OTP: PASS/FAIL
+CLIENT SIGNUP + OTP: PASS/FAIL
+
+502 ROOT CAUSE:
+
+FILES CHANGED:
+
+TESTS:
+
+PRODUCTION CHANGE REQUIRED: YES/NO
+REPUBLISH REQUIRED: YES/NO
+
+Do not publish or change production.
