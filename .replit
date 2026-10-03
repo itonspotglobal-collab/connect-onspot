@@ -44,8 +44,11 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "env -u VITE_API_BASE sh -c 'export EMAIL_VERIFICATION_HMAC_KEY=\"$DEVELOPMENT_EMAIL_VERIFICATION_HMAC_KEY\"; exec npm run dev'"
 waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[workflows.workflow]]
 name = "typecheck"
@@ -86,6 +89,11 @@ PUBLIC_APP_URL = "https://talent.onspotglobal.com"
 VITE_HOW_IT_WORKS_ENABLED = "true"
 
 [userenv.production]
+CLIENT_VERIFICATION_EMAIL_FROM = "HireTalent@onspotglobal.com"
+SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED = "true"
+TALENT_VERIFICATION_EMAIL_FROM = "FindWork@onspotglobal.com"
+
+[userenv.development]
 CLIENT_VERIFICATION_EMAIL_FROM = "HireTalent@onspotglobal.com"
 SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED = "true"
 TALENT_VERIFICATION_EMAIL_FROM = "FindWork@onspotglobal.com"
