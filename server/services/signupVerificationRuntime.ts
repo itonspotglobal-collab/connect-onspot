@@ -1,22 +1,15 @@
 import jwt from "jsonwebtoken";
 import { getClient } from "../db";
 import { hashPassword } from "../auth-utils";
-import { SignupError, SignupVerificationService } from "./signupVerificationService";
-import { sendSignupVerificationEmail, verificationSender } from "./signupVerificationEmail";
+import { SignupVerificationService } from "./signupVerificationService";
+import { sendSignupVerificationEmail } from "./signupVerificationEmail";
+import { assertSignupVerificationConfigured } from "./signupVerificationConfig";
 
 export const signupVerificationRuntime = new SignupVerificationService({
   connect: getClient,
   hashPassword,
   hmacKey: () => process.env.EMAIL_VERIFICATION_HMAC_KEY!,
-  assertConfigured() {
-    if (!process.env.EMAIL_VERIFICATION_HMAC_KEY || Buffer.byteLength(process.env.EMAIL_VERIFICATION_HMAC_KEY) < 32
-      || !process.env.JWT_SECRET || !process.env.MICROSOFT_TENANT_ID
-      || !process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET) {
-      throw new SignupError(503, "VERIFICATION_NOT_CONFIGURED", "Email verification is temporarily unavailable.");
-    }
-    verificationSender("client");
-    verificationSender("talent");
-  },
+  assertConfigured: assertSignupVerificationConfigured,
   send: sendSignupVerificationEmail,
   issueCredentials({ user, candidateId }) {
     const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET!, { expiresIn: "7d" });

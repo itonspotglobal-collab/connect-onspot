@@ -1,9 +1,9 @@
 import { SignupError } from "./signupVerificationService";
 
-export function verificationSender(role: "client" | "talent"): string {
+export function verificationSender(role: "client" | "talent", env: NodeJS.ProcessEnv = process.env): string {
   const sender = (role === "talent"
-    ? process.env.TALENT_VERIFICATION_EMAIL_FROM
-    : process.env.CLIENT_VERIFICATION_EMAIL_FROM)?.trim().toLowerCase();
+    ? env.TALENT_VERIFICATION_EMAIL_FROM
+    : env.CLIENT_VERIFICATION_EMAIL_FROM)?.trim().toLowerCase();
   // Exact role identity, not merely any allowed mailbox. No default fallback.
   const expected = role === "talent" ? "findwork@onspotglobal.com" : "hiretalent@onspotglobal.com";
   if (sender !== expected) throw new SignupError(503, "VERIFICATION_NOT_CONFIGURED", "Email verification is temporarily unavailable.");

@@ -14,3 +14,9 @@ Disposable PostgreSQL processes need an explicitly owned background lifetime and
 **Why:** A detached child started from a one-shot shell did not survive to the next check, and PostgreSQL's default socket directory was unavailable. Both looked like database failures despite a valid disposable dataset.
 
 **How to apply:** Keep the scratch server in a tracked foreground background task, with its socket under the temporary fixture directory; stop only that owned process after validation. Never substitute the application's database when scratch infrastructure fails.
+
+Use the scratch cluster's explicitly initialized role in both PostgreSQL client commands and the disposable connection URL.
+
+**Why:** The workspace's inherited PostgreSQL client defaults can select a different role from the operating-system user that initialized the scratch cluster, producing a misleading role-not-found failure against an otherwise healthy local server.
+
+**How to apply:** Specify the owned scratch role explicitly rather than inheriting application database credentials or client defaults.
