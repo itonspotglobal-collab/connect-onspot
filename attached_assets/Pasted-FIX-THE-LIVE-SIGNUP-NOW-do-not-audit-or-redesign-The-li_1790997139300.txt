@@ -1,0 +1,29 @@
+FIX THE LIVE SIGNUP NOW — do not audit or redesign.
+The live site https://onspotglobal.com is currently returning 503 from POST /api/signup.
+I have already published the current implementation. Work against the LIVE deployment logs/runtime for this failure.
+1. Read the latest /api/signup 503 server log and identify its application error code.
+2. If it is VERIFICATION_NOT_CONFIGURED, check the running production process for presence only of:
+   - EMAIL_VERIFICATION_HMAC_KEY
+   - TALENT_VERIFICATION_EMAIL_FROM
+   - CLIENT_VERIFICATION_EMAIL_FROM
+   - Microsoft tenant/client/client-secret
+   Fix any missing production configuration that you are able to fix. Never display secret values.
+3. Production must have:
+   - TALENT_VERIFICATION_EMAIL_FROM=FindWork@onspotglobal.com
+   - CLIENT_VERIFICATION_EMAIL_FROM=HireTalent@onspotglobal.com
+   - valid EMAIL_VERIFICATION_HMAC_KEY
+   - SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED=true
+4. If the latest error is EMAIL_SEND_FAILED, stop investigating signup/database code and inspect the Microsoft Graph send failure directly. Fix the existing Graph configuration/transport if possible. Report the exact sanitized Microsoft error if owner action is required.
+5. Confirm Graph can send verification email as:
+   - Talent → FindWork@onspotglobal.com
+   - Client → HireTalent@onspotglobal.com
+6. Do NOT modify the database schema. Migration 0033 is already applied. Do NOT add another migration. Do NOT bypass OTP. Do NOT restore unverified signup.
+7. Do NOT perform a broad audit. Do NOT inspect unrelated features.
+8. Once fixed, make the minimum runtime/redeploy action necessary and verify that a controlled POST /api/signup reaches pending verification instead of returning 503.
+9. The required final state is:
+signup → pending registration → Graph sends OTP → verification email arrives → OTP accepted → account activated
+If you cannot complete one step because owner action is required, stop and tell me only:
+- current /api/signup application error code;
+- exact blocker;
+- exact owner action required.
+Do not spend time producing another architecture/readiness report.
