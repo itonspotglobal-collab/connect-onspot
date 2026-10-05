@@ -106,6 +106,12 @@ test("missing goals or failed goal fetch show counts only; mobile stacks without
     const rect = element.getBoundingClientRect(); return { x: rect.x, y: rect.y, bottom: rect.bottom };
   }));
   assert.equal(boxes[0].x, boxes[1].x); assert.ok(boxes[1].y >= boxes[0].bottom);
+  const labelGap = await gauge(page).evaluate((element) => {
+    const number = element.querySelector(".investor-gauge-count")!.getBoundingClientRect();
+    const label = element.querySelector(".investor-gauge-label")!.getBoundingClientRect();
+    return label.top - number.bottom;
+  });
+  assert.ok(labelGap <= 24, `Count-only labels must not reserve the missing ring's space: ${labelGap}px`);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   state.goalsFail = true;
   await page.reload();
@@ -161,6 +167,50 @@ test("all three CTAs share a treatment and still select their original request t
     assert.equal(await page.locator("#investor-request-type").inputValue(), type);
     await page.keyboard.press("Escape");
   }
+  await page.close();
+});
+
+test("Investors typography, two-tone subhead and primary pills match the measured Home hero", async () => {
+  const { page } = await pageWithData();
+  await page.goto(base);
+  await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "1,234");
+  const styles = await page.evaluate(() => {
+    const [headline, count, label, goal, button] = [
+      "#investor-headline", ".investor-gauge-count", ".investor-gauge-label",
+      ".investor-gauge-goal", ".investor-actions button",
+    ].map((selector) => {
+      const computed = getComputedStyle(document.querySelector(selector)!);
+      return { fontFamily: computed.fontFamily, fontWeight: computed.fontWeight,
+        fontSize: computed.fontSize, lineHeight: computed.lineHeight,
+        letterSpacing: computed.letterSpacing, color: computed.color,
+        background: computed.backgroundColor, height: computed.height,
+        borderRadius: computed.borderRadius, padding: computed.padding };
+    });
+    return { headline, count, label, goal, button };
+  });
+  assert.equal(styles.headline.fontFamily, "Inter, -apple-system, BlinkMacSystemFont, sans-serif");
+  assert.equal(styles.headline.fontWeight, "700");
+  assert.ok(Math.abs(Number.parseFloat(styles.headline.letterSpacing) / Number.parseFloat(styles.headline.fontSize) + .03) < .0001);
+  for (const element of [styles.count, styles.label, styles.goal, styles.button]) {
+    assert.equal(element.fontFamily, styles.headline.fontFamily);
+  }
+  assert.equal(styles.button.background, "rgb(255, 255, 255)");
+  assert.equal(styles.button.color, "rgb(75, 81, 184)");
+  assert.equal(styles.button.fontWeight, "600");
+  assert.equal(styles.button.fontSize, "15.5px");
+  assert.equal(styles.button.lineHeight, "23.25px");
+  assert.equal(styles.button.height, "52px");
+  assert.equal(styles.button.borderRadius, "9999px");
+  assert.equal(styles.button.padding, "0px 32px");
+  const gold = page.locator("#investor-headline span").filter({ hasText: "without limits" });
+  assert.equal(await gold.count(), 1);
+  assert.equal(await gold.evaluate((element) => getComputedStyle(element).color), "rgb(255, 192, 82)");
+  const subtitle = page.locator(".investors-subhead span");
+  assert.equal(await subtitle.nth(0).textContent(), "Talent earns more.");
+  assert.equal(await subtitle.nth(1).textContent(), "Clients pay less.");
+  assert.deepEqual(await subtitle.evaluateAll((elements) => elements.map((element) => {
+    const computed = getComputedStyle(element); return [computed.fontWeight, computed.color];
+  })), [["600", "rgb(255, 255, 255)"], ["400", "rgba(199, 203, 242, 0.8)"]]);
   await page.close();
 });
 

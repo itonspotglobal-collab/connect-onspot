@@ -8,10 +8,13 @@ import {
 } from "@/components/ui/dialog";
 import { InvestorGauge } from "@/components/InvestorGauge";
 import {
-  HERO_GLASS_CTA_CLASS,
-  HERO_GLASS_CTA_STYLE,
+  HERO_HEADLINE_STYLE,
+  HERO_PRIMARY_CTA_CLASS,
+  HERO_PRIMARY_CTA_STYLE,
   HERO_SHARED_CSS_VARS,
   HERO_WORK_BACKGROUND,
+  HERO_SUBTITLE_LEAD_STYLE,
+  HERO_SUBTITLE_MUTED_STYLE,
 } from "@/components/HeroPresentation";
 import "./InvestorsCorner.css";
 
@@ -255,12 +258,16 @@ export default function InvestorsCorner() {
             FOR INVESTORS
           </div>
 
-          <h1 id="investor-headline">
+          <h1 id="investor-headline" className="investor-headline" style={HERO_HEADLINE_STYLE}>
             A world where anyone can work anywhere. And every company can hire
-            anyone to work without limits.
+            anyone to work{" "}
+            <span className="investor-headline-gold">without limits.</span>
           </h1>
 
-          <p className="investors-subhead">Talent earns more. Clients pay less.</p>
+          <p className="investors-subhead">
+            <span style={HERO_SUBTITLE_LEAD_STYLE}>Talent earns more.</span>{" "}
+            <span style={HERO_SUBTITLE_MUTED_STYLE}>Clients pay less.</span>
+          </p>
 
           <div className="investors-counts" aria-label="OnSpot marketplace account totals">
             <InvestorGauge
@@ -290,14 +297,11 @@ export default function InvestorsCorner() {
               <button
                 key={type}
                 type="button"
-                className={`investor-action ${HERO_GLASS_CTA_CLASS}`}
-                style={HERO_GLASS_CTA_STYLE}
+                className={`investor-action ${HERO_PRIMARY_CTA_CLASS}`}
+                style={HERO_PRIMARY_CTA_STYLE}
                 onClick={() => openRequest(type)}
               >
-                <span>{label}</span>
-                <span className="investor-action-arrow" aria-hidden="true">
-                  ↗
-                </span>
+                <span>{label} →</span>
               </button>
             ))}
           </div>

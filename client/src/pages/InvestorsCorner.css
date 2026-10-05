@@ -3,7 +3,7 @@
   overflow: hidden;
   color: #fff;
   background-color: #272668;
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
 }
 
 /* The global assistant launcher otherwise overlaps the Founder CTA on phones. */
@@ -36,8 +36,8 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   justify-content: center;
   gap: 12px;
   margin-bottom: clamp(17px, 2.6vh, 26px);
-  color: rgba(255, 255, 255, 0.75);
-  font-family: "Bricolage Grotesque", sans-serif;
+  color: var(--hero-eyebrow-color);
+  font-family: var(--hero-typeface);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -50,24 +50,28 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 }
 
 .investors-intro h1 {
-  max-width: 1080px;
+  max-width: 1100px;
   margin: 0 auto;
   color: #fff;
-  font-family: "Bricolage Grotesque", sans-serif;
-  font-size: clamp(42px, 5.5vw, 78px);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.99;
+  font-family: var(--hero-typeface);
+  font-size: clamp(42px, 4.6vw, 66.24px);
+  font-weight: var(--hero-headline-weight);
+  letter-spacing: var(--hero-headline-letter-spacing);
+  line-height: var(--hero-headline-line-height);
   text-wrap: balance;
+}
+
+.investor-headline-gold {
+  color: var(--hero-orange-light);
 }
 
 .investors-subhead {
   margin: clamp(12px, 1.8vh, 20px) 0 0;
-  color: var(--hero-muted-light);
-  font-family: "Bricolage Grotesque", sans-serif;
-  font-size: clamp(20px, 2vw, 27px);
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  color: var(--hero-white);
+  font-family: var(--hero-typeface);
+  font-size: var(--hero-subtitle-size);
+  font-weight: 400;
+  line-height: var(--hero-subtitle-line-height);
 }
 
 .investors-counts {
@@ -93,6 +97,11 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
+}
+
+.investor-gauge-visual:not(.has-goal) {
+  width: auto;
+  aspect-ratio: auto;
 }
 
 .investor-gauge-ring {
@@ -125,7 +134,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   z-index: 1;
   max-width: 100%;
   color: #fff;
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.065em;
@@ -136,7 +145,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 .investor-gauge-label {
   margin: 8px 0 0;
   color: #fff;
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: clamp(20px, 2vw, 26px);
   font-weight: 650;
   letter-spacing: -0.02em;
@@ -149,7 +158,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   gap: 8px;
   margin: 5px 0 0;
   color: rgba(227, 229, 249, 0.74);
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.09em;
@@ -164,7 +173,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 .investor-stats-note {
   margin: 10px 0 -8px;
   color: rgba(255, 255, 255, 0.68);
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 12px;
 }
 
@@ -180,7 +189,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   border-radius: 999px;
   color: #fff;
   background: rgba(255, 255, 255, 0.075);
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.005em;
@@ -204,26 +213,15 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 
 .investor-action {
   width: 100%;
-  min-width: 0;
-  min-height: 56px;
+  min-width: 180px;
+  border: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 19px;
-  color: #fff;
+  justify-content: center;
+  padding: 0 32px;
   cursor: pointer;
-  text-align: left;
-  font-family: "Bricolage Grotesque", sans-serif;
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.25;
-  transition: transform 180ms ease, background-color 180ms ease;
-}
-
-.investor-action:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.15);
+  text-align: center;
+  font-family: var(--hero-typeface);
 }
 
 .investor-action:focus-visible,
@@ -234,13 +232,6 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 .investor-result a:focus-visible {
   outline: 3px solid rgb(var(--hero-orange-light-rgb) / 0.85);
   outline-offset: 3px;
-}
-
-.investor-action-arrow {
-  flex: 0 0 auto;
-  color: var(--hero-orange-light);
-  font-size: 18px;
-  font-weight: 400;
 }
 
 .investor-dialog {
@@ -420,14 +411,11 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 
   .investors-intro h1 {
     max-width: 560px;
-    font-size: clamp(36px, 9.1vw, 50px);
-    line-height: 1.01;
-    letter-spacing: -0.045em;
+    font-size: clamp(34px, 8.8vw, 40px);
   }
 
   .investors-subhead {
     margin-top: 12px;
-    font-size: 21px;
   }
 
   .investors-counts {
@@ -463,9 +451,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   }
 
   .investor-action {
-    min-height: 50px;
-    padding: 12px 16px;
-    font-size: 13px;
+    width: 100%;
   }
 }
 
@@ -473,13 +459,13 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   .investors-shell { padding-top: 18px; padding-bottom: 20px; }
   .investors-eyebrow { margin-bottom: 12px; }
   .investors-intro h1 { font-size: clamp(32px, 8.7vw, 38px); }
-  .investors-subhead { margin-top: 9px; font-size: 19px; }
+  .investors-subhead { margin-top: 9px; }
   .investors-counts { gap: 15px; margin-top: 16px; }
   .investor-gauge-visual { width: min(57vw, 218px); }
   .investor-gauge-label { font-size: 19px; }
   .investor-raise { margin-top: 13px; }
   .investor-actions { margin-top: 12px; gap: 6px; }
-  .investor-action { min-height: 44px; }
+  .investor-action { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -21,11 +21,15 @@ import { formatCurrencyAmount } from "@/lib/jobUtils";
 import { Footer } from "@/components/Footer";
 import {
   HERO_COLORS,
+  HERO_HEADLINE_STYLE,
   HERO_GLASS_CTA_CLASS,
   HERO_GLASS_CTA_STYLE,
   HERO_PRIMARY_CTA_CLASS,
   HERO_PRIMARY_CTA_STYLE,
   HERO_SHARED_CSS_VARS,
+  HERO_SUBTITLE_LEAD_STYLE,
+  HERO_SUBTITLE_MUTED_STYLE,
+  HERO_SUBTITLE_STYLE,
   HERO_WORK_BACKGROUND,
 } from "@/components/HeroPresentation";
 import {
@@ -846,9 +850,8 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
       <h1
         className="font-bold tracking-tight hero-work-h1"
         style={{
+          ...HERO_HEADLINE_STYLE,
           fontSize: "clamp(58px, 5.6vw, 82px)",
-          lineHeight: 0.99,
-          letterSpacing: "-0.03em",
         }}
       >
         <span className="text-white">Work </span>
@@ -859,16 +862,15 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
       <p
         className="mt-5 hero-subtitle"
         style={{
-          fontSize: "clamp(16px, 1.35vw, 22px)",
-          lineHeight: 1.4,
+          ...HERO_SUBTITLE_STYLE,
           whiteSpace: "nowrap",
           width: "max-content",
           maxWidth: "100%",
           marginInline: "auto",
         }}
       >
-        <span className="font-semibold text-white">One system.</span>{" "}
-        <span style={{ color: "var(--hero-muted-light)" }}>
+        <span className="font-semibold text-white" style={HERO_SUBTITLE_LEAD_STYLE}>One system.</span>{" "}
+        <span style={HERO_SUBTITLE_MUTED_STYLE}>
           Highest pay for talents at lower cost to companies.
         </span>
       </p>

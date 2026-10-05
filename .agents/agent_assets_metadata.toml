@@ -587,3 +587,59 @@ mtime_ms = 1791187379414
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/04484340-46f7-4f8e-8581-7c132feb3919/b8c231cd-a671-4b07-bd67-2304745b3f43"
 storage_version_token = "1791187542082288"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "ifZEjcNBVYyrwrwffn2qj"
+uri = "file://screenshots/investors-corrected-desktop.jpg"
+type = "image"
+title = "Corrected Investors — desktop"
+description = "Measured Home typography and solid-white primary pills. Live goals remain unset; counters no longer reserve empty ring space."
+logical_id = "2c4aea1a-b754-473d-987d-58085cf5241b"
+content_hash = "sha256:622eb689007b953c4ae3a7a6b6bff1627c003cbd501fb9b443c6e026737d9928"
+size = 114327
+mtime_ms = 1791188913265
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/2c4aea1a-b754-473d-987d-58085cf5241b/dfdd8d5a-0a31-484e-a13d-cfc38ec3be2f"
+storage_version_token = "1791189115513997"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "MoXHiyzofaNtMgkJHYMNc"
+uri = "file://screenshots/investors-corrected-mobile.jpg"
+type = "image"
+title = "Corrected Investors — mobile"
+description = "Matching Inter typography, gold emphasis, stacked counters and identical primary pills. No guessed goals."
+logical_id = "fcdec383-52c1-458a-b5e2-0b49aeb7fc9b"
+content_hash = "sha256:bca87c0d57fc3cc801c99298b4b9b9091e173078439fd013c47c2e321b3a96d2"
+size = 59494
+mtime_ms = 1791188924246
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/fcdec383-52c1-458a-b5e2-0b49aeb7fc9b/fdef3644-1744-4603-9efa-5972a1a190c6"
+storage_version_token = "1791189117503810"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "jS-miCUWSc4rctdfFC1oS"
+uri = "file://screenshots/home-hero-before-desktop.png"
+type = "image"
+title = "Home hero — before"
+description = "Desktop baseline, with animations paused for a repeatable visual comparison."
+logical_id = "d971dd5d-d5dc-4d75-adbd-9fe1f777ebeb"
+content_hash = "sha256:4c942cc773a0f63ada3be9f54ef12661b84a9a4499a5b5ce70a5e83dc8d69f29"
+size = 669171
+mtime_ms = 1791188639493
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/d971dd5d-d5dc-4d75-adbd-9fe1f777ebeb/b3299dbb-6409-4089-b294-dfd8fd4def15"
+storage_version_token = "1791189120416412"
+content_type = "image/png"
+
+[[outputs]]
+id = "9PCkTawlHJ8Jti92oHo08"
+uri = "file://screenshots/home-hero-after-desktop.png"
+type = "image"
+title = "Home hero — after"
+description = "Zero changed pixels compared with the desktop baseline. Mobile comparison also had zero changed pixels."
+logical_id = "b39500c5-8574-476c-abe3-757c69245d8e"
+content_hash = "sha256:4c942cc773a0f63ada3be9f54ef12661b84a9a4499a5b5ce70a5e83dc8d69f29"
+size = 669171
+mtime_ms = 1791188908829
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/b39500c5-8574-476c-abe3-757c69245d8e/9099d6d2-9b46-429b-a2fa-ed024f54733d"
+storage_version_token = "1791189123421641"
+content_type = "image/png"

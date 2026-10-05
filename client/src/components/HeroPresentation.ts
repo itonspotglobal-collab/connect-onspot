@@ -21,6 +21,32 @@ export const HERO_COLORS = {
   navySection: "#0C123F",
 } as const;
 
+const HERO_TYPEFACE = "Inter, -apple-system, BlinkMacSystemFont, sans-serif";
+const HERO_MUTED_TEXT = "rgba(199,203,242,0.8)";
+
+export const HERO_HEADLINE_STYLE = {
+  fontFamily: HERO_TYPEFACE,
+  fontWeight: 700,
+  letterSpacing: "-0.03em",
+  lineHeight: 0.99,
+} as const;
+
+export const HERO_SUBTITLE_STYLE = {
+  fontFamily: HERO_TYPEFACE,
+  fontSize: "clamp(16px, 1.35vw, 22px)",
+  lineHeight: 1.4,
+} as const;
+
+export const HERO_SUBTITLE_LEAD_STYLE = {
+  color: "#ffffff",
+  fontWeight: 600,
+} as const;
+
+export const HERO_SUBTITLE_MUTED_STYLE = {
+  color: HERO_MUTED_TEXT,
+  fontWeight: 400,
+} as const;
+
 const rgbChannels = (hex: string) =>
   [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16)).join(", ");
 
@@ -34,7 +60,14 @@ export const HERO_SHARED_CSS_VARS = {
   "--hero-orange-light": HERO_COLORS.orangeLight,
   "--hero-orange-light-rgb": rgbChannels(HERO_COLORS.orangeLight),
   "--hero-orange-deep": HERO_COLORS.orangeDeep,
-  "--hero-muted-light": "rgba(199,203,242,0.8)",
+  "--hero-muted-light": HERO_MUTED_TEXT,
+  "--hero-eyebrow-color": "rgba(255,255,255,0.75)",
+  "--hero-typeface": HERO_TYPEFACE,
+  "--hero-headline-weight": String(HERO_HEADLINE_STYLE.fontWeight),
+  "--hero-headline-letter-spacing": HERO_HEADLINE_STYLE.letterSpacing,
+  "--hero-headline-line-height": String(HERO_HEADLINE_STYLE.lineHeight),
+  "--hero-subtitle-size": HERO_SUBTITLE_STYLE.fontSize,
+  "--hero-subtitle-line-height": String(HERO_SUBTITLE_STYLE.lineHeight),
   "--hero-white": "#ffffff",
 } as CSSProperties;
 
