@@ -14,7 +14,7 @@ const cacheDir = mkdtempSync(join(tmpdir(), "investor-gauge-vite-"));
 before(async () => {
   vite = await createServer({
     configFile: false, root: resolve("client"), cacheDir,
-    resolve: { alias: { "@": resolve("client/src"), "@shared": resolve("shared") } },
+    resolve: { alias: { "@": resolve("client/src"), "@shared": resolve("shared"), "@assets": resolve("attached_assets") } },
     optimizeDeps: { entries: ["src/pages/InvestorsCorner.tsx", "src/components/InvestorGoalSettings.tsx"] },
     plugins: [react(), {
       name: "investor-fixture",
@@ -125,9 +125,12 @@ test("owner targets show exact small progress, independent start dots, account l
   assert.deepEqual(await page.locator(".investor-gauge-goal").allTextContents(), ["Goal for 2027: 10,000", "Goal for 2027: 5,000"]);
   for (const width of [1024, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
-    await page.clock.runFor(32);
+    await page.reload();
+    await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "98");
     const size = await gauges.first().locator(".investor-gauge-count").evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
-    assert.ok(size >= 96 && size <= 120, `Desktop count is ${size}px at ${width}px`);
+    assert.ok(size >= 64 && size <= 88, `Desktop count is ${size}px at ${width}px`);
+    const diameter = await gauges.first().locator(".investor-gauge-visual").evaluate((el) => el.getBoundingClientRect().width);
+    assert.ok(diameter >= 200 && diameter <= 240, `Desktop gauge is ${diameter}px at ${width}px`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   // Use a fresh mobile render: the frozen browser clock can retain viewport-unit
@@ -152,12 +155,26 @@ test("owner targets show exact small progress, independent start dots, account l
   const boxes = await gauges.evaluateAll((elements) => elements.map((el) => {
     const box = el.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom };
   }));
-  assert.equal(boxes[0].x, boxes[1].x);
-  assert.ok(boxes[1].y >= boxes[0].bottom);
+  assert.ok(boxes[0].y === boxes[1].y || boxes[1].y >= boxes[0].bottom, "Mobile gauges must be side-by-side or safely stacked");
+  const mobileDiameter = await gauges.first().locator(".investor-gauge-track").evaluate((el) => el.getBoundingClientRect().width);
+  assert.ok(mobileDiameter >= 135 && mobileDiameter <= 150, `Mobile gauge is ${mobileDiameter}px`);
+  const order = await page.evaluate(() =>
+    [".investor-headline", ".investors-counts", ".investor-tagline", ".investor-raise", ".investor-actions", ".investors-phone-column"]
+      .map((selector) => document.querySelector(selector)!.getBoundingClientRect().top));
+  assert.ok(order.every((top, i) => i === 0 || top >= order[i - 1]), `Mobile order: ${order}`);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "98");
+  const narrowBoxes = await gauges.evaluateAll((elements) => elements.map((el) => {
+    const box = el.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom };
+  }));
+  assert.equal(narrowBoxes[0].x, narrowBoxes[1].x);
+  assert.ok(narrowBoxes[1].y >= narrowBoxes[0].bottom);
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.close();
 });
 
-test("missing goals or failed goal fetch show counts only; mobile stacks without overflow", async () => {
+test("missing goals or failed goal fetch show counts only; mobile fits without overflow", async () => {
   const { page, state } = await pageWithData();
   state.contractorGoal = null; state.clientGoal = null;
   await page.setViewportSize({ width: 390, height: 844 });
@@ -167,7 +184,7 @@ test("missing goals or failed goal fetch show counts only; mobile stacks without
   const boxes = await page.locator(".investor-gauge").evaluateAll((elements) => elements.map((element) => {
     const rect = element.getBoundingClientRect(); return { x: rect.x, y: rect.y, bottom: rect.bottom };
   }));
-  assert.equal(boxes[0].x, boxes[1].x); assert.ok(boxes[1].y >= boxes[0].bottom);
+  assert.ok(boxes[0].y === boxes[1].y || boxes[1].y >= boxes[0].bottom);
   const labelGap = await gauge(page).evaluate((element) => {
     const number = element.querySelector(".investor-gauge-count")!.getBoundingClientRect();
     const label = element.querySelector(".investor-gauge-label")!.getBoundingClientRect();
@@ -232,7 +249,7 @@ test("all three CTAs share a treatment and still select their original request t
   await page.close();
 });
 
-test("Investors typography, two-tone subhead and primary pills match the measured Home hero", async () => {
+test("Investors typography and primary pills match Home while the pitch headline and tagline supersede the old subhead", async () => {
   const { page } = await pageWithData();
   await page.goto(base);
   await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "1,234");
@@ -264,15 +281,20 @@ test("Investors typography, two-tone subhead and primary pills match the measure
   assert.equal(styles.button.height, "52px");
   assert.equal(styles.button.borderRadius, "9999px");
   assert.equal(styles.button.padding, "0px 32px");
-  const gold = page.locator("#investor-headline span").filter({ hasText: "without limits" });
+  const gold = page.locator(".investor-headline-secondary");
   assert.equal(await gold.count(), 1);
+  assert.equal((await gold.textContent())?.trim(), "We are not watching. We built the replacement.");
   assert.equal(await gold.evaluate((element) => getComputedStyle(element).color), "rgb(255, 192, 82)");
-  const subtitle = page.locator(".investors-subhead span");
-  assert.equal(await subtitle.nth(0).textContent(), "Talent earns more.");
-  assert.equal(await subtitle.nth(1).textContent(), "Clients pay less.");
-  assert.deepEqual(await subtitle.evaluateAll((elements) => elements.map((element) => {
-    const computed = getComputedStyle(element); return [computed.fontWeight, computed.color];
-  })), [["600", "rgb(255, 255, 255)"], ["400", "rgba(199, 203, 242, 0.8)"]]);
+  assert.equal((await page.locator(".investor-headline-primary").textContent())?.trim(), "The outsourcing industry is being replaced.");
+  assert.equal(await page.locator(".investors-subhead,.investors-eyebrow").count(), 0);
+  assert.match((await page.locator(".investor-tagline").textContent())?.trim() ?? "", /^Work Without Limits$/i);
+  assert.equal(await page.locator(".investor-tagline").getAttribute("aria-label"), "Work Without Limits");
+  const accent = page.locator(".investor-tagline-accent");
+  assert.equal(await accent.textContent(), "WITHOUT");
+  assert.equal(await accent.evaluate((el) => getComputedStyle(el).color), "rgb(255, 192, 82)");
+  assert.match(await accent.evaluate((el) => getComputedStyle(el).fontFamily), /Permanent Marker/);
+  assert.equal(await page.getByAltText("OnSpot mobile About page: Built by people who lived the problem").count(), 1);
+  assert.doesNotMatch(await page.locator(".investors-page").innerText(), /nur@|jake@|Contacts:/i);
   await page.close();
 });
 

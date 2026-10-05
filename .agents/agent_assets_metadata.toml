@@ -671,3 +671,87 @@ mtime_ms = 1791190428184
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/05c473db-eb12-4b6f-9eb4-fac7caf30b77/1013cbd7-00b3-4e22-bed9-40ea4fcfa341"
 storage_version_token = "1791190639292425"
 content_type = "image/png"
+
+[[outputs]]
+id = "g00Deh7uYgGekmokFEAyW"
+uri = "file://screenshots/investors-desktop-versus-reference.png"
+type = "image"
+title = "Desktop Investors page beside the pitch slide"
+description = "Development preview: final 13 Contractor / 30 Client counts. Original phone artwork used unchanged."
+logical_id = "cfc717b7-a4aa-4a66-9235-0e9d170338f5"
+content_hash = "sha256:979db98d1164fc0a2e4a1c005d10cf1f013787070e6fa49cfb439c2ea3308c21"
+size = 926626
+mtime_ms = 1791192523139
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/cfc717b7-a4aa-4a66-9235-0e9d170338f5/a626d87c-7767-44a7-a7c8-033441662e4c"
+storage_version_token = "1791192628272795"
+content_type = "image/png"
+
+[[outputs]]
+id = "n0CZ8IBVPAr4AKsI6WNzA"
+uri = "file://screenshots/investors-mobile-versus-reference.png"
+type = "image"
+title = "Mobile Investors page beside the pitch slide"
+description = "Development preview with the requested mobile order, approximately 140px rings and phone last."
+logical_id = "23109222-4fce-4e96-b6ae-752d53ec8cae"
+content_hash = "sha256:ed7122dca1daf300558fc9199004f8d044eb96b58b46539280aebb7dc0af2873"
+size = 795491
+mtime_ms = 1791192523495
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/23109222-4fce-4e96-b6ae-752d53ec8cae/f2b90845-0672-4b19-88f4-981f1fdf69b9"
+storage_version_token = "1791192631761118"
+content_type = "image/png"
+
+[[outputs]]
+id = "jqlNVnd9sbhCz35EsHSbF"
+uri = "file://screenshots/investor-font-comparison.png"
+type = "image"
+title = "Three verified fonts against the reference"
+description = "Permanent Marker, Kaushan Script and Caveat Brush, each in mixed case and uppercase. All fonts actually loaded."
+logical_id = "785c090f-e3f2-45c5-8574-24372d907a63"
+content_hash = "sha256:442c42d29b73d647bc635d2f909ea0177899b3f71d7fd4ea4911a890cfb19a51"
+size = 772599
+mtime_ms = 1791191856115
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/785c090f-e3f2-45c5-8574-24372d907a63/2247c5c0-ef1a-4a58-9e0c-381d592dbdcb"
+storage_version_token = "1791192635056257"
+content_type = "image/png"
+
+[[outputs]]
+id = "4KagPJX61_dcgkxrxLp9A"
+uri = "file://screenshots/home-before-after-desktop.png"
+type = "image"
+title = "Home desktop before and after"
+description = "1440 × 1000 captures under identical conditions: zero changed pixels."
+logical_id = "512c4813-1947-411b-a971-439112ebc6f3"
+content_hash = "sha256:3099973672c8c513614b8c3ece646d4eddb813224368aa0e3b95dd8f408b67f3"
+size = 845542
+mtime_ms = 1791191934283
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/512c4813-1947-411b-a971-439112ebc6f3/da4026e6-e9f6-4875-a25e-2c43da87a8d4"
+storage_version_token = "1791192638585271"
+content_type = "image/png"
+
+[[outputs]]
+id = "6K0ZxgbCNOfgU0JL4cP81"
+uri = "file://screenshots/home-before-after-mobile.png"
+type = "image"
+title = "Home mobile before and after"
+description = "390 × 844 captures under identical conditions: zero changed pixels."
+logical_id = "7434d3ae-0aa0-4f10-ae40-0dec387faf82"
+content_hash = "sha256:be7af35002a9cde1796f61db6a880178347516a4299cd1de7c77dc259a05f2e0"
+size = 236312
+mtime_ms = 1791191941331
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/7434d3ae-0aa0-4f10-ae40-0dec387faf82/1a4f1810-e293-45e4-b71f-48114b4c711c"
+storage_version_token = "1791192641143033"
+content_type = "image/png"
+
+[[outputs]]
+id = "rpYspSs26w_aPsAXxAIQt"
+uri = "file://screenshots/investors-rebuild-verification.pdf"
+type = "pdf"
+title = "Verification and signup audit report"
+description = "Font verification, reduced motion, environment totals, signup-audit limitations and unpublished production ring status."
+logical_id = "a4ec99e0-864a-47e1-94ec-e352249bde12"
+content_hash = "sha256:2eb27bbb4fffe1d94c5f75e0c915f84b6d97d0901e9b63cfd1b80b886d583587"
+size = 35952
+mtime_ms = 1791192523638
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/a4ec99e0-864a-47e1-94ec-e352249bde12/15d7e3d3-0cdf-465b-a24c-bc1f0bb00893"
+storage_version_token = "1791192642438827"
+content_type = "application/pdf"

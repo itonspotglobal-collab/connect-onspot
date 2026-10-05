@@ -1,12 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap");
+
+/*
+ * Permanent Marker is the provisional Google Fonts stand-in for Hyperwave One.
+ * Replace this token with the licensed, self-hosted Hyperwave One WOFF2 when
+ * that asset is available; keep a safe cursive fallback.
+ */
 .investors-page {
+  --font-accent-script: "Permanent Marker", "Brush Script MT", cursive;
   min-height: calc(100svh - var(--nav-h, 80px));
-  overflow: hidden;
-  color: #fff;
-  background-color: #272668;
+  overflow-x: hidden;
+  color: var(--hero-white);
   font-family: var(--hero-typeface);
 }
 
-/* The global assistant launcher otherwise overlaps the Founder CTA on phones. */
 body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   display: none !important;
 }
@@ -16,71 +22,48 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   width: min(100%, 1440px);
   min-height: inherit;
   margin-inline: auto;
-  display: flex;
+  padding: clamp(28px, 4.2vh, 52px) clamp(24px, 4.5vw, 68px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr);
   align-items: center;
-  padding: clamp(36px, 5.5vh, 68px) clamp(24px, 7.2vw, 110px);
+  gap: clamp(10px, 2vw, 30px);
 }
 
 .investors-intro {
   position: relative;
   z-index: 1;
-  width: min(100%, 1140px);
+  width: 100%;
+  max-width: 790px;
   margin-inline: auto;
-  text-align: center;
   animation: investor-reveal 650ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
 }
 
-.investors-eyebrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: clamp(17px, 2.6vh, 26px);
-  color: var(--hero-eyebrow-color);
-  font-family: var(--hero-typeface);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-}
-
-.investors-eyebrow-rule {
-  width: 31px;
-  height: 2px;
-  background: var(--hero-orange);
-}
-
-.investors-intro h1 {
-  max-width: 1100px;
-  margin: 0 auto;
-  color: #fff;
-  font-family: var(--hero-typeface);
-  font-size: clamp(42px, 4.6vw, 66.24px);
-  font-weight: var(--hero-headline-weight);
-  letter-spacing: var(--hero-headline-letter-spacing);
+.investor-headline {
+  max-width: 760px;
+  margin: 0;
+  color: var(--hero-white);
+  font-size: clamp(40px, 4.2vw, 62px);
   line-height: var(--hero-headline-line-height);
   text-wrap: balance;
 }
 
-.investor-headline-gold {
-  color: var(--hero-orange-light);
+.investor-headline-primary,
+.investor-headline-secondary {
+  display: block;
 }
 
-.investors-subhead {
-  margin: clamp(12px, 1.8vh, 20px) 0 0;
-  color: var(--hero-white);
-  font-family: var(--hero-typeface);
-  font-size: var(--hero-subtitle-size);
-  font-weight: 400;
-  line-height: var(--hero-subtitle-line-height);
+.investor-headline-secondary {
+  margin-top: 0.18em;
+  color: var(--hero-orange-light);
 }
 
 .investors-counts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-  gap: clamp(30px, 8vw, 130px);
-  width: min(100%, 780px);
-  margin: clamp(25px, 3.4vh, 38px) auto 0;
+  gap: clamp(8px, 1.2vw, 18px);
+  width: min(100%, 620px);
+  margin-top: clamp(19px, 2.6vh, 28px);
 }
 
 .investor-gauge {
@@ -93,7 +76,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 
 .investor-gauge-visual {
   position: relative;
-  width: min(100%, 330px);
+  width: min(100%, 240px);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -120,7 +103,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 }
 
 .investor-gauge-track {
-  stroke: rgba(255, 255, 255, 0.13);
+  stroke: rgba(255, 255, 255, 0.14);
 }
 
 .investor-gauge-fill {
@@ -136,72 +119,87 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   position: relative;
   z-index: 1;
   max-width: 100%;
-  color: #fff;
+  color: var(--hero-white);
   font-family: var(--hero-typeface);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.055em;
   line-height: 0.95;
   white-space: nowrap;
 }
 
 .investor-gauge-label {
   margin: 8px 0 0;
-  color: #fff;
+  color: var(--hero-white);
   font-family: var(--hero-typeface);
-  font-size: clamp(20px, 2vw, 26px);
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .investor-gauge-goal {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 5px 0 0;
-  color: rgba(227, 229, 249, 0.74);
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.76);
   font-family: var(--hero-typeface);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
 }
 
 .investor-gauge-goal strong {
   color: var(--hero-orange-light);
-  font-size: 11px;
-  letter-spacing: 0.015em;
+  font-weight: 600;
 }
 
 .investor-stats-note {
-  margin: 10px 0 -8px;
-  color: rgba(255, 255, 255, 0.68);
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.76);
   font-family: var(--hero-typeface);
   font-size: 12px;
+}
+
+.investor-tagline {
+  margin: clamp(17px, 2.2vh, 24px) 0 0;
+  color: var(--hero-white);
+  font-family: var(--hero-typeface);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.investor-tagline-accent {
+  display: inline-block;
+  color: var(--hero-orange-light);
+  font-family: var(--font-accent-script);
+  font-size: 1em;
+  font-weight: 400;
+  transform: rotate(-5deg);
+  transform-origin: center;
 }
 
 .investor-raise {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
   width: fit-content;
-  margin: clamp(18px, 2.8vh, 28px) auto 0;
-  padding: 9px 14px;
+  margin-top: 13px;
+  padding: 8px 13px;
   border: 1px solid rgb(var(--hero-orange-light-rgb) / 0.43);
   border-radius: 999px;
-  color: #fff;
+  color: var(--hero-white);
   background: rgba(255, 255, 255, 0.075);
   font-family: var(--hero-typeface);
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.005em;
+  line-height: 1.35;
   backdrop-filter: blur(8px);
 }
 
 .investor-raise-mark {
   width: 7px;
   height: 7px;
+  flex: 0 0 auto;
   border-radius: 50%;
   background: var(--hero-orange-light);
   box-shadow: 0 0 0 4px rgb(var(--hero-orange-light-rgb) / 0.13);
@@ -210,8 +208,8 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 .investor-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: clamp(19px, 2.8vh, 29px);
+  gap: 12px;
+  margin-top: 17px;
 }
 
 .investor-action {
@@ -231,10 +229,27 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 .investor-form-submit:focus-visible,
 .investor-form input:focus-visible,
 .investor-form select:focus-visible,
-.investor-form textarea:focus-visible,
-.investor-result a:focus-visible {
+.investor-form textarea:focus-visible {
   outline: 3px solid rgb(var(--hero-orange-light-rgb) / 0.85);
   outline-offset: 3px;
+}
+
+.investors-phone-column {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.investors-phone {
+  display: block;
+  flex: 0 0 auto;
+  width: min(960px, 180%);
+  max-width: none;
+  height: auto;
+  transform: translateX(-27%);
 }
 
 .investor-dialog {
@@ -254,6 +269,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   color: var(--investor-ink);
   background: #fbfaf7 !important;
   box-shadow: 0 22px 80px rgba(13, 18, 52, 0.24) !important;
+  font-family: var(--hero-typeface);
 }
 
 .investor-dialog-header {
@@ -264,7 +280,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 .investor-dialog-kicker {
   margin-bottom: 4px;
   color: var(--investor-purple);
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.13em;
@@ -272,7 +288,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 
 .investor-dialog h2 {
   color: var(--investor-navy);
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -280,7 +296,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 
 .investor-dialog-header > p {
   color: var(--investor-muted);
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 13px;
 }
 
@@ -296,7 +312,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 
 .investor-field label {
   color: #252b51;
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 12px;
   font-weight: 650;
 }
@@ -311,7 +327,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   border-radius: 5px;
   color: #1b203f;
   background: #fff;
-  font: 400 14px/1.4 "Bricolage Grotesque", sans-serif;
+  font: 400 14px/1.4 var(--hero-typeface);
 }
 
 .investor-field textarea {
@@ -328,7 +344,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   color: white;
   background: #353c83;
   cursor: pointer;
-  font: 650 13px "Bricolage Grotesque", sans-serif;
+  font: 600 13px var(--hero-typeface);
   transition: background 160ms ease, opacity 160ms ease;
 }
 
@@ -347,7 +363,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   border-left: 3px solid #ae4d4d;
   color: #8a3434;
   background: #fbefed;
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -356,7 +372,7 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   display: grid;
   gap: 16px;
   color: #34394f;
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: var(--hero-typeface);
   font-size: 14px;
   line-height: 1.65;
 }
@@ -383,96 +399,143 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
   background: #fff7e8;
 }
 
-.investor-result-warning a {
-  color: #343c83;
-  font-weight: 650;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 @keyframes investor-reveal {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 767px) {
-  .investor-gauge-count {
-    --investor-count-min: 4.6rem;
+@media (max-width: 1023px) {
+  .investors-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding-inline: clamp(24px, 7vw, 80px);
   }
 
+  .investors-intro {
+    max-width: 790px;
+  }
+
+  .investor-headline {
+    max-width: 780px;
+    font-size: clamp(40px, 6vw, 62px);
+  }
+
+  .investors-counts {
+    width: min(100%, 620px);
+  }
+
+  .investors-phone-column {
+    width: 100vw;
+    min-height: clamp(320px, 50vw, 520px);
+    margin-left: calc(50% - 50vw);
+    overflow: hidden;
+  }
+
+  .investors-phone {
+    width: min(960px, 175vw);
+    transform: translateX(-27%);
+  }
+}
+
+@media (max-width: 767px) {
   .investors-page {
     min-height: calc(100svh - var(--nav-h, 80px));
-    overflow: visible;
   }
 
   .investors-shell {
     min-height: calc(100svh - var(--nav-h, 80px));
-    align-items: center;
-    padding: 28px 22px 34px;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 12px;
+    padding: 26px 20px 24px;
   }
 
-  .investors-eyebrow {
-    margin-bottom: 17px;
-    font-size: 11px;
-  }
-
-  .investors-intro h1 {
+  .investors-intro {
     max-width: 560px;
-    font-size: clamp(34px, 8.8vw, 40px);
   }
 
-  .investors-subhead {
-    margin-top: 12px;
+  .investor-headline {
+    font-size: clamp(36px, 8.3vw, 48px);
+  }
+
+  .investor-headline-secondary {
+    margin-top: 0.16em;
   }
 
   .investors-counts {
-    grid-template-columns: 1fr;
-    gap: 22px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     width: 100%;
-    margin-top: 24px;
+    margin-top: 18px;
   }
 
   .investor-gauge-visual {
-    width: min(68vw, 276px);
+    width: clamp(154px, 38vw, 165px);
+  }
+
+  .investor-gauge-count {
+    --investor-count-min: 2.4rem;
+    --investor-count-min-medium: 2rem;
+    --investor-count-min-long: 1.6rem;
   }
 
   .investor-gauge-label {
-    margin-top: 3px;
-    font-size: 21px;
+    margin-top: 5px;
+    font-size: 13px;
+    line-height: 1.2;
   }
 
   .investor-gauge-goal {
-    margin-top: 3px;
-  }
-
-  .investor-raise {
-    margin-top: 20px;
-    padding: 8px 11px;
     font-size: 11px;
   }
 
+  .investor-tagline {
+    margin-top: 16px;
+    font-size: 20px;
+  }
+
+  .investor-raise {
+    margin-top: 11px;
+  }
+
   .investor-actions {
-    grid-template-columns: 1fr;
-    gap: 9px;
-    margin-top: 17px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 14px;
   }
 
   .investor-action {
     width: 100%;
   }
+
+  .investors-phone-column {
+    width: 100vw;
+    min-height: 75vw;
+    margin-left: calc(50% - 50vw);
+    overflow: hidden;
+  }
+
+  .investors-phone {
+    width: 200vw;
+    transform: translateX(-27%);
+  }
 }
 
-@media (max-width: 390px) and (max-height: 720px) {
-  .investors-shell { padding-top: 18px; padding-bottom: 20px; }
-  .investors-eyebrow { margin-bottom: 12px; }
-  .investors-intro h1 { font-size: clamp(32px, 8.7vw, 38px); }
-  .investors-subhead { margin-top: 9px; }
-  .investors-counts { gap: 15px; margin-top: 16px; }
-  .investor-gauge-visual { width: min(57vw, 218px); }
-  .investor-gauge-label { font-size: 19px; }
-  .investor-raise { margin-top: 13px; }
-  .investor-actions { margin-top: 12px; gap: 6px; }
-  .investor-action { width: 100%; }
+@media (max-width: 355px) {
+  .investors-counts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 15px;
+  }
+
+  .investor-gauge-visual {
+    width: 154px;
+  }
+
+  .investor-gauge-count {
+    --investor-count-min: 2.7rem;
+    --investor-count-min-medium: 2.1rem;
+    --investor-count-min-long: 1.6rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OnSpot Investor Tagline Font Study</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Inter:wght@400;600;700&family=Kaushan+Script&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        color-scheme: dark;
+        --hero-white: #fff;
+        --hero-orange-light: #ffc052;
+        --hero-typeface: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-accent-script: "Permanent Marker", "Brush Script MT", cursive;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 26px;
+        color: var(--hero-white);
+        background:
+          radial-gradient(ellipse at 70% 30%, rgba(70,82,181,0.55), transparent 60%),
+          linear-gradient(150deg, #272668 0%, #3A4295 55%, #4652B5 100%);
+        font-family: var(--hero-typeface);
+      }
+
+      main {
+        width: min(100%, 1600px);
+        min-height: calc(100vh - 52px);
+        margin: auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(420px, 0.95fr);
+        align-items: center;
+        gap: 26px;
+      }
+
+      .candidates { display: grid; }
+      .candidate {
+        padding: 18px 4px;
+        border-bottom: 1px solid rgba(255,255,255,.18);
+      }
+      .candidate:first-child { padding-top: 0; }
+      .candidate h2 {
+        margin: 0 0 14px;
+        color: rgba(255,255,255,.75);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+      .samples { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+
+      /* Same structure, 20px size, Inter regular weight, gold and slant as
+         the production InvestorTagline component. Only case/typeface vary. */
+      .investor-tagline {
+        margin: 0;
+        color: var(--hero-white);
+        font-family: var(--hero-typeface);
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.4;
+        white-space: nowrap;
+      }
+      .investor-tagline-accent {
+        display: inline-block;
+        color: var(--hero-orange-light);
+        font-family: var(--font-accent-script);
+        font-size: 1em;
+        font-weight: 400;
+        transform: rotate(-5deg);
+        transform-origin: center;
+      }
+
+      .permanent { --font-accent-script: "Permanent Marker", cursive; }
+      .kaushan { --font-accent-script: "Kaushan Script", cursive; }
+      .caveat { --font-accent-script: "Caveat Brush", cursive; }
+      .reference {
+        width: 100%;
+        display: block;
+        height: auto;
+        border: 1px solid rgba(255,255,255,.28);
+        box-shadow: 0 18px 60px rgba(10,12,48,.32);
+      }
+      .reference-label {
+        margin: 0 0 10px;
+        color: rgba(255,255,255,.75);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 880px) {
+        body { padding: 20px; }
+        main { grid-template-columns: 1fr; }
+        .reference { max-width: 720px; margin-inline: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="candidates" aria-label="Tagline type comparisons">
+        <article class="candidate permanent">
+          <h2>Permanent Marker · provisional production choice</h2>
+          <div class="samples">
+            <p class="investor-tagline"><span>Work </span><span class="investor-tagline-accent">Without</span><span> Limits</span></p>
+            <p class="investor-tagline"><span>Work </span><span class="investor-tagline-accent">WITHOUT</span><span> Limits</span></p>
+          </div>
+        </article>
+        <article class="candidate kaushan">
+          <h2>Kaushan Script</h2>
+          <div class="samples">
+            <p class="investor-tagline"><span>Work </span><span class="investor-tagline-accent">Without</span><span> Limits</span></p>
+            <p class="investor-tagline"><span>Work </span><span class="investor-tagline-accent">WITHOUT</span><span> Limits</span></p>
+          </div>
+        </article>
+        <article class="candidate caveat">
+          <h2>Caveat Brush</h2>
+          <div class="samples">
+            <p class="investor-tagline"><span>Work </span><span class="investor-tagline-accent">Without</span><span> Limits</span></p>
+            <p class="investor-tagline"><span>Work </span><span class="investor-tagline-accent">WITHOUT</span><span> Limits</span></p>
+          </div>
+        </article>
+      </section>
+      <aside>
+        <p class="reference-label">Pitch deck reference</p>
+        <img class="reference" src="../attached_assets/OnSpot_Seed_Pitch_Deck_1791191229942.png" alt="OnSpot investor pitch reference slide">
+      </aside>
+    </main>
+  </body>
+</html>

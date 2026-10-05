@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>OnSpot Investors rebuild — verification and account audit</title>
+  <style>
+    @page { size: A4; margin: 18mm; }
+    body { max-width: 780px; margin: 32px auto; color: #202344; font: 14px/1.55 Arial, sans-serif; }
+    h1 { font-size: 27px; line-height: 1.18; margin-bottom: 8px; }
+    h2 { font-size: 18px; margin-top: 24px; }
+    p, ul { margin: 8px 0; }
+    li { margin: 5px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { text-align: left; border: 1px solid #d4d7e4; padding: 8px 10px; }
+    th { background: #edf0fa; }
+    .notice { border-left: 4px solid #bc8428; padding: 10px 14px; background: #fff7e7; }
+    .muted { color: #62677c; }
+    section { break-inside: avoid; }
+  </style>
+</head>
+<body>
+  <h1>Investors rebuild<br>Verification and account audit</h1>
+  <p class="muted">5 October 2026 · Development rebuild; not published by Agent</p>
+  <section>
+    <h2>Delivered page</h2>
+    <ul>
+      <li>Pitch-slide composition: separate white and gold headline groups on the left, original phone artwork on the right.</li>
+      <li>Inter typography, exact shared Home background, and three equally treated white primary pills. Old eyebrow, earnings subhead and public contact details removed.</li>
+      <li>Live Contractor and Client account gauges; owner-approved 2027 goals remain 10,000 and 5,000, initialized only when absent and still Super-Admin-editable.</li>
+      <li>Mobile content follows the requested order. Gauges sit side by side when their roughly 140px rings fit, otherwise stack; full-width CTAs precede the phone.</li>
+      <li>The original 1920 × 1080 transparent PNG is used unchanged. Actual alpha values range from 0 to 255; all corners are fully transparent. Its baked tilt, screen and shadow were not recreated. No visible background fringes were found.</li>
+      <li>The existing persisted investor form, recorded request types and founder-notification routing are preserved. Notification failure is not represented as successful delivery.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Font verification and provisional choice</h2>
+    <p>Hyperwave One was absent from the live official Google Fonts catalog (1,950 families), and its exact Google Fonts CSS request returned HTTP 400. The owner subsequently authorized a provisional verified Google Fonts match rather than blocking the rebuild.</p>
+    <ul>
+      <li><strong>Permanent Marker — selected provisionally:</strong> heavy, mostly unconnected marker forms are closest to the reference. Uppercase and a slight slant give the strongest match. Mixed case naturally retains much of its uppercase-like appearance.</li>
+      <li><strong>Kaushan Script:</strong> mixed case is flowing and connected; those loops depart from the reference's blockier uppercase brush lettering. Uppercase becomes more decorative.</li>
+      <li><strong>Caveat Brush:</strong> loose painted forms, but narrower and lighter than the reference in both cases.</li>
+      <li>All three families were verified in the live catalog and actually loaded in the comparison browser. Rock Salt also exists, but its thinner, scratchier strokes were not selected.</li>
+    </ul>
+    <p>Only “Without” uses the accent font. One accent-font token controls the provisional family, with font-display: swap and a cursive fallback. Exact Hyperwave One remains a future replacement requiring a web-licensed WOFF2 file; the provisional font is not claimed to be identical.</p>
+  </section>
+  <section>
+    <h2>Functional and visual verification</h2>
+    <ul>
+      <li>Seven browser checks passed, including true count/goal ratios, independent start markers, over-goal capping, thousands separators, count-only error fallback, three CTA request types, measured Home typography/buttons and editable goals.</li>
+      <li>Initial and 60-second refresh animations were checked. Reduced motion renders final values immediately, schedules no gauge animation frames, and disables the entrance animation. Progressbar semantics state actual counts and goals.</li>
+      <li>TypeScript and diff checks passed. Dialog headings, labels and form controls were checked for Inter.</li>
+      <li>Home before/after captures at 1440 × 1000 and 390 × 844 had exactly zero changed pixels under identical deterministic capture conditions. Home and its shared presentation source were not modified by this rebuild.</li>
+      <li>Desktop/mobile development screenshots are explicitly labeled and delivered beside the original pitch slide, alongside the font comparison and Home before/after images.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Environment and published ring status</h2>
+    <table>
+      <thead><tr><th>Environment</th><th>Contractors</th><th>Clients</th><th>Ring status</th></tr></thead>
+      <tbody>
+        <tr><td>Development preview</td><td>13</td><td>30</td><td>Both rings and goal lines render.</td></tr>
+        <tr><td>Production: last successful check</td><td>98</td><td>8</td><td>No rings; goals endpoint returned HTTP 404.</td></tr>
+      </tbody>
+    </table>
+    <p>The earlier 13/30 screenshot came from development, not production. Production totals were last successfully verified on 5 October at 17:12 Manila time. A subsequent production DOM check found no gauge rings or progressbars.</p>
+    <p class="notice">The goal seed and rebuilt page have not been published by Agent. Goal initialization takes effect when the new server version is published and starts successfully. Later checks found the published site returning HTTP 500, with production logs showing database connection termination/timeouts. Its current rendering cannot be verified during that failure. No production database values were hand-edited for this rebuild.</p>
+  </section>
+  <section>
+    <h2>90 → 98 Contractor account audit</h2>
+    <p>The production read-only inspection found eight recent, distinct credentialed signup identities dated 1–5 October. Among these eight: zero duplicate user identities, zero repeated portal credentials, zero Gmail-alias collisions and zero name collisions. Their eight user/candidate pairs are legitimate profile mirrors, not sixteen separate accounts.</p>
+    <p><strong>Qualification:</strong> only one of these eight had a verified email. Distinct credentialed accounts do not prove eight independently verified people. There was no saved historical snapshot of the 90-account audit, so the exact 90 → 98 cohort cannot be established conclusively. These results describe the eight recent identities inspected, not a proven reconstruction of the historical delta.</p>
+    <p>One older repeated-credential identity was already deduplicated by the existing metric. The counting definition and filtering rules were not changed. No personal names, email addresses, credential values or raw account identifiers are included in this report.</p>
+  </section>
+</body>
+</html>

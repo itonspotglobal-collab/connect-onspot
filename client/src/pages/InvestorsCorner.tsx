@@ -7,14 +7,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InvestorGauge } from "@/components/InvestorGauge";
+import { InvestorTagline } from "@/components/InvestorTagline";
+import iphoneMockup from "@assets/iphone_mockup_transparent_1791189886936.png";
 import {
   HERO_HEADLINE_STYLE,
   HERO_PRIMARY_CTA_CLASS,
   HERO_PRIMARY_CTA_STYLE,
   HERO_SHARED_CSS_VARS,
   HERO_WORK_BACKGROUND,
-  HERO_SUBTITLE_LEAD_STYLE,
-  HERO_SUBTITLE_MUTED_STYLE,
 } from "@/components/HeroPresentation";
 import "./InvestorsCorner.css";
 
@@ -253,21 +253,18 @@ export default function InvestorsCorner() {
     >
       <div className="investors-shell">
         <section className="investors-intro" aria-labelledby="investor-headline">
-          <div className="investors-eyebrow">
-            <span className="investors-eyebrow-rule" aria-hidden="true" />
-            FOR INVESTORS
-          </div>
-
-          <h1 id="investor-headline" className="investor-headline" style={HERO_HEADLINE_STYLE}>
-            A world where anyone can work anywhere. And every company can hire
-            anyone to work{" "}
-            <span className="investor-headline-gold">without limits.</span>
+          <h1
+            id="investor-headline"
+            className="investor-headline"
+            style={HERO_HEADLINE_STYLE}
+          >
+            <span className="investor-headline-primary">
+              The outsourcing industry is being replaced.
+            </span>
+            <span className="investor-headline-secondary">
+              We are not watching. We built the replacement.
+            </span>
           </h1>
-
-          <p className="investors-subhead">
-            <span style={HERO_SUBTITLE_LEAD_STYLE}>Talent earns more.</span>{" "}
-            <span style={HERO_SUBTITLE_MUTED_STYLE}>Clients pay less.</span>
-          </p>
 
           <div className="investors-counts" aria-label="OnSpot marketplace account totals">
             <InvestorGauge
@@ -287,6 +284,8 @@ export default function InvestorsCorner() {
             </p>
           )}
 
+          <InvestorTagline />
+
           <div className="investor-raise">
             <span className="investor-raise-mark" aria-hidden="true" />
             <span>Currently raising our seed round.</span>
@@ -301,11 +300,18 @@ export default function InvestorsCorner() {
                 style={HERO_PRIMARY_CTA_STYLE}
                 onClick={() => openRequest(type)}
               >
-                <span>{label} →</span>
+                <span>{label}</span>
               </button>
             ))}
           </div>
         </section>
+        <div className="investors-phone-column">
+          <img
+            className="investors-phone"
+            src={iphoneMockup}
+            alt="OnSpot mobile About page: Built by people who lived the problem"
+          />
+        </div>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
@@ -325,7 +331,7 @@ export default function InvestorsCorner() {
           {submission.kind === "sent" ? (
             <div className="investor-result investor-result-success" role="status">
               <span className="investor-result-mark" aria-hidden="true">✓</span>
-              <p>Your request is saved and a notification was sent to Nur.</p>
+              <p>Your request has been saved, and the notification was sent.</p>
               <button
                 type="button"
                 className="investor-form-submit"
@@ -337,9 +343,8 @@ export default function InvestorsCorner() {
           ) : submission.kind === "saved-email-failed" ? (
             <div className="investor-result investor-result-warning" role="status">
               <p>
-                Your request is saved, but the email notification to Nur was not
-                sent. For an urgent follow-up, email{" "}
-                <a href="mailto:nur@onspotglobal.com">nur@onspotglobal.com</a>.
+                Your request is saved, but we couldn’t send the notification.
+                Please try again later.
               </p>
               <button
                 type="button"

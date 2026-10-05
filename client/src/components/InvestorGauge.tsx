@@ -71,10 +71,10 @@ export function InvestorGauge({ count, goal, label }: InvestorGaugeProps) {
   const circumference = 2 * Math.PI * 136;
   const countDigits = count === null ? 1 : Math.max(1, Math.floor(Math.abs(count)).toLocaleString().length);
   const dynamicSize = countDigits >= 9
-    ? "clamp(3.8rem, 6.6vw, 6rem)"
+    ? "clamp(var(--investor-count-min-long, 3.2rem), 4.5vw, 4rem)"
     : countDigits >= 6
-      ? "clamp(var(--investor-count-min, 6rem), 6.6vw, 6rem)"
-      : "clamp(var(--investor-count-min, 6rem), 8.2vw, 7.5rem)";
+      ? "clamp(var(--investor-count-min-medium, 4rem), 5vw, 5rem)"
+      : "clamp(var(--investor-count-min, 4rem), 5.5vw, 5.5rem)";
   const accessibleCurrent = hasGoal
     ? Math.min(Math.max(count ?? 0, 0), goal ?? 0)
     : undefined;

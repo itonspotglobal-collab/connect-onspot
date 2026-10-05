@@ -7,7 +7,13 @@ The latest consolidated owner spec supersedes the earlier centered Investors lay
 
 **Why:** The owner explicitly replaced the earlier instructions to match the investor pitch-deck presentation.
 
-**How to apply:** Follow the consolidated composition rather than restoring the former centered headline. Use Inter throughout except the tagline word “Without,” which requires Hyperwave One. Verify its Google Fonts availability before implementation; if unavailable, stop and report, never substitute. Self-hosting the exact font requires explicit owner approval of the Google Fonts exception.
+**How to apply:** Follow the consolidated composition rather than restoring the former centered headline. Use Inter throughout except the tagline word “Without.” The owner subsequently authorized the closest verified Google Fonts brush/marker candidate provisionally, with a single accent-font token; swap to Hyperwave One when a licensed web-font file is supplied.
+
+The owner explicitly approved stopping to report the unavailable Hyperwave One font rather than silently substituting, then resolved the stop through an addendum authorizing a provisional Google Fonts match without waiting for a selection.
+
+**Why:** Font substitutions require an explicit scope decision; approval of this exception is not a general permission to ignore future exact-font requirements.
+
+**How to apply:** Compare two or three catalog-verified candidates in the actual tagline against the pitch slide, including uppercase versus mixed case. Use the best candidate now, retain `font-display: swap` and a safe fallback, and document that exact Hyperwave One self-hosting needs a web-licensed WOFF2 file.
 
 Use the owner-supplied phone artwork as-is, preserving its baked tilt and shadow; do not rebuild the device or replace its screen with a fresh capture.
 
@@ -25,7 +31,7 @@ Measure the home hero's actual computed styles, including inherited typography, 
 
 **Why:** The owner rejected the initial Investors rebuild because its forced display font and translucent buttons did not match the rendered Home hero despite sharing background and color tokens.
 
-**How to apply:** Use the rendered headline's typeface for the Investors headline, gauge numerals, labels and goal lines. All three inquiry actions should match Home's solid-white primary pill, not its translucent secondary button. Preserve the requested gold headline emphasis and two-tone subhead.
+**How to apply:** Use the rendered headline's typeface for the Investors headline, gauge numerals, labels and goal lines. All three inquiry actions should match Home's solid-white primary pill, not its translucent secondary button. Preserve the current two-group white/gold headline, not the superseded earnings subhead.
 
 Contractor and Client account gauges are the page's only statistics. Keep the current owner-specified headline, tagline, seed-round pill, phone artwork and three equally weighted inquiry actions; do not add extra figures or sections without a new scope decision.
 
