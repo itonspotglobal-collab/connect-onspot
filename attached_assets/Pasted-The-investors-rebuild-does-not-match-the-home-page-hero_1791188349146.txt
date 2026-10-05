@@ -1,0 +1,39 @@
+The /investors rebuild does not match the home page hero. Fix it by
+copying the home hero's actual rendered styles. Do not approximate, and
+do not rely on any font name from earlier instructions.
+
+1. LOCATE the home hero component and read its computed styles
+   (font-family, weight, size, line-height, letter-spacing, text
+   colors, gold accent, gradient background, button styles). Report
+   the values you find.
+
+2. APPLY them to /investors:
+   - Same hero background gradient and header (already close).
+   - Headline: same font-family, weight and letter-spacing as the home
+     hero headline. It currently renders in a different, heavier
+     display face. Keep the existing headline text; scale the size so
+     the longer text sits comfortably on 3-4 lines. Set "without
+     limits" in the hero's gold accent, mirroring how "Without" is
+     gold on the home hero.
+   - Subhead: mirror the home hero's two-tone treatment ("Talent earns
+     more." in the bold white lead style, "Clients pay less." in the
+     lavender regular style).
+   - CTAs: use the home hero's primary pill button (solid white fill,
+     indigo text, arrow) for all three, equal weight. The current
+     translucent buttons look disabled.
+   - Gauge numerals, labels and goal lines use the same typeface as
+     the headline (no separate display font).
+   - Eyebrow and "Currently raising our seed round" pill: keep, styled
+     with the hero's tokens.
+
+3. If it can be done with zero visual change to the home page,
+   extract the shared hero styles into common tokens/components used by
+   both pages so they cannot drift again (include before/after home
+   screenshots as proof). Otherwise just apply the values to
+   /investors and do not touch the home page.
+
+4. GAUGES ARE MISSING in the latest screenshot: no ring, no track, no
+   "Goal for 2027" line, and a large empty gap between each number and
+   its label where the ring should be. Diagnose whether the ring is
+   mounted but not painting (stroke, opacity, animation state) or not
+   mounting at all. Rings:
