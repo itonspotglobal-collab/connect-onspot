@@ -4,7 +4,8 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { Pool } from "pg";
 import express from "express";
-import { SignupError, SignupVerificationService, generateSignupCode, signupCodeHmac, safeSignupReturnTo } from "../services/signupVerificationService";
+import { SignupError, SignupVerificationService, generateSignupCode, signupCodeHmac, safeSignupReturnTo, signupEmailVerificationRequired } from "../services/signupVerificationService";
+import { hashPassword, verifyPassword } from "../auth-utils";
 import { emailOwnershipAllowsAccess, hasEmailOwnership } from "../lib/emailOwnership";
 import { findOwnedProviderAccount } from "../services/providerEmailOwnership";
 import { signupVerificationPreflight } from "../lib/signupVerificationPreflight";
@@ -31,7 +32,7 @@ const details = (overrides: Record<string, unknown> = {}) => ({
   email: "person@example.test", role: "talent", first_name: "Fixture", last_name: "Talent",
   password: "ValidPassword123!", ...overrides,
 });
-function service() {
+function service(verificationFlag?: string) {
   assert.ok(pool);
   return new SignupVerificationService({
     connect: async () => {
@@ -49,9 +50,16 @@ function service() {
       };
     },
     now: () => clock,
-    hmacKey: () => key,
-    assertConfigured: () => {},
-    hashPassword: async value => createHash("sha256").update(value).digest("hex"),
+    verificationRequired: () => signupEmailVerificationRequired({ SIGNUP_EMAIL_VERIFICATION_REQUIRED: verificationFlag }),
+    hmacKey: () => {
+      assert.notEqual(verificationFlag, "false", "direct signup must not access the HMAC key");
+      return key;
+    },
+    assertConfigured: () => {
+      assert.notEqual(verificationFlag, "false", "direct signup must not require verification configuration");
+    },
+    hashPassword: async value => verificationFlag === "false" ? hashPassword(value)
+      : createHash("sha256").update(value).digest("hex"),
     send: async input => {
       emails.push(input);
       if (deliveryThrows) throw new Error(`fixture-transport-error-${input.code}`);
@@ -121,6 +129,168 @@ beforeEach(async () => {
   emails = []; deliveryWorks = true; deliveryThrows = false; failCandidate = false; credentialCalls = 0; activationCommits = 0;
 });
 after(async () => { await pool?.end(); });
+
+test("verification flag fails closed unless the exact server value is false", () => {
+  for (const value of [undefined, "", "true", "False", "FALSE", " false ", "0"]) {
+    assert.equal(signupEmailVerificationRequired({ SIGNUP_EMAIL_VERIFICATION_REQUIRED: value }), true);
+  }
+  assert.equal(signupEmailVerificationRequired({ SIGNUP_EMAIL_VERIFICATION_REQUIRED: "false" }), false);
+});
+
+for (const role of ["talent", "client"] as const) {
+  dbTest(`direct ${role} signup creates normal records with bcrypt, no OTP/configuration dependency`, async () => {
+    const result = await service("false").start(details({ role, company: "Fixture Company" }), "direct-fixture");
+    assert.equal(result.status, 201);
+    assert.equal(result.body.success, true);
+    assert.equal(result.body.accountCreated, true);
+    assert.equal(result.body.pendingVerification, undefined);
+    assert.equal(result.capability, "");
+    assert.ok(result.body.token);
+    const user = (await pool!.query("SELECT * FROM users")).rows[0];
+    assert.match(user.password_hash, /^\$2[aby]\$12\$/);
+    assert.equal(await verifyPassword("ValidPassword123!", user.password_hash), true);
+    assert.equal(user.role, role);
+    assert.equal(user.email_verification_required, false);
+    assert.equal(user.email_verified_at, null);
+    assert.equal(user.email_verified_email, null);
+    assert.equal(emailOwnershipAllowsAccess(user), true);
+    assert.equal((await pool!.query("SELECT count(*)::int n FROM pending_registrations")).rows[0].n, 0);
+    assert.equal(emails.length, 0);
+    assert.equal(credentialCalls, 1);
+    assert.deepEqual(await counts(), role === "talent"
+      ? { users: 1, profiles: 1, candidates: 1, clients: 0 }
+      : { users: 1, profiles: 0, candidates: 0, clients: 1 });
+    if (role === "talent") {
+      const candidate = (await pool!.query("SELECT * FROM candidates")).rows[0];
+      assert.equal(candidate.user_id, user.id);
+      assert.equal(candidate.password_hash, user.password_hash);
+      assert.equal(candidate.email_verification_required, false);
+      assert.equal(candidate.email_verified_at, null);
+      assert.ok(result.body.talentToken);
+      assert.equal(result.body.candidateId, candidate.id);
+      assert.equal(await hasEmailOwnership((sql, values) => pool!.query(sql, values), { candidateId: candidate.id }), true);
+    } else {
+      assert.equal(result.body.talentToken, null);
+      assert.equal((await pool!.query("SELECT company_name FROM client_profiles")).rows[0].company_name, "Fixture Company");
+    }
+  });
+}
+
+dbTest("direct duplicate email and username are rejected without overwriting an account", async () => {
+  const svc = service("false");
+  await svc.start(details({ username: "fixture-user" }), "duplicate-fixture");
+  const original = (await pool!.query("SELECT * FROM users")).rows[0];
+  await rejectsCode(svc.start(details({ email: " PERSON@EXAMPLE.TEST ", role: "client" }), "duplicate-fixture"), "ACCOUNT_EXISTS");
+  await rejectsCode(svc.start(details({ email: "other@example.test", username: "fixture-user" }), "duplicate-fixture"), "USERNAME_UNAVAILABLE");
+  assert.deepEqual((await pool!.query("SELECT * FROM users")).rows[0], original);
+  assert.equal(credentialCalls, 1);
+});
+
+dbTest("direct signup cannot claim an existing unverified account or imported Talent profile", async () => {
+  await pool!.query(`INSERT INTO users(id,email,username,role,password_hash,email_verification_required)
+    VALUES ('unverified','person@example.test','original','talent','original-hash',true)`);
+  await rejectsCode(service("false").start(details(), "claim-fixture"), "ACCOUNT_EXISTS");
+  assert.equal((await pool!.query("SELECT password_hash FROM users")).rows[0].password_hash, "original-hash");
+  await pool!.query("INSERT INTO candidates(email,full_name) VALUES ('imported@example.test','Imported Profile')");
+  await rejectsCode(service("false").start(details({ email: "imported@example.test" }), "claim-fixture"), "ACCOUNT_EXISTS");
+  assert.equal((await pool!.query("SELECT user_id FROM candidates")).rows[0].user_id, null);
+  assert.equal(credentialCalls, 0);
+});
+
+dbTest("direct signup still rejects invalid roles, fields, email and weak passwords", async () => {
+  for (const [input, code] of [
+    [{ role: "admin" }, "INVALID_SIGNUP"], [{ first_name: "" }, "INVALID_SIGNUP"],
+    [{ email: "not-an-email" }, "INVALID_SIGNUP"], [{ email_verification_required: false }, "INVALID_SIGNUP"],
+    [{ password: "weak" }, "WEAK_PASSWORD"], [{ password: undefined }, "WEAK_PASSWORD"],
+  ] as const) {
+    await rejectsCode(service("false").start(details(input), "invalid-fixture"), code);
+  }
+  assert.deepEqual(await counts(), { users: 0, profiles: 0, candidates: 0, clients: 0 });
+  assert.equal(credentialCalls, 0);
+});
+
+dbTest("direct signup retains IP, hourly email and daily email abuse limits", async () => {
+  for (const [kind, value, maximum, duration] of [
+    ["start-ip", "limited-fixture", 10, 3_600_000],
+    ["send-hour", "person@example.test", 5, 3_600_000],
+    ["send-day", "person@example.test", 10, 86_400_000],
+  ] as const) {
+    await pool!.query("TRUNCATE signup_verification_limits");
+    const bucket = `${kind}:${createHash("sha256").update(value).digest("hex")}:${Math.floor(clock.getTime() / duration)}`;
+    await pool!.query("INSERT INTO signup_verification_limits(bucket,used,resets_at) VALUES ($1,$2,$3)",
+      [bucket, maximum, new Date(clock.getTime() + duration)]);
+    await rejectsCode(service("false").start(details(), "limited-fixture"), "RATE_LIMITED");
+  }
+  assert.equal(credentialCalls, 0);
+  assert.deepEqual(await counts(), { users: 0, profiles: 0, candidates: 0, clients: 0 });
+});
+
+dbTest("direct required-record failure rolls back account creation and issues no credentials", async () => {
+  failCandidate = true;
+  await assert.rejects(service("false").start(details(), "rollback-fixture"), /fixture-required-write-failure/);
+  assert.deepEqual(await counts(), { users: 0, profiles: 0, candidates: 0, clients: 0 });
+  assert.equal(credentialCalls, 0);
+});
+
+dbTest("concurrent direct registration creates only one account", async () => {
+  const svc = service("false");
+  const results = await Promise.allSettled([
+    svc.start(details(), "race-fixture"), svc.start(details(), "race-fixture"),
+  ]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  const rejected = results.find(result => result.status === "rejected") as PromiseRejectedResult;
+  assert.equal(rejected.reason.code, "ACCOUNT_EXISTS");
+  assert.equal(credentialCalls, 1);
+  assert.deepEqual(await counts(), { users: 1, profiles: 1, candidates: 1, clients: 0 });
+});
+
+dbTest("explicit true retains pending OTP flow; switching false does not delete pending data", async () => {
+  const result = await service("true").start(details(), "enabled-fixture");
+  assert.equal(result.status, 202);
+  assert.equal(result.body.pendingVerification, true);
+  assert.equal(emails.length, 1);
+  assert.equal(credentialCalls, 0);
+  await rejectsCode(service("false").status(result.capability), "NO_PENDING_SIGNUP");
+  assert.equal((await service("true").status(result.capability)).pendingVerification, true);
+  assert.deepEqual(await counts(), { users: 0, profiles: 0, candidates: 0, clients: 0 });
+});
+
+dbTest("direct HTTP signup returns credentials and clears the pending cookie; origin protection remains", async () => {
+  const app = express();
+  app.use(express.json());
+  registerSignupVerificationRoutes(app, service("false"));
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise<void>(resolve => server.once("listening", resolve));
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  try {
+    const url = `http://127.0.0.1:${address.port}`;
+    const blocked = await fetch(`${url}/api/signup`, {
+      method: "POST", headers: { "Content-Type": "application/json", "Sec-Fetch-Site": "cross-site" },
+      body: JSON.stringify(details()),
+    });
+    assert.equal(blocked.status, 403);
+    for (const [path, role, email] of [
+      ["/api/signup", "talent", "talent-http@example.test"], ["/signup", "client", "client-http@example.test"],
+    ]) {
+      const response = await fetch(`${url}${path}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(details({ role, email })),
+      });
+      assert.equal(response.status, 201);
+      const body = await response.json();
+      assert.equal(body.success, true);
+      assert.ok(body.token);
+      assert.equal(body.pendingVerification, undefined);
+      assert.match(response.headers.get("set-cookie")!, /onspot_pending_signup=;/);
+      assert.match(response.headers.get("set-cookie")!, /HttpOnly/);
+    }
+    assert.equal(emails.length, 0);
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});
 
 test("codes are secure six-digit strings and HMAC binds every context dimension", () => {
   for (let n = 0; n < 100; n++) assert.match(generateSignupCode(), /^\d{6}$/);

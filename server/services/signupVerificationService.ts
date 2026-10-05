@@ -24,7 +24,13 @@ export interface SignupDependencies {
   issueCredentials(identity: any): any;
   assertConfigured(): void;
   hmacKey(): string;
+  verificationRequired?(): boolean;
+  assertDirectConfigured?(): void;
   now?: () => Date;
+}
+/** Fail closed: only the exact server-side value "false" enables the fallback. */
+export function signupEmailVerificationRequired(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.SIGNUP_EMAIL_VERIFICATION_REQUIRED !== "false";
 }
 export class SignupError extends Error {
   constructor(public status: number, public code: string, message: string, public retryAfter?: number) {
@@ -111,7 +117,11 @@ export class SignupVerificationService {
   }
   async start(raw: unknown, ip: string, oldCapability?: string,
     trusted: { purpose?: "talent_claim" | "provider"; provider?: { provider: string; subject: string } } = {}) {
-    this.deps.assertConfigured();
+    // This fallback is for fresh password registrations, never profile claiming
+    // or provider identity linking, which still require ownership evidence.
+    const direct = !trusted.purpose && this.deps.verificationRequired?.() === false;
+    if (direct) this.deps.assertDirectConfigured?.();
+    else this.deps.assertConfigured();
     const parsed = signupDetailsSchema.safeParse(raw);
     if (!parsed.success) throw new SignupError(400, "INVALID_SIGNUP", "Check your signup details.");
     const input = parsed.data;
@@ -121,7 +131,26 @@ export class SignupVerificationService {
       }
     }
     await this.transaction(db => this.budget(db, "start-ip", ip, 10, 3_600_000));
+    if (direct) await this.transaction(db => this.emailSendBudget(db, input.email));
     const passwordHash = input.password ? await this.deps.hashPassword(input.password) : null;
+    if (direct) {
+      const identity = await this.transaction(async db => {
+        await this.lockEmail(db, input.email);
+        const result = await this.activate(db, {
+          ...input, username: input.username ?? input.email, company: input.company ?? null,
+          password_hash: passwordHash, purpose: "signup",
+          context: { returnTo: safeSignupReturnTo(input.returnTo) },
+        }, false);
+        if (result.error) throw result.error;
+        return result.identity;
+      });
+      // Share record creation and credentials with OTP activation; never
+      // fabricate verified timestamps or issue credentials before COMMIT.
+      return { status: 201, capability: "", body: {
+        success: true, accountCreated: true, ...this.deps.issueCredentials(identity),
+        returnTo: identity.returnTo,
+      } };
+    }
     const capability = oldCapability && /^[a-f0-9]{64}$/.test(oldCapability) ? oldCapability : randomBytes(32).toString("hex");
     const now = this.now();
     const row: any = {
@@ -174,7 +203,13 @@ export class SignupVerificationService {
   }
   async status(capability: string) {
     const db = await this.deps.connect();
-    try { return this.publicState(await this.pending(db, capability)); }
+    try {
+      const row = await this.pending(db, capability);
+      if (this.deps.verificationRequired?.() === false && row.purpose === "signup") {
+        throw new SignupError(404, "NO_PENDING_SIGNUP", "Start signup again or sign in.");
+      }
+      return this.publicState(row);
+    }
     finally { db.release(); }
   }
   async cancel(capability: string, id: string) {
@@ -244,11 +279,14 @@ export class SignupVerificationService {
     // No token signing callback runs until transaction COMMIT has completed.
     return { success: true, ...this.deps.issueCredentials(outcome.identity), returnTo: outcome.identity.returnTo };
   }
-  private async activate(db: SignupConnection, row: any): Promise<{ error?: SignupError; identity?: any }> {
+  private async activate(db: SignupConnection, row: any, verified = true): Promise<{ error?: SignupError; identity?: any }> {
     await db.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`signup-username:${row.username}`]);
     const existing = await db.query("SELECT * FROM users WHERE lower(trim(email)) = $1 FOR UPDATE", [row.email]);
     if (existing.rows.length > 1) throw new SignupError(409, "IDENTITY_CONFLICT", "This account needs administrator assistance.");
     let user = existing.rows[0];
+    if (!verified && user) {
+      return { error: new SignupError(409, "ACCOUNT_EXISTS", "An account already exists. Please sign in.") };
+    }
     // A code proves inbox possession, not knowledge of an established password.
     if (user && (user.role !== row.role || user.email_verified_at || user.email_verification_required === false)) {
       await db.query("UPDATE pending_registrations SET consumed_at = $2 WHERE id = $1", [row.id, this.now()]);
@@ -261,6 +299,11 @@ export class SignupVerificationService {
       const candidates = await db.query("SELECT * FROM candidates WHERE lower(trim(email)) = $1 FOR UPDATE", [row.email]);
       if (candidates.rows.length > 1) throw new SignupError(409, "IDENTITY_CONFLICT", "This profile needs administrator assistance.");
       candidate = candidates.rows[0];
+      if (!verified && candidate) {
+        // Without inbox proof, do not attach or overwrite an imported profile,
+        // even if it has no password yet.
+        throw new SignupError(409, "ACCOUNT_EXISTS", "A profile already exists. Please sign in or contact support.");
+      }
       if (candidate && (
         (candidate.user_id && candidate.user_id !== user?.id)
         || (!candidate.user_id && (candidate.email_verified_at || candidate.email_verification_required === false))
@@ -277,8 +320,9 @@ export class SignupVerificationService {
       const created = await db.query(
         `INSERT INTO users(id,email,username,first_name,last_name,password_hash,company,role,
           email_verification_required,email_verified_at,email_verified_email,created_at,updated_at)
-          VALUES ($1,$2::text,$3,$4,$5,$6,$7,$8,true,$9::timestamptz,$2::text,$9::timestamptz,$9::timestamptz) RETURNING *`,
-        [randomUUID(), row.email, row.username, row.first_name, row.last_name, row.password_hash, row.company, row.role, this.now()],
+          VALUES ($1,$2::text,$3,$4,$5,$6,$7,$8,$10,$11::timestamptz,$12::text,$9::timestamptz,$9::timestamptz) RETURNING *`,
+        [randomUUID(), row.email, row.username, row.first_name, row.last_name, row.password_hash, row.company, row.role,
+          this.now(), verified, verified ? this.now() : null, verified ? row.email : null],
       );
       user = created.rows[0];
     } else {
@@ -308,9 +352,9 @@ export class SignupVerificationService {
         );
       } else {
         const created = await db.query(
-          `INSERT INTO candidates(full_name,email,password_hash,user_id,account_created)
-           VALUES ($1,$2,$3,$4,true) RETURNING id`,
-          [`${row.first_name} ${row.last_name}`, row.email, row.password_hash, user.id],
+          `INSERT INTO candidates(full_name,email,password_hash,user_id,account_created,email_verification_required)
+           VALUES ($1,$2,$3,$4,true,$5) RETURNING id`,
+          [`${row.first_name} ${row.last_name}`, row.email, row.password_hash, user.id, verified],
         );
         candidate = created.rows[0];
       }

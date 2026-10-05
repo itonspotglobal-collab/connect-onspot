@@ -3,11 +3,17 @@ name: Signup email ownership policy
 description: Email ownership policy, historical continuity, and approved email UAT boundaries.
 ---
 
-Normal new Client and Talent registrations must not activate usable accounts until the server confirms email ownership. MVP verification uses email, not SMS.
+Normal new Client and Talent registrations must not activate usable accounts until the server confirms email ownership. MVP verification uses email, not SMS. The owner has authorized a temporary server-controlled exception for fresh password registrations while verification delivery is repaired; this does not revoke the default ownership policy.
 
 **Why:** The owner explicitly requires new Client and Talent accounts to prove inbox ownership before usable credentials are activated.
 
 **How to apply:** Historical established accounts must not suddenly lose access or acquire a false verified timestamp. Passwordless imported records are not established authenticated accounts merely because a registration flag is set.
+
+The temporary exception must never claim that an email was verified, take over an existing account, or attach an imported profile without ownership proof. Re-enabling verification applies to subsequent registrations; do not silently lock out accounts created during the approved exception.
+
+**Why:** The owner requested a reversible signup-only fallback while explicitly preserving existing login, authentication, and authorization.
+
+**How to apply:** Keep persisted inbox-verification evidence truthful, preserve existing-account claiming protections, and require separate approval for any retrospective verification policy.
 
 Provider email presence alone is not verification. A provider exception requires an explicit verified-email contract that the application validates and consumes. Email ownership must remain separate from the Talent Verified/Vetted classifications.
 

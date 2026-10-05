@@ -42,13 +42,13 @@ args = "admin-auth-check"
 name = "Start application"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "env -u VITE_API_BASE sh -c 'export EMAIL_VERIFICATION_HMAC_KEY=\"$DEVELOPMENT_EMAIL_VERIFICATION_HMAC_KEY\"; exec npm run dev'"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "env -u VITE_API_BASE sh -c 'if [ -n \"$DEVELOPMENT_EMAIL_VERIFICATION_HMAC_KEY\" ]; then export EMAIL_VERIFICATION_HMAC_KEY=\"$DEVELOPMENT_EMAIL_VERIFICATION_HMAC_KEY\"; fi; exec npm run dev'"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "typecheck"

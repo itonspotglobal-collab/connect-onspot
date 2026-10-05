@@ -48,7 +48,8 @@ export function createSignupVerificationHandlers(service: SignupVerificationServ
   return {
     start: handle(async (req, res) => {
       const result = await service.start(req.body, req.ip ?? "unknown", pendingSignupCapability(req));
-      setPendingSignupCapability(res, result.capability);
+      if (result.capability) setPendingSignupCapability(res, result.capability);
+      else res.clearCookie(PENDING_SIGNUP_COOKIE, { path: "/", httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
       res.status(result.status).json(result.body);
     }),
     claim: handle(async (req, res) => {

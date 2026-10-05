@@ -165,7 +165,7 @@ export function SignUpDialog({
           fullName: `${signupResponse.user.first_name ?? formData.firstName} ${signupResponse.user.last_name ?? formData.lastName}`.trim(),
         });
       }
-      toast({ title: "Account verified", description: `Welcome to your OnSpot ${accountType} portal.` });
+      toast({ title: signupResponse.accountCreated === true ? "Account created" : "Account verified", description: `Welcome to your OnSpot ${accountType} portal.` });
       setOpen(false);
       resetDialog();
       window.location.href = accountType === "talent" ? (safeReturnPath(signupResponse.returnTo) ?? "/get-hired") : safeReturnTo;
@@ -248,6 +248,15 @@ export function SignUpDialog({
       if (isSignupPending(signupResponse)) {
         setPendingVerification(signupResponse);
         setAccountCreated(false);
+        return;
+      }
+      if (signupResponse.httpStatus === 201) {
+        setAccountCreated(true);
+        try {
+          await completeVerifiedSignup(signupResponse);
+        } catch {
+          showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
+        }
         return;
       }
       showSignupError(

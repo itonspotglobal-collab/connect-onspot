@@ -39,6 +39,123 @@ before(async () => {
 });
 after(async () => { await browser?.close(); });
 
+for (const role of ["talent", "client"] as const) {
+  test(`direct ${role} signup saves the normal session and continues without OTP`, async () => {
+    let signups = 0;
+    let otpRequests = 0;
+    const fixture = await fixturePage(async route => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/api/signup/status") return json(route, 404, { error: "NO_PENDING_SIGNUP" });
+      if (path === "/api/signup") {
+        signups++;
+        assert.equal(route.request().postDataJSON().role, role);
+        return json(route, 201, {
+          success: true, accountCreated: true, token: `direct-${role}-token`,
+          user: { id: `direct-${role}`, email: `${role}@example.test`, role },
+          candidateId: role === "talent" ? "direct-candidate" : null,
+          talentToken: role === "talent" ? "direct-talent-token" : null,
+        });
+      }
+      if (["/api/signup/verify", "/api/signup/resend"].includes(path)) {
+        otpRequests++;
+        return json(route, 500, { error: "Unexpected OTP request" });
+      }
+      return json(route, 200, []);
+    }, `/signup/${role}`);
+    try {
+      const page = fixture.page;
+      await page.getByTestId("input-first-name").fill("Direct");
+      await page.getByTestId("input-last-name").fill("Fixture");
+      await page.getByTestId("input-signup-email").fill(`${role}@example.test`);
+      if (role === "client") await page.getByTestId("input-company").fill("Fixture Company");
+      await page.getByTestId("input-signup-password").fill("ValidPass123!");
+      await page.getByTestId("input-confirm-password").fill("ValidPass123!");
+      await page.getByTestId("checkbox-terms").click();
+      await page.getByTestId("button-submit-signup").click();
+      await page.waitForURL(url => url.pathname === (role === "talent" ? "/get-hired" : "/hire-talent"));
+      assert.equal(signups, 1);
+      assert.equal(otpRequests, 0);
+      assert.equal(await page.getByTestId("signup-verification-code").count(), 0);
+      assert.equal(await page.evaluate(() => localStorage.getItem("onspot_jwt_token")), `direct-${role}-token`);
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("onspot_user") || "null")?.role), role);
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("talent_profile_token") || "null")?.candidateId ?? null),
+        role === "talent" ? "direct-candidate" : null);
+    } finally { await fixture.context.close(); }
+  });
+}
+
+test("direct application-origin Talent signup signs in and preserves application linking", async () => {
+  const context = await browser.newContext({ serviceWorkers: "block" });
+  const page = await context.newPage();
+  let created = false;
+  let linked = 0;
+  let otpRequests = 0;
+  await page.route("**/api/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.startsWith("/api/job-applications/continue/")) return json(route, 200, {
+      success: true, submissionId: "direct-submission", fullName: "Direct Fixture",
+      firstName: "Direct", lastName: "Fixture", email: "application-direct@example.test", phone: "", jobTitle: "Fixture role",
+    });
+    if (path === "/api/signup/status") return json(route, 404, { error: "NO_PENDING_SIGNUP" });
+    if (path === "/api/signup") {
+      created = true;
+      return json(route, 201, { success: true, accountCreated: true, token: "direct-application-token",
+        talentToken: "direct-application-talent-token", candidateId: "direct-application-candidate",
+        user: { id: "direct-application-user", role: "talent", email: "application-direct@example.test" } });
+    }
+    if (["/api/signup/verify", "/api/signup/resend"].includes(path)) {
+      otpRequests++;
+      return json(route, 500, { error: "Unexpected OTP request" });
+    }
+    if (path === "/api/job-applications/link") {
+      assert.equal(created, true);
+      assert.equal(route.request().headers().authorization, "Bearer direct-application-token");
+      assert.deepEqual(route.request().postDataJSON(), { submissionId: "direct-submission", token: "direct-continuation" });
+      linked++;
+      return json(route, 200, { success: true });
+    }
+    return json(route, 200, []);
+  });
+  try {
+    await page.goto(`${BASE_URL}/talent/signup?applicationToken=direct-continuation`, { waitUntil: "domcontentloaded" });
+    await page.getByTestId("application-signup-password").fill("ValidPass123!");
+    await page.getByTestId("application-signup-confirm-password").fill("ValidPass123!");
+    await page.getByTestId("application-signup-submit").click();
+    await page.waitForURL(url => url.pathname === "/find-best-matches");
+    assert.equal(linked, 1);
+    assert.equal(otpRequests, 0);
+    assert.equal(await page.evaluate(() => localStorage.getItem("onspot_jwt_token")), "direct-application-token");
+  } finally { await context.close(); }
+});
+
+test("direct creation with an incomplete session cannot be submitted twice or claim sign-in", async () => {
+  let signups = 0;
+  const fixture = await fixturePage(async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/signup/status") return json(route, 404, { error: "NO_PENDING_SIGNUP" });
+    if (path === "/api/signup") {
+      signups++;
+      return json(route, 201, { success: true, accountCreated: true });
+    }
+    return json(route, 200, []);
+  });
+  try {
+    const page = fixture.page;
+    await page.getByTestId("input-first-name").fill("Direct");
+    await page.getByTestId("input-last-name").fill("Fixture");
+    await page.getByTestId("input-signup-email").fill("incomplete@example.test");
+    await page.getByTestId("input-signup-password").fill("ValidPass123!");
+    await page.getByTestId("input-confirm-password").fill("ValidPass123!");
+    await page.getByTestId("checkbox-terms").click();
+    await page.getByTestId("button-submit-signup").click();
+    await page.getByRole("alert").filter({ hasText: "Automatic sign-in could not be completed" }).waitFor();
+    assert.equal(signups, 1);
+    assert.equal(await page.getByTestId("button-submit-signup").isDisabled(), true);
+    assert.equal(await page.evaluate(() => localStorage.getItem("onspot_jwt_token")), null);
+    assert.equal(await page.getByTestId("signup-verification-code").count(), 0);
+  } finally { await fixture.context.close(); }
+});
+
 test("application continuation waits for email proof before storing credentials or linking the application", async () => {
   const context = await browser.newContext();
   const page = await context.newPage();

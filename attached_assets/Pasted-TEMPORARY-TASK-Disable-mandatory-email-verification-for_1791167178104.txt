@@ -1,0 +1,139 @@
+TEMPORARY TASK: Disable mandatory email verification for Client and Talent signup so users can create accounts on the live server while the email verification configuration issue is being fixed.
+
+IMPORTANT:
+- This is a TEMPORARY controlled bypass.
+- Do NOT delete the existing email verification implementation.
+- Do NOT remove verification-related database tables, migrations, services, OTP logic, or email code.
+- Do NOT weaken authentication for login, password validation, authorization, or protected routes.
+- Existing users and login behavior must continue working.
+- Do not expose secrets or credentials.
+- Make the smallest safe change possible.
+
+CURRENT ISSUE:
+POST /api/signup currently returns:
+{
+  "success": false,
+  "error": "VERIFICATION_NOT_CONFIGURED",
+  "message": "Email verification is temporarily unavailable."
+}
+
+This happens because signup currently requires signupVerificationRuntime/assertConfigured() before an account can be created.
+
+GOAL:
+Temporarily allow both Talent and Client users to complete normal account creation without email OTP verification.
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. Add a server-side environment/configuration flag:
+
+   SIGNUP_EMAIL_VERIFICATION_REQUIRED
+
+   Behavior:
+   - "true" = existing email verification/OTP flow is required.
+   - "false" = temporarily use direct account creation without OTP verification.
+
+   Do not use a VITE_ variable for this. The server must control the behavior.
+
+2. When SIGNUP_EMAIL_VERIFICATION_REQUIRED !== "false":
+   Preserve the CURRENT signup verification behavior exactly.
+
+3. When SIGNUP_EMAIL_VERIFICATION_REQUIRED === "false":
+   - Do NOT call the email verification configuration requirement/assertConfigured() as a prerequisite for signup.
+   - Do NOT require EMAIL_VERIFICATION_HMAC_KEY for signup.
+   - Do NOT require Microsoft Graph/email verification configuration for signup.
+   - Do NOT send an OTP.
+   - Do NOT create a pending verification that prevents account creation.
+   - Create the user/account immediately using the application's existing secure account-creation logic.
+   - Hash passwords using the existing password hashing implementation.
+   - Preserve all existing input validation.
+   - Preserve duplicate-email handling.
+   - Preserve role handling for both "talent" and "client".
+   - Create all normal related records that the pre-email-verification signup flow requires (for example candidate/talent records or client profile records, as applicable).
+   - Return the normal authentication/session credentials expected by the frontend after successful account creation.
+
+4. IMPORTANT SECURITY REQUIREMENTS:
+   This bypass must ONLY bypass email ownership verification.
+
+   It must NOT bypass:
+   - password hashing
+   - password requirements
+   - duplicate account checks
+   - role validation
+   - authentication
+   - authorization
+   - session/JWT security
+   - database constraints
+   - rate limiting or abuse protections that already exist
+
+5. FRONTEND:
+   When verification is disabled:
+   - Signup should complete normally.
+   - Do not send the user to an OTP/email-verification screen.
+   - Continue with the application's normal post-registration flow.
+   - Talent signup should create/sign in the Talent user correctly.
+   - Client signup should create/sign in the Client user correctly.
+
+   When verification is enabled:
+   - Preserve the existing OTP verification UI and behavior.
+
+6. FAILURE BEHAVIOR:
+   Do NOT convert real database/account-creation errors into fake successful registrations.
+   Only bypass the email verification requirement.
+   Genuine signup failures must still return appropriate errors.
+
+7. CONFIGURATION:
+   I will set:
+
+   SIGNUP_EMAIL_VERIFICATION_REQUIRED=false
+
+   in Replit for the temporary live-server bypass.
+
+   Later, changing it to:
+
+   SIGNUP_EMAIL_VERIFICATION_REQUIRED=true
+
+   must restore the existing verification flow without requiring another code rewrite.
+
+8. REVIEW THE EXISTING CODE FIRST:
+   Inspect the existing signup implementation, especially:
+   - /api/signup
+   - signupVerificationRuntime
+   - signupVerificationService
+   - signupVerificationEmail
+   - existing account/user creation services
+   - Talent/candidate creation
+   - Client account/profile creation
+   - frontend signup handling
+
+   Reuse existing account creation logic rather than duplicating security-sensitive logic.
+
+9. TESTS:
+   Add/update tests covering at minimum:
+
+   A. Verification disabled + Talent signup
+      -> account created successfully without OTP
+
+   B. Verification disabled + Client signup
+      -> account created successfully without OTP
+
+   C. Verification disabled + duplicate email
+      -> duplicate account is rejected correctly
+
+   D. Verification disabled + invalid signup data
+      -> validation still rejects it
+
+   E. Verification enabled
+      -> existing OTP/email verification behavior remains unchanged
+
+   F. Verification disabled even when EMAIL_VERIFICATION_HMAC_KEY/email delivery configuration is unavailable
+      -> direct signup still succeeds
+
+10. Before finishing:
+   - Run the relevant automated tests.
+   - Run TypeScript/type checking.
+   - Do not modify unrelated functionality.
+   - Summarize exactly which files were changed.
+   - Explain how to turn email verification back on.
+   - Flag any security concern discovered instead of silently working around it.
+
+DO NOT permanently remove email verification. This is a temporary feature-flagged production fallback while the verification service is being repaired.

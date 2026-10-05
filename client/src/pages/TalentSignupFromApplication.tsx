@@ -353,7 +353,11 @@ export default function TalentSignupFromApplication() {
         throw new Error(serverMessage);
       }
 
-      // A 201 without a successful OTP verification is not accepted as signup completion.
+      if (signupRes.status === 201) {
+        await finishVerifiedSignup(signupData);
+        return;
+      }
+
       throw new Error("Signup did not return a pending email verification challenge. Please try again.");
 
     } catch (err: any) {
@@ -387,7 +391,7 @@ export default function TalentSignupFromApplication() {
     sessionStorage.setItem("onspot_talent_candidate_id", signupData.candidateId);
     setPendingVerification(null);
     if (isAccountFirstMode) {
-      toast({ title: "Account verified", description: "Your Talent account is ready. Continue to your saved application.", duration: 6000 });
+      toast({ title: signupData.accountCreated === true ? "Account created" : "Account verified", description: "Your Talent account is ready. Continue to your saved application.", duration: 6000 });
       navigate(returnTo);
       return;
     }

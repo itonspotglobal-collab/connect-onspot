@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { getClient } from "../db";
 import { hashPassword } from "../auth-utils";
-import { SignupVerificationService } from "./signupVerificationService";
+import { SignupError, SignupVerificationService, signupEmailVerificationRequired } from "./signupVerificationService";
 import { sendSignupVerificationEmail } from "./signupVerificationEmail";
 import { assertSignupVerificationConfigured } from "./signupVerificationConfig";
 
@@ -10,6 +10,12 @@ export const signupVerificationRuntime = new SignupVerificationService({
   hashPassword,
   hmacKey: () => process.env.EMAIL_VERIFICATION_HMAC_KEY!,
   assertConfigured: assertSignupVerificationConfigured,
+  verificationRequired: signupEmailVerificationRequired,
+  assertDirectConfigured() {
+    if (!process.env.JWT_SECRET) {
+      throw new SignupError(503, "AUTH_NOT_CONFIGURED", "Signup is temporarily unavailable.");
+    }
+  },
   send: sendSignupVerificationEmail,
   issueCredentials({ user, candidateId }) {
     const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET!, { expiresIn: "7d" });
