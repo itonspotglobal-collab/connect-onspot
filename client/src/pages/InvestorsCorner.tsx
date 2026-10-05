@@ -6,6 +6,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { InvestorGauge } from "@/components/InvestorGauge";
+import {
+  HERO_GLASS_CTA_CLASS,
+  HERO_GLASS_CTA_STYLE,
+  HERO_SHARED_CSS_VARS,
+  HERO_WORK_BACKGROUND,
+} from "@/components/HeroPresentation";
 import "./InvestorsCorner.css";
 
 type RequestType = "meeting" | "deck" | "founder";
@@ -13,6 +20,10 @@ type InvestorStats = {
   contractorAccounts: number;
   clientAccounts: number;
   asOf: string;
+};
+type InvestorGoals = {
+  contractorGoal2027: number | null;
+  clientGoal2027: number | null;
 };
 type FormValues = {
   name: string;
@@ -60,8 +71,20 @@ function isStatsResponse(value: unknown): value is InvestorStats {
   );
 }
 
+function isGoalsResponse(value: unknown): value is InvestorGoals {
+  if (!value || typeof value !== "object") return false;
+  const goals = value as Partial<InvestorGoals>;
+  return (
+    (goals.contractorGoal2027 === null ||
+      (typeof goals.contractorGoal2027 === "number" && Number.isFinite(goals.contractorGoal2027))) &&
+    (goals.clientGoal2027 === null ||
+      (typeof goals.clientGoal2027 === "number" && Number.isFinite(goals.clientGoal2027)))
+  );
+}
+
 export default function InvestorsCorner() {
   const [stats, setStats] = useState<InvestorStats | null>(null);
+  const [goals, setGoals] = useState<InvestorGoals | null>(null);
   const [statsUnavailable, setStatsUnavailable] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormValues>(INITIAL_FORM);
@@ -84,6 +107,19 @@ export default function InvestorsCorner() {
     }
   }, []);
 
+  const fetchGoals = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const response = await fetch("/api/public/investor-goals", { signal });
+      if (!response.ok) throw new Error("Goals unavailable");
+      const result: unknown = await response.json();
+      if (!isGoalsResponse(result)) throw new Error("Invalid goals response");
+      setGoals(result);
+    } catch {
+      // Goal configuration is optional; a failure must not affect live account totals.
+      if (signal?.aborted) return;
+    }
+  }, []);
+
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
     let controller: AbortController | undefined;
@@ -97,12 +133,14 @@ export default function InvestorsCorner() {
       controller?.abort();
       controller = new AbortController();
       void fetchStats(controller.signal);
+      void fetchGoals(controller.signal);
       if (!interval) {
         interval = setInterval(() => {
           if (document.visibilityState === "visible") {
             controller?.abort();
             controller = new AbortController();
             void fetchStats(controller.signal);
+            void fetchGoals(controller.signal);
           }
         }, 60_000);
       }
@@ -115,7 +153,7 @@ export default function InvestorsCorner() {
       controller?.abort();
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, [fetchStats]);
+  }, [fetchGoals, fetchStats]);
 
   useEffect(() => {
     document.title = "For Investors | OnSpot";
@@ -206,7 +244,10 @@ export default function InvestorsCorner() {
     submission.kind === "sent" || submission.kind === "saved-email-failed";
 
   return (
-    <div className="investors-page">
+    <div
+      className="investors-page"
+      style={{ ...HERO_SHARED_CSS_VARS, background: HERO_WORK_BACKGROUND }}
+    >
       <div className="investors-shell">
         <section className="investors-intro" aria-labelledby="investor-headline">
           <div className="investors-eyebrow">
@@ -221,23 +262,17 @@ export default function InvestorsCorner() {
 
           <p className="investors-subhead">Talent earns more. Clients pay less.</p>
 
-          <div
-            className="investors-counts"
-            aria-label="OnSpot marketplace account totals"
-          >
-            <div className="investor-count">
-              <span className="investor-count-value" aria-live="polite">
-                {stats ? stats.contractorAccounts.toLocaleString() : "—"}
-              </span>
-              <span className="investor-count-label">Contractor accounts</span>
-            </div>
-            <span className="investor-count-divider" aria-hidden="true" />
-            <div className="investor-count">
-              <span className="investor-count-value" aria-live="polite">
-                {stats ? stats.clientAccounts.toLocaleString() : "—"}
-              </span>
-              <span className="investor-count-label">Client accounts</span>
-            </div>
+          <div className="investors-counts" aria-label="OnSpot marketplace account totals">
+            <InvestorGauge
+              count={stats?.contractorAccounts ?? null}
+              goal={goals?.contractorGoal2027 ?? null}
+              label="Contractors"
+            />
+            <InvestorGauge
+              count={stats?.clientAccounts ?? null}
+              goal={goals?.clientGoal2027 ?? null}
+              label="Clients"
+            />
           </div>
           {statsUnavailable && (
             <p className="investor-stats-note" role="status">
@@ -251,11 +286,12 @@ export default function InvestorsCorner() {
           </div>
 
           <div className="investor-actions" aria-label="Investor inquiries">
-            {REQUESTS.map(({ type, label }, index) => (
+            {REQUESTS.map(({ type, label }) => (
               <button
                 key={type}
                 type="button"
-                className={`investor-action investor-action-${index + 1}`}
+                className={`investor-action ${HERO_GLASS_CTA_CLASS}`}
+                style={HERO_GLASS_CTA_STYLE}
                 onClick={() => openRequest(type)}
               >
                 <span>{label}</span>
@@ -266,10 +302,6 @@ export default function InvestorsCorner() {
             ))}
           </div>
         </section>
-        <div className="investors-side-mark" aria-hidden="true">
-          <span>O</span>
-          <span className="investors-side-line" />
-        </div>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>

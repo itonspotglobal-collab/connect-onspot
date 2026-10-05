@@ -32,6 +32,8 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { registerInvestorRoutes } from "./routes/investors.js";
+import { registerInvestorGoalRoutes, guardInvestorGoalUpdates } from "./routes/investorGoals";
+import { INVESTOR_GOAL_PLACEHOLDERS, isInvestorGoalKey, isValidInvestorGoalSetting } from "../shared/investorGoals";
 import { registerTimesheetRoutes } from "./routes/timesheets.js";
 import { TIMESHEET_HIRE_SQL } from "./services/timesheetEligibility.js";
 import { registerTalentInvoiceRoutes } from "./routes/talentInvoices.js";
@@ -2061,6 +2063,12 @@ export async function registerRoutes(
       ON CONFLICT (key) DO NOTHING
     `);
     console.log("✅ Migration: platform_settings table ready");
+    for (const [key, value] of Object.entries(INVESTOR_GOAL_PLACEHOLDERS)) {
+      await query(
+        `INSERT INTO platform_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`,
+        [key, value],
+      );
+    }
 
   // ── search_query_frequency — aggregate real search query volume for chips ──
   try {
@@ -3653,6 +3661,7 @@ export async function registerRoutes(
   );
 
   registerInvestorRoutes(app);
+  registerInvestorGoalRoutes(app, query);
 
   registerTimesheetRoutes(app, {
     authenticateJWT,
@@ -8988,12 +8997,13 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, async (req: Request, res: Response) => {
+  app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, guardInvestorGoalUpdates(requireSuperAdmin), async (req: Request, res: Response) => {
     try {
       const ALLOWED_KEYS = new Set([
         'name_reveal_threshold',
         'search_suggestion_threshold',
         'vetted_auto_hire_threshold',
+        ...Object.keys(INVESTOR_GOAL_PLACEHOLDERS),
       ]);
       const VALID_THRESHOLDS = new Set(['new', 'reviewed', 'shortlisted', 'hired']);
       const updates: Array<{ key: string; value: string }> = [];
@@ -9004,6 +9014,9 @@ export async function registerRoutes(
         }
         if (typeof value !== 'string') {
           return res.status(400).json({ error: `Value for ${key} must be a string` });
+        }
+        if (isInvestorGoalKey(key) && !isValidInvestorGoalSetting(key, value)) {
+          return res.status(400).json({ error: `${key} must be a positive whole account count, its placeholder, or blank to hide the goal` });
         }
         if (key === 'name_reveal_threshold' && !VALID_THRESHOLDS.has(value)) {
           return res.status(400).json({ error: `Invalid name_reveal_threshold: ${value}` });

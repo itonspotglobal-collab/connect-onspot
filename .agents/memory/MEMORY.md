@@ -62,3 +62,4 @@
 - [Isolated server test boundaries](isolated-test-boundaries.md) — inspect transitive imports; denying SQL alone does not isolate memory stores or auth initialization.
 - [Signup email ownership policy](signup-email-ownership-policy.md) — new Client/Talent activation needs server-confirmed email ownership; audit is not implementation authorization.
 - [Timesheet access boundaries](timesheet-access-boundaries.md) — Team roster membership is not payroll permission; navigation eligibility must remain read-only.
+- [Investors visual scope](investors-visual-scope.md) — continue the actual home hero; account gauges are the only statistics, with three equal-weight inquiry CTAs.

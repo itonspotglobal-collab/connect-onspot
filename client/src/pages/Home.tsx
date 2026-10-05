@@ -20,6 +20,15 @@ import { formatPublicTalentNameFromFull } from "@/lib/formatPublicTalentName";
 import { formatCurrencyAmount } from "@/lib/jobUtils";
 import { Footer } from "@/components/Footer";
 import {
+  HERO_COLORS,
+  HERO_GLASS_CTA_CLASS,
+  HERO_GLASS_CTA_STYLE,
+  HERO_PRIMARY_CTA_CLASS,
+  HERO_PRIMARY_CTA_STYLE,
+  HERO_SHARED_CSS_VARS,
+  HERO_WORK_BACKGROUND,
+} from "@/components/HeroPresentation";
+import {
   type CarouselApi,
   Carousel,
   CarouselContent,
@@ -29,33 +38,8 @@ import jakePhoto from "@assets/Jake_1780574815787.png";
 const nurPhoto = "/nur-ceo.jpeg";
 const markPhoto = "/mark-apostol.png";
 
-// ── Design tokens (matched to screenshots) ────────────────────────────────────
-const C = {
-  // Hero dark slide gradient stops
-  dark1: "#272668",
-  dark2: "#3A4295",
-  dark3: "#4652B5",
-  // Hero light slide bg
-  lightBg: "#FAF8F5",
-  lightGlow: "rgba(71,78,173,0.06)",
-  // Brand
-  indigo: "#4B51B8",
-  indigoDark: "#383E90",
-  indigoDeep: "#272668",
-  indigoLight: "#7B81D4",
-  // Orange/gold accent
-  orange: "#FFAE21",
-  orangeLight: "#FFC052",
-  orangeDeep: "#A06800",
-  // Text
-  charcoal: "#17171C",
-  gray: "#6B6B76",
-  grayLight: "#9494A0",
-  // Non-hero sections
-  lavenderBg: "#F1F0FF",
-  warmBg: "#FFF9EF",
-  navySection: "#0C123F",
-};
+// Shared with focused public pages that continue the hero's visual language.
+const C = HERO_COLORS;
 
 const HERO_MONTHLY_RATE_LABEL = "Avg. monthly rate";
 const HERO_MONTHLY_RATE_VALUE = "$2,400/month";
@@ -73,7 +57,7 @@ const SLIDES = [
 // ── Slide backgrounds ─────────────────────────────────────────────────────────
 function slideBg(id: string) {
   if (id === "work")
-    return `radial-gradient(ellipse at 70% 30%, rgba(70,82,181,0.55), transparent 60%), linear-gradient(150deg, ${C.dark1} 0%, ${C.dark2} 55%, ${C.dark3} 100%)`;
+    return HERO_WORK_BACKGROUND;
   if (id === "talent" || id === "jobs")
     return `radial-gradient(ellipse at 75% 20%, rgba(70,82,181,0.45), transparent 55%), radial-gradient(ellipse at 15% 80%, rgba(255,174,33,0.08), transparent 45%), linear-gradient(150deg, ${C.dark1} 0%, ${C.dark2} 60%, ${C.dark3} 100%)`;
   // light slides
@@ -646,6 +630,7 @@ function HeroSection() {
       ref={sectionRef}
       className="relative overflow-hidden"
       style={{
+        ...HERO_SHARED_CSS_VARS,
         height: "calc(100svh - 74px)",
         background: slideBg(active.id),
         transition: "background 0.65s ease",
@@ -867,7 +852,7 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
         }}
       >
         <span className="text-white">Work </span>
-        <span style={{ color: C.orangeLight }}>Without</span>
+        <span style={{ color: "var(--hero-orange-light)" }}>Without</span>
         <span className="text-white"> Limits</span>
       </h1>
 
@@ -883,7 +868,7 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
         }}
       >
         <span className="font-semibold text-white">One system.</span>{" "}
-        <span style={{ color: "rgba(199,203,242,0.8)" }}>
+        <span style={{ color: "var(--hero-muted-light)" }}>
           Highest pay for talents at lower cost to companies.
         </span>
       </p>
@@ -891,22 +876,15 @@ function WorkSlide({ isDark }: { isDark: boolean }) {
       <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
         <Link
           href="/hire-talent"
-          className="inline-flex h-[52px] min-w-[180px] items-center justify-center rounded-full bg-white px-8 text-[15.5px] font-semibold transition hover:-translate-y-[1px] hover:bg-white/95"
-          style={{
-            color: C.indigo,
-            boxShadow: "0 12px 32px -8px rgba(0,0,0,0.35)",
-          }}
+          className={HERO_PRIMARY_CTA_CLASS}
+          style={HERO_PRIMARY_CTA_STYLE}
         >
           Hire talent →
         </Link>
         <Link
           href="/find-work/jobs"
-          className="inline-flex h-[52px] min-w-[180px] items-center justify-center rounded-full px-8 text-[15.5px] font-semibold text-white transition hover:-translate-y-[1px]"
-          style={{
-            background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.4)",
-            backdropFilter: "blur(8px)",
-          }}
+          className={HERO_GLASS_CTA_CLASS}
+          style={HERO_GLASS_CTA_STYLE}
         >
           Find work →
         </Link>

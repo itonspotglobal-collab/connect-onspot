@@ -6,6 +6,7 @@ import { queryClient } from '@/lib/queryClient';
 import { authAPI } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { ObjectUploader } from '@/components/ObjectUploader';
+import { InvestorGoalSettings } from '@/components/InvestorGoalSettings';
 import { 
   Card, 
   CardContent, 
@@ -1192,6 +1193,7 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground">Loading settings…</p>
               ) : (
                 <div className="space-y-6 max-w-lg">
+                  <InvestorGoalSettings settings={platformSettings ?? {}} />
                   {/* Name-reveal threshold */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
