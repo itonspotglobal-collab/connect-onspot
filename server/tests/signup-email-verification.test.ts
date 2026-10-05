@@ -90,6 +90,33 @@ async function counts() {
   return result.rows[0];
 }
 
+for (const role of ["talent", "client"] as const) {
+  dbTest(`verified signup cannot overwrite a historical ${role} password missed by the NULL-only grandfathering`, async () => {
+    const original = await hashPassword("Historical-Fixture-Password-123!");
+    await pool!.query(`INSERT INTO users(id,email,username,role,password_hash,created_at,email_verification_required)
+      VALUES('legacy','person@example.test','legacy-fixture',$1,$2,'2026-09-01',true)`, [role, original]);
+    const { svc, body, capability, code } = await begin({ role });
+    await rejectsCode(svc.verify(capability, body.challengeId, code, "fixture"), "ACCOUNT_EXISTS");
+    const persisted = await pool!.query(`SELECT password_hash=$1 AS password_unchanged,email_verified_at,
+      email_verification_required FROM users WHERE id='legacy'`, [original]);
+    assert.deepEqual(persisted.rows[0], { password_unchanged: true, email_verified_at: null, email_verification_required: true });
+    assert.equal(credentialCalls, 0);
+  });
+}
+
+dbTest("verified signup cannot overwrite historical candidate-only credentials missed by grandfathering", async () => {
+  const original = await hashPassword("Historical-Fixture-Password-123!");
+  await pool!.query(`INSERT INTO candidates(id,email,password_hash,created_at,email_verification_required)
+    VALUES('legacy-candidate','person@example.test',$1,'2026-09-01',true)`, [original]);
+  const { svc, body, capability, code } = await begin();
+  await rejectsCode(svc.verify(capability, body.challengeId, code, "fixture"), "ACCOUNT_EXISTS");
+  const persisted = await pool!.query(`SELECT password_hash=$1 AS password_unchanged,user_id
+    FROM candidates WHERE id='legacy-candidate'`, [original]);
+  assert.deepEqual(persisted.rows[0], { password_unchanged: true, user_id: null });
+  assert.equal((await counts()).users, 0);
+  assert.equal(credentialCalls, 0);
+});
+
 before(async () => {
   if (!pool) return;
   assert.equal((await pool.query("SELECT current_database() AS name")).rows[0].name, "signup_verification_test");
@@ -105,6 +132,7 @@ before(async () => {
       company_name text,contact_person text,email text);
     CREATE TABLE candidates(id varchar PRIMARY KEY DEFAULT gen_random_uuid(),user_id varchar REFERENCES users(id),
       full_name text NOT NULL DEFAULT '',email text,password_hash text,account_created boolean DEFAULT false,
+      created_at timestamp DEFAULT now(),
       is_verified boolean NOT NULL DEFAULT false,is_vetted boolean NOT NULL DEFAULT false);
     INSERT INTO users(id,email,role,password_hash) VALUES ('historical','old@example.test','talent','historical-hash');
     INSERT INTO candidates(email,password_hash) VALUES ('candidate-only@example.test','historical-hash'),
@@ -115,6 +143,8 @@ before(async () => {
   assert.equal(preflight.passwordlessProfiles, 1);
   console.log("Disposable preflight counts:", JSON.stringify(preflight));
   await pool.query(await readFile("migrations/0033_signup_email_verification.sql", "utf8"));
+  await pool.query(`CREATE TABLE app_schema_migrations(id text PRIMARY KEY,applied_at timestamptz);
+    INSERT INTO app_schema_migrations VALUES('0033_signup_email_verification','2026-10-02T00:00:00Z')`);
   const history = await pool.query("SELECT * FROM users WHERE id='historical'");
   assert.equal(history.rows[0].email_verification_required, false);
   assert.equal(history.rows[0].email_verified_at, null);

@@ -1,0 +1,274 @@
+URGENT AUTH REGRESSION INVESTIGATION
+
+After the recent signup/email-verification changes, new Talent and Client accounts can be created and can log in successfully.
+
+However, EXISTING Talent and Client accounts that existed before these changes can no longer log in. They receive "wrong password" / invalid credentials even when the password is correct.
+
+An existing Admin account can still log in successfully.
+
+DO NOT reset existing users' passwords.
+DO NOT delete users.
+DO NOT modify password hashes in the database yet.
+DO NOT disable password checking.
+DO NOT add an authentication bypass.
+DO NOT weaken authentication or authorization.
+
+We need to identify and fix backward compatibility for existing Talent/Client accounts.
+
+CURRENT BEHAVIOR:
+
+NEW ACCOUNT:
+- Signup succeeds
+- Login succeeds
+
+EXISTING ADMIN:
+- Login succeeds
+
+EXISTING TALENT:
+- Login fails with wrong password
+
+EXISTING CLIENT:
+- Login fails with wrong password
+
+This strongly suggests a difference between historical password hashes/authentication logic and the current password hashing/verification implementation.
+
+TASK 1 — TRACE ALL LOGIN PATHS
+
+Inspect the complete authentication implementation for:
+
+1. Talent login
+   - POST /api/talent-auth/login
+   - candidate lookup
+   - user lookup
+   - password verification
+   - token issuance
+
+2. Client login
+   - identify the exact login endpoint
+   - user lookup
+   - password verification
+   - token/session issuance
+
+3. Admin login
+   - identify its authentication path
+   - determine why existing Admin accounts still work while existing Talent/Client accounts do not
+
+Do not assume these routes use identical authentication logic.
+
+TASK 2 — INSPECT PASSWORD HASHING
+
+Find every location where passwords are:
+
+- hashed
+- stored
+- compared
+- migrated
+- transformed
+
+Search for things such as:
+
+hashPassword
+comparePassword
+bcrypt.hash
+bcrypt.compare
+bcryptjs
+argon2
+scrypt
+crypto
+password_hash
+passwordHash
+password_digest
+user.password
+
+Determine:
+
+A. What algorithm newly created accounts use.
+
+B. What algorithm/format existing Talent/Client accounts use.
+
+C. Whether the recent signup/email-verification work changed hashPassword or password verification.
+
+D. Whether login now accidentally hashes the submitted password and compares hashes directly instead of using the appropriate password verification function.
+
+E. Whether old hashes and new hashes have different formats.
+
+TASK 3 — SAFE DATABASE DIAGNOSTICS
+
+Inspect representative records for:
+
+- one NEW Talent account that can login
+- one OLD Talent account that cannot login
+- one NEW Client account that can login
+- one OLD Client account that cannot login
+
+DO NOT output or expose password hashes.
+
+Report only safe metadata such as:
+
+account role
+account source/age category
+password field exists: yes/no
+hash length
+recognized hash prefix/type
+candidate/user linkage exists: yes/no
+email normalization status
+account active status
+verification status
+
+For example:
+
+OLD TALENT
+password exists: yes
+hash type: bcrypt
+hash length: 60
+
+NEW TALENT
+password exists: yes
+hash type: bcrypt
+hash length: 60
+
+Never print the actual hashes.
+
+TASK 4 — CHECK ACCOUNT LOOKUP
+
+Make sure the "wrong password" message is actually caused by password comparison.
+
+Verify that existing accounts are being found correctly.
+
+Check for regressions involving:
+
+- email case normalization
+- trim()
+- users.email
+- candidates.email
+- candidate.user_id
+- client_profiles.user_id
+- roles
+- active/inactive status
+- email verification fields
+- pending registration records
+
+An account lookup failure must not be incorrectly diagnosed internally as a password hashing failure just because the frontend displays "wrong password."
+
+TASK 5 — CHECK EMAIL VERIFICATION CHANGES
+
+Review the recent signup/email verification changes.
+
+The temporary:
+
+SIGNUP_EMAIL_VERIFICATION_REQUIRED=false
+
+flag should ONLY affect signup/email ownership verification.
+
+It must NOT change:
+
+- login password verification
+- historical account authentication
+- password hashes
+- existing account lookup
+- role detection
+- JWT/session creation
+
+Existing accounts created before email verification was introduced must remain able to authenticate.
+
+TASK 6 — CHECK FOR LEGACY PASSWORD SUPPORT
+
+Use Git history to compare the authentication implementation before and after the signup/email-verification changes.
+
+Determine whether older Talent/Client accounts were created using a different hashing implementation.
+
+If legacy hashes exist, implement backward-compatible verification.
+
+Preferred behavior:
+
+verifyPassword(password, storedHash)
+
+should recognize the stored hash format and use the appropriate secure verifier.
+
+DO NOT convert hashes by simply hashing passwords again.
+
+If an old secure hashing format must be upgraded, use a safe migration-on-login strategy:
+
+1. Verify the user's password using the legacy algorithm.
+2. ONLY after successful verification, hash the plaintext password using the current secure algorithm.
+3. Replace the stored legacy hash with the current hash.
+4. Continue login normally.
+
+Never migrate a password hash without first successfully verifying the submitted password.
+
+TASK 7 — CHECK FOR DOUBLE HASHING
+
+Specifically investigate whether existing passwords are being double-hashed.
+
+Look for patterns such as:
+
+bcrypt.compare(hashPassword(inputPassword), storedHash)
+
+or:
+
+hashPassword(inputPassword) === storedHash
+
+or hashing an already hashed password during account migration/update.
+
+Password verification should use the correct comparison mechanism for the stored hash.
+
+TASK 8 — DO NOT TOUCH WORKING NEW ACCOUNTS
+
+Whatever fix is implemented must preserve:
+
+- login for newly created Talent accounts
+- login for newly created Client accounts
+- existing Admin authentication
+- current JWT/session behavior
+- current role authorization
+- current temporary email-verification bypass
+
+Do not solve legacy login by breaking new login.
+
+TASK 9 — TESTS
+
+Add regression tests covering:
+
+1. Existing/legacy Talent password -> login succeeds
+2. Existing/legacy Client password -> login succeeds
+3. New Talent password -> login succeeds
+4. New Client password -> login succeeds
+5. Incorrect Talent password -> rejected
+6. Incorrect Client password -> rejected
+7. Existing Admin authentication -> unchanged
+8. Unknown email -> rejected
+9. Existing accounts without newer email-verification metadata -> login remains supported if they were valid established accounts
+
+TASK 10 — REPORT BEFORE DESTRUCTIVE CHANGES
+
+Before performing any database-wide password migration, report:
+
+ROOT CAUSE:
+<exact reason>
+
+OLD HASH FORMAT:
+<type only, never hash>
+
+NEW HASH FORMAT:
+<type only, never hash>
+
+AFFECTED LOGIN PATHS:
+<routes/services>
+
+FILES RESPONSIBLE:
+<files>
+
+FIX:
+<backward-compatible implementation>
+
+Do NOT perform a mass password reset or database-wide password rewrite.
+
+After implementing the safe compatibility fix:
+
+- run authentication tests
+- run type checking
+- test an existing Talent account
+- test an existing Client account
+- test a newly created account
+- confirm incorrect passwords are still rejected
+- summarize exactly which files changed

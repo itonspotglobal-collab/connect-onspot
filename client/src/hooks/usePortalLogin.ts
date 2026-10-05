@@ -59,6 +59,9 @@ export function usePortalLogin() {
         }
 
         if (!res.ok) {
+          if (data.error === "EMAIL_VERIFICATION_REQUIRED") {
+            return { success: false, message: "Email verification is required for this account. Please complete verification before signing in." };
+          }
           if (data.error === "no_password" || data.requiresPasswordSetup) {
             return {
               success: false,
@@ -132,6 +135,9 @@ export function usePortalLogin() {
           const redirectTo = role === "admin" ? "/admin/find-work" : "/hire-talent";
           return { success: true, portal: "client", displayName, redirectTo };
         } else {
+          if (data.error === "EMAIL_VERIFICATION_REQUIRED") {
+            return { success: false, message: "Email verification is required for this account. Please complete verification before signing in." };
+          }
           if (data.error === "talent_account") {
             return { success: false, message: "This is a Talent account. Please use the Talent Portal." };
           }

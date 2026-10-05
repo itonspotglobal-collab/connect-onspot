@@ -51,6 +51,7 @@ import { maskClientTalentName } from "../shared/talentName";
 import { createCandidateMeHandler } from "./lib/candidateMeHandler";
 import { registerDisabledLinkedInImportRoutes } from "./lib/disabledLinkedInImport";
 import { hasEmailOwnership } from "./lib/emailOwnership";
+import { authenticatePassword } from "./lib/passwordAuthentication";
 import { registerSignupVerificationRoutes } from "./routes/signupVerification";
 import { signupVerificationRuntime } from "./services/signupVerificationRuntime";
 import {
@@ -4199,13 +4200,11 @@ export async function registerRoutes(
 
       // Verify password
       console.log(`🔐 Verifying password [${requestId}]`);
-      if (!await hasEmailOwnership(query, { userId: user.id })) {
+      const passwordAuthentication = await authenticatePassword(query, { userId: user.id }, password, user.password_hash);
+      if (passwordAuthentication === "verification_required") {
         return res.status(403).json({ success: false, error: "EMAIL_VERIFICATION_REQUIRED" });
       }
-      const isPasswordValid = await verifyPassword(
-        password,
-        user.password_hash,
-      );
+      const isPasswordValid = passwordAuthentication === "authenticated";
       if (!isPasswordValid) {
         console.error(
           `❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`,
@@ -7290,13 +7289,14 @@ export async function registerRoutes(
             console.log(`🔍 [talent-auth/login]: Email found in users table (role=${userRow.role})`);
 
             if (userRow.role === "talent") {
-              if (!await hasEmailOwnership(query, { userId: userRow.id })) {
+              const passwordAuthentication = await authenticatePassword(query, { userId: userRow.id }, password, userRow.password_hash);
+              if (passwordAuthentication === "verification_required") {
                 return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
               }
               // This is a legitimate Talent account that predates the candidates
               // auto-creation fix (or whose candidates row failed to create).
               // Verify their password then auto-create the candidates record.
-              const validPw = await verifyPassword(password, userRow.password_hash);
+              const validPw = passwordAuthentication === "authenticated";
               if (!validPw) {
                 return res.status(401).json({ error: "Invalid email or password" });
               }
@@ -7352,10 +7352,11 @@ export async function registerRoutes(
           candidateEmail: candidate.email,
         });
       }
-      if (!await hasEmailOwnership(query, { candidateId: candidate.id })) {
+      const passwordAuthentication = await authenticatePassword(query, { candidateId: candidate.id }, password, candidate.passwordHash);
+      if (passwordAuthentication === "verification_required") {
         return res.status(403).json({ error: "EMAIL_VERIFICATION_REQUIRED" });
       }
-      const valid = await verifyPassword(password, candidate.passwordHash);
+      const valid = passwordAuthentication === "authenticated";
       if (!valid) {
         return res.status(401).json({ error: "Invalid email or password" });
       }
@@ -13268,10 +13269,11 @@ export async function registerRoutes(
 
       // Verify password
       console.log(`🔐 Verifying password [${requestId}]`);
-      const isPasswordValid = await verifyPassword(
-        password,
-        user.password_hash,
-      );
+      const passwordAuthentication = await authenticatePassword(query, { userId: user.id }, password, user.password_hash);
+      const isPasswordValid = passwordAuthentication === "authenticated";
+      if (passwordAuthentication === "verification_required") {
+        return res.status(403).json({ success: false, error: "EMAIL_VERIFICATION_REQUIRED" });
+      }
       if (!isPasswordValid) {
         console.error(
           `❌ Password verification failed [${requestId}]: Password did not match for user ${user.id}`,
@@ -13318,9 +13320,6 @@ export async function registerRoutes(
         role: user.role,
       };
 
-      if (!await hasEmailOwnership(query, { userId: user.id })) {
-        return res.status(403).json({ success: false, error: "EMAIL_VERIFICATION_REQUIRED" });
-      }
       const token = jwt.sign(tokenPayload, jwtSecret, { expiresIn: "7d" });
 
       console.log(`🔍 Debug [${requestId}]: JWT signed = true`);

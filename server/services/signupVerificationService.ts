@@ -1,6 +1,7 @@
 import { createHash, createHmac, randomBytes, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { validatePasswordStrength } from "../../shared/passwordPolicy";
+import { hasEmailOwnership } from "../lib/emailOwnership";
 
 export const signupDetailsSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -288,7 +289,8 @@ export class SignupVerificationService {
       return { error: new SignupError(409, "ACCOUNT_EXISTS", "An account already exists. Please sign in.") };
     }
     // A code proves inbox possession, not knowledge of an established password.
-    if (user && (user.role !== row.role || user.email_verified_at || user.email_verification_required === false)) {
+    if (user && (user.role !== row.role || user.email_verified_at || user.email_verification_required === false
+      || await hasEmailOwnership((sql, values) => db.query(sql, values), { userId: user.id }))) {
       await db.query("UPDATE pending_registrations SET consumed_at = $2 WHERE id = $1", [row.id, this.now()]);
       return { error: new SignupError(409, "ACCOUNT_EXISTS", "An account already exists. Please sign in.") };
     }
@@ -306,7 +308,8 @@ export class SignupVerificationService {
       }
       if (candidate && (
         (candidate.user_id && candidate.user_id !== user?.id)
-        || (!candidate.user_id && (candidate.email_verified_at || candidate.email_verification_required === false))
+        || (!candidate.user_id && (candidate.email_verified_at || candidate.email_verification_required === false
+          || await hasEmailOwnership((sql, values) => db.query(sql, values), { candidateId: candidate.id })))
       )) {
         throw new SignupError(409, "ACCOUNT_EXISTS", "An account already exists. Please sign in.");
       }

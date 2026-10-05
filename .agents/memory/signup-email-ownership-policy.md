@@ -15,6 +15,12 @@ The temporary exception must never claim that an email was verified, take over a
 
 **How to apply:** Keep persisted inbox-verification evidence truthful, preserve existing-account claiming protections, and require separate approval for any retrospective verification policy.
 
+Schema defaults are not evidence that historical password accounts require new inbox proof.
+
+**Why:** The 2026-10-05 production investigation found established bcrypt-backed Talent/Client rows with `required=true` and no verification evidence despite the grandfathering migration being recorded as applied. A NULL-only backfill misses rows already populated by a schema default; staff exemptions can hide the regression.
+
+**How to apply:** Reconcile canonical credential-bearing account age with the original trusted rollout ledger. Preserve real password verification and truthful verification timestamps; fail closed without rollout evidence. Apply established-account protection to signup claiming too. Do not accept either of two divergent linked passwords merely to restore access—doing so could revive a revoked credential.
+
 Provider email presence alone is not verification. A provider exception requires an explicit verified-email contract that the application validates and consumes. Email ownership must remain separate from the Talent Verified/Vetted classifications.
 
 **Why:** The owner explicitly prohibited assuming provider email verification and required preserving the removal of simulated LinkedIn profile import.
