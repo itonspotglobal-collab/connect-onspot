@@ -32,7 +32,7 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { registerInvestorRoutes } from "./routes/investors.js";
-import { registerInvestorGoalRoutes, guardInvestorGoalUpdates } from "./routes/investorGoals";
+import { registerInvestorGoalRoutes, guardInvestorGoalUpdates, seedInvestorGoalSettings } from "./routes/investorGoals";
 import { INVESTOR_GOAL_PLACEHOLDERS, isInvestorGoalKey, isValidInvestorGoalSetting } from "../shared/investorGoals";
 import { registerTimesheetRoutes } from "./routes/timesheets.js";
 import { TIMESHEET_HIRE_SQL } from "./services/timesheetEligibility.js";
@@ -2063,12 +2063,7 @@ export async function registerRoutes(
       ON CONFLICT (key) DO NOTHING
     `);
     console.log("✅ Migration: platform_settings table ready");
-    for (const [key, value] of Object.entries(INVESTOR_GOAL_PLACEHOLDERS)) {
-      await query(
-        `INSERT INTO platform_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`,
-        [key, value],
-      );
-    }
+    await seedInvestorGoalSettings(query);
 
   // ── search_query_frequency — aggregate real search query volume for chips ──
   try {

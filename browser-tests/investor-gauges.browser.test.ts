@@ -85,13 +85,75 @@ test("reduced motion renders final count/arc, accessible real values and caps at
   await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "1,234");
   assert.match(await gauge(page).getAttribute("aria-label") ?? "", /1,234.*2,500/);
   assert.ok(Math.abs(await offset(page) - 2 * Math.PI * 136 * (1 - 1234 / 2500)) < .01);
+  const progressbar = gauge(page).getByRole("progressbar");
+  assert.equal(await progressbar.getAttribute("aria-valuenow"), "1234");
+  assert.equal(await progressbar.getAttribute("aria-valuemax"), "2500");
+  assert.match(await progressbar.getAttribute("aria-valuetext") ?? "", /1,234.*2,500/);
   state.contractors = 6000;
   await page.clock.fastForward(60_000);
   await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "6,000");
   assert.equal(await offset(page), 0);
   assert.match(await gauge(page).getAttribute("aria-label") ?? "", /6,000/);
+  assert.equal(await progressbar.getAttribute("aria-valuenow"), "2500");
+  assert.match(await progressbar.getAttribute("aria-valuetext") ?? "", /6,000.*2,500/);
   assert.equal(await page.evaluate(() => (window as any).__rafCalls), 0);
   assert.equal(await page.locator(".investors-intro").evaluate((element) => getComputedStyle(element).animationName), "none");
+  await page.close();
+});
+
+test("owner targets show exact small progress, independent start dots, account labels and formatted goals", async () => {
+  const { page, state } = await pageWithData();
+  state.contractors = 98; state.clients = 8;
+  state.contractorGoal = 10000; state.clientGoal = 5000;
+  await page.goto(base);
+  await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "98");
+  const gauges = page.locator(".investor-gauge");
+  for (const [index, count, goal] of [[0, 98, 10000], [1, 8, 5000]]) {
+    const element = gauges.nth(index);
+    const actualOffset = Number(await element.locator(".investor-gauge-fill").getAttribute("stroke-dashoffset"));
+    assert.ok(Math.abs(actualOffset - 2 * Math.PI * 136 * (1 - count / goal)) < .00001);
+    const dot = element.locator(".investor-gauge-marker");
+    assert.equal(await dot.count(), 1);
+    assert.equal(await dot.getAttribute("cx"), "286");
+    assert.equal(await dot.getAttribute("cy"), "150");
+    assert.equal(await dot.evaluate((el) => getComputedStyle(el).fill), "rgb(255, 192, 82)");
+    const bar = element.getByRole("progressbar");
+    assert.equal(await bar.getAttribute("aria-valuenow"), String(count));
+    assert.equal(await bar.getAttribute("aria-valuemax"), String(goal));
+  }
+  assert.deepEqual(await page.locator(".investor-gauge-label").allTextContents(), ["Contractor accounts", "Client accounts"]);
+  assert.deepEqual(await page.locator(".investor-gauge-goal").allTextContents(), ["Goal for 2027: 10,000", "Goal for 2027: 5,000"]);
+  for (const width of [1024, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.clock.runFor(32);
+    const size = await gauges.first().locator(".investor-gauge-count").evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
+    assert.ok(size >= 96 && size <= 120, `Desktop count is ${size}px at ${width}px`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  // Use a fresh mobile render: the frozen browser clock can retain viewport-unit
+  // computed values from the desktop render during a device-metrics resize.
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "98");
+  const mobileLayout = await page.evaluate(() => ({
+    viewport: innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    columns: getComputedStyle(document.querySelector(".investors-counts")!).gridTemplateColumns,
+    boxes: [...document.querySelectorAll("html,body,#root,.investors-page,.investors-shell,.investors-intro,.investors-counts,.investor-gauge-visual,.investor-gauge-ring")].map((el) => {
+      const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+      return { tag: el.tagName, class: el.getAttribute("class"), x: box.x, y: box.y, width: box.width,
+        height: box.height, scrollWidth: el.scrollWidth, transform: style.transform, padding: style.padding };
+    }),
+    overflowing: [...document.querySelectorAll("*")].map((el) => {
+      const box = el.getBoundingClientRect();
+      return { tag: el.tagName, class: el.getAttribute("class"), x: box.x, width: box.width, right: box.right };
+    }).filter((box) => box.right > innerWidth + 1 || box.x < -1).slice(0, 15),
+  }));
+  assert.ok(mobileLayout.scrollWidth <= mobileLayout.viewport, JSON.stringify(mobileLayout));
+  const boxes = await gauges.evaluateAll((elements) => elements.map((el) => {
+    const box = el.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom };
+  }));
+  assert.equal(boxes[0].x, boxes[1].x);
+  assert.ok(boxes[1].y >= boxes[0].bottom);
   await page.close();
 });
 

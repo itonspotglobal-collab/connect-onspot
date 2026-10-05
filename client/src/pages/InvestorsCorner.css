@@ -125,8 +125,11 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 
 .investor-gauge-fill {
   stroke: var(--hero-orange-light);
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 7px rgb(var(--hero-orange-light-rgb) / 0.16));
+  stroke-linecap: butt;
+}
+
+.investor-gauge-marker {
+  fill: var(--hero-orange-light);
 }
 
 .investor-gauge-count {
@@ -393,6 +396,10 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
 }
 
 @media (max-width: 767px) {
+  .investor-gauge-count {
+    --investor-count-min: 4.6rem;
+  }
+
   .investors-page {
     min-height: calc(100svh - var(--nav-h, 80px));
     overflow: visible;

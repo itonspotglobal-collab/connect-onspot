@@ -2,7 +2,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import type { Server } from "node:http";
-import { guardInvestorGoalUpdates, registerInvestorGoalRoutes } from "../routes/investorGoals";
+import { guardInvestorGoalUpdates, registerInvestorGoalRoutes, seedInvestorGoalSettings } from "../routes/investorGoals";
 import { INVESTOR_GOAL_PLACEHOLDERS, isValidInvestorGoalSetting, parseInvestorGoal } from "../../shared/investorGoals";
 
 describe("investor goal configuration", () => {
@@ -38,6 +38,26 @@ describe("investor goal configuration", () => {
       assert.equal(response.headers.get("cache-control"), "no-store");
       assert.deepEqual(await response.json(), { contractorGoal2027: null, clientGoal2027: null });
     }
+  });
+  it("seeds the owner's targets once and preserves Super Admin changes, including clears", async () => {
+    const values = new Map<string, string>();
+    const seed = () => seedInvestorGoalSettings(async (sql, params) => {
+      assert.match(sql, /INSERT INTO platform_settings/);
+      assert.match(sql, /ON CONFLICT \(key\) DO NOTHING/);
+      const [key, value] = params!;
+      if (!values.has(key)) values.set(key, value);
+      return { rows: [] };
+    });
+    await seed();
+    assert.equal(values.get("investor_goal_contractors_2027"), "10000");
+    assert.equal(values.get("investor_goal_clients_2027"), "5000");
+    await seed();
+    assert.equal(values.size, 2);
+    values.set("investor_goal_contractors_2027", "12000");
+    values.set("investor_goal_clients_2027", "");
+    await seed();
+    assert.equal(values.get("investor_goal_contractors_2027"), "12000");
+    assert.equal(values.get("investor_goal_clients_2027"), "");
   });
   it("reads changed live goals without a deploy or a stats-cache dependency", async () => {
     rows = [

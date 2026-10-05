@@ -62,3 +62,9 @@ Do not fulfill unexpected fixture API requests with a successful empty array.
 **Why:** An empty array is truthy and can be mistaken for an event-claim object, opening a fabricated modal. That modal makes an otherwise-rendered card unavailable to accessibility selectors. Object endpoints can also crash when a list-shaped fallback omits required nested fields.
 
 **How to apply:** Explicitly model each endpoint's response, including its actual no-event value, and fail unexpected requests. Inspect modal and accessibility state before changing a missing-card selector. Keep diagnostic response overrides temporary until a test correction is authorized.
+
+With a frozen Playwright clock, changing device metrics can leave viewport-unit computed styles from the prior desktop render, even when `innerWidth` and media queries have changed.
+
+**Why:** The browser retained desktop viewport-based padding during a mobile resize; advancing the fake clock did not correct it, but a fresh navigation did. This produced a false mobile-overflow failure.
+
+**How to apply:** Use a fresh navigation or separate page for each device-size layout check under a frozen clock. Preserve strict overflow assertions; do not change product CSS to accommodate stale test-browser styles.

@@ -273,12 +273,12 @@ export default function InvestorsCorner() {
             <InvestorGauge
               count={stats?.contractorAccounts ?? null}
               goal={goals?.contractorGoal2027 ?? null}
-              label="Contractors"
+              label="Contractor accounts"
             />
             <InvestorGauge
               count={stats?.clientAccounts ?? null}
               goal={goals?.clientGoal2027 ?? null}
-              label="Clients"
+              label="Client accounts"
             />
           </div>
           {statsUnavailable && (

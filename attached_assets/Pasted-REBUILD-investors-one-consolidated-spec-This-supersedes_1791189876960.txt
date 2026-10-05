@@ -1,0 +1,106 @@
+REBUILD /investors - one consolidated spec. This supersedes all earlier
+/investors instructions. Do NOT modify the home page.
+
+═══ GOAL ═══
+Match the attached reference slide: a two-column layout, text on the
+left, a tilted iPhone on the right, for continuity with the investor
+pitch deck. Add the live account gauges. Replace the reference image's
+"Contacts" line with the three CTAs.
+
+═══ STYLE (use the measured Home hero values; do not approximate) ═══
+- Font: Inter everywhere. Headline weight 700, letter-spacing -0.03em.
+  The only exception is the word "Without" in the tagline (below).
+- Gold accent: #FFC052.
+- Background: the Home hero's gradient -
+  radial-gradient(ellipse at 70% 30%, rgba(70,82,181,0.55),
+  transparent 60%), linear-gradient(150deg, #272668 0%, #3A4295 55%,
+  #4652B5 100%). Keep the lighter glow in the upper right behind the
+  phone, as in the reference.
+- Header: same as the Home hero (already matching).
+- Buttons: the Home primary pill - solid white, indigo #4B51B8 text,
+  Inter 600 15.5px, 52px high, 32px horizontal padding, shadow
+  0 12px 32px -8px rgba(0,0,0,0.35).
+
+═══ LEFT COLUMN, top to bottom ═══
+1. HEADLINE (Inter bold, large; scale so it sits on about 4 lines):
+   Group 1, white: "The outsourcing industry is being replaced."
+   Group 2, gold #FFC052, visually separated from group 1, as in the
+   reference: "We are not watching. We built the replacement."
+
+2. LIVE GAUGES - prominent, the visual centerpiece below the headline.
+   Two radial gauges side by side: Contractor accounts, Client accounts.
+   - Ring about 200-240px diameter on desktop; translucent-white track;
+     gold #FFC052 arc.
+   - Live count centered inside the ring, Inter bold, about 64-88px,
+     with thousands separators.
+   - Label beneath ("Contractor accounts" / "Client accounts"), plus
+     "Goal for 2027: 10,000" / "Goal for 2027: 5,000". Use "Goal", never
+     "Forecast".
+   - Arc length = live count / goal, capped at 100%. Do NOT inflate,
+     floor or rescale. Place a gold marker dot at the arc's start so the
+     ring never reads as empty at about 1% (Contractors) and 0.2%
+     (Clients).
+   - Arc sweeps from 0 and the number counts up on load; both animate
+     smoothly on each 60-second live refresh. Under
+     prefers-reduced-motion, render the final state with no animation.
+   - Screen readers get progressbar semantics stating the count and goal.
+   - If the headline plus gauges don't fit, reduce the headline slightly;
+     do not shrink the gauges below these sizes.
+   - GOALS: seed these now with an idempotent insert-if-absent at
+     startup (same pattern as deposit_cure_period_days):
+       investor_goal_contractors_2027 = 10000
+       investor_goal_clients_2027     = 5000
+     Do not edit the production database by hand. Keep both values
+     Super-Admin-editable, not hardcoded. The "no goal = no ring" rule
+     stays only as an error-state safeguard.
+   - Do NOT change the account-counting definition or its filtering
+     rules.
+
+3. TAGLINE: "Work Without Limits" on one line, white Inter regular, with
+   "Without" in the font "Hyperwave One", gold, in the slanted
+   brush-script treatment shown in the reference. VERIFY that Hyperwave
+   One exists on Google Fonts. If it does not, STOP and report - do not
+   substitute another font. Use font-display: swap and a safe fallback.
+
+4. PILL: "Currently raising our seed round."
+
+5. CTAs, where the Contacts line sits in the reference: three equal
+   white pill buttons - Request a Meeting, Request the Pitch Deck, Speak
+   to the Founder. No contact names, emails or phone numbers anywhere on
+   the page. Keep the existing investor intake form and routing (one
+   persisted form, request type recorded, Nur notified).
+
+REMOVE: the "For Investors" eyebrow and the "Talent earns more. Clients
+pay less." subhead.
+
+═══ RIGHT COLUMN - PHONE ═══
+I'm uploading the phone mockup to you (transparent PNG, from the
+pitch deck). Use that file as-is:
+- Do NOT rebuild the device in CSS and do NOT retake any screenshot.
+- Keep the tilt and shadow as baked into the image. Serve it at 2x with
+  responsive sizes (WebP/PNG). Alt text: "OnSpot mobile About page:
+  Built by people who lived the problem".
+- Position it in the right half, overlapping the vertical center, as in
+  the reference.
+- If the file has background fringes or isn't truly transparent, tell
+  me before shipping.
+
+═══ MOBILE ═══
+Stack in this order: headline, gauges (side by side at about 140px
+rings if they fit, otherwise one under the other), tagline, pill, CTAs
+(full width), then the phone at about 70% width. No horizontal overflow.
+
+═══ ALSO REPORT ═══
+1. Which environment the earlier screenshot (13 and 30) came from,
+   versus the live 98 and 8.
+2. Of the contractor accounts added since the last audit (90 to 98),
+   how many are distinct real signups versus duplicates from the mobile
+   signup retries.
+3. Whether the gauges show rings on the published page. The goal seed
+   only takes effect after a publish, so say so if that hasn't happened
+   yet.
+Do not change the counting rules.
+
+DELIVERABLES: desktop and mobile screenshots of /investors next to the
+reference slide, the Hyperwave One check result, confirmation of
+reduced-motion behavior, and a Home before/after showing no change.

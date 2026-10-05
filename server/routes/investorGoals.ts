@@ -1,7 +1,17 @@
 import type { Express, RequestHandler } from "express";
-import { isInvestorGoalKey, parseInvestorGoal } from "../../shared/investorGoals";
+import { INVESTOR_GOAL_DEFAULTS, isInvestorGoalKey, parseInvestorGoal } from "../../shared/investorGoals";
 
 type SettingsQuery = (text: string, values?: any[]) => Promise<{ rows: any[] }>;
+
+/** Same insert-if-absent policy as deposit_cure_period_days; never reset admin edits. */
+export async function seedInvestorGoalSettings(query: SettingsQuery): Promise<void> {
+  for (const [key, value] of Object.entries(INVESTOR_GOAL_DEFAULTS)) {
+    await query(
+      `INSERT INTO platform_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`,
+      [key, value],
+    );
+  }
+}
 
 /** Keep goals independent of the unchanged account-count endpoint and its cache. */
 export function registerInvestorGoalRoutes(app: Express, query: SettingsQuery): void {

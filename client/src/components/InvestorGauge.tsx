@@ -70,11 +70,30 @@ export function InvestorGauge({ count, goal, label }: InvestorGaugeProps) {
   const animatedProgress = useAnimatedValue(progressTarget, reducedMotion);
   const circumference = 2 * Math.PI * 136;
   const countDigits = count === null ? 1 : Math.max(1, Math.floor(Math.abs(count)).toLocaleString().length);
-  const dynamicSize = countDigits >= 9 ? "clamp(3.8rem, 6.6vw, 6rem)" : "clamp(4.6rem, 8.2vw, 7.5rem)";
+  const dynamicSize = countDigits >= 9
+    ? "clamp(3.8rem, 6.6vw, 6rem)"
+    : countDigits >= 6
+      ? "clamp(var(--investor-count-min, 6rem), 6.6vw, 6rem)"
+      : "clamp(var(--investor-count-min, 6rem), 8.2vw, 7.5rem)";
+  const accessibleCurrent = hasGoal
+    ? Math.min(Math.max(count ?? 0, 0), goal ?? 0)
+    : undefined;
 
   return (
     <article className="investor-gauge" aria-label={`${label}: ${count === null ? "unavailable" : `${count.toLocaleString()} registered accounts`}${hasGoal ? `; goal for 2027: ${goal.toLocaleString()}` : ""}`}>
-      <div className={`investor-gauge-visual${hasGoal ? " has-goal" : ""}`}>
+      <div
+        className={`investor-gauge-visual${hasGoal ? " has-goal" : ""}`}
+        role={hasGoal ? "progressbar" : undefined}
+        aria-label={hasGoal ? `${label} progress toward the 2027 goal` : undefined}
+        aria-valuemin={hasGoal ? 0 : undefined}
+        aria-valuemax={hasGoal ? goal ?? undefined : undefined}
+        aria-valuenow={accessibleCurrent}
+        aria-valuetext={
+          hasGoal
+            ? `${count?.toLocaleString()} actual accounts; goal ${goal?.toLocaleString()}`
+            : undefined
+        }
+      >
         {hasGoal && (
           <svg className="investor-gauge-ring" viewBox="0 0 300 300" aria-hidden="true">
             <circle className="investor-gauge-track" cx="150" cy="150" r="136" />
@@ -86,6 +105,7 @@ export function InvestorGauge({ count, goal, label }: InvestorGaugeProps) {
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - (reducedMotion ? finalProgress : animatedProgress))}
             />
+            <circle className="investor-gauge-marker" cx="286" cy="150" r="6" />
           </svg>
         )}
         <span

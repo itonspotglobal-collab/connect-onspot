@@ -643,3 +643,31 @@ mtime_ms = 1791188908829
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/b39500c5-8574-476c-abe3-757c69245d8e/9099d6d2-9b46-429b-a2fa-ed024f54733d"
 storage_version_token = "1791189123421641"
 content_type = "image/png"
+
+[[outputs]]
+id = "aIcRiogfTGC5pbFbFNX5_"
+uri = "file://screenshots/investors-desktop-development.png"
+type = "image"
+title = "Investors — desktop development preview"
+description = "1440px development preview. Actual development totals: 13 Contractor accounts and 30 Client accounts. Owner-approved 2027 goals: 10,000 and 5,000. Not a published-site capture."
+logical_id = "3aa8a46e-f763-4eec-8e9f-40b258c4ba30"
+content_hash = "sha256:4078078f188e21f1c31e92fbf043e72166ba3b6c44b0de583044b7b4383ab2c4"
+size = 991180
+mtime_ms = 1791190426112
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/3aa8a46e-f763-4eec-8e9f-40b258c4ba30/82d0beed-e96e-4668-89e8-62dad2193f8f"
+storage_version_token = "1791190636395189"
+content_type = "image/png"
+
+[[outputs]]
+id = "xCTLB8rKM7aXk7r8P_y6h"
+uri = "file://screenshots/investors-mobile-development.png"
+type = "image"
+title = "Investors — mobile development preview"
+description = "390px development preview with final counts, stacked gauges and no horizontal overflow. Actual development totals: 13 / 30; 2027 goals: 10,000 / 5,000. Not a published-site capture."
+logical_id = "05c473db-eb12-4b6f-9eb4-fac7caf30b77"
+content_hash = "sha256:51b8c181dac68f60a6be5d5f3329e4a6620272f67879a2091f0c55c4da9547c7"
+size = 342130
+mtime_ms = 1791190428184
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/05c473db-eb12-4b6f-9eb4-fac7caf30b77/1013cbd7-00b3-4e22-bed9-40ea4fcfa341"
+storage_version_token = "1791190639292425"
+content_type = "image/png"
