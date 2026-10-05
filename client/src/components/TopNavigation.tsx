@@ -5,6 +5,7 @@ import { usePortalLogin } from "@/hooks/usePortalLogin";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { authAPI } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import {
   ChevronDown,
   ChevronRight,
@@ -31,6 +32,7 @@ import {
   Flag,
   MessageSquare,
   DollarSign,
+  Clock3,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -271,6 +273,24 @@ export function TopNavigation() {
     : 0;
   const [generalTalentDropdownOpen, setGeneralTalentDropdownOpen] = useState(false);
 
+  // Timesheets only appear for an authenticated Talent after the server confirms
+  // a signed hiring engagement. apiRequest carries the application's active
+  // JWT/talent token and credentials using the established auth conventions.
+  const { data: talentTimesheetEligibility } = useQuery<{
+    eligible?: boolean;
+    trackedEligible?: boolean;
+    periods?: unknown[];
+  }>({
+    queryKey: ["/api/talent/timesheets", "eligibility"],
+    queryFn: async () => (await apiRequest("GET", "/api/talent/timesheets?eligibilityOnly=true")).json(),
+    enabled: (!!user && user.role === "talent" && isAuthenticated) || (!user && !!talentAuth),
+    staleTime: 60_000,
+    refetchInterval: 30_000,
+  });
+  const talentTimesheetsEligible = talentTimesheetEligibility?.eligible === true
+    || talentTimesheetEligibility?.trackedEligible === true
+    || (Array.isArray(talentTimesheetEligibility?.periods) && talentTimesheetEligibility.periods.length > 0);
+
   // ── Unread message notifications badge (talent) ───────────────────────────
   const unreadMsgsCount = useUnreadMessagesCount();
   // ── Persisted offer + application notifications for the account menu ──────
@@ -423,6 +443,7 @@ export function TopNavigation() {
     return [
       { key: "talent-profile", label: "Talent Profile", route: talentProfileRoute, icon: User },
       { key: "my-applications", label: "My Applications", route: "/my-applications", icon: ClipboardList },
+      ...(talentTimesheetsEligible ? [{ key: "talent-timesheets", label: "Timesheets", route: "/talent/timesheets", icon: Clock3 }] : []),
       { key: "messages", label: "Messages", route: "/messages", icon: MessageSquare },
       { key: "payout-history", label: "Payout History", route: "/talent/payouts", icon: DollarSign },
       { key: "finish-profile-setup", label: "Finish Profile Setup", route: finishSetupRoute, icon: CheckCircle2 },
@@ -991,6 +1012,15 @@ export function TopNavigation() {
                           </button>
                         </RadixDropdown.Item>
                       )}
+                      {talentTimesheetsEligible && (
+                        <RadixDropdown.Item asChild>
+                          <button onClick={() => navigate("/talent/timesheets")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
+                            <Clock3 style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                            <span style={{ flex: 1 }}>Timesheets</span>
+                            <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                          </button>
+                        </RadixDropdown.Item>
+                      )}
                       <RadixDropdown.Item asChild>
                         <button onClick={() => navigate("/find-work/jobs")} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }} onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}>
                           <Briefcase style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
@@ -1380,6 +1410,23 @@ export function TopNavigation() {
                         )}
                       </button>
                     </RadixDropdown.Item>
+
+                    {talentTimesheetsEligible && (
+                      <RadixDropdown.Item asChild>
+                        <button
+                          onClick={() => navigate("/talent/timesheets")}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px', height: 48, width: '100%', fontSize: 14, fontWeight: 500, color: '#1E2330', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', marginTop: 2, transition: 'background 150ms ease, color 150ms ease', outline: 'none' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                          onFocus={e => { e.currentTarget.style.background = '#F3F3FF'; e.currentTarget.style.color = '#4D55C7'; }}
+                          onBlur={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1E2330'; }}
+                        >
+                          <Clock3 style={{ width: 18, height: 18, color: '#4D55C7', flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>Timesheets</span>
+                          <ChevronRight style={{ width: 14, height: 14, color: '#ABAFD4', flexShrink: 0 }} />
+                        </button>
+                      </RadixDropdown.Item>
+                    )}
 
                     {/* Find Work */}
                     <RadixDropdown.Item asChild>
@@ -1815,6 +1862,13 @@ export function TopNavigation() {
                 <User className="w-4 h-4 shrink-0 text-white/50" />
                 Talent Profile
               </button>
+              {talentTimesheetsEligible && <button
+                onClick={() => { navigate("/talent/timesheets"); setIsMobileMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"
+              >
+                <Clock3 className="w-4 h-4 shrink-0 text-white/50" />
+                Timesheets
+              </button>}
               <button
                 onClick={() => { navigate("/messages"); setIsMobileMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors text-left"

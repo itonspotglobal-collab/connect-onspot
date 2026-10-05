@@ -61,3 +61,4 @@
 - [Client navigation availability](client-navigation-availability.md) — hide unavailable Client navigation; preserve planned routes and do not equate Contracts/Payments with other financial flows.
 - [Isolated server test boundaries](isolated-test-boundaries.md) — inspect transitive imports; denying SQL alone does not isolate memory stores or auth initialization.
 - [Signup email ownership policy](signup-email-ownership-policy.md) — new Client/Talent activation needs server-confirmed email ownership; audit is not implementation authorization.
+- [Timesheet access boundaries](timesheet-access-boundaries.md) — Team roster membership is not payroll permission; navigation eligibility must remain read-only.

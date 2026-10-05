@@ -1,5 +1,6 @@
 import type { Express, RequestHandler } from "express";
-import { getClient, query } from "../db.ts";
+import { getClient as databaseClient, query as databaseQuery } from "../db.ts";
+import { TIMESHEET_HIRE_SQL, TIMESHEET_CONTEXT_SQL, timesheetDisplayContext } from "../services/timesheetEligibility";
 
 type Middleware = RequestHandler;
 type Options = {
@@ -9,6 +10,11 @@ type Options = {
   requireAdmin: Middleware;
   requireAdminSubRole: (roles: string[]) => Middleware;
   getTalentBillingUserId: (req: any) => Promise<string | null>;
+  query?: (sql: string, params?: any[]) => Promise<{ rows: any[]; rowCount?: number | null }>;
+  getClient?: () => Promise<{
+    query: (sql: string, params?: any[]) => Promise<{ rows: any[]; rowCount?: number | null }>;
+    release: () => void;
+  }>;
 };
 
 const ET = "America/New_York";
@@ -83,6 +89,8 @@ const validateInstant = (value: unknown) => {
 };
 
 export function registerTimesheetRoutes(app: Express, options: Options) {
+  const query = options.query ?? databaseQuery;
+  const getClient = options.getClient ?? databaseClient;
   const { authenticateJWT, requireTalent, requireClient, requireAdmin, requireAdminSubRole } = options;
   const talentAuth = [authenticateJWT, requireTalent];
   const clientAuth = [authenticateJWT, requireClient];
@@ -128,30 +136,44 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     }
   }
 
-  async function loadPeriods(scopeSql: string, scopeArgs: unknown[]) {
+  async function loadPeriods(scopeSql: string, scopeArgs: unknown[], eligibilityOnly = false) {
     const contractResult = await query(
-      `SELECT hc.id, hc.billing_mode, hc.effective_end_date, j.time_zone FROM hiring_contracts hc
+      `SELECT hc.id, hc.effective_end_date, j.time_zone, ${eligibilityOnly ? "hc.billing_mode" : TIMESHEET_CONTEXT_SQL} FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
        JOIN jobs j ON j.id = js.job_id
-       WHERE hc.status IN ('signed', 'terminated') AND ${scopeSql}`,
+       LEFT JOIN users client ON client.id = js.client_id
+       LEFT JOIN users talent ON talent.id = js.talent_id
+       WHERE ${TIMESHEET_HIRE_SQL} AND ${scopeSql}`,
       scopeArgs,
     );
+    const engagements = contractResult.rows.map(timesheetDisplayContext);
+    const eligibility = {
+      eligible: engagements.length > 0,
+      trackedEligible: engagements.some((engagement: any) => engagement.billingMode === "tracked"),
+    };
+    // Account navigation needs only eligibility, not period generation or the
+    // potentially large session/revision history.
+    if (eligibilityOnly) return eligibility;
     await ensurePeriods(contractResult.rows);
-    if (!contractResult.rows.length) return [];
+    if (!contractResult.rows.length) return { periods: [], engagements, eligible: false, trackedEligible: false };
     const ids = contractResult.rows.map((row: any) => row.id);
     const periods = await query(
-      `SELECT tp.*, j.title AS job_title, js.talent_id, js.client_id,
-              COALESCE(NULLIF(BTRIM(client.company), ''), NULLIF(BTRIM(CONCAT_WS(' ', client.first_name, client.last_name)), '')) AS client_name
+      `SELECT tp.*, ${TIMESHEET_CONTEXT_SQL}
        FROM timesheet_periods tp
        JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
        JOIN job_submissions js ON js.id = hc.submission_id
        JOIN jobs j ON j.id = js.job_id
        LEFT JOIN users client ON client.id = js.client_id
-       WHERE tp.hiring_contract_id = ANY($1::uuid[])
+       LEFT JOIN users talent ON talent.id = js.talent_id
+       WHERE tp.hiring_contract_id = ANY($${scopeArgs.length + 1}::uuid[]) AND hc.billing_mode = 'tracked'
+         AND ${TIMESHEET_HIRE_SQL} AND ${scopeSql}
        ORDER BY tp.period_start DESC, tp.created_at DESC`,
-      [ids],
+      [...scopeArgs, ids],
     );
-    return Promise.all(periods.rows.map(async (period: any) => serializePeriod(period)));
+    return {
+      periods: await Promise.all(periods.rows.map(async (period: any) => serializePeriod(period))),
+      engagements, ...eligibility,
+    };
   }
 
   async function serializePeriod(period: any) {
@@ -240,6 +262,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       date, hours: Math.round(seconds / 3600 * 10000) / 10000,
     }));
     return {
+      ...timesheetDisplayContext(period),
       id: period.id, hiringContractId: period.hiring_contract_id,
       periodStart: dateString(period.period_start), periodEnd: dateString(period.period_end), status: period.status,
       workTimezone: workTimezone ?? null, jobTitle: period.job_title, clientName: period.client_name ?? null,
@@ -262,12 +285,45 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     };
   }
 
+  async function listFor(req: any, scope: string, args: any[], client = false) {
+    if (req.query.eligibilityOnly !== undefined && req.query.eligibilityOnly !== "true") {
+      return { status: 400, body: { error: "Invalid eligibility filter" } };
+    }
+    const clauses = [scope];
+    for (const [key, column] of [
+      ["talentId", "js.talent_id"], ["jobId", "js.job_id"], ["hiringContractId", "hc.id::text"],
+      ["organizationId", null],
+    ] as const) {
+      const value = req.query[key];
+      if (value === undefined) continue;
+      if (typeof value !== "string" || !value.trim() || value.length > 200) {
+        return { status: 400, body: { error: "Invalid timesheet filter" } };
+      }
+      if (key === "organizationId") {
+        if (client) {
+          const member = await query(
+            `SELECT 1 FROM organization_members WHERE organization_id = $1 AND user_id = $2 AND status = 'active'`,
+            [value, req.user.id],
+          );
+          if (!member.rows.length) return { status: 403, body: { error: "Organization access denied" } };
+        }
+        args.push(value);
+        clauses.push(`EXISTS (SELECT 1 FROM organization_members om
+          WHERE om.user_id = js.client_id AND om.status = 'active' AND om.organization_id = $${args.length})`);
+      } else {
+        args.push(value);
+        clauses.push(`${column} = $${args.length}`);
+      }
+    }
+    return { status: 200, body: await loadPeriods(clauses.join(" AND "), args, req.query.eligibilityOnly === "true") };
+  }
+
   app.get("/api/talent/timesheets", ...talentAuth, async (req: any, res) => {
     try {
       const talentId = await options.getTalentBillingUserId(req);
       if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
-      const periods = await loadPeriods("js.talent_id = $1", [talentId]);
-      return res.json({ periods });
+      const result = await listFor(req, "js.talent_id = $1", [talentId]);
+      return res.status(result.status).json(result.body);
     } catch (error) {
       console.error("GET talent timesheets failed", error);
       return res.status(500).json({ error: "Failed to load timesheets" });
@@ -275,15 +331,15 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
   });
   app.get("/api/client/timesheets", ...clientAuth, async (req: any, res) => {
     try {
-      const periods = await loadPeriods("js.client_id = $1", [req.user.id]);
-      return res.json({ periods });
+      const result = await listFor(req, "js.client_id = $1", [req.user.id], true);
+      return res.status(result.status).json(result.body);
     } catch (error) {
       console.error("GET client timesheets failed", error);
       return res.status(500).json({ error: "Failed to load timesheets" });
     }
   });
   app.get("/api/admin/timesheets", ...adminAuth, async (_req: any, res) => {
-    try { return res.json({ periods: await loadPeriods("true", []) }); }
+    try { return res.json(await loadPeriods("true", [])); }
     catch (error) {
       console.error("GET admin timesheets failed", error);
       return res.status(500).json({ error: "Failed to load timesheets" });
@@ -300,7 +356,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
          `SELECT tp.* FROM timesheet_periods tp
          JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
          JOIN job_submissions js ON js.id = hc.submission_id
-         WHERE tp.id = $1 AND js.talent_id = $2 AND hc.billing_mode = 'tracked' FOR UPDATE OF tp`,
+         WHERE tp.id = $1 AND js.talent_id = $2 AND hc.billing_mode = 'tracked' AND ${TIMESHEET_HIRE_SQL} FOR UPDATE OF tp`,
         [req.params.id, talentId],
       );
       if (!locked.rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Timesheet period not found" }); }
@@ -340,7 +396,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
          `SELECT tp.id, tp.status FROM timesheet_periods tp
          JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
          JOIN job_submissions js ON js.id = hc.submission_id
-         WHERE tp.id = $1 AND js.talent_id = $2 AND hc.billing_mode = 'tracked' FOR UPDATE OF tp`,
+         WHERE tp.id = $1 AND js.talent_id = $2 AND hc.billing_mode = 'tracked' AND ${TIMESHEET_HIRE_SQL} FOR UPDATE OF tp`,
         [req.params.id, talentId],
       );
       if (!period.rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Timesheet period not found" }); }
@@ -395,7 +451,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
          `SELECT tp.id, tp.status FROM timesheet_periods tp
          JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
          JOIN job_submissions js ON js.id = hc.submission_id
-         WHERE tp.id = $1 AND js.client_id = $2 AND hc.billing_mode = 'tracked' FOR UPDATE OF tp`,
+         WHERE tp.id = $1 AND js.client_id = $2 AND hc.billing_mode = 'tracked' AND ${TIMESHEET_HIRE_SQL} FOR UPDATE OF tp`,
         [req.params.id, req.user.id],
       );
       if (!own.rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Timesheet period not found" }); }
@@ -639,11 +695,11 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
 
   async function serializeById(id: string) {
     const result = await query(
-      `SELECT tp.*, j.title AS job_title, js.talent_id, js.client_id,
-              COALESCE(NULLIF(BTRIM(client.company), ''), NULLIF(BTRIM(CONCAT_WS(' ', client.first_name, client.last_name)), '')) AS client_name
+      `SELECT tp.*, ${TIMESHEET_CONTEXT_SQL}
          FROM timesheet_periods tp JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
          JOIN job_submissions js ON js.id = hc.submission_id JOIN jobs j ON j.id = js.job_id
-         LEFT JOIN users client ON client.id = js.client_id WHERE tp.id = $1`,
+         LEFT JOIN users client ON client.id = js.client_id
+         LEFT JOIN users talent ON talent.id = js.talent_id WHERE tp.id = $1`,
       [id],
     );
     return result.rows[0] ? serializePeriod(result.rows[0]) : null;

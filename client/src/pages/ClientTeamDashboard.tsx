@@ -23,6 +23,7 @@ type MemberStatus = "online" | "away" | "offline";
 
 interface TeamMember {
   id: string;
+  canViewTimesheets?: boolean;
   name: string;
   initials: string;
   role: string;
@@ -175,7 +176,7 @@ function formatActivity(member: TeamMember) {
   return `Last active ${activityDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
-function TeamMemberCard({ member, onAction }: { member: TeamMember; onAction: (name: string) => void }) {
+function TeamMemberCard({ member, onAction, organizationId }: { member: TeamMember; onAction: (name: string) => void; organizationId: string }) {
   const status = statusCopy[member.status];
   const tracksHours = member.hoursTracking !== "not_tracked";
   const progress = member.weeklyTargetHours > 0
@@ -218,7 +219,7 @@ function TeamMemberCard({ member, onAction }: { member: TeamMember; onAction: (n
           {!!member.incompleteSessionCount && <p className="mt-2 text-[11px] text-amber-700">{member.incompleteSessionCount} open or unresolved session{member.incompleteSessionCount === 1 ? "" : "s"} excluded from hours.</p>}
         </> : <p className="mt-2 text-[11px] text-slate-500">Guaranteed engagements do not require clock attendance.</p>}
         <div className="mt-4 flex gap-2">
-          <a href="/client/timesheets" className="inline-flex flex-1 items-center justify-center rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">View timesheets</a>
+          {member.canViewTimesheets === true && <a href={`/client/timesheets?talentId=${encodeURIComponent(member.id)}&organizationId=${encodeURIComponent(organizationId)}`} className="inline-flex flex-1 items-center justify-center rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">View Timesheets</a>}
           <Button type="button" size="sm" className="flex-1 bg-[#474ead] text-xs text-white hover:bg-[#3e439c]" onClick={() => onAction(member.name)}><MessageSquare className="h-3.5 w-3.5" />Message</Button>
         </div>
       </div>
@@ -365,7 +366,6 @@ export default function ClientTeamDashboard() {
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-7 pb-8">
       <TeamHeader data={data} />
-      <div className="-mt-4 flex justify-end"><a href="/client/timesheets" className="inline-flex items-center rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Review timesheets</a></div>
       <section>
         <SectionHeading eyebrow="This week at a glance" title="Your team, in focus" detail="Current reporting period" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map((metric) => <SummaryMetricCard key={metric.label} metric={metric} />)}</div>
@@ -379,7 +379,7 @@ export default function ClientTeamDashboard() {
             <p className="mt-1 text-sm text-slate-500">Signed contracts for this organization will appear here once a team member is onboarded.</p>
           </Card>
         ) : (
-          <div className="grid gap-4 xl:grid-cols-3">{data.members.map((member) => <TeamMemberCard key={member.id} member={member} onAction={handleAction} />)}</div>
+          <div className="grid gap-4 xl:grid-cols-3">{data.members.map((member) => <TeamMemberCard key={member.id} member={member} onAction={handleAction} organizationId={selectedOrganizationId} />)}</div>
         )}
       </section>
       {data.members.length > 0 && <TeamROI data={data} />}

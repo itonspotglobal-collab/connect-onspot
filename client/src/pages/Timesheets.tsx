@@ -1,18 +1,36 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertCircle, Clock3, RefreshCw } from "lucide-react";
 
 type Role = "talent" | "client" | "admin";
 type Session = { id: string; startedAt: string; endedAt: string | null; effectiveEndAt: string | null; status: string };
 type Correction = { id: string; sessionId: string; requestedStartedAt: string | null; requestedEndAt: string | null; reason: string; status: string; decisionReason: string | null; createdAt: string; decidedAt: string | null };
+type Workspace = { id: string; name: string };
+type Engagement = {
+  hiringContractId: string;
+  jobTitle: string;
+  jobId?: string | null;
+  talentId?: string | null;
+  talentName?: string | null;
+  talentAvatar?: string | null;
+  clientId?: string | null;
+  clientName?: string | null;
+  organizations?: Workspace[];
+  billingMode?: string | null;
+  contractStatus?: string | null;
+};
 type Period = {
   id: string; hiringContractId: string; periodStart: string; periodEnd: string; status: string;
   workTimezone: string | null; jobTitle: string; clientName: string | null; days: Array<{ date: string; hours: number }>;
+  jobId?: string | null; talentId?: string | null; talentName?: string | null; talentAvatar?: string | null;
+  clientId?: string | null; organizations?: Workspace[]; billingMode?: string | null;
   totalHours: number; approvalBlocked: boolean; blockingIssues: string[]; sessions: Session[];
   revisions: Array<{ id: string; version: number; reason: string; exceptionApproved: boolean; createdAt: string }>;
   corrections: Correction[];
@@ -63,6 +81,11 @@ export default function Timesheets({ role }: { role: Role }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedId, setSelectedId] = useState("");
+  const [talentFilter, setTalentFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [engagementFilter, setEngagementFilter] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("");
   const [correctionSession, setCorrectionSession] = useState("");
   const [correctionStart, setCorrectionStart] = useState("");
   const [correctionEnd, setCorrectionEnd] = useState("");
@@ -73,14 +96,60 @@ export default function Timesheets({ role }: { role: Role }) {
   const [sessionEdits, setSessionEdits] = useState<Record<string, { startedAt: string; endedAt: string }>>({});
   const [correctionDecisions, setCorrectionDecisions] = useState<Record<string, "approve" | "reject">>({});
   const endpoint = `/api/${role}/timesheets`;
-  const { data, isLoading, isError, error, refetch } = useQuery<{ periods: Period[] }>({
-    queryKey: [endpoint],
-    queryFn: async () => (await apiRequest("GET", endpoint)).json(),
+  const requestedOrganizationId = role === "client" && typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("organizationId")
+    : null;
+  const queryEndpoint = requestedOrganizationId
+    ? `${endpoint}?organizationId=${encodeURIComponent(requestedOrganizationId)}`
+    : endpoint;
+  const { data, isLoading, isError, error, refetch } = useQuery<{
+    periods?: Period[];
+    engagements?: Engagement[];
+    eligible?: boolean;
+    trackedEligible?: boolean;
+  }>({
+    queryKey: [queryEndpoint],
+    queryFn: async () => (await apiRequest("GET", queryEndpoint)).json(),
   });
   const periods = data?.periods ?? [];
-  const activeId = selectedId && periods.some((period) => period.id === selectedId) ? selectedId : periods[0]?.id;
-  const period = useMemo(() => periods.find((item) => item.id === activeId), [periods, activeId]);
-  const refresh = () => queryClient.invalidateQueries({ queryKey: [endpoint] });
+  const engagements = data?.engagements ?? [];
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const deepLinkedTalentId = role === "client" ? searchParams.get("talentId") : null;
+  const deepLinkedOrganizationId = requestedOrganizationId;
+  const filteredPeriods = useMemo(() => periods.filter((item) => {
+    if (deepLinkedTalentId && item.talentId && item.talentId !== deepLinkedTalentId) return false;
+    if (talentFilter && item.talentId !== talentFilter) return false;
+    if (roleFilter && item.jobTitle !== roleFilter) return false;
+    if (statusFilter && item.status !== statusFilter) return false;
+    if (engagementFilter && item.hiringContractId !== engagementFilter) return false;
+    if (periodFilter && item.id !== periodFilter) return false;
+    return true;
+  }), [periods, deepLinkedTalentId, talentFilter, roleFilter, statusFilter, engagementFilter, periodFilter]);
+  const filteredEngagements = useMemo(() => engagements.filter((item) => {
+    if (deepLinkedTalentId && item.talentId && item.talentId !== deepLinkedTalentId) return false;
+    if (talentFilter && item.talentId !== talentFilter) return false;
+    if (roleFilter && item.jobTitle !== roleFilter) return false;
+    if (engagementFilter && item.hiringContractId !== engagementFilter) return false;
+    if (statusFilter && statusFilter !== "no-period") return false;
+    if (periodFilter) return false;
+    return true;
+  }), [engagements, deepLinkedTalentId, talentFilter, roleFilter, engagementFilter, statusFilter, periodFilter]);
+  const periodContractIds = new Set(periods.map((item) => item.hiringContractId));
+  const noPeriodEngagements = filteredEngagements.filter((item) => !periodContractIds.has(item.hiringContractId));
+  const activeId = selectedId && filteredPeriods.some((period) => period.id === selectedId) ? selectedId : filteredPeriods[0]?.id;
+  const period = useMemo(() => filteredPeriods.find((item) => item.id === activeId), [filteredPeriods, activeId]);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: [queryEndpoint] });
+  useEffect(() => {
+    setCorrectionSession("");
+    setCorrectionStart("");
+    setCorrectionEnd("");
+    setCorrectionReason("");
+    setDisputeReason("");
+    setReviewReason("");
+    setReviewDecision("approve");
+    setSessionEdits({});
+    setCorrectionDecisions({});
+  }, [period?.id]);
   const chooseCorrectionSession = (sessionId: string) => {
     if (correctionSession !== sessionId) {
       setCorrectionStart("");
@@ -126,26 +195,109 @@ export default function Timesheets({ role }: { role: Role }) {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Clock-derived hours</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">{role === "admin" ? "Timesheet Review" : "Timesheets"}</h1>
-            <p className="mt-2 text-sm text-slate-600">{role === "talent" ? "Review recorded work periods and request timestamp corrections against a clock session." : role === "client" ? "Review submitted work periods, daily totals and recorded sessions." : "Review submitted periods, correction proposals and clock anomalies."}</p>
+            <p className="mt-2 text-sm text-slate-600">{role === "talent" ? "Review and submit recorded work for your active Client engagements." : role === "client" ? "Review recorded work for your hired Talent." : "Review submitted periods, correction proposals and clock anomalies."}</p>
           </div>
-          <Button variant="outline" onClick={() => refetch()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+          <div className="flex items-center gap-2">
+            {role === "talent" && data?.trackedEligible === true && <Button variant="outline" asChild><Link href="/talent/clock"><Clock3 className="mr-2 h-4 w-4" />Open Clock</Link></Button>}
+            <Button variant="outline" onClick={() => refetch()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+          </div>
         </header>
+        {role === "client" && !isLoading && !isError && (
+          <section aria-label="Timesheet filters" className="mb-5 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
+            <label className="text-xs font-medium text-slate-600">Talent
+              <select value={talentFilter || deepLinkedTalentId || ""} onChange={(event) => setTalentFilter(event.target.value)} className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" aria-label="Filter by Talent">
+                <option value="">All Talent</option>
+                {Array.from(new Map([...periods, ...engagements].filter((item) => item.talentId).map((item) => [item.talentId!, item.talentName || "Talent"]))).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600">Role / job
+              <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" aria-label="Filter by role">
+                <option value="">All roles</option>
+                {Array.from(new Set([...periods, ...engagements].map((item) => item.jobTitle))).map((title) => <option key={title} value={title}>{title}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600">Status
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                {Array.from(new Set(periods.map((item) => item.status))).map((status) => <option key={status} value={status}>{status}</option>)}
+                <option value="no-period">No period yet</option>
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600">Period
+              <select value={periodFilter} onChange={(event) => setPeriodFilter(event.target.value)} className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" aria-label="Filter by period">
+                <option value="">All periods</option>
+                {periods.map((item) => <option key={item.id} value={item.id}>{item.periodStart} – {item.periodEnd}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-medium text-slate-600">Engagement
+              <select value={engagementFilter} onChange={(event) => setEngagementFilter(event.target.value)} className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" aria-label="Filter by engagement">
+                <option value="">All engagements</option>
+                {Array.from(new Map([...periods, ...engagements].map((item) => [item.hiringContractId, `${item.jobTitle} · ${item.talentName || item.clientName || "Engagement"}`]))).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+              </select>
+            </label>
+            {deepLinkedOrganizationId && <p className="sm:col-span-2 lg:col-span-5 text-xs text-slate-500">Showing records available to this Client for the selected workspace.</p>}
+          </section>
+        )}
         {isLoading ? <p className="py-12 text-center text-sm text-slate-500">Loading timesheets…</p>
-          : isError ? <Card><CardContent className="p-6 text-sm text-red-700">Unable to load timesheets: {(error as Error).message}</CardContent></Card>
-          : !periods.length ? <Card><CardContent className="p-8 text-center text-sm text-slate-500">No timesheet periods are available yet.</CardContent></Card>
+          : isError ? <Card><CardContent className="p-6 text-sm text-red-700">Unable to load timesheets: {(error as Error).message}<Button variant="outline" size="sm" className="ml-3" onClick={() => refetch()}>Retry</Button></CardContent></Card>
+          : role === "talent" && data?.eligible === false && engagements.length === 0 && !periods.length
+            ? <Card><CardContent className="p-8 text-center text-sm text-slate-600">Timesheets become available after you are hired by a Client.</CardContent></Card>
+          : role === "client" && !engagements.length && !periods.length
+            ? <Card><CardContent className="p-8 text-center text-sm text-slate-600">No hired Talent have timesheets yet.</CardContent></Card>
+          : !filteredPeriods.length ? (
+            <div className="space-y-4">
+              <Card><CardContent className="p-8 text-center text-sm text-slate-600">
+                {role === "client" && (engagements.length > 0 || periods.length > 0)
+                  ? "Hired Talent are connected to this Client, but no timesheet periods match these filters yet."
+                  : "No timesheet periods are available yet."}
+              </CardContent></Card>
+              {noPeriodEngagements.map((engagement) => (
+                <Card key={engagement.hiringContractId}>
+                  <CardContent className="flex flex-wrap items-center gap-3 p-4">
+                    {role === "client" && <Avatar className="h-10 w-10"><AvatarImage src={engagement.talentAvatar || undefined} alt="" /><AvatarFallback>{(engagement.talentName || "T").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>}
+                    <div className="min-w-0 flex-1">
+                      {role === "client" && <p className="text-sm font-semibold text-slate-900">{engagement.talentName || "Hired Talent"}</p>}
+                      <p className="text-sm font-medium text-slate-800">{engagement.jobTitle}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {role === "talent" ? `${engagement.clientName || "Client"} · ` : ""}
+                        Client workspaces: {engagement.organizations?.length ? engagement.organizations.map((workspace) => workspace.name).join(", ") : "Not listed"}
+                      </p>
+                    </div>
+                    {engagement.billingMode === "guaranteed"
+                      ? <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">Not tracked</span>
+                      : <span className="text-xs text-slate-500">No timesheet period yet</span>}
+                    {engagement.billingMode === "guaranteed" && <p className="w-full pl-1 text-xs text-slate-500">Guaranteed engagement; clock attendance is not required.</p>}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
           : <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
             <aside className="space-y-2">
-              {periods.map((item) => <button key={item.id} onClick={() => setSelectedId(item.id)} className={`w-full rounded-xl border p-4 text-left transition ${activeId === item.id ? "border-indigo-300 bg-indigo-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}>
+              {filteredPeriods.map((item) => <button key={item.id} onClick={() => setSelectedId(item.id)} className={`w-full rounded-xl border p-4 text-left transition ${activeId === item.id ? "border-indigo-300 bg-indigo-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}>
+                {role === "client" && <span className="mb-2 flex items-center gap-2">{item.talentAvatar && <Avatar className="h-7 w-7"><AvatarImage src={item.talentAvatar} alt="" /><AvatarFallback>{(item.talentName || "T").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>}<span className="text-xs font-semibold text-slate-700">{item.talentName || "Hired Talent"}</span></span>}
                 <span className="block text-sm font-semibold text-slate-900">{item.jobTitle}</span>
                 {role !== "client" && item.clientName && <span className="mt-1 block text-xs text-slate-500">{item.clientName}</span>}
+                {(item.organizations?.length || item.billingMode) && <span className="mt-1 block text-xs text-slate-500">Client workspaces: {item.organizations?.map((workspace) => workspace.name).join(", ") || "Not listed"}</span>}
                 <span className="mt-2 block text-xs text-slate-500">{item.periodStart} – {item.periodEnd}</span>
                 <span className="mt-2 flex justify-between text-xs"><span className="capitalize text-indigo-700">{item.status}</span><b>{item.totalHours.toFixed(2)} hrs</b></span>
               </button>)}
+              {noPeriodEngagements.map((engagement) => <div key={engagement.hiringContractId} className="rounded-xl border border-dashed border-slate-300 bg-white p-4">
+                {role === "client" && <p className="text-xs font-semibold text-slate-700">{engagement.talentName || "Hired Talent"}</p>}
+                <p className="mt-1 text-sm font-medium text-slate-900">{engagement.jobTitle}</p>
+                <p className="mt-1 text-xs text-slate-500">Client workspaces: {engagement.organizations?.map((workspace) => workspace.name).join(", ") || "Not listed"}</p>
+                <p className="mt-2 text-xs font-medium text-slate-600">{engagement.billingMode === "guaranteed" ? "Not tracked · attendance not required" : "No period yet"}</p>
+              </div>)}
             </aside>
             {period && <section className="space-y-5">
               <Card><CardContent className="p-5 md:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><h2 className="text-xl font-semibold text-slate-950">{period.jobTitle}</h2><p className="mt-1 text-sm text-slate-500">{period.periodStart} – {period.periodEnd}{role !== "client" && period.clientName ? ` · ${period.clientName}` : ""}</p>
+                  <div className="flex items-start gap-3">
+                    {role === "client" && <Avatar className="mt-1 h-11 w-11"><AvatarImage src={period.talentAvatar || undefined} alt="" /><AvatarFallback>{(period.talentName || "T").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>}
+                    <div><h2 className="text-xl font-semibold text-slate-950">{role === "client" && period.talentName ? period.talentName : period.jobTitle}</h2>{role === "client" && <p className="mt-0.5 text-sm font-medium text-slate-700">{period.jobTitle}</p>}<p className="mt-1 text-sm text-slate-500">{period.periodStart} – {period.periodEnd}{role !== "client" && period.clientName ? ` · ${period.clientName}` : ""}</p>
+                    {(role === "talent" || period.organizations?.length) && <p className="mt-1 text-xs text-slate-500">{role === "talent" && period.clientName ? `Client: ${period.clientName} · ` : ""}Client workspaces: {period.organizations?.map((workspace) => workspace.name).join(", ") || "Not listed"}</p>}</div>
+                  </div>
+                  <div>
                     <p className="mt-1 text-xs text-slate-500">Work timezone: {period.workTimezone || "Not specified"} · Contract {period.hiringContractId}</p></div>
                   <span className="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold capitalize text-slate-700">{period.status}</span>
                 </div>
@@ -183,7 +335,7 @@ export default function Timesheets({ role }: { role: Role }) {
 
               {period.corrections.length > 0 && <Card><CardContent className="p-5 md:p-6"><h3 className="font-semibold text-slate-900">Timestamp correction requests</h3><div className="mt-3 space-y-2">{period.corrections.map((item) => <div key={item.id} className="rounded-lg bg-slate-50 p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><b className="text-slate-800">Session {item.sessionId}</b><span className="text-xs capitalize text-slate-500">{item.status}</span></div><p className="mt-1 text-xs text-slate-600">{item.reason}</p><p className="mt-1 text-xs text-slate-500">Requested: {item.requestedStartedAt ? fmt(item.requestedStartedAt, period.workTimezone) : "start unchanged"} – {item.requestedEndAt ? fmt(item.requestedEndAt, period.workTimezone) : "end unchanged"}</p>{role !== "client" && item.decisionReason && <p className="mt-1 text-xs text-slate-500">Decision note: {item.decisionReason}</p>}{role === "admin" && item.status === "pending" && <div className="mt-2 flex gap-2"><Button size="sm" variant={correctionDecisions[item.id] === "approve" ? "default" : "outline"} onClick={() => setCorrectionDecisions({ ...correctionDecisions, [item.id]: "approve" })}>Approve</Button><Button size="sm" variant={correctionDecisions[item.id] === "reject" ? "default" : "outline"} onClick={() => setCorrectionDecisions({ ...correctionDecisions, [item.id]: "reject" })}>Reject</Button></div>}</div>)}</div></CardContent></Card>}
 
-              {role === "talent" && ["open", "rejected"].includes(period.status) && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Submit timesheet</h3><p className="mt-1 text-sm text-slate-500">Submission sends the recorded clock-derived period for client review.</p><Button className="mt-3" disabled={mutate.isPending || !period.sessions.length} onClick={() => mutate.mutate({ path: `${endpoint}/${period.id}/submit`, body: {} })}>Submit for review</Button></CardContent></Card>}
+              {role === "talent" && ["open", "rejected"].includes(period.status) && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Submit timesheet</h3><p className="mt-1 text-sm text-slate-500">Submission sends the recorded clock-derived period to OnSpot Admin for review.</p><Button className="mt-3" disabled={mutate.isPending || !period.sessions.length} onClick={() => mutate.mutate({ path: `${endpoint}/${period.id}/submit`, body: {} })}>Submit for review</Button></CardContent></Card>}
               {role === "client" && period.status === "approved" && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Dispute this approved timesheet</h3><p className="mt-1 text-sm text-slate-500">A clear reason is required and will be reviewed by the timesheet administrator.</p><textarea maxLength={2000} rows={3} className="mt-3 w-full rounded-md border border-slate-300 p-2 text-sm" value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Describe the issue with this approved period" /><Button className="mt-3" variant="destructive" disabled={mutate.isPending || !disputeReason.trim()} onClick={() => mutate.mutate({ path: `${endpoint}/${period.id}/dispute`, body: { reason: disputeReason.trim() } })}>Submit dispute</Button></CardContent></Card>}
               {role === "admin" && ["submitted", "disputed"].includes(period.status) && <Card><CardContent className="p-5 md:p-6"><h3 className="font-semibold text-slate-900">Review decision</h3><p className="mt-1 text-sm text-slate-500">Provide a decision reason. For approved corrections, include the final timestamps in the session fields above.</p><label className="mt-4 block text-xs font-medium text-slate-600">Decision reason<textarea rows={3} className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm" value={reviewReason} onChange={(e) => setReviewReason(e.target.value)} placeholder="Record why this review decision is being made" /></label><div className="mt-4 flex flex-wrap gap-2">{(["approve", "reject", "edit", "exception"] as const).map((choice) => <Button key={choice} variant={choice === "reject" ? "destructive" : reviewDecision === choice ? "default" : "outline"} onClick={() => setReviewDecision(choice)} className="capitalize">{choice}</Button>)}<Button className="ml-auto" disabled={mutate.isPending || !reviewReason.trim() || (reviewDecision === "edit" && !Object.keys(sessionEdits).length) || period.corrections.some((item) => item.status === "pending" && !correctionDecisions[item.id])} onClick={() => review(reviewDecision)}>Record {reviewDecision} decision</Button></div></CardContent></Card>}
               {role !== "client" && period.revisions.length > 0 && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Approved revisions</h3><div className="mt-2 space-y-2">{period.revisions.map((item) => <p key={item.id} className="text-sm text-slate-600">Version {item.version}{item.exceptionApproved ? " · exception approved" : ""} · {item.reason} <span className="text-xs text-slate-400">({fmt(item.createdAt, period.workTimezone)})</span></p>)}</div></CardContent></Card>}

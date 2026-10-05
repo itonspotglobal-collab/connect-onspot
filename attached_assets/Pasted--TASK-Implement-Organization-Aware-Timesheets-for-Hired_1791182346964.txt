@@ -1,0 +1,933 @@
+# TASK — Implement Organization-Aware Timesheets for Hired Talent
+
+Extend the existing OnSpot Timesheet system so that Timesheets are available specifically to **Talent who have actually been hired by a Client and are part of that Client/organization engagement**, and so the corresponding Client can securely view the Timesheets for their hired Talent.
+
+This is an **extension of the existing Timesheet, Clock, Hiring Contract, Client Team, and Organization functionality**.
+
+DO NOT create a second or parallel timesheet system.
+
+DO NOT replace existing working Timesheet functionality.
+
+The implementation must reuse and safely extend the current application architecture.
+
+---
+
+# PRIMARY PRODUCT REQUIREMENT
+
+Timesheets should become available to Talent only when that Talent has been successfully hired through the Client hiring workflow.
+
+Conceptually:
+
+Client hires Talent
+→ valid signed hiring contract exists
+→ Talent becomes part of the Client's active hired workforce / organization context
+→ Talent gains access to Timesheets
+→ Talent records work through the existing Clock system where applicable
+→ existing Timesheet periods are generated
+→ Talent can review/submit their Timesheet
+→ Client can view the Timesheet for that hired Talent
+→ existing Admin review / billing workflow continues unchanged
+
+A Talent account that has NOT been hired must NOT gain access to functional Timesheets merely because they have a Talent account.
+
+---
+
+# IMPORTANT — AUDIT BEFORE EDITING
+
+Before modifying code, inspect the existing implementations directly related to this feature.
+
+At minimum inspect:
+
+- `client/src/pages/Timesheets.tsx`
+- `client/src/App.tsx`
+- `client/src/components/ClientLayout.tsx`
+- Talent navigation / Talent account navigation
+- `client/src/pages/ClientTeamDashboard.tsx`
+- `server/routes/timesheets.ts`
+- existing Clock routes and Clock page
+- hiring contract creation/signing flow
+- Client hiring workflow
+- `hiring_contracts`
+- `job_submissions`
+- `clock_sessions`
+- `timesheet_periods`
+- `timesheet_revisions`
+- `timesheet_revision_sessions`
+- `timesheet_correction_proposals`
+- `timesheet_disputes`
+- `organization_members`
+- `organizations`
+- existing Client Team Dashboard API
+- existing Timesheet tests
+- route/navigation tests
+
+Trace the actual relationship between:
+
+Client
+→ Organization
+→ Job
+→ Talent
+→ Job Submission
+→ Offer
+→ Signed Hiring Contract
+→ Clock Sessions
+→ Timesheet Period
+→ Timesheet Revision
+→ Client visibility
+
+Do not infer relationships from table names alone.
+
+---
+
+# EXISTING TIMESHEET SYSTEM MUST BE PRESERVED
+
+The application already has a modern Timesheet implementation.
+
+Existing routes include:
+
+- `/talent/timesheets`
+- `/client/timesheets`
+
+Existing APIs include:
+
+- `GET /api/talent/timesheets`
+- `GET /api/client/timesheets`
+
+There is also existing support for:
+
+- clock-derived hours
+- timesheet periods
+- timesheet submission
+- timestamp corrections
+- Admin review
+- approved revisions
+- disputes
+- audit records
+- invoice/billing handoff
+
+Reuse this architecture.
+
+Do NOT introduce a new table such as a generic `talent_timesheets` table unless the existing architecture demonstrably cannot support the requirement.
+
+Prefer extending existing queries, authorization, organization scoping, navigation, and UI.
+
+---
+
+# SOURCE OF HIRE ELIGIBILITY
+
+A Talent should be considered eligible for Timesheets only when there is a legitimate completed Client hiring relationship.
+
+Use the existing canonical hiring state.
+
+The current modern flow already uses `hiring_contracts`, and Timesheets currently load contracts whose status is effectively active/signed.
+
+Verify the actual hiring lifecycle and preserve it.
+
+A Talent MUST NOT receive Timesheet access based only on:
+
+- being registered as Talent
+- applying for a job
+- being shortlisted
+- receiving an invitation
+- receiving an interview
+- receiving an offer
+- accepting an offer without a completed hiring contract
+- being manually associated with an organization without a valid hire
+
+The canonical eligibility should be tied to the successfully signed/countersigned hiring contract or whatever exact existing state represents a completed hire.
+
+Do not create a new duplicate `isHired` flag if the hiring contract already provides the canonical state.
+
+---
+
+# ORGANIZATION INTEGRATION
+
+Timesheets must work correctly for Clients operating inside an Organization.
+
+The system already has:
+
+- `organizations`
+- `organization_members`
+
+Do not confuse Client organization membership with hired Talent employment/engagement.
+
+First determine how the existing system currently associates a hired Talent with:
+
+1. the Client who hired them;
+2. the Client's organization/workspace;
+3. the hiring contract;
+4. the job/submission.
+
+If the organization relationship can already be derived reliably from the Client/hiring/job relationship, reuse it.
+
+If an explicit organization reference on the hiring relationship is required, make the smallest safe schema change necessary.
+
+Do NOT simply insert hired Talent into `organization_members` unless that table is genuinely intended to contain Talent workforce members.
+
+`organization_members` currently represents organization/workspace users such as owners/members. Preserve that semantic unless the existing architecture clearly establishes otherwise.
+
+Prefer distinguishing:
+
+Organization account members
+vs.
+Organization's hired Talent/workforce
+
+if they are separate concepts.
+
+---
+
+# TALENT EXPERIENCE
+
+For an eligible hired Talent:
+
+Timesheets should be accessible from their Talent account.
+
+Reuse:
+
+`/talent/timesheets`
+
+The page must use the existing Timesheet component and existing APIs wherever possible.
+
+The Talent should be able to see only Timesheet periods belonging to their own eligible hiring contract(s).
+
+Display useful context such as:
+
+- Client / organization
+- job or role title
+- Timesheet period
+- status
+- total recorded hours
+- daily totals
+- recorded sessions
+- corrections
+- submission state
+
+Preserve existing correction/submission functionality.
+
+Do not expose another Talent's Timesheets.
+
+---
+
+# TALENT WITH MULTIPLE HIRES
+
+Support the possibility that one Talent can have more than one legitimate hiring contract.
+
+For example:
+
+Talent
+→ Organization A / Role A
+
+and possibly later or concurrently:
+
+Talent
+→ Organization B / Role B
+
+Do not make Timesheets rely on one global `organizationId` stored on the Talent account.
+
+Timesheets must remain contract/engagement scoped.
+
+The Talent page should clearly identify which Client/organization/job each Timesheet belongs to.
+
+---
+
+# NON-HIRED TALENT
+
+A Talent who has no eligible signed hiring contract should not receive a misleading functional Timesheet workspace.
+
+Choose the behavior most consistent with the current Talent UX:
+
+Preferred behavior:
+
+- hide the Timesheets navigation item until eligible;
+
+and also secure the route/server so manually opening:
+
+`/talent/timesheets`
+
+does not expose unauthorized data.
+
+If keeping the URL reachable is cleaner for the existing router, show a clear empty/eligibility state such as:
+
+`Timesheets become available after you are hired by a Client.`
+
+But API authorization/data filtering must still enforce eligibility server-side.
+
+Do not rely only on hiding navigation.
+
+---
+
+# CLIENT EXPERIENCE
+
+Clients must be able to view Timesheets belonging to Talent they actually hired.
+
+Reuse:
+
+`/client/timesheets`
+
+Do NOT give the Client access to all Timesheets in the system.
+
+The current Client API appears scoped using the hiring relationship / Client ID. Preserve and strengthen that authorization.
+
+Extend the Client Timesheets experience so the Client can clearly understand whose Timesheet is being viewed.
+
+At minimum include:
+
+- Talent name
+- Talent avatar if already available
+- job / role
+- organization if applicable
+- contract/engagement
+- period
+- status
+- total hours
+- daily hours
+- recorded sessions
+
+If multiple Talent have Timesheets, provide a clean filtering/navigation experience.
+
+For example:
+
+Talent
+Role
+Period
+Status
+
+Do not redesign the full Client Portal.
+
+Use the existing OnSpot visual system.
+
+---
+
+# CLIENT TEAM INTEGRATION
+
+The application already has a Client Team Dashboard at approximately:
+
+`/clients`
+
+with:
+
+`ClientTeamDashboard`
+
+and an existing organization-aware team API.
+
+Integrate Timesheets with this existing hired-team experience where appropriate.
+
+For hired Talent cards/rows, add a contextual action such as:
+
+`View Timesheets`
+
+which navigates the Client to the existing Client Timesheets page filtered to that Talent/engagement.
+
+Example:
+
+`/client/timesheets?talentId=<id>`
+
+or another clean existing-router-compatible approach.
+
+Do not duplicate a Timesheet detail implementation inside the Team Dashboard.
+
+The Team Dashboard should link to the canonical Client Timesheets experience.
+
+---
+
+# CLIENT ORGANIZATION SECURITY
+
+This is critical.
+
+A Client may only view Timesheets belonging to a hiring relationship they are authorized to manage.
+
+If organization users other than the original hiring Client can view workforce Timesheets, determine that permission from existing organization roles.
+
+Do not automatically assume every organization member has full payroll/time visibility.
+
+Audit the existing organization authorization model first.
+
+At minimum:
+
+- unauthenticated users: no access
+- Talent: own eligible Timesheets only
+- Client: own hired Talent / permitted organization workforce only
+- unrelated Client: no access
+- Admin: preserve existing authorized Admin review access
+
+Never accept an arbitrary:
+
+`clientId`
+`organizationId`
+`talentId`
+
+from the browser as proof of authorization.
+
+Requested IDs may be filters only after server-side ownership/membership has been established.
+
+---
+
+# TIMESHEET GENERATION
+
+Continue using the existing Timesheet period generation logic.
+
+Do not manually create blank Timesheets just because someone is hired unless that matches the current architecture.
+
+The existing model derives Timesheet periods from eligible hiring contracts and Clock data.
+
+Preserve:
+
+`hiring_contract`
+→ `clock_session`
+→ `timesheet_period`
+→ submission/review
+→ approved revision
+→ billing
+
+Do not bypass the existing flow.
+
+---
+
+# TRACKED VS GUARANTEED CONTRACTS
+
+Audit and preserve existing billing mode behavior.
+
+For:
+
+`billing_mode = tracked`
+
+Timesheets and Clock-derived work periods should function normally.
+
+For:
+
+`billing_mode = guaranteed`
+
+do not incorrectly force clock attendance/timesheet hours if the existing contract semantics explicitly do not require tracked attendance.
+
+Do NOT display `0 hours` in a way that implies failure to work for a Guaranteed engagement.
+
+Use the existing product semantics.
+
+Do not change Guaranteed billing logic.
+
+---
+
+# CLOCK INTEGRATION
+
+Timesheets should remain connected to the existing Clock feature.
+
+For eligible Tracked Talent:
+
+Clock
+→ Clock Sessions
+→ Timesheet Period
+→ Talent Submission
+→ Admin Review
+→ Client visibility / dispute
+→ Billing
+
+Do not create manually entered Timesheet hours that bypass clock sessions unless such behavior already exists.
+
+Preserve:
+
+- completed sessions
+- unresolved sessions
+- missed clock-out handling
+- approved clock exceptions
+- correction proposals
+- timezone handling
+- day splitting
+- period boundaries
+
+---
+
+# TIMESHEET STATUS
+
+Preserve the existing Timesheet states.
+
+Do not invent another overlapping state machine.
+
+Use the existing status lifecycle already implemented by:
+
+`timesheet_periods`
+
+and associated revisions/audit.
+
+The UI should visibly distinguish statuses such as the currently supported equivalents of:
+
+- Open
+- Submitted
+- Approved
+- Rejected
+- Disputed
+
+Use exact existing statuses after auditing the schema.
+
+---
+
+# CLIENT REVIEW SEMANTICS
+
+Do not change the current Admin approval model unless required.
+
+The existing application appears to have:
+
+Talent submission
+→ Admin review/approval
+→ Client can view / dispute approved Timesheets
+
+Preserve this division of responsibility if confirmed by the code.
+
+Do NOT silently turn the Client into the final Timesheet approver unless the existing system already defines that behavior.
+
+The request is:
+
+**Client can view the Timesheet for hired Talent.**
+
+It is not permission to redesign Timesheet approval.
+
+---
+
+# TIMESHEET FILTERING
+
+Improve Client Timesheet usability without replacing the current page.
+
+Recommended filters:
+
+- Talent
+- Role/job
+- Period
+- Status
+
+Optional if straightforward:
+
+- Organization, when a Client belongs to more than one organization
+
+Filters must operate only on server-authorized records.
+
+A query parameter is a filter, not authorization.
+
+---
+
+# TALENT NAME / ORGANIZATION DATA
+
+The existing Timesheet API currently exposes primarily contract/job/client context.
+
+Extend the serializer/query safely so Client Timesheet records contain enough display context.
+
+For the Client role, include appropriate Talent fields, for example:
+
+- talentId
+- talentName
+- avatar/profile image if available
+- jobTitle
+- organizationId / organizationName where applicable
+
+For the Talent role, include:
+
+- clientId where safe/useful
+- clientName
+- organizationName where applicable
+- jobTitle
+
+Do NOT expose private profile fields unnecessarily.
+
+---
+
+# ROUTING
+
+Preserve the existing canonical routes:
+
+Talent:
+`/talent/timesheets`
+
+Client:
+`/client/timesheets`
+
+Do not introduce duplicate routes unless necessary.
+
+Make sure outer `App.tsx` routing actually mounts all routes being used.
+
+This project has historically contained nested routes that were not reachable from the outer router, so verify real route reachability rather than assuming a declared nested route works.
+
+---
+
+# NAVIGATION
+
+Update navigation carefully.
+
+## Talent
+
+Show Timesheets to hired/eligible Talent.
+
+Do not make Timesheets appear as an active working feature to Talent with no eligible hire unless the design intentionally uses an eligibility empty state.
+
+## Client
+
+Ensure Timesheets remains reachable through the canonical Client layout/navigation.
+
+Do not create dead sidebar links.
+
+Any new navigation option must resolve to a real mounted route.
+
+---
+
+# AUTHORIZATION REQUIREMENTS
+
+All authorization must be enforced on the backend.
+
+Talent Timesheet query should effectively enforce:
+
+authenticated Talent
+AND
+Timesheet → hiring contract → submission → talent_id = current Talent
+
+Client Timesheet query should effectively enforce:
+
+authenticated Client
+AND
+Timesheet → hiring contract → submission → Client/authorized organization relationship
+
+Admin should preserve existing scoped access.
+
+Never trust:
+
+`talentId`
+`clientId`
+`organizationId`
+`hiringContractId`
+
+supplied from the frontend without verifying it against the authenticated user.
+
+---
+
+# DO NOT BREAK BILLING
+
+Timesheets feed downstream financial functionality.
+
+Do NOT change:
+
+- invoice calculations
+- approved revision selection
+- Talent invoice generation
+- Client monthly invoice calculation
+- payout calculation
+- credit memos
+- guarantee claims
+- financial status transitions
+
+unless an extremely small compatibility change is strictly necessary.
+
+Timesheets should remain the same canonical records already consumed by billing.
+
+---
+
+# DO NOT DOUBLE COUNT HOURS
+
+Modern worked time may have multiple representations:
+
+`clock_session`
+→ `timesheet revision`
+→ invoice
+
+These are different lifecycle representations of the same underlying work.
+
+Never calculate a displayed Timesheet total by adding:
+
+clock sessions + revisions
+
+or:
+
+clock sessions + invoice hours
+
+or:
+
+multiple Timesheet revisions
+
+Reuse the existing serializer's effective/current Timesheet representation.
+
+---
+
+# DATA MODEL RULE
+
+Before adding any migration, answer:
+
+Can this feature be implemented using the current:
+
+- hiring contract
+- job submission
+- organization
+- clock session
+- timesheet period
+- revision
+
+relationships?
+
+If YES:
+
+do not add a new table.
+
+If NO:
+
+make the smallest additive schema change possible and explain why it is required.
+
+No destructive migration.
+
+No migration that rewrites historical Timesheets.
+
+---
+
+# UI / UX
+
+Follow the existing OnSpot design system.
+
+Do not redesign the whole application.
+
+For Client Timesheets, a useful structure would be:
+
+Header:
+`Timesheets`
+
+Subheading:
+`Review recorded work for your hired Talent.`
+
+Summary/filter area:
+
+- Talent selector
+- Status
+- Period
+- Role
+
+Timesheet cards/list:
+
+Talent name + avatar
+Role
+Period
+Status badge
+Total Hours
+View Details
+
+Detail:
+
+- daily totals
+- recorded sessions
+- correction history where appropriate
+- Timesheet status
+- existing dispute action when eligible
+
+For Talent:
+
+Header:
+`Timesheets`
+
+Subheading:
+`Review and submit recorded work for your active Client engagements.`
+
+Clearly show Client/organization and role.
+
+Keep mobile responsiveness.
+
+---
+
+# EMPTY STATES
+
+Talent, not hired:
+
+`Timesheets become available after you are hired by a Client.`
+
+Hired Talent but no recorded period yet:
+
+`No timesheet periods are available yet.`
+
+Client with no hired Talent:
+
+`No hired Talent have timesheets yet.`
+
+Client with hired Talent but no submitted/recorded periods:
+
+use wording that does not imply an error.
+
+Do not show fake/sample Timesheets.
+
+---
+
+# TESTING REQUIREMENTS
+
+Add or update automated tests.
+
+At minimum cover:
+
+## Talent authorization
+
+1. Talent with no hiring contract receives no Timesheet data.
+2. Talent with only application/shortlist/offer but no completed hire receives no Timesheet data.
+3. Talent with eligible signed Tracked hiring contract can access their Timesheets.
+4. Talent cannot access another Talent's Timesheets.
+5. Talent with two Client engagements sees only their own records, correctly separated.
+
+## Client authorization
+
+6. Client can view Timesheets for Talent they hired.
+7. Client cannot view Timesheets for another unrelated Client.
+8. Querying a different `talentId` cannot bypass ownership checks.
+9. Querying another `organizationId` cannot bypass membership/ownership.
+10. Authorized organization access works according to the existing role model.
+
+## Timesheet lifecycle
+
+11. Clock sessions generate/use the correct Timesheet period.
+12. Talent submits Timesheet.
+13. Existing Admin review remains functional.
+14. Existing Client dispute remains functional.
+15. Approved revision behavior remains unchanged.
+
+## Contract state
+
+16. Unsigned contract does not enable Timesheets.
+17. Signed Tracked contract enables Timesheets.
+18. Terminated historical contract preserves historical Timesheets as appropriate.
+19. Guaranteed contract does not incorrectly require clock-derived hours.
+
+## Navigation
+
+20. Eligible Talent can reach `/talent/timesheets`.
+21. Client can reach `/client/timesheets`.
+22. Team Dashboard `View Timesheets` link reaches the canonical Client Timesheets page.
+23. No dead navigation item is introduced.
+
+Run existing Timesheet tests and Client navigation tests after implementation.
+
+---
+
+# REGRESSION REQUIREMENTS
+
+Verify these existing features still work after the change:
+
+- Client authentication
+- Talent authentication
+- Client Team Dashboard
+- organizations
+- organization invitations
+- job creation
+- Talent application/invitation
+- interview flow
+- offer flow
+- contract signing
+- Talent Clock
+- Timesheet submission
+- Admin Timesheet review
+- Client Timesheet view
+- Timesheet dispute
+- Client monthly invoices
+- Talent invoices
+- notifications
+- messaging
+- Client navigation
+- Talent navigation
+
+Do not refactor unrelated functionality.
+
+---
+
+# IMPLEMENTATION STYLE
+
+Make the smallest safe set of changes required.
+
+Prefer modifying/extending existing:
+
+`client/src/pages/Timesheets.tsx`
+
+`server/routes/timesheets.ts`
+
+Client Team integration
+
+Talent navigation
+
+Client navigation
+
+and associated tests.
+
+Do not create duplicate components or APIs when the existing ones can be extended.
+
+Preserve existing endpoint response compatibility where possible.
+
+---
+
+# REQUIRED IMPLEMENTATION REPORT
+
+After completing the feature, report:
+
+## 1. Eligibility Rule
+
+State exactly what makes a Talent eligible for Timesheets.
+
+## 2. Organization Relationship
+
+Explain how a hired Talent is associated with the Client/organization without confusing workforce relationships with organization account membership.
+
+## 3. Talent Flow
+
+Show:
+
+Hire
+→ Talent access
+→ Clock
+→ Timesheet
+→ Submission
+
+## 4. Client Flow
+
+Show:
+
+Client/Organization
+→ Hired Talent
+→ Client Team
+→ View Timesheets
+→ Timesheet Detail
+
+## 5. Authorization
+
+Explain how cross-Client and cross-Talent data access is prevented.
+
+## 6. Files Changed
+
+List every modified file and why.
+
+## 7. Schema Changes
+
+State:
+
+`NONE`
+
+if no migration was necessary.
+
+If a migration was necessary, explain precisely why.
+
+## 8. Existing Functionality Preserved
+
+Confirm Clock, Admin review, billing, invoice and dispute workflows were not replaced.
+
+## 9. Tests
+
+List tests added/updated and results.
+
+---
+
+# ACCEPTANCE CRITERIA
+
+The task is complete only when all of the following are true:
+
+- Timesheets use the existing modern Timesheet system.
+- A Talent without a completed Client hire cannot access another/functional hired-work Timesheet.
+- A legitimately hired Tracked Talent can access their Timesheets.
+- Timesheets remain connected to their hiring contract and Clock sessions.
+- Client can view Timesheets belonging to Talent they hired.
+- Client Team can link to the appropriate Timesheet view.
+- Organization scoping is authorization-safe.
+- One Client cannot see another Client's Timesheets.
+- One Talent cannot see another Talent's Timesheets.
+- Multiple engagements are correctly separated.
+- Existing Admin Timesheet review still works.
+- Existing Client dispute functionality still works.
+- Existing invoice/billing logic is unchanged.
+- Guaranteed contracts are not incorrectly treated as missing-work Timesheets.
+- No duplicate Timesheet architecture is introduced.
+- Navigation routes are genuinely mounted and usable.
+- Existing Timesheet and navigation tests pass.
+- No unrelated existing feature is broken.
+
+Implement this as an extension of the existing OnSpot architecture, not as a new standalone Timesheet feature.

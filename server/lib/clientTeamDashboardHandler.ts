@@ -1,4 +1,5 @@
 import type { Request, RequestHandler, Response } from "express";
+import { TIMESHEET_HIRE_SQL } from "../services/timesheetEligibility";
 import {
   calculateModernDashboardActivity,
   getDashboardHoursTracking,
@@ -108,6 +109,10 @@ SELECT ge.talent_id,
        NULLIF(p.rating::text, '0') AS rating, ge.rate, ge.rate_currency, ge.rate_period,
        ge.engagement_type, ge.has_legacy_time_tracking, ge.hours_engagement_type,
        ge.modern_tracked_contracts, ge.contract_end_date,
+       EXISTS (SELECT 1 FROM hiring_contracts hc
+         JOIN job_submissions js ON js.id = hc.submission_id
+         WHERE js.talent_id = ge.talent_id AND js.client_id = $3
+           AND hc.billing_mode = 'tracked' AND ${TIMESHEET_HIRE_SQL}) AS can_view_timesheets,
        latest_activity.start_time AS latest_activity_at,
        latest_activity.end_time AS latest_activity_end,
        modern_activity.latest_activity_at AS modern_latest_activity_at,
@@ -255,7 +260,7 @@ export function createClientTeamDashboardHandler(
         return res.status(404).json({ error: "Organization not found" });
       }
 
-      const memberResult = await dbQuery(MEMBERS_SQL, [organizationId, dashboardNow]);
+      const memberResult = await dbQuery(MEMBERS_SQL, [organizationId, dashboardNow, userId]);
       const spendResult = await dbQuery(SPEND_SQL, [organizationId]);
       const spendByCurrency = spendResult.rows.map((row: any) => ({
         currency: row.currency,
@@ -312,6 +317,7 @@ export function createClientTeamDashboardHandler(
           : [];
         return {
           id: row.talent_id,
+          canViewTimesheets: row.can_view_timesheets === true,
           name: row.name,
           initials: row.name.split(/\s+/).filter(Boolean).slice(0, 2)
             .map((part: string) => part[0]?.toUpperCase()).join("") || "TM",

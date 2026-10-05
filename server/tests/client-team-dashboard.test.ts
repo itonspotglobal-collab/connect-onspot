@@ -75,6 +75,9 @@ function fixtureQuery(options: {
     if (sql === clientTeamDashboardSqlForTests.members) {
       assert.equal(params[0], "org-1");
       assert.ok(params[1] instanceof Date);
+      assert.equal(params[2], "owner-1");
+      assert.match(sql, /js\.client_id = \$3/);
+      assert.match(sql, /hc\.talent_signed_at IS NOT NULL AND hc\.onspot_signed_at IS NOT NULL/);
       assert.match(sql, /WHERE om\.organization_id = \$1 AND om\.status = 'active'/);
       assert.match(sql, /INNER JOIN authorized_clients ac ON ac\.user_id = c\.client_id/);
       assert.match(sql, /INNER JOIN authorized_clients ac ON ac\.user_id = js\.client_id/);

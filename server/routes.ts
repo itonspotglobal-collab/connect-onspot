@@ -33,6 +33,7 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { registerInvestorRoutes } from "./routes/investors.js";
 import { registerTimesheetRoutes } from "./routes/timesheets.js";
+import { TIMESHEET_HIRE_SQL } from "./services/timesheetEligibility.js";
 import { registerTalentInvoiceRoutes } from "./routes/talentInvoices.js";
 import { registerContractTerminationRoutes } from "./routes/contractTerminations.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
@@ -3312,7 +3313,7 @@ export async function registerRoutes(
              JOIN job_submissions js ON js.id = hc.submission_id
              JOIN jobs j ON j.id = js.job_id
              LEFT JOIN users client ON client.id = js.client_id
-            WHERE js.talent_id = $1 AND hc.status IN ('signed', 'terminated') AND hc.billing_mode = 'tracked'
+            WHERE js.talent_id = $1 AND ${TIMESHEET_HIRE_SQL} AND hc.billing_mode = 'tracked'
             ORDER BY hc.created_at DESC`,
           [talentId],
         ),
@@ -3373,7 +3374,7 @@ export async function registerRoutes(
          `SELECT hc.id, hc.effective_end_date
            FROM hiring_contracts hc
            JOIN job_submissions js ON js.id = hc.submission_id
-           WHERE hc.id = $1 AND js.talent_id = $2 AND hc.status IN ('signed', 'terminated')
+           WHERE hc.id = $1 AND js.talent_id = $2 AND ${TIMESHEET_HIRE_SQL}
              AND hc.billing_mode = 'tracked'
              AND (hc.effective_end_date IS NULL
                OR hc.effective_end_date >= (now() AT TIME ZONE 'America/New_York')::date)

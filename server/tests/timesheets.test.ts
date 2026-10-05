@@ -3,8 +3,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { query } from "../db.js";
-import { registerRoutes } from "../routes.js";
+import { query, registerRoutes, initializeFixture, closeFixture } from "./fixtures/timesheetServer";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-fallback-secret";
 const suffix = Date.now();
@@ -112,10 +111,11 @@ async function teardown() {
 }
 
 describe("clock-derived timesheets", () => {
-  before(async () => setup());
+  before(async () => { await initializeFixture(); await setup(); });
   after(async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await teardown();
+    await closeFixture();
   });
 
   it("isolates client periods and blocks unresolved missed-out sessions until explicit Admin exception", async () => {
