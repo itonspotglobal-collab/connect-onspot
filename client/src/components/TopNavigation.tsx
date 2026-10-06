@@ -33,6 +33,7 @@ import {
   MessageSquare,
   DollarSign,
   Clock3,
+  FileText,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -395,6 +396,7 @@ export function TopNavigation() {
   const getDropdownItems = (): { key: string; label: string; route: string; icon: React.ElementType }[] => {
     if (user?.role === "client") return [
       { key: "client-profile", label: "Client Profile", route: "/client-profile", icon: Building },
+      { key: "contracts", label: "Contracts", route: "/contracts", icon: ClipboardList },
       { key: "create-organization", label: "Create Organization", route: "/organization/create", icon: Building2 },
       {
         key: "organization-invitations",
@@ -413,6 +415,7 @@ export function TopNavigation() {
       { key: "billing-ledger", label: "Billing Ledger", route: "/admin/ledger", icon: DollarSign },
       { key: "find-work", label: "Find Work", route: "/admin/find-work", icon: Briefcase },
       { key: "job-applications", label: "Job Applications", route: "/admin/job-applications", icon: Users },
+      { key: "contracts", label: "Contracts", route: "/contracts", icon: ClipboardList },
       { key: "email-templates", label: "Email Templates", route: "/admin/email-templates", icon: Mail },
       { key: "email-delivery-audit", label: "Email Delivery Audit", route: "/admin/email-deliveries", icon: Mail },
       { key: "insights", label: "Insights", route: "/admin/insights", icon: Eye },
@@ -443,6 +446,7 @@ export function TopNavigation() {
     return [
       { key: "talent-profile", label: "Talent Profile", route: talentProfileRoute, icon: User },
       { key: "my-applications", label: "My Applications", route: "/my-applications", icon: ClipboardList },
+      { key: "contracts", label: "Contracts", route: "/contracts", icon: FileText },
       ...(talentTimesheetsEligible ? [{ key: "talent-timesheets", label: "Timesheets", route: "/talent/timesheets", icon: Clock3 }] : []),
       { key: "messages", label: "Messages", route: "/messages", icon: MessageSquare },
       { key: "payout-history", label: "Payout History", route: "/talent/payouts", icon: DollarSign },

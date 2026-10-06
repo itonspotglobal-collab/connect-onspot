@@ -769,3 +769,17 @@ mtime_ms = 1791254325608
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/9f5e26fe-f5c9-4e67-9b38-eca75ff547c6/148ad69d-aa14-40b6-b295-9c863bd7deef"
 storage_version_token = "1791254844495798"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "ij2lPMe0IdRGwp2kb3CIv"
+uri = "file://docs/private-contract-signing-report.md"
+type = "text"
+title = "Contract signing implementation report"
+description = "The requested 16-part audit and implementation report, including test results, authorization rules, migration details and all 17 manual UAT steps marked pending."
+logical_id = "b973b738-5c58-4e59-8801-2d5ff1fd12c8"
+content_hash = "sha256:74708e20a79a2adae081344b17e68dffd4f52004405cb5c3e231641ba7447117"
+size = 13026
+mtime_ms = 1791270793503
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/b973b738-5c58-4e59-8801-2d5ff1fd12c8/be63db79-07af-4fb5-939f-bce5ab63f257"
+storage_version_token = "1791270801956489"
+content_type = "text/markdown"

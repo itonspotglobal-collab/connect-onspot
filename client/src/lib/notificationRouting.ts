@@ -1,4 +1,5 @@
 export const TALENT_NOTIFICATION_TYPES = [
+  "contract_update",
   "offer_received",
   "job_invitation",
   "job_application_status_changed",
@@ -9,6 +10,7 @@ export const TALENT_NOTIFICATION_TYPES = [
 ] as const;
 
 export const CLIENT_NOTIFICATION_TYPES = [
+  "contract_update",
   "offer_accepted",
   "offer_declined",
   "offer_expired",

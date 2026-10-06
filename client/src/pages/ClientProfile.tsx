@@ -76,6 +76,7 @@ import {
 } from "@/components/InterviewWorkflowUi";
 import { ClientJobTalentSearchDialog } from "@/components/ClientJobTalentSearchDialog";
 import { JobRichText } from "@/components/JobRichText";
+import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -113,6 +114,7 @@ interface JobSubmission {
   interviewNudge?: boolean;
   /** 'client' when the client invited this talent via Search & Shortlist; 'talent' for self-applied */
   initiated_by: string | null;
+  acceptedOfferId?: string | null;
 }
 
 const OFFERABLE_STATUSES = new Set([
@@ -182,6 +184,12 @@ function ViewSubmissionModal({
     },
     enabled: Boolean(submission.interviewId),
   });
+  const { data: submissionOffers = [] } = useQuery<OfferRecord[]>({
+    queryKey: ["/api/client/offers", submission.id],
+    queryFn: async () => (await apiRequest("GET", `/api/client/offers?submissionId=${encodeURIComponent(submission.id)}`)).json(),
+    enabled: ["offer_accepted", "contract_sent", "hired"].includes(submission.status),
+  });
+  const acceptedOfferId = submission.acceptedOfferId || submissionOffers.find((offer) => offer.status === "accepted")?.id || null;
   const [meetingLinkDraft, setMeetingLinkDraft] = useState("");
   const [interviewBusy, setInterviewBusy] = useState(false);
   const currentInterview = interviewRows.find((row: any) => row.id === submission.interviewId);
@@ -431,6 +439,10 @@ function ViewSubmissionModal({
                 {submission.resumeFileName || "Download Resume"}
               </Button>
             </div>
+          )}
+
+          {(["offer_accepted", "contract_sent", "hired"].includes(submission.status) || Boolean(acceptedOfferId)) && (
+            <ContractApplicationPanel submissionId={submission.id} acceptedOfferId={acceptedOfferId} />
           )}
 
           {/* Extend Offer action */}
@@ -1044,10 +1056,15 @@ export default function ClientProfile() {
               </h2>
             </div>
             {!editing ? (
-              <Button variant="outline" size="sm" onClick={startEdit}>
-                <Pencil className="w-3.5 h-3.5 mr-1.5" />
-                Edit Profile
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate("/contracts")}>
+                  <FileText className="w-3.5 h-3.5 mr-1.5" />Contracts
+                </Button>
+                <Button variant="outline" size="sm" onClick={startEdit}>
+                  <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                  Edit Profile
+                </Button>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={cancelEdit}>

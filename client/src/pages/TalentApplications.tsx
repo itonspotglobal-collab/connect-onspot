@@ -1068,6 +1068,8 @@ function ContractsSection({
   applications: TalentApplication[];
   authToken: string | null;
 }) {
+  const [, navigate] = useLocation();
+  void TalentContractCard;
   if (!authToken || applications.length === 0) return null;
   return (
     <div className="mb-8">
@@ -1077,7 +1079,12 @@ function ContractsSection({
       </div>
       <div className="space-y-3">
         {applications.map((application) => (
-          <TalentContractCard key={application.id} application={application} authToken={authToken} />
+          <Card key={application.id} className="border border-indigo-200 bg-indigo-50/50 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <div><p className="font-semibold text-slate-900 dark:text-white">{application.job.title}</p><p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{application.job.companyName} · Contract activity and secure PDF review</p></div>
+              <Button size="sm" variant="outline" onClick={() => navigate("/contracts")}>Open Contracts <FileText className="ml-2 h-4 w-4" /></Button>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

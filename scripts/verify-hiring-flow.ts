@@ -13,7 +13,7 @@ if (!process.env.HIRING_FLOW_TEST_DATABASE_URL) throw new Error("Provide HIRING_
 const directory = await mkdtemp(path.join(tmpdir(), "onspot-hiring-bundle-"));
 const output = path.join(directory, "hiring-fixture.mjs");
 await build({
-  entryPoints: ["server/tests/hiring-flow.fixture.ts"],
+  entryPoints: [process.argv[2] === "contracts" ? "server/tests/contract-documents.fixture.ts" : "server/tests/hiring-flow.fixture.ts"],
   outfile: output, bundle: true, platform: "node", format: "esm",
   packages: "external", target: "node20",
   plugins: [{

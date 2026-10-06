@@ -162,6 +162,11 @@ export class ObjectStorageService {
 
   // Gets the object entity file from the object path.
   async getObjectEntityFile(objectPath: string): Promise<File> {
+    // Contract PDFs are never generic ACL objects. Only the dedicated
+    // relationship-authorized contract router may serve their bytes.
+    if (objectPath.replace(/^\/objects\/objects\//, "/objects/").startsWith("/objects/hiring-contract-documents/")) {
+      throw new ObjectNotFoundError();
+    }
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();
     }

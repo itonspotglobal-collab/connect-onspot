@@ -122,6 +122,7 @@ import AdminEmailDeliveries from "@/pages/AdminEmailDeliveries";
 import AdminClockExceptions from "@/pages/AdminClockExceptions";
 import Invoicing from "@/pages/Invoicing";
 import ContractEndings from "@/pages/ContractEndings";
+import ContractsPage from "@/components/ContractWorkflow";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
@@ -240,6 +241,7 @@ function PublicRouter() {
           <Route path="/jobs/:jobId/apply" component={JobApplyPage} />
           <Route path="/jobs/:jobId" component={FindWorkJob} />
           <Route path="/my-applications" component={TalentApplications} />
+          <Route path="/contracts" component={ContractsRoute} />
           <Route path="/inbox" component={Inbox} />
           <Route path="/talent/signup" component={TalentSignupFromApplication} />
           {/* TODO: Restore Talent Dashboard routes when the final Talent Dashboard design is ready. */}
@@ -341,6 +343,20 @@ function MessagesRoute() {
   return <ClientRouter />;
 }
 
+function ContractsRoute() {
+  const { isLoading, user } = useAuth();
+  const talentAuth = loadTalentAuth();
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    if (!isLoading && !user && !talentAuth) navigate("/login");
+  }, [isLoading, user, talentAuth, navigate]);
+  if (isLoading) return null;
+  if (user?.role === "client") return <ClientRouter />;
+  if (user?.role === "admin") return <AdminProtectedRoute><ContractsPage /></AdminProtectedRoute>;
+  if (user?.role === "talent" || talentAuth) return <TalentRouter />;
+  return null;
+}
+
 function ClientTalentRoute() {
   const { isLoading, user } = useAuth();
 
@@ -375,6 +391,7 @@ function ClientRouter() {
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/client-profile" component={ClientProfile} />
+          <Route path="/contracts" component={ContractsPage} />
           <Route path="/client/billing/invoices/:id" component={Billing} />
           <Route path="/client/billing" component={Billing} />
           <Route path="/client/timesheets" component={() => <Timesheets role="client" />} />
@@ -462,6 +479,7 @@ function TalentRouter() {
         <Route path="/talent/timesheets" component={() => <Timesheets role="talent" />} />
         <Route path="/talent/invoices" component={() => <Invoicing role="talent" />} />
         <Route path="/talent/contract-endings" component={() => <ContractEndings role="talent" />} />
+        <Route path="/contracts" component={ContractsPage} />
         <Route path="/hired-talent-portal/payouts" component={TalentPayouts} />
         <Route path="/hired-talent-portal" component={HiredTalentPortal} />
         <Route path="/settings" component={ProfileSettings} />
@@ -576,6 +594,7 @@ function AppContent() {
       
       {/* Public Routes - Always available */}
       <Route path="/" component={PublicRouter} />
+      <Route path="/contracts" component={ContractsRoute} />
       <Route path="/manifesto" component={PublicRouter} />
       <Route path="/hire-talent" component={ClientHireTalentRoute} />
       <Route path="/talent-pool" component={PublicRouter} />

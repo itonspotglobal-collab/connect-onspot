@@ -8,7 +8,7 @@ description: hiring_contracts endpoints — admin create/sign/void, talent view;
 - `talent_signed_at` — only the candidate-authenticated talent endpoint may record this; it does NOT trigger hired on its own.
 - `onspot_signed_at` — admin-only countersignature; the contract executes only when both signatures are present.
 - Fully signed contracts are immutable; void and reissue is required to change their document or terms.
-- No `client_signed_at` — clients (the hiring companies) do not sign OnSpot contracts.
+- OnSpot-only agreements do not require a Client signature. Uploaded Client/Organization agreements additionally require their representative: see [current signing policy](contract-signing-policy.md).
 - `signing_entity` is snapshotted from `platform_settings('contract_signing_entity')` at contract creation time.
 
 **Why:** Contracts are between the talent and OnSpot (the intermediary). The client company deals with OnSpot separately.

@@ -88,6 +88,13 @@ const TYPE_CONFIG: Record<
   string,
   { icon: React.ElementType; color: string; bg: string; label: string; route: string }
 > = {
+  contract_update: {
+    icon: FileText,
+    color: "#4D55C7",
+    bg: "#EEF2FF",
+    label: "Contract Update",
+    route: "/contracts",
+  },
   offer_received: {
     icon: PackageOpen,
     color: "#D97706",   // amber-600
@@ -441,7 +448,9 @@ export function NotificationBell() {
     }
 
     const cfg = TYPE_CONFIG[n.type];
-    if (n.type === "new_message" && n.relatedId) {
+    if (n.type === "contract_update" && n.relatedId) {
+      navigate(`/contracts?id=${encodeURIComponent(n.relatedId)}`);
+    } else if (n.type === "new_message" && n.relatedId) {
       navigate(`/messages/${encodeURIComponent(n.relatedId)}`);
     } else if (cfg) {
       const route = notificationRouteForRole(n.type, user?.role, cfg.route);

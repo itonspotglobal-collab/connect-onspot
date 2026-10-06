@@ -43,7 +43,8 @@ export class ContractError extends Error {
 
 const DEFAULT_SIGNING_ENTITY = "OnSpot Technologies Inc.";
 
-async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>, existing?: PoolClient): Promise<T> {
+  if (existing) return fn(existing);
   const client = await getClient();
   try {
     await client.query("BEGIN");
@@ -83,6 +84,8 @@ export async function createHiringContract(params: {
   templateRef?: string | null;
   documentPath?: string | null;
   adminId?: string | null;
+  prepareOnly?: boolean;
+  transactionClient?: PoolClient;
 }): Promise<Record<string, any>> {
   const { offerId, templateRef, documentPath, adminId } = params;
   return withTransaction(async (client) => {
@@ -161,10 +164,11 @@ export async function createHiringContract(params: {
       insert = await client.query(
         `INSERT INTO hiring_contracts
            (offer_id, submission_id, template_ref, document_path, status, signing_entity, billing_mode, effective_start_date)
-         VALUES ($1, $2, $3, $4, 'sent', $5, $6, $7::date)
+          VALUES ($1, $2, $3, $4, $8, $5, $6, $7::date)
          RETURNING *`,
         [offerId, submissionId, templateRef ?? null, documentPath ?? null, signingEntity,
-          offer.billing_mode ?? null, offer.proposed_start_date ? new Date(offer.proposed_start_date).toISOString().slice(0, 10) : null],
+          offer.billing_mode ?? null, offer.proposed_start_date ? new Date(offer.proposed_start_date).toISOString().slice(0, 10) : null,
+          params.prepareOnly ? "draft" : "sent"],
       );
     } catch (err: any) {
       // Partial unique index uq_hiring_contracts_active_offer — race-safe duplicate guard
@@ -177,6 +181,7 @@ export async function createHiringContract(params: {
       throw err;
     }
 
+    if (params.prepareOnly) return insert.rows[0];
     await client.query(
       `UPDATE job_submissions SET status = 'contract_sent', updated_at = NOW() WHERE id = $1`,
       [submissionId],
@@ -188,7 +193,7 @@ export async function createHiringContract(params: {
       [submissionId, previousStatus, `Hiring contract sent (signing entity: ${signingEntity})`, adminId ?? null],
     );
     return insert.rows[0];
-  });
+  }, params.transactionClient);
 }
 
 /**
@@ -208,6 +213,7 @@ export async function updateHiringContract(
     actorRole?: "admin" | "talent";
     adminId?: string | null;
   },
+  options?: { transactionClient?: PoolClient; documentId?: string },
 ): Promise<Record<string, any>> {
   const {
     documentPath,
@@ -227,6 +233,25 @@ export async function updateHiringContract(
     );
     if (contractResult.rows.length === 0) throw new ContractError(404, { error: "Contract not found" });
     const contract = contractResult.rows[0];
+    if ((documentPath !== undefined || templateRef !== undefined) &&
+        (contract.talent_signed_at || contract.onspot_signed_at || contract.document_managed)) {
+      throw new ContractError(409, { error: "document_immutable", message: "Use the private draft document workflow; signed versions cannot be replaced." });
+    }
+    if (contract.document_managed) {
+      if (!options?.transactionClient || !options.documentId) {
+        throw new ContractError(409, { error: "document_signature_required", message: "Review and sign the exact contract PDF." });
+      }
+      const proof = await client.query(
+        `SELECT d.id FROM contract_documents d
+          WHERE d.id=$1 AND d.hiring_contract_id=$2 AND d.status='executed'
+          AND (SELECT COUNT(*) FROM contract_signatures s WHERE s.document_id=d.id
+               AND s.document_sha256=d.sha256 AND s.document_version=d.version
+               AND s.signer_role IN ('talent','onspot',CASE WHEN $3='organization' THEN 'organization' ELSE 'client' END))
+             = CASE WHEN $3='onspot' THEN 2 ELSE 3 END`,
+        [options.documentId, contractId, contract.party_type],
+      );
+      if (!proof.rows.length) throw new ContractError(409, { error: "required_document_signatures_missing" });
+    }
     if (contract.status === "void" || contract.status === "voided") {
       throw new ContractError(409, { error: "contract_void", message: "A voided contract cannot be updated." });
     }
@@ -354,10 +379,17 @@ export async function updateHiringContract(
       }
     }
     return { contract: updated.rows[0], hiredTransition };
-  });
+  }, options?.transactionClient);
 
-  if (result.hiredTransition) {
+  if (result.hiredTransition && !options?.transactionClient) {
     const { submissionId, previousStatus } = result.hiredTransition;
+    await dispatchHiringActivation(submissionId, previousStatus);
+  }
+  return result.contract;
+}
+
+/** Called only after the owning signing transaction commits. */
+export async function dispatchHiringActivation(submissionId: string, previousStatus = "contract_sent"): Promise<void> {
     try {
       const contextResult = await query(
         `SELECT js.talent_id, js.client_id, js.email, js.first_name, js.last_name,
@@ -410,9 +442,6 @@ export async function updateHiringContract(
     } catch (error) {
       console.error(`[hiring-contract] committed Hired side effects failed for ${submissionId}:`, error);
     }
-  }
-
-  return result.contract;
 }
 
 /**
@@ -424,6 +453,7 @@ export async function voidHiringContract(
   contractId: string,
   reason: string,
   adminId?: string | null,
+  transactionClient?: PoolClient,
 ): Promise<Record<string, any>> {
   const trimmed = String(reason ?? "").trim();
   if (!trimmed) throw new ContractError(400, { error: "reason is required to void a contract" });
@@ -469,5 +499,5 @@ export async function voidHiringContract(
       );
     }
     return updated.rows[0];
-  });
+  }, transactionClient);
 }

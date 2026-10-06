@@ -72,6 +72,11 @@ const managementItems = [
     icon: FileText,
   },
   {
+    title: "Contracts",
+    url: "/contracts",
+    icon: FileText,
+  },
+  {
     title: "Contract End Requests",
     url: "/client/contract-endings",
     icon: CalendarOff,

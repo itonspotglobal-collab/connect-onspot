@@ -1759,6 +1759,12 @@ export const hiringContracts = pgTable("hiring_contracts", {
   templateRef:     text("template_ref"),
   documentPath:    text("document_path"),
   documentVersion: integer("document_version").notNull().default(1),
+  partyType: text("party_type").notNull().default("onspot"),
+  organizationId: varchar("organization_id").references(() => organizations.id, { onDelete: "restrict" }),
+  preparedBy: varchar("prepared_by").references(() => users.id, { onDelete: "restrict" }),
+  title: text("title"),
+  talentMessage: text("talent_message"),
+  documentManaged: boolean("document_managed").notNull().default(false),
   // 'draft' → 'sent' → 'signed' | 'void'
   status:          text("status").notNull().default("draft"),
   // Snapshotted from platform_settings('contract_signing_entity') at row creation
@@ -1794,6 +1800,66 @@ export const hiringContracts = pgTable("hiring_contracts", {
       AND (${table.effectiveStartDate} IS NULL OR ${table.effectiveEndDate} >= ${table.effectiveStartDate}))
   `),
 ]);
+
+export const contractDocuments = pgTable("contract_documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id),
+  objectKey: text("object_key").notNull().unique(),
+  originalFilename: text("original_filename").notNull(),
+  mimeType: text("mime_type").notNull(), fileSize: integer("file_size").notNull(),
+  sha256: text("sha256").notNull(), version: integer("version").notNull(),
+  status: text("status").notNull().default("draft"),
+  uploadedBy: varchar("uploaded_by").notNull().references(() => users.id),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  executedAt: timestamp("executed_at", { withTimezone: true }),
+  executedObjectKey: text("executed_object_key"),
+  executedSha256: text("executed_sha256"),
+}, table => [
+  uniqueIndex("contract_documents_version").on(table.hiringContractId, table.version),
+  uniqueIndex("contract_documents_current").on(table.hiringContractId).where(sql`${table.status} NOT IN ('superseded','voided','declined')`),
+  check("contract_documents_size_check", sql`${table.fileSize}>0 AND ${table.fileSize}<=10485760`),
+  check("contract_documents_hash_check", sql`${table.sha256} ~ '^[a-f0-9]{64}$'`),
+  check("contract_documents_mime_check", sql`${table.mimeType}='application/pdf'`),
+  check("contract_documents_status_check", sql`${table.status} IN ('draft','sent_for_signature','talent_signed','countersigned','executed','voided','declined','superseded')`),
+]);
+export const contractDocumentReviews = pgTable("contract_document_reviews", {
+  documentId: uuid("document_id").notNull().references(() => contractDocuments.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  sha256: text("sha256").notNull(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [primaryKey({ columns: [table.documentId, table.userId] })]);
+export const contractSignatures = pgTable("contract_signatures", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  documentId: uuid("document_id").notNull().references(() => contractDocuments.id),
+  signerUserId: varchar("signer_user_id").notNull().references(() => users.id),
+  signerRole: text("signer_role").notNull(), legalName: text("legal_name").notNull(),
+  signatureMethod: text("signature_method").notNull().default("typed_name_consent"),
+  signedAt: timestamp("signed_at", { withTimezone: true }).notNull().defaultNow(),
+  documentVersion: integer("document_version").notNull(),
+  documentSha256: text("document_sha256").notNull(),
+  organizationId: varchar("organization_id").references(() => organizations.id),
+  authorityContext: text("authority_context").notNull(),
+  auditMetadata: jsonb("audit_metadata").notNull().default({}),
+}, table => [
+  uniqueIndex("contract_signatures_role").on(table.documentId, table.signerRole),
+  check("contract_signatures_role_check", sql`${table.signerRole} IN ('talent','client','organization','onspot')`),
+]);
+export const contractDocumentEvents = pgTable("contract_document_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id),
+  documentId: uuid("document_id").references(() => contractDocuments.id),
+  actorUserId: varchar("actor_user_id").notNull().references(() => users.id),
+  action: text("action").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const contractDeliveryEvents = pgTable("contract_delivery_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  documentId: uuid("document_id").notNull().references(() => contractDocuments.id),
+  eventType: text("event_type").notNull(),
+  recipientUserId: varchar("recipient_user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending"), attempts: integer("attempts").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [uniqueIndex("contract_delivery_event_recipient").on(table.documentId, table.eventType, table.recipientUserId)]);
 
 export const hiringContractTerminationRequests = pgTable("hiring_contract_termination_requests", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),

@@ -40,6 +40,7 @@ import { registerTalentInvoiceRoutes } from "./routes/talentInvoices.js";
 import { registerContractTerminationRoutes } from "./routes/contractTerminations.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
+import { contractDocumentRouter } from "./contractDocumentRoutes";
 import { inferCategory } from "./lib/searchScaffold";
 import {
   normalizeInterviewTimeZone,
@@ -1509,6 +1510,20 @@ export async function registerRoutes(
   app: Express,
   httpServer: Server = createServer(app),
 ): Promise<Server> {
+  const contractAuth: RequestHandler = (req, res, next) => {
+    // Decode only to choose the existing verifier; decoded claims never authorize.
+    const token = req.headers.authorization?.split(" ")[1];
+    const decoded = token ? jwt.decode(token) as any : null;
+    return decoded?.type === "candidate"
+      ? authenticateTalentJWT(req, res, next)
+      : authenticateJWT(req, res, next);
+  };
+  app.use("/api/contracts", contractDocumentRouter(contractAuth, pipelineMutationLimiter));
+  // Legacy API object lookup must never bypass contract-level authorization,
+  // including the redundant objects/ prefix accepted by the generic route.
+  app.use(["/objects/hiring-contract-documents", "/api/objects/hiring-contract-documents", "/api/objects/objects/hiring-contract-documents"], (_req, res) => {
+    res.status(404).json({ error: "Use the authenticated contract document endpoint" });
+  });
   // Configure multer for file uploads (CSV, PDF, videos)
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -22860,6 +22875,9 @@ export async function registerRoutes(
 
   // POST /api/admin/hiring-contracts — create & send a contract from an accepted offer
   app.post("/api/admin/hiring-contracts", authenticateJWT, async (req: Request, res: Response) => {
+    if ((req as any).user?.role !== "admin") return res.status(403).json({ error: "Admin access required" });
+    res.status(409).json({ error: "private_pdf_workflow_required", message: "Prepare and send the actual PDF in Contracts." });
+    return;
     try {
       const user = (req as any).user;
       if (!user?.id || user.role !== "admin") {
@@ -22916,6 +22934,9 @@ export async function registerRoutes(
   // PATCH /api/admin/hiring-contracts/:id — update a contract and/or record signatures.
   // Keep this service-backed path for the admin workflow.
   app.patch("/api/admin/hiring-contracts/:id", authenticateJWT, async (req: Request, res: Response) => {
+    if ((req as any).user?.role !== "admin") return res.status(403).json({ error: "Admin access required" });
+    res.status(409).json({ error: "private_pdf_workflow_required", message: "Use the immutable contract document workflow." });
+    return;
     try {
       const user = (req as any).user;
       if (!user?.id || user.role !== "admin") {
@@ -22941,6 +22962,9 @@ export async function registerRoutes(
   // Body: { signerType: 'onspot', signedAt?: ISO date string }
   // The contract is executed only when both signature timestamps are present.
   app.patch("/api/admin/hiring-contracts/:id/sign", authenticateJWT, async (req: Request, res: Response) => {
+    if ((req as any).user?.role !== "admin") return res.status(403).json({ error: "Admin access required" });
+    res.status(409).json({ error: "private_pdf_workflow_required", message: "Review the exact PDF and provide a legal name with consent in Contracts." });
+    return;
     try {
       const user = (req as any).user;
       if (!user?.id || user.role !== "admin") {
@@ -22984,6 +23008,9 @@ export async function registerRoutes(
   // Body: { reason: string }
   // Submission status is NOT automatically reverted — admin must adjust manually.
   app.patch("/api/admin/hiring-contracts/:id/void", authenticateJWT, async (req: Request, res: Response) => {
+    if ((req as any).user?.role !== "admin") return res.status(403).json({ error: "Admin access required" });
+    res.status(409).json({ error: "private_pdf_workflow_required", message: "Void contracts in Contracts so the document and audit stay consistent." });
+    return;
     try {
       const user = (req as any).user;
       if (!user?.id || user.role !== "admin") {
@@ -23056,6 +23083,8 @@ export async function registerRoutes(
   // OnSpot's signature remains admin-only; the shared service executes the
   // contract only after both signatures are present.
   app.patch("/api/talent/hiring-contracts/:id/sign", pipelineMutationLimiter, authenticateTalentJWT, async (req: Request, res: Response) => {
+    res.status(409).json({ error: "private_pdf_workflow_required", message: "Review and sign the exact PDF in Contracts." });
+    return;
     try {
       const candidateId = (req as any).talentAuth?.candidateId;
       const talentUserResult = await query(
