@@ -102,11 +102,14 @@ import {
 } from "./services/hiringContractService";
 import {
   loadClientFormalSubmission,
+  loadAdminFormalSubmission,
   FORMAL_PIPELINE_PREDICATE,
+  INVITATION_RELATIONSHIP_PREDICATE,
   SHORTLIST_EXCLUSION_PREDICATE,
   FORMAL_PIPELINE_ACTIVE_STATUS_SQL,
   nameRevealExistsSQL,
 } from "./services/formalPipelineGuard.js";
+import { FindWorkCalendarError, findWorkMailbox, synchronizeFindWorkInterview } from "./services/findWorkCalendarService";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
@@ -9318,18 +9321,12 @@ export async function registerRoutes(
       }
 
       const { getInterviewerSlots, findInterviewerConfig } = await import("./services/microsoftGraphCalendarService");
+      findWorkMailbox();
 
       // Verify interviewer exists and has a calendar configured before hitting Graph
       const interviewerConfig = await findInterviewerConfig(interviewerId);
       if (!interviewerConfig) {
         return res.status(404).json({ error: `Interviewer '${interviewerId}' not found` });
-      }
-
-      if (!interviewerConfig.calendarEmail?.trim()) {
-        return res.status(422).json({
-          error: "calendar_not_connected",
-          message: "This interviewer's Outlook calendar is not yet configured.",
-        });
       }
 
       // Check Graph credentials before making the call
@@ -9350,6 +9347,7 @@ export async function registerRoutes(
 
       res.json({ slots, timezone, interviewerId });
     } catch (err: any) {
+      if (err instanceof FindWorkCalendarError) return res.status(err.status).json({ error: err.code, message: err.message });
       console.error("GET /api/admin/interviewer-availability error:", err);
       // Distinguish Graph API failures from internal errors
       const isGraphError =
@@ -9447,6 +9445,7 @@ export async function registerRoutes(
         submissionId, interviewType = "initial", proposedTimes,
         durationMinutes, candidateNotes, internalNotes, meetingLink,
         confirmedTime, confirmedTimeZone,
+        interviewerId,
       } = req.body;
 
       if (!submissionId) return res.status(400).json({ error: "submissionId is required" });
@@ -9456,6 +9455,18 @@ export async function registerRoutes(
       const normalizedProposedTimes = normalizeInterviewTimes(proposedTimes);
       if (!normalizedProposedTimes) {
         return res.status(400).json({ error: "proposedTimes must contain one to ten valid time slots" });
+      }
+      if (normalizedProposedTimes.some(slot => parseInterviewTimestamp(slot.start) <= Date.now())) {
+        return res.status(400).json({ error: "All proposed interview times must be in the future" });
+      }
+      // Proposals also require a configured real organizer, but do not create an
+      // Outlook event until a time is confirmed.
+      findWorkMailbox();
+      if (interviewerId) {
+        const { findInterviewerConfig } = await import("./services/microsoftGraphCalendarService");
+        if (!await findInterviewerConfig(interviewerId)) {
+          return res.status(400).json({ error: "Unknown interviewer" });
+        }
       }
 
       // Optional: admin confirms a specific slot directly at creation time
@@ -9470,7 +9481,10 @@ export async function registerRoutes(
           return res.status(400).json({ error: "confirmedTime must be in the future" });
         }
         directConfirmedTime = new Date(ts).toISOString();
-        directConfirmedZone = confirmedTimeZone ? (normalizeInterviewTimeZone(confirmedTimeZone) ?? "UTC") : "UTC";
+        if (confirmedTimeZone && !normalizeInterviewTimeZone(confirmedTimeZone)) {
+          return res.status(400).json({ error: "confirmedTimeZone must be a valid timezone" });
+        }
+        directConfirmedZone = normalizeInterviewTimeZone(confirmedTimeZone) ?? "UTC";
       }
       const validTypes = ["initial", "technical", "final", "culture", "other"];
       if (!validTypes.includes(interviewType)) {
@@ -9505,6 +9519,7 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Submission not found or not in the formal pipeline" });
       }
       const submission = subResult.rows[0];
+      if (!submission.talent_id) return res.status(409).json({ error: "A linked Talent account is required for scheduling" });
 
       const scheduleable = ["shortlisted", "reviewed", "under_review", "interviewing", "new", "in_review"];
       if (!scheduleable.includes(submission.status)) {
@@ -9527,6 +9542,10 @@ export async function registerRoutes(
             `SELECT pg_advisory_xact_lock(hashtext($1 || ':interview_confirm'))`,
             [submission.talent_id],
           );
+          const lockedSubmission = await loadAdminFormalSubmission(submissionId, { txClient, forUpdate: true });
+          if (!lockedSubmission.ok || !scheduleable.includes(lockedSubmission.row.status)) {
+            throw new FindWorkCalendarError("interview_submission_changed", "The application is no longer eligible for interviewing.", 409);
+          }
           // Conflict check inside the lock
           const effectiveDuration = parsedDuration ?? 60;
           const slotEnd = new Date(new Date(directConfirmedTime).getTime() + effectiveDuration * 60_000).toISOString();
@@ -9589,6 +9608,11 @@ export async function registerRoutes(
                `Round ${roundNumber} interview confirmed by admin (type: ${interviewType})`, userId],
             );
           }
+          await txClient.query(
+            `UPDATE interviews SET calendar_managed = TRUE, calendar_interviewer_id = $2 WHERE id = $1`,
+            [interview.id, interviewerId || null],
+          );
+          interview = await synchronizeFindWorkInterview(txClient, interview.id, true);
           await txClient.query("COMMIT");
         } catch (txErr: any) {
           await txClient.query("ROLLBACK").catch(() => {});
@@ -9597,6 +9621,14 @@ export async function registerRoutes(
         }
         txClient.release();
       } else {
+        const proposalClient = await pool.connect();
+        const query = (sql: string, params?: any[]) => proposalClient.query(sql, params);
+        try {
+        await query("BEGIN");
+        const lockedSubmission = await loadAdminFormalSubmission(submissionId, { txClient: proposalClient, forUpdate: true });
+        if (!lockedSubmission.ok || !scheduleable.includes(lockedSubmission.row.status)) {
+          throw new FindWorkCalendarError("interview_submission_changed", "The application is no longer eligible for interviewing.", 409);
+        }
         // Talent-led: no confirmed slot yet — just insert proposed interview
         const roundResult = await query(
           `SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM interviews WHERE submission_id = $1`,
@@ -9620,6 +9652,10 @@ export async function registerRoutes(
         );
         interview = insertRow.rows[0];
         await query(
+          `UPDATE interviews SET calendar_managed = TRUE, calendar_interviewer_id = $2 WHERE id = $1`,
+          [interview.id, interviewerId || null],
+        );
+        await query(
           `INSERT INTO interview_proposals
              (interview_id, proposer_id, proposer_role, action, proposed_times, selected_time, selected_time_zone)
            VALUES ($1, $2, 'admin', 'initial', $3, NULL, NULL)`,
@@ -9638,6 +9674,11 @@ export async function registerRoutes(
              `Round ${roundNumber} interview proposed by admin (type: ${interviewType})`, userId],
           );
         }
+        await query("COMMIT");
+        } catch (err) {
+          await query("ROLLBACK").catch(() => {});
+          throw err;
+        } finally { proposalClient.release(); }
       }
 
       // Notify talent (fire-and-forget)
@@ -9662,7 +9703,7 @@ export async function registerRoutes(
             confirmedTime: directConfirmedTime!,
             confirmedTimeZone: directConfirmedZone ?? "UTC",
             durationMinutes: parsedDuration,
-            meetingLink: normalizedMeetingLink ?? null,
+             meetingLink: interview.meeting_link ?? normalizedMeetingLink ?? null,
             interviewType,
             roundNumber: interview.round_number ?? null,
           }).catch((e: any) => console.error("admin interview confirmation email failed:", e));
@@ -9682,6 +9723,7 @@ export async function registerRoutes(
 
       return res.status(201).json(interview);
     } catch (err: any) {
+      if (err instanceof FindWorkCalendarError) return res.status(err.status).json({ error: err.code, message: err.message });
       console.error("POST /api/admin/interviews error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -9720,6 +9762,7 @@ export async function registerRoutes(
       // Confirm path needs atomic conflict-check+write; validated values captured here
       let confirmedIsoForTx: string | null = null;
       let confirmedTzForTx: string | null = null;
+      let adminRescheduleTimes: any[] | null = null;
 
       if (status) {
         const validStatuses = ["proposed", "confirmed", "rescheduled", "cancelled"];
@@ -9731,8 +9774,11 @@ export async function registerRoutes(
             return res.status(400).json({ error: "confirmedTime is required when confirming" });
           }
           const ts = parseInterviewTimestamp(confirmedTime);
-          if (Number.isNaN(ts)) {
+          if (Number.isNaN(ts) || ts <= Date.now()) {
             return res.status(400).json({ error: "confirmedTime is not a valid ISO timestamp" });
+          }
+          if (confirmedTimeZone && !normalizeInterviewTimeZone(confirmedTimeZone)) {
+            return res.status(400).json({ error: "confirmedTimeZone must be a valid timezone" });
           }
           confirmedIsoForTx = new Date(ts).toISOString();
           confirmedTzForTx = confirmedTimeZone ? (normalizeInterviewTimeZone(confirmedTimeZone) ?? "UTC") : "UTC";
@@ -9753,14 +9799,10 @@ export async function registerRoutes(
           updates.proposed_times = `$${params.length}`;
           updates.confirmed_time = "NULL";
           updates.confirmed_time_zone = "NULL";
+          updates.current_proposal_owner = "'talent'";
+          updates.proposal_exchange_count = "proposal_exchange_count + 1";
           notifType = "interview_rescheduled";
-          // Record in proposal history
-          await query(
-            `INSERT INTO interview_proposals
-               (interview_id, proposer_id, proposer_role, action, proposed_times)
-             VALUES ($1, $2, 'admin', 'reschedule', $3)`,
-            [id, userId, JSON.stringify(normalizedTimes)],
-          );
+          adminRescheduleTimes = normalizedTimes;
         }
         if (status === "cancelled") {
           updates.confirmed_time = "NULL";
@@ -9852,6 +9894,7 @@ export async function registerRoutes(
              VALUES ($1, $2, 'admin', 'accepted', $3, $4, $5)`,
             [id, userId, JSON.stringify(interview.proposed_times ?? []), confirmedIsoForTx, confirmedTzForTx],
           );
+          updated2.rows[0] = await synchronizeFindWorkInterview(txClient2, id, true);
           await txClient2.query("COMMIT");
           updatedRow = updated2.rows[0];
         } catch (txErr: any) {
@@ -9861,11 +9904,25 @@ export async function registerRoutes(
         }
         txClient2.release();
       } else {
-        const updated = await query(
-          `UPDATE interviews SET ${setClauses} WHERE id = $${params.length} RETURNING *`,
-          params,
-        );
-        updatedRow = updated.rows[0];
+        const editClient = await pool.connect();
+        try {
+          await editClient.query("BEGIN");
+          await editClient.query("SELECT id FROM interviews WHERE id = $1 FOR UPDATE", [id]);
+          await editClient.query(
+            `UPDATE interviews SET ${setClauses} WHERE id = $${params.length} RETURNING *`,
+            params,
+          );
+          if (adminRescheduleTimes) await editClient.query(
+            `INSERT INTO interview_proposals (interview_id, proposer_id, proposer_role, action, proposed_times)
+             VALUES ($1, $2, 'admin', 'reschedule', $3)`,
+            [id, userId, JSON.stringify(adminRescheduleTimes)],
+          );
+          updatedRow = await synchronizeFindWorkInterview(editClient, id, true);
+          await editClient.query("COMMIT");
+        } catch (err) {
+          await editClient.query("ROLLBACK").catch(() => {});
+          throw err;
+        } finally { editClient.release(); }
       }
 
       // Post-update notification to talent
@@ -9888,10 +9945,7 @@ export async function registerRoutes(
         if (notifType === "interview_confirmed" && confirmedIsoForTx) {
           // Resolve meeting link: prefer the incoming value (already validated above)
           // then fall back to whatever was previously stored on the interview row.
-          const emailMeetingLink =
-            meetingLink !== undefined
-              ? (normalizeMeetingLink(meetingLink) ?? null)
-              : (interview.meeting_link ?? null);
+          const emailMeetingLink = updatedRow?.meeting_link ?? interview.meeting_link ?? null;
           const emailDuration =
             durationMinutes !== undefined && durationMinutes !== null
               ? Number(durationMinutes)
@@ -9941,6 +9995,7 @@ export async function registerRoutes(
 
       return res.json(updatedRow);
     } catch (err: any) {
+      if (err instanceof FindWorkCalendarError) return res.status(err.status).json({ error: err.code, message: err.message });
       console.error("PATCH /api/admin/interviews/:id error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -11816,7 +11871,7 @@ export async function registerRoutes(
       const rel = await query(
         `SELECT job_id, client_id, talent_id FROM job_submissions
          WHERE ((client_id = $1 AND talent_id = $2) OR (client_id = $2 AND talent_id = $1))
-           AND ${FORMAL_PIPELINE_PREDICATE}
+           AND ${INVITATION_RELATIONSHIP_PREDICATE}
            AND status IN (${FORMAL_PIPELINE_ACTIVE_STATUS_SQL})
          ORDER BY updated_at DESC NULLS LAST
          LIMIT 1`,
@@ -18128,9 +18183,10 @@ export async function registerRoutes(
                 j.title AS job_title
            FROM interviews i
            JOIN job_submissions js ON js.id = i.submission_id
+             AND js.${FORMAL_PIPELINE_PREDICATE}
            JOIN jobs j ON j.id = js.job_id
-          WHERE i.id = $1 AND js.talent_id = $2
-          FOR UPDATE OF i`,
+           WHERE i.id = $1 AND js.talent_id = $2
+           FOR UPDATE OF i, js`,
         [req.params.id, userId],
       );
       if (!interviewResult.rows.length) {
@@ -18138,6 +18194,10 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Interview not found" });
       }
       const interview = interviewResult.rows[0];
+      if (!["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(interview.submission_status)) {
+        await txClient.query("ROLLBACK");
+        return res.status(409).json({ error: "This application has moved beyond interview scheduling" });
+      }
       if (!["proposed", "rescheduled"].includes(interview.status)) {
         await txClient.query("ROLLBACK");
         return res.status(409).json({ error: "This interview is no longer awaiting a response" });
@@ -18153,6 +18213,10 @@ export async function registerRoutes(
           return res.status(400).json({ error: "selectedTime must be a valid ISO date" });
         }
         const selectedTimestamp = parseInterviewTimestamp(selectedTime);
+        if (selectedTimestamp <= Date.now()) {
+          await txClient.query("ROLLBACK");
+          return res.status(400).json({ error: "Select a future interview time" });
+        }
         const selectedSlot = (Array.isArray(interview.proposed_times) ? interview.proposed_times : [])
           .find((slot: any) => typeof slot?.start === "string" && parseInterviewTimestamp(slot.start) === selectedTimestamp);
         if (Number.isNaN(selectedTimestamp) || !selectedSlot) {
@@ -18313,6 +18377,10 @@ export async function registerRoutes(
         }
       }
       const updated = await txClient.query(`SELECT * FROM interviews WHERE id = $1`, [interview.id]);
+      if (action === "accept") {
+        updated.rows[0] = await synchronizeFindWorkInterview(txClient, interview.id);
+        if (confirmedEmailParams) confirmedEmailParams.meetingLink = updated.rows[0]?.meeting_link ?? confirmedEmailParams.meetingLink;
+      }
       await txClient.query("COMMIT");
 
       // Fire-and-forget confirmation emails when talent accepts — failure never rolls back the accept
@@ -18370,6 +18438,7 @@ export async function registerRoutes(
       });
     } catch (err: any) {
       await txClient.query("ROLLBACK").catch(() => {});
+      if (err instanceof FindWorkCalendarError) return res.status(err.status).json({ error: err.code, message: err.message });
       console.error("PATCH /api/talent/interviews/:id/respond error:", err);
       return res.status(500).json({ error: "Failed to respond to interview proposal" });
     } finally {
@@ -19461,6 +19530,7 @@ export async function registerRoutes(
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
                   js.is_repeat_application AS "isRepeatApplication",
                   js.initiated_by AS "initiatedBy",
+                  (js.${FORMAL_PIPELINE_PREDICATE}) AS "hiringPipelineEligible",
                   j.title AS "jobTitle", j.company AS "jobCompany",
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName"
            FROM job_submissions js
@@ -19498,6 +19568,7 @@ export async function registerRoutes(
                   js.talent_id AS "talentId", js.submitted_at AS "submittedAt", js.updated_at AS "updatedAt",
                   js.is_repeat_application AS "isRepeatApplication",
                   js.initiated_by AS "initiatedBy",
+                  (js.${FORMAL_PIPELINE_PREDICATE}) AS "hiringPipelineEligible",
                   js.resume_url AS "appResumeUrl", js.resume_file_name AS "appResumeFileName",
                   js.video_introduction_url AS "videoIntroductionUrl",
                   js.video_introduction_file_name AS "videoIntroductionFileName",
@@ -19995,6 +20066,7 @@ export async function registerRoutes(
       talentId:     row.talentId     ?? row.talent_id,
       status:       row.status,
       workflowType: row.workflowType ?? row.workflow_type ?? "application",
+      hiringPipelineEligible: Boolean(row.hiringPipelineEligible),
       initiated_by: row.initiated_by,
       submittedAt:  row.submittedAt  ?? row.submitted_at,
       updatedAt:    row.updatedAt    ?? row.updated_at,
@@ -20071,7 +20143,8 @@ export async function registerRoutes(
       js.created_at               AS "createdAt",
       js.initiated_by,
       js.registration_status      AS "registrationStatus",
-      j.title                     AS "jobTitle",
+       (js.${FORMAL_PIPELINE_PREDICATE}) AS "hiringPipelineEligible",
+       j.title                     AS "jobTitle",
       j.company                   AS "jobCompany",
       j.engagement_type           AS "jobEngagementType"
       ,j.status                   AS "jobStatus"
@@ -20707,9 +20780,9 @@ export async function registerRoutes(
            JOIN job_submissions js ON js.id = i.submission_id
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users client ON client.id = js.client_id
-           WHERE i.id = $1 AND js.client_id = $2
-             AND js.${FORMAL_PIPELINE_PREDICATE}
-           FOR UPDATE OF i`,
+            WHERE i.id = $1 AND js.client_id = $2
+              AND js.${FORMAL_PIPELINE_PREDICATE}
+            FOR UPDATE OF i, js`,
           [id, userId],
         );
         if (interviewResult.rows.length === 0) {
@@ -20717,6 +20790,15 @@ export async function registerRoutes(
           return res.status(404).json({ error: "Interview not found or forbidden" });
         }
         const interview = interviewResult.rows[0];
+        // Validate before any confirmation can rewrite the parent to interviewing.
+        if (!["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(interview.submission_status)) {
+          await txClient.query("ROLLBACK");
+          transactionClosed = true;
+          return res.status(409).json({
+            error: "submission_not_interviewable",
+            message: "This application has already moved beyond interviewing.",
+          });
+        }
 
       const validTransitions: Record<string, string[]> = {
         proposed:     ["confirmed", "cancelled"],
@@ -20976,6 +21058,7 @@ export async function registerRoutes(
          }
        }
 
+       await synchronizeFindWorkInterview(txClient, id);
        await txClient.query("COMMIT");
        transactionClosed = true;
         const finalResult = await query(`SELECT * FROM interviews WHERE id = $1`, [id]);
@@ -21052,6 +21135,7 @@ export async function registerRoutes(
         txClient.release();
       }
     } catch (err: any) {
+      if (err instanceof FindWorkCalendarError) return res.status(err.status).json({ error: err.code, message: err.message });
       console.error("PATCH /api/client/interviews/:id error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -21097,24 +21181,36 @@ export async function registerRoutes(
         return res.status(400).json({ error: "outcome must be one of: " + validOutcomes.join(", ") });
       }
 
+      const outcomeClient = await pool.connect();
+      try {
+      const query = (sql: string, args: any[]) => outcomeClient.query(sql, args);
+      await outcomeClient.query("BEGIN");
       // Load interview + verify ownership (formal pipeline guard)
       const interviewResult = await query(
         `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
          FROM interviews i
          JOIN job_submissions js ON js.id = i.submission_id
          WHERE i.id = $1 AND js.client_id = $2
-           AND js.${FORMAL_PIPELINE_PREDICATE}`,
+           AND js.${FORMAL_PIPELINE_PREDICATE}
+         FOR UPDATE OF i, js`,
         [id, userId],
       );
       if (interviewResult.rows.length === 0) {
+        await outcomeClient.query("ROLLBACK");
         return res.status(404).json({ error: "Interview not found or forbidden" });
       }
       const interview = interviewResult.rows[0];
 
+      if (["hired", "contract_sent", "offer_accepted"].includes(interview.submission_status)) {
+        await outcomeClient.query("ROLLBACK");
+        return res.status(409).json({ error: "submission_not_interviewable", message: "This application has already moved beyond interviewing." });
+      }
       if (interview.status === "cancelled") {
+        await outcomeClient.query("ROLLBACK");
         return res.status(409).json({ error: "Cannot record outcome for a cancelled interview" });
       }
       if (interview.status === "completed") {
+        await outcomeClient.query("ROLLBACK");
         return res.status(409).json({ error: "Outcome already recorded for this interview" });
       }
 
@@ -21143,7 +21239,14 @@ export async function registerRoutes(
         );
       }
 
+      await outcomeClient.query("COMMIT");
       return res.json(updatedInterview.rows[0]);
+      } catch (outcomeErr) {
+        await outcomeClient.query("ROLLBACK").catch(() => {});
+        throw outcomeErr;
+      } finally {
+        outcomeClient.release();
+      }
     } catch (err: any) {
       console.error("PATCH /api/client/interviews/:id/outcome error:", err);
       return res.status(500).json({ error: err.message });
@@ -21274,6 +21377,17 @@ export async function registerRoutes(
       let offer: any;
       try {
         await txClient.query("BEGIN");
+        const lockedSubmission = await loadClientFormalSubmission(submissionId, userId, {
+          forUpdate: true, txClient,
+        });
+        if (!lockedSubmission.ok) {
+          await txClient.query("ROLLBACK");
+          return res.status(lockedSubmission.status).json({ error: lockedSubmission.error });
+        }
+        if (!offerable.includes(lockedSubmission.row.status)) {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({ error: "cannot_extend_offer", message: "This application is no longer at an offer-eligible stage." });
+        }
         const insert = await txClient.query(
           `INSERT INTO offers
              (submission_id, engagement_type, billing_mode, rate, rate_currency, proposed_start_date,

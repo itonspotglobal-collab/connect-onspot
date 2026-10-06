@@ -76,6 +76,7 @@ interface InterviewSectionProps extends InterviewContext {
   hasInterview?: boolean;
   onAction?: () => void;
   actionDisabled?: boolean;
+  disabledReason?: string;
   children?: ReactNode;
 }
 
@@ -185,6 +186,7 @@ export function InterviewSection({
   hasInterview = false,
   onAction,
   actionDisabled = false,
+  disabledReason,
   children,
 }: InterviewSectionProps) {
   const eligible = role === "admin"
@@ -241,7 +243,7 @@ export function InterviewSection({
               </p>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                 {role === "admin"
-                  ? "Schedule an interview using the assigned interviewer's real-time Outlook availability."
+                  ? "Schedule an interview using the shared FindWork Outlook calendar."
                   : "You can request an interview with this applicant. OnSpot Admin will review and arrange the next step."}
               </p>
             </>
@@ -249,6 +251,7 @@ export function InterviewSection({
         </div>
       )}
 
+      {disabledReason && <p className="text-xs text-amber-700 dark:text-amber-300">{disabledReason}</p>}
       {eligible && onAction && (
         <div className="border-t border-slate-100 px-4 py-3 dark:border-white/[0.06]">
           <Button
@@ -294,6 +297,7 @@ export function ScheduleInterviewDialog({
   const [startDate, setStartDate]             = useState("");
   const [endDate, setEndDate]                 = useState("");
   const [schedulingMethod, setSchedulingMethod] = useState<"talent" | "admin">("talent");
+  const [talentSlotStarts, setTalentSlotStarts] = useState<string[]>([]);
 
   // Dialog step
   const [step, setStep] = useState<DialogStep>("configure");
@@ -334,6 +338,7 @@ export function ScheduleInterviewDialog({
       setSlotsError(null);
       setInterviewersError(null);
       setSelectedSlot(null);
+      setTalentSlotStarts([]);
       setManualDate("");
       setManualTime("");
       setScheduling(false);
@@ -380,6 +385,11 @@ export function ScheduleInterviewDialog({
   }, [slots]);
 
   const sortedDates = useMemo(() => Object.keys(slotsByDate).sort(), [slotsByDate]);
+  useEffect(() => {
+    setSlots([]);
+    setSelectedSlot(null);
+    setTalentSlotStarts([]);
+  }, [selectedInterviewerId, startDate, endDate, timezone, duration]);
 
   async function handleCheckAvailability() {
     setSlotsError(null);
@@ -418,31 +428,31 @@ export function ScheduleInterviewDialog({
 
     try {
       let confirmedTime: string | undefined;
-      let proposedTimes: Array<{ start: string; end?: string }>;
+      let proposedTimes: Array<{ start: string; end?: string; timezone: string }>;
 
       if (schedulingMethod === "admin") {
         if (selectedSlot) {
           confirmedTime = selectedSlot.start;
-          proposedTimes = [{ start: selectedSlot.start, end: selectedSlot.end }];
+          proposedTimes = [{ start: selectedSlot.start, end: selectedSlot.end, timezone }];
         } else if (manualDate && manualTime) {
           const iso = localDateTimeToUTC(manualDate, manualTime, timezone);
           confirmedTime = iso;
-          proposedTimes = [{ start: iso }];
+          proposedTimes = [{ start: iso, timezone }];
         } else {
           setScheduleError("Please select a slot or enter a date and time.");
           setScheduling(false);
           return;
         }
       } else {
-        // talent-led: send all slots as proposed times
-        if (slots.length === 0 && !(manualDate && manualTime)) {
-          setScheduleError("No slots available. Enter a date and time manually.");
+        // Talent-led: send only the selected windows (maximum ten).
+        if (talentSlotStarts.length === 0 && !(manualDate && manualTime)) {
+          setScheduleError("Select one to ten available slots, or enter a date and time manually.");
           setScheduling(false);
           return;
         }
-        proposedTimes = slots.length > 0
-          ? slots.map((s) => ({ start: s.start, end: s.end }))
-          : [{ start: localDateTimeToUTC(manualDate, manualTime, timezone) }];
+        proposedTimes = talentSlotStarts.length > 0
+          ? slots.filter(s => talentSlotStarts.includes(s.start)).map(s => ({ start: s.start, end: s.end, timezone }))
+          : [{ start: localDateTimeToUTC(manualDate, manualTime, timezone), timezone }];
       }
 
       const body: Record<string, any> = {
@@ -450,6 +460,7 @@ export function ScheduleInterviewDialog({
         interviewType,
         proposedTimes,
         durationMinutes: Number(duration),
+        interviewerId: selectedInterviewerId || undefined,
       };
       if (schedulingMethod === "admin" && confirmedTime) {
         body.confirmedTime = confirmedTime;
@@ -575,7 +586,7 @@ export function ScheduleInterviewDialog({
           )}
           {selectedInterviewer && !selectedInterviewer.isCalendarConnected && (
             <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-              This interviewer's Outlook calendar is not yet connected. Select a connected interviewer to check availability.
+              The shared FindWork Outlook calendar is not configured. Availability cannot be checked yet.
             </p>
           )}
         </div>
@@ -662,7 +673,7 @@ export function ScheduleInterviewDialog({
         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50/70 px-3.5 py-3 dark:border-amber-800/40 dark:bg-amber-950/20">
           <WifiOff className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <p className="text-xs leading-relaxed text-amber-900/80 dark:text-amber-200/80">
-            Select an interviewer with a connected Outlook calendar to check availability.
+            Select an interviewer and configure the shared FindWork calendar to check availability.
           </p>
         </div>
       )}
@@ -691,7 +702,7 @@ export function ScheduleInterviewDialog({
       {loadingSlots && (
         <div className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 py-10 dark:border-white/[0.08]">
           <Loader2 className="h-5 w-5 animate-spin text-[#474ead]" />
-          <span className="text-sm text-slate-500">Checking {selectedInterviewer?.name}'s Outlook calendar…</span>
+          <span className="text-sm text-slate-500">Checking the shared FindWork Outlook calendar…</span>
         </div>
       )}
 
@@ -722,7 +733,7 @@ export function ScheduleInterviewDialog({
             <div className="flex items-start gap-3 rounded-lg border border-indigo-100 bg-indigo-50/70 px-3.5 py-3 dark:border-indigo-800/40 dark:bg-indigo-950/20">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-300" />
               <p className="text-xs leading-relaxed text-indigo-900/80 dark:text-indigo-200/80">
-                <span className="font-semibold">Talent-led scheduling:</span> The Talent will receive a scheduling invitation with these open windows and can choose their preferred time.{submissionId ? " Click \u2018Send to Talent\u2019 to create the interview record." : " No appointment is created yet."}
+                <span className="font-semibold">Talent-led scheduling:</span> Select one to ten available windows. Talent can choose one in the portal; Outlook sends the calendar invitation only after confirmation.
               </p>
             </div>
           )}
@@ -759,9 +770,14 @@ export function ScheduleInterviewDialog({
                       <span className="text-xs text-slate-600 dark:text-slate-400">{slot.endDisplay}</span>
                     </button>
                   ) : (
-                    <div
+                    <button
                       key={slot.start}
-                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-white/[0.08] dark:bg-white/[0.02]"
+                      type="button"
+                      aria-pressed={talentSlotStarts.includes(slot.start)}
+                      disabled={!talentSlotStarts.includes(slot.start) && talentSlotStarts.length >= 10}
+                      onClick={() => setTalentSlotStarts(current => current.includes(slot.start)
+                        ? current.filter(start => start !== slot.start) : [...current, slot.start].slice(0, 10))}
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 disabled:opacity-40 ${talentSlotStarts.includes(slot.start) ? "border-[#474ead] bg-[#474ead]/10" : "border-slate-200 bg-slate-50 dark:border-white/[0.08] dark:bg-white/[0.02]"}`}
                     >
                       <Clock className="h-3.5 w-3.5 shrink-0 text-[#474ead]" />
                       <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
@@ -769,7 +785,7 @@ export function ScheduleInterviewDialog({
                       </span>
                       <span className="text-xs text-slate-400">–</span>
                       <span className="text-xs text-slate-600 dark:text-slate-400">{slot.endDisplay}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -806,9 +822,11 @@ export function ScheduleInterviewDialog({
         <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50/70 p-4 dark:border-green-800/40 dark:bg-green-950/20">
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-300" />
           <div>
-            <p className="font-semibold text-green-900 dark:text-green-200">Interview scheduled</p>
+            <p className="font-semibold text-green-900 dark:text-green-200">{schedulingMethod === "admin" ? "Interview confirmed" : "Interview proposed"}</p>
             <p className="mt-1 text-sm leading-relaxed text-green-800/80 dark:text-green-300/80">
-              The interview record has been created and the talent has been notified.
+              {schedulingMethod === "admin"
+                ? "The shared FindWork calendar event has been created. Outlook handles attendee invitations."
+                : "Your selected times have been saved. The Outlook invitation is created only after Talent confirms a time."}
             </p>
           </div>
         </div>
@@ -876,7 +894,7 @@ export function ScheduleInterviewDialog({
                 <Button
                   type="button"
                   className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-                  disabled={scheduling || (schedulingMethod === "admin" && !selectedSlot && !(manualDate && manualTime)) || (schedulingMethod === "talent" && slots.length === 0 && !(manualDate && manualTime))}
+                  disabled={scheduling || (schedulingMethod === "admin" && !selectedSlot && !(manualDate && manualTime)) || (schedulingMethod === "talent" && talentSlotStarts.length === 0 && !(manualDate && manualTime))}
                   onClick={handleSchedule}
                 >
                   {scheduling ? (
@@ -997,9 +1015,9 @@ export function RequestInterviewDialog({
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-300" />
                 <div>
-                  <p className="font-semibold text-green-900 dark:text-green-200">Interview scheduled</p>
+                  <p className="font-semibold text-green-900 dark:text-green-200">Interview proposed</p>
                   <p className="mt-1 text-sm leading-relaxed text-green-800/80 dark:text-green-300/80">
-                    The interview has been proposed and the talent will be notified. You can track the status in the application detail.
+                    The proposed times have been saved. Talent can review them in My Applications, and you can track the status in the application detail.
                   </p>
                 </div>
               </div>

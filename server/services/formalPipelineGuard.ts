@@ -2,8 +2,9 @@
  * Formal Pipeline Guard
  *
  * Single source of truth for the rule:
- *   "Only job_submissions with workflow_type = 'client_invitation' may participate
- *    in the hiring pipeline (interviews, offers, contracts, messaging, name-reveal)."
+ *   Accepted client invitations and authenticated, linked Find Work applications
+ *   may participate in hiring. Silent shortlists and unlinked public records may not.
+ *   Messaging/name reveal keep their separate invitation-only relationship rule.
  *
  * Every enforcement point in the codebase should import constants or helpers from
  * here rather than hand-writing the predicate. Adding a new pipeline route means
@@ -23,11 +24,34 @@ import { query } from "../db.js";
 // ── Core predicate ─────────────────────────────────────────────────────────────
 
 /**
- * SQL predicate fragment that restricts any query to formally-invited submissions
- * only. Embed this in WHERE / JOIN ON clauses; prefix with a table alias when the
- * query has JOINs (e.g. `AND js.${FORMAL_PIPELINE_PREDICATE}`).
+ * Invitation-only identity relationship. Hiring eligibility is deliberately
+ * broader and defined separately below.
  */
-export const FORMAL_PIPELINE_PREDICATE = `workflow_type = 'client_invitation'` as const;
+export const INVITATION_RELATIONSHIP_PREDICATE = `workflow_type = 'client_invitation'` as const;
+
+// Every hiring query uses the canonical js alias. The first term remains
+// prefixable as js.${FORMAL_PIPELINE_PREDICATE} for existing consumers.
+// A submission itself is the built-in application record; job_applications is
+// a separate legacy tracker and is not created by POST /api/jobs/:id/apply.
+export const FORMAL_PIPELINE_PREDICATE = `workflow_type IN ('client_invitation', 'application')
+  AND js.status NOT IN ('rejected', 'withdrawn', 'declined')
+  AND EXISTS (
+    SELECT 1 FROM jobs hiring_job
+     WHERE hiring_job.id = js.job_id AND hiring_job.client_id = js.client_id
+       AND hiring_job.created_via <> 'search_scaffold'
+       AND EXISTS (SELECT 1 FROM users hiring_owner
+                    WHERE hiring_owner.id = hiring_job.client_id AND hiring_owner.role IN ('client', 'admin'))
+        AND EXISTS (SELECT 1 FROM users hiring_talent
+                     WHERE hiring_talent.id = js.talent_id AND hiring_talent.role = 'talent')
+       AND (
+         js.workflow_type = 'client_invitation'
+         OR (
+           js.initiated_by = 'talent' AND js.registration_status = 'linked'
+           AND hiring_job.approval_status = 'approved'
+           AND hiring_job.status <> 'draft'
+         )
+       )
+  )` as const;
 
 /**
  * SQL predicate fragment that excludes silent client shortlist submissions from
@@ -78,7 +102,7 @@ export function nameRevealExistsSQL(clientParam: string, talentParam: string): s
     SELECT 1 FROM job_submissions js
      WHERE ((js.client_id = ${clientParam} AND js.talent_id = ${talentParam})
          OR (js.client_id = ${talentParam} AND js.talent_id = ${clientParam}))
-       AND js.${FORMAL_PIPELINE_PREDICATE}
+       AND js.${INVITATION_RELATIONSHIP_PREDICATE}
        AND js.status IN (${FORMAL_PIPELINE_ACTIVE_STATUS_SQL})
   )`;
 }
@@ -138,8 +162,8 @@ export interface LoadClientFormalOptions {
 
 /**
  * Load a job_submissions row that belongs to a specific client AND carries
- * workflow_type = 'client_invitation'. Returns 404 if not found, not owned by
- * the client, or is a silent shortlist / organic application row.
+ * eligible invitation or linked organic application. Returns 404 if not found,
+ * not owned, or otherwise ineligible.
  *
  * The returned `row` always includes the FormalSubmissionCore columns plus
  * anything requested via `extraCols`.
@@ -187,8 +211,8 @@ export interface LoadAdminFormalOptions {
 /**
  * Load a job_submissions row for admin access, enforcing formal pipeline membership
  * but without any client-ownership filter. Admins may access any client's formal
- * invitation; they still cannot reach shortlist or organic application rows through
- * pipeline endpoints.
+ * invitation or eligible linked organic application. Silent shortlists and
+ * unlinked public records remain excluded.
  */
 export async function loadAdminFormalSubmission(
   submissionId: string,

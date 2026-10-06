@@ -1648,6 +1648,9 @@ export const interviews = pgTable("interviews", {
   // 'client' | 'talent' | null when no proposal is pending.
   currentProposalOwner: text("current_proposal_owner"),
   meetingLink: text("meeting_link"),
+  calendarEventId: text("calendar_event_id"),
+  calendarManaged: boolean("calendar_managed").notNull().default(false),
+  calendarInterviewerId: text("calendar_interviewer_id"),
   proposalExchangeCount: integer("proposal_exchange_count").notNull().default(0),
   // Client user who created this interview row (must match submission's client_id)
   createdBy:      varchar("created_by").notNull().references(() => users.id),

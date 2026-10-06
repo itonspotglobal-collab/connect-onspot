@@ -103,6 +103,7 @@ interface Application {
   coverLetter?: string;
   status: string;
   registrationStatus: string;
+  hiringPipelineEligible?: boolean;
   isRepeatApplication?: boolean;
   initiatedBy?: string;
   talentId?: string;
@@ -625,6 +626,8 @@ function DetailDialog({
                company={detail.jobCompany}
                currentStatus={detail.status}
                onAction={() => setInterviewDialogOpen(true)}
+               actionDisabled={!detail.hiringPipelineEligible || !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(detail.status)}
+               disabledReason={!detail.hiringPipelineEligible ? "Hiring requires a linked Talent application to a real approved job, or an eligible Client invitation." : !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(detail.status) ? "This application is not at an interview scheduling stage." : undefined}
              />
 
             {/* Hiring contract */}

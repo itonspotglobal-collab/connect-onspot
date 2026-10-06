@@ -1,0 +1,569 @@
+TASK: Fix Admin + Client Interview / Offer Hiring Flow and Integrate the Shared FindWork Outlook Calendar
+
+IMPORTANT:
+Audit the existing implementation FIRST, then implement the fixes in the same task.
+
+Do NOT broadly redesign the hiring system.
+Do NOT remove existing authorization/security guards just to make the endpoints work.
+Do NOT create fake/mock calendar events, fake interview success states, or fake offer success states.
+Reuse the existing application, submission, interview, offer, contract, Microsoft Graph, email, and notification architecture wherever possible.
+
+Current repository already contains:
+- Find Work/public job applications
+- client_invitation submissions
+- Admin application management
+- Client job submissions
+- interview workflow
+- offers
+- contracts
+- Microsoft Graph calendar availability service
+- Microsoft Graph email service
+- formalPipelineGuard.ts
+- InterviewWorkflowUi.tsx
+- ClientProfile.tsx
+- /api/admin/interviews
+- /api/client/interviews
+- /api/client/offers
+
+There is an important existing architectural restriction:
+The formal interview/offer/contract pipeline currently primarily allows
+workflow_type = 'client_invitation'.
+
+This causes legitimate Talent applications submitted through Find Work
+(organic/public applications) to be visible in Admin/Client UI but then fail
+when Interview or Offer actions are attempted.
+
+Fix this correctly rather than bypassing authorization.
+
+============================================================
+BUG / REQUIREMENT 1
+ADMIN — SHARED FINDWORK OUTLOOK CALENDAR
+============================================================
+
+For Admin-side interview scheduling, use the organization's shared
+FindWork Microsoft 365 mailbox/calendar as the calendar used for interview
+availability and interview invitations.
+
+IMPORTANT:
+FindWork is a SHARED organizational mailbox/email, not an individual
+Admin's personal mailbox.
+
+Do NOT assume that the logged-in Admin's Microsoft account/calendar is
+the organizer.
+
+Audit:
+server/services/microsoftGraphCalendarService.ts
+server/services/microsoftGraphEmailService.ts
+the existing Graph configuration/environment variables
+/api/admin/interviewers
+/api/admin/interviewer-availability
+/api/admin/interviews
+InterviewWorkflowUi.tsx
+and any related interview/calendar code.
+
+Determine the existing FindWork/shared-mailbox configuration before
+introducing new configuration.
+
+If an existing configured FindWork email/address is already available,
+reuse it.
+
+If configuration is required, use a clearly named environment variable,
+for example:
+
+MICROSOFT_FINDWORK_MAILBOX=<shared FindWork email address>
+
+Do NOT hardcode the real email address in source.
+
+Do NOT expose:
+- client secrets
+- access tokens
+- tenant credentials
+- Graph tokens
+- private environment variables
+
+Use the existing Microsoft Graph application authentication architecture.
+
+------------------------------------------------------------
+EXPECTED ADMIN CALENDAR FLOW
+------------------------------------------------------------
+
+Admin opens Schedule Interview.
+
+Admin configures:
+- interview type
+- duration
+- timezone
+- date/date range
+- scheduling method
+
+The system should use the shared FindWork Outlook calendar for the
+interview scheduling workflow.
+
+When an interview time is CONFIRMED, create a REAL Outlook calendar event
+on the shared FindWork calendar through Microsoft Graph.
+
+The calendar event should invite the Talent using the Talent's actual
+application/account email.
+
+Where appropriate, include relevant OnSpot/Admin attendees using existing
+system data.
+
+The Talent must receive a real Outlook calendar invitation.
+
+The event should contain:
+- meaningful interview subject
+- job title
+- Talent/applicant
+- interview date/time
+- correct timezone handling
+- duration
+- useful interview description/context
+- online meeting/join URL if the existing Microsoft tenant/configuration
+  supports it
+
+Persist the Microsoft Graph event identifier/reference on the interview
+record if the existing schema supports it.
+
+If no field exists, audit the schema/migrations and introduce the smallest
+safe migration required to persist the external calendar event ID.
+
+Calendar event creation MUST NOT be treated as successful if Microsoft
+Graph fails.
+
+Do not save fake external IDs.
+
+Handle Graph failures clearly and safely.
+
+Do not silently claim that an invitation was sent when it was not.
+
+============================================================
+BUG / REQUIREMENT 2
+ADMIN — FIX SCHEDULE INTERVIEW MODAL
+============================================================
+
+The Admin Schedule Interview modal currently contains scheduling options
+such as:
+
+1. Let Talent choose an available time
+2. Admin chooses a time
+
+Audit the complete UI and backend flow.
+
+Several controls currently appear non-functional or lead into backend
+restrictions.
+
+Fix the modal so both scheduling methods work end-to-end.
+
+------------------------------------------------------------
+A. ADMIN CHOOSES A TIME
+------------------------------------------------------------
+
+Admin selects/configures an interview time.
+
+Validate:
+- date
+- time
+- timezone
+- duration
+
+Create the interview record.
+
+Create the Outlook event on the shared FindWork calendar.
+
+Invite the Talent.
+
+Persist the confirmed interview time and external calendar reference.
+
+Update the appropriate application/submission interview state using the
+existing canonical status rules.
+
+Refresh the UI after success.
+
+------------------------------------------------------------
+B. TALENT CHOOSES AN AVAILABLE TIME
+------------------------------------------------------------
+
+Do NOT fake this workflow.
+
+Admin should be able to define/provide legitimate available interview
+slots.
+
+Persist the proposed slots using the existing interview proposal
+architecture.
+
+Talent should be able to select one of the available proposed slots using
+the existing Talent interview workflow.
+
+Once Talent selects/confirms a slot:
+
+1. persist the confirmed time;
+2. create the real Outlook calendar event on the shared FindWork calendar;
+3. invite the Talent;
+4. persist the Graph event reference;
+5. update interview state;
+6. show the confirmed interview consistently to Admin, Client where
+   authorized, and Talent.
+
+Prevent duplicate calendar events when requests are retried.
+
+The operation should be idempotent where practical.
+
+============================================================
+BUG / REQUIREMENT 3
+ADMIN — "HIRED" STATUS IS DISABLED
+============================================================
+
+DO NOT simply enable the Hired option.
+
+The existing UI correctly indicates:
+
+"Contract and Hired stages are controlled by the signed-contract workflow."
+
+Preserve this business rule.
+
+Expected lifecycle should remain approximately:
+
+Submitted
+→ Under Review
+→ Shortlisted
+→ Interviewing
+→ Offered / Offer Accepted
+→ Contract
+→ Required signatures
+→ Hired
+
+"Hired" must be produced by the legitimate contract/signature workflow,
+not manually selected from the generic application status dropdown.
+
+The actual bug is that Find Work applications can become stranded before
+reaching the formal Interview → Offer → Contract workflow.
+
+Fix that pipeline instead.
+
+============================================================
+BUG / REQUIREMENT 4
+SUPPORT ORGANIC "FIND WORK" APPLICATIONS IN THE FORMAL PIPELINE
+============================================================
+
+This is the core architectural fix.
+
+Currently, formalPipelineGuard.ts and related queries heavily restrict
+interview/offer/contract operations to:
+
+workflow_type = 'client_invitation'
+
+As a result:
+
+Talent
+→ Find Work
+→ opens Client job
+→ applies
+→ Client/Admin sees application
+→ Shortlisted
+→ Interview/Offer action
+→ backend rejects submission
+
+This is incorrect for a legitimate organic application.
+
+A legitimate authenticated Talent who applies to a real approved Client
+job through Find Work must be capable of progressing through the same
+secure hiring lifecycle.
+
+DO NOT simply delete FORMAL_PIPELINE_PREDICATE.
+
+DO NOT replace it with "allow everything".
+
+DO NOT trust submission IDs supplied by the browser without verifying
+ownership/relationships.
+
+Instead, refactor/extend formal pipeline eligibility.
+
+At minimum, formal hiring eligibility should safely support:
+
+A. existing client_invitation flow
+
+AND
+
+B. legitimate organic Find Work application flow
+
+For an organic application verify server-side:
+- submission exists
+- associated application exists where required
+- Talent identity matches the submission/application
+- job exists
+- job is a real persisted job
+- Client owns/is authorized for that job
+- organization relationship is valid
+- submission belongs to that job
+- submission is at an appropriate hiring stage
+- submission is not withdrawn/rejected/declined/terminal
+- request actor is authorized for the operation
+
+Preserve privacy/name-reveal/security behavior where applicable.
+
+Create a clear reusable eligibility helper rather than duplicating
+different insecure checks across Interview, Offer and Contract routes.
+
+============================================================
+BUG / REQUIREMENT 5
+CLIENT — INTERVIEW FIND WORK APPLICANTS
+============================================================
+
+Clients must be able to interview Talent who organically applied to their
+job through Find Work.
+
+Current desired flow:
+
+Talent
+→ Find Work
+→ applies to Client job
+
+Client
+→ Client Profile / Job Submissions
+→ views applicant
+→ requests/schedules interview according to the existing Client/Admin
+   interview business rules
+
+Do NOT require the Client to invite the Talent again.
+
+Do NOT create a duplicate client_invitation submission merely to bypass
+the guard.
+
+The original organic application/submission should progress through the
+hiring pipeline.
+
+Reuse existing interview records and APIs where possible.
+
+Maintain Client ownership/organization authorization.
+
+A Client must NEVER be able to schedule an interview for an application
+belonging to another Client's job.
+
+If the current product rule is that Client only REQUESTS an interview and
+Admin performs final scheduling, preserve that rule.
+
+Do not silently change it into direct Client calendar control unless the
+existing architecture explicitly supports that.
+
+============================================================
+BUG / REQUIREMENT 6
+CLIENT — SEND OFFER RETURNS 404
+============================================================
+
+Known reproduced error:
+
+POST /api/client/offers
+→ 404
+→ "Submission not found or forbidden"
+
+The route EXISTS.
+
+Do NOT "fix" this by changing the frontend URL.
+
+The failure originates from formal pipeline eligibility.
+
+ClientProfile.tsx currently sends:
+
+POST /api/client/offers
+
+with the selected submissionId.
+
+formalPipelineGuard.ts rejects organic Find Work submissions because they
+do not satisfy the existing formal client_invitation predicate.
+
+Fix the backend eligibility model described above.
+
+After the fix, an authorized Client must be able to extend an offer to a
+legitimate Talent who applied to that Client's job through Find Work,
+provided the application is at an offer-eligible stage.
+
+Continue enforcing:
+- Client/job ownership
+- valid submission relationship
+- offerable status
+- duplicate/pending offer rules
+- engagement type requirements
+- rate validation
+- offer expiry
+- existing notification behavior
+- Talent offer response rules
+
+Do not weaken those validations.
+
+============================================================
+UI CONSISTENCY
+============================================================
+
+Audit ClientProfile.tsx, Admin application UI, InterviewWorkflowUi.tsx and
+other components exposing Interview or Offer actions.
+
+The UI must not expose an action that the backend will inevitably reject.
+
+However, backend authorization remains authoritative.
+
+Do NOT solve authorization only by hiding buttons.
+
+For legitimate organic Find Work applicants:
+
+Admin/Client should see Interview actions when eligible.
+
+Client should see Offer when the applicant is offer-eligible.
+
+For genuinely ineligible submissions, disable/hide actions with a useful
+reason.
+
+============================================================
+MICROSOFT GRAPH SAFETY
+============================================================
+
+The shared FindWork mailbox may require Microsoft 365 / Exchange
+permissions beyond ordinary Graph application authentication.
+
+Audit and document the exact required Graph permissions.
+
+Use least privilege supported by the existing architecture.
+
+Do NOT print secrets/tokens in logs.
+
+Do NOT return Graph access tokens to the browser.
+
+All Graph calendar operations must occur server-side.
+
+Clearly distinguish:
+
+1. Graph configuration missing
+2. mailbox inaccessible
+3. calendar unavailable
+4. no available slots
+5. calendar event creation failure
+6. invitation successfully created
+
+Do not collapse these into generic fake success.
+
+============================================================
+TESTS REQUIRED
+============================================================
+
+Add/update automated tests covering BOTH entry paths.
+
+FLOW A — CLIENT INVITATION
+Existing invitation pipeline must continue working.
+
+Test:
+Client invite
+→ accepted submission
+→ interview
+→ offer
+→ accepted offer
+→ contract eligibility
+
+FLOW B — FIND WORK ORGANIC APPLICATION
+Test:
+Talent applies through Find Work
+→ submission created
+→ Client/Admin reviews
+→ shortlist
+→ interview eligibility
+→ interview creation/request
+→ offer
+→ Talent accepts offer
+→ contract eligibility
+
+Authorization tests:
+
+Client A must NOT:
+- interview Client B's applicant
+- offer Client B's applicant
+- access Client B's interview
+- access Client B's offer
+
+Random submission IDs must fail.
+
+Rejected/withdrawn/terminal submissions must remain protected.
+
+Calendar tests should mock the Microsoft Graph transport only at the
+external Graph boundary.
+
+Do NOT mock away OnSpot's own interview/business logic.
+
+Verify:
+- correct shared FindWork mailbox is targeted
+- Talent email becomes attendee
+- correct confirmed time is sent
+- timezone conversion is correct
+- Graph event ID is persisted
+- Graph failure does not produce false success
+- retry does not create duplicate events
+
+============================================================
+MANUAL UAT REQUIRED
+============================================================
+
+After implementation, report a UAT checklist.
+
+ADMIN:
+
+1. Open real Find Work application.
+2. Shortlist Talent.
+3. Open Schedule Interview.
+4. Verify controls work.
+5. Test "Admin chooses a time".
+6. Confirm interview persists.
+7. Confirm shared FindWork Outlook calendar contains event.
+8. Confirm Talent receives Outlook invitation.
+9. Test "Talent chooses an available time".
+10. Confirm selected slot becomes final interview.
+11. Confirm one Outlook event is created.
+
+CLIENT:
+
+1. Talent applies through Find Work.
+2. Client sees application.
+3. Client reaches permitted interview action.
+4. Verify no "Submission not found or forbidden" for legitimate applicant.
+5. Progress applicant to offer-eligible state.
+6. Client sends offer.
+7. Verify POST /api/client/offers succeeds.
+8. Talent sees real offer.
+9. Talent accepts.
+10. Verify downstream contract workflow remains reachable.
+
+SECURITY:
+
+Attempt equivalent Interview/Offer operations using another Client's
+submission ID and confirm the server rejects them.
+
+============================================================
+DELIVERABLE
+============================================================
+
+At completion, provide:
+
+1. Root cause of each reported bug.
+2. Files changed.
+3. Database migration(s), if any.
+4. Explanation of the revised formal pipeline eligibility rules.
+5. Explanation of how organic Find Work applications become formally
+   hireable without creating duplicate invitation submissions.
+6. Microsoft Graph calendar implementation details.
+7. Exact Microsoft Graph permissions required for the shared FindWork
+   mailbox.
+8. Environment variable names required — NAMES ONLY, never values.
+9. Automated tests added/updated.
+10. Test results.
+11. Manual UAT results.
+12. Known limitations.
+13. Confirmation that Hired remains controlled by the signed-contract
+    workflow.
+14. Confirmation that cross-Client authorization remains enforced.
+15. Confirmation that existing client_invitation hiring flow was not
+    broken.
+
+IMPORTANT:
+If Microsoft Graph credentials or shared-mailbox permissions are not
+available in the development environment, implement and test the code
+against a mocked Graph transport, but explicitly mark real Outlook
+send/receive verification as PENDING.
+
+Never claim that a real Outlook invite was sent unless it was actually
+verified against the configured FindWork shared mailbox.

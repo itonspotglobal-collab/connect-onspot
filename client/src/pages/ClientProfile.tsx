@@ -79,6 +79,7 @@ import { JobRichText } from "@/components/JobRichText";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
+  hiringPipelineEligible: boolean;
   id: string;
   jobId: string;
   clientId: string;
@@ -353,7 +354,8 @@ function ViewSubmissionModal({
                company={submission.jobCompany}
                currentStatus={submission.status}
                onAction={() => setRequestInterviewOpen(true)}
-               actionDisabled={!canRequestInterviewNow}
+               actionDisabled={!canRequestInterviewNow || !submission.hiringPipelineEligible}
+               disabledReason={!submission.hiringPipelineEligible ? "This application is not eligible for formal hiring. A linked Talent account and a real approved job are required." : undefined}
              />
            )}
 
@@ -432,7 +434,7 @@ function ViewSubmissionModal({
           )}
 
           {/* Extend Offer action */}
-          {OFFERABLE_STATUSES.has(submission.status) && !isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
+          {submission.hiringPipelineEligible && OFFERABLE_STATUSES.has(submission.status) && !isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
             <div className="border-t border-slate-100 dark:border-white/[0.08] pt-4">
               <Button
                 className="w-full gap-2 bg-[#474ead] hover:bg-[#3a3d8f] text-white"
@@ -1519,7 +1521,7 @@ function JobSubmissionsSection({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {OFFERABLE_STATUSES.has(sub.status) && !isPendingOrDeclinedInvite(sub.initiated_by, sub.status) && (
+                        {sub.hiringPipelineEligible && OFFERABLE_STATUSES.has(sub.status) && !isPendingOrDeclinedInvite(sub.initiated_by, sub.status) && (
                           <Button
                             variant="outline"
                             size="sm"

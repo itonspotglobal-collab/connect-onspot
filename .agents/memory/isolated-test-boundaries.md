@@ -20,3 +20,9 @@ Use the scratch cluster's explicitly initialized role in both PostgreSQL client 
 **Why:** The workspace's inherited PostgreSQL client defaults can select a different role from the operating-system user that initialized the scratch cluster, producing a misleading role-not-found failure against an otherwise healthy local server.
 
 **How to apply:** Specify the owned scratch role explicitly rather than inheriting application database credentials or client defaults.
+
+Temporary fixture processes and logs do not survive workspace restarts. Keep the reusable harness in tracked source and distinguish interrupted checks from completed assertion results.
+
+**Why:** Workspace restarts during verification erased both the disposable cluster and its output; retrying against the application database would change the safety boundary.
+
+**How to apply:** Reinitialize only the disposable fixture, recheck the latest source edits, and never replace lost test evidence with a claim of success.

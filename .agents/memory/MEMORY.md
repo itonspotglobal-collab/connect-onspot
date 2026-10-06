@@ -32,7 +32,8 @@
 - [Tablet hero layout rule](homepage-tablet-hero-layout.md) — 768–1023px uses a contained two-column hero, preventing stacked desktop previews from overflowing.
 - [Flat-rate compensation language](flat-rate-compensation-language.md) — public OnSpot copy must never imply hourly billing; use flat period-based terminology.
 - [Invitation/interview smoke coverage](invite-interview-smoke.md) — production-route fixtures should verify eligibility, role filtering, consent, and timezone propagation without touching real hiring data.
-- [Formal pipeline guard](formal-pipeline-guard.md) — centralised module (formalPipelineGuard.ts) for the workflow_type='client_invitation' rule; all 15 pipeline enforcement points now import from it; new routes must too.
+- [Hiring eligibility and privacy](formal-pipeline-guard.md) — organic applications are hireable on their original submission; invitation-only identity relationships stay separate.
+- [Shared hiring calendar](shared-hiring-calendar.md) — Admin interviews use FindWork, not personal calendars; preserve Client proposal permissions.
 - [Vetted badge](vetted-badge.md) — admin-grantable "Vetted" badge on contractor profiles; schema, migrations, endpoints, and three badge surfaces.
 - [Verified tier](verified-tier.md) — full Verified identity tier; 9 DB columns, 9 endpoints, grandfathering, doc-delete-on-decision, Super Admin gate, fake-badge default fixes.
 - [Engagement type rename](engagement-type-rename.md) — 'Half-Day'→'Lite', 'Full-Time'→'Standard'; 4 storage locations, drop-then-rename-then-add constraint pattern, confirmed legal wording.

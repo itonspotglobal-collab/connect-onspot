@@ -1,9 +1,9 @@
 /**
  * Microsoft Graph Calendar Service
- * Queries interviewer free/busy availability via the Graph `getSchedule` endpoint.
+ * Queries the shared FindWork mailbox via the Graph `getSchedule` endpoint.
  *
  * Required application permission (granted by tenant admin):
- *   Calendars.Read   — read any user's calendar in the tenant
+ *   Calendars.ReadWrite — scoped to the shared FindWork mailbox (also creates events)
  *
  * The same app registration credentials used for Mail.Send are reused here.
  * The service is fully server-side: calendar emails and raw schedule data are
@@ -23,6 +23,7 @@
  */
 
 import { getMicrosoftGraphAccessToken } from "./microsoftGraphEmailService";
+import { findWorkMailbox, findWorkCalendarConfigured, graphCalendarRequest, FindWorkCalendarError } from "./findWorkCalendarService";
 import { db } from "../db";
 import { adminInterviewers as adminInterviewersTable } from "@shared/schema";
 import { asc } from "drizzle-orm";
@@ -161,13 +162,13 @@ function isGraphConfigured(): boolean {
  * The calendarEmail is intentionally omitted from the return value.
  */
 export async function getInterviewerList(): Promise<InterviewerRecord[]> {
-  const graphReady = isGraphConfigured();
+  const graphReady = findWorkCalendarConfigured();
   const configs = await loadInterviewerConfigs();
   return configs.map(({ id, name, title, calendarEmail, source }) => ({
     id,
     name,
     title,
-    isCalendarConnected: graphReady && calendarEmail.trim().length > 0,
+    isCalendarConnected: graphReady,
     source,
   }));
 }
@@ -479,8 +480,6 @@ async function fetchScheduleData(
   rangeEndUtc: Date,
   intervalMinutes: number,
 ): Promise<ScheduleData> {
-  const token = await getMicrosoftGraphAccessToken();
-
   const body = {
     schedules: [calendarEmail],
     startTime: {
@@ -494,29 +493,19 @@ async function fetchScheduleData(
     availabilityViewInterval: intervalMinutes,
   };
 
-  const graphUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(calendarEmail)}/calendar/getSchedule`;
-  const res = await fetch(graphUrl, {
+  const data: GraphScheduleResponse = await graphCalendarRequest(`/users/${encodeURIComponent(calendarEmail)}/calendar/getSchedule`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Graph getSchedule failed (${res.status}): ${text.slice(0, 500)}`);
-  }
-
-  const data = (await res.json()) as GraphScheduleResponse;
   const entry = data.value?.[0];
-  if (!entry) return { busyItems: [], workingHours: null };
+  if (!entry) throw new FindWorkCalendarError("calendar_unavailable", "Outlook did not return availability for the shared calendar.");
 
   if (entry.error) {
-    throw new Error(
-      `Graph returned error for ${calendarEmail}: [${entry.error.code ?? "?"}] ${entry.error.message}`,
-    );
+    throw new FindWorkCalendarError("mailbox_inaccessible", "Outlook cannot read the shared FindWork calendar availability.");
   }
 
   const busyItems = (entry.scheduleItems ?? []).filter((item) => item.status !== "free");
@@ -665,16 +654,13 @@ export function buildSlotsFromScheduleData(
  * Throws if Microsoft Graph credentials are not configured or the API call fails.
  */
 export async function getInterviewerSlots(opts: GetSlotsOptions): Promise<AvailableSlot[]> {
-  if (!isGraphConfigured()) {
-    throw new Error("Microsoft Graph credentials are not configured.");
-  }
+  const calendarEmail = findWorkMailbox();
 
   const interviewer = await findInterviewerConfig(opts.interviewerId);
-  if (!interviewer || !interviewer.calendarEmail?.trim()) {
-    throw new Error(`Interviewer '${opts.interviewerId}' has no calendar connected.`);
+  if (!interviewer) {
+    throw new Error("The selected interviewer does not exist.");
   }
 
-  const { calendarEmail } = interviewer;
   const { startDate, endDate, durationMinutes, timezone } = opts;
 
   // Expand query range to cover full working days in the display timezone
@@ -700,5 +686,6 @@ export async function getInterviewerSlots(opts: GetSlotsOptions): Promise<Availa
     endMs:   parseGraphDateTime(item.end),
   }));
 
-  return buildSlotsFromScheduleData(effectiveWh, busyIntervals, startDate, endDate, durationMinutes, timezone);
+  return buildSlotsFromScheduleData(effectiveWh, busyIntervals, startDate, endDate, durationMinutes, timezone)
+    .filter(slot => new Date(slot.start).getTime() > Date.now());
 }

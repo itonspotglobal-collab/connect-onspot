@@ -755,3 +755,17 @@ mtime_ms = 1791192523638
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/a4ec99e0-864a-47e1-94ec-e352249bde12/15d7e3d3-0cdf-465b-a24c-bc1f0bb00893"
 storage_version_token = "1791192642438827"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "humGnydrJABwLAQ60Ja75"
+uri = "file://docs/hiring-flow-calendar-audit.md"
+type = "text"
+title = "Hiring flow and shared Outlook calendar audit"
+description = "Root causes, changes, migration status, Microsoft permissions, test results and pending manual UAT."
+logical_id = "9f5e26fe-f5c9-4e67-9b38-eca75ff547c6"
+content_hash = "sha256:d965e0d90797c22d799172b7455da699ed1d90f2eb1ccacf89acb00e03bef153"
+size = 12075
+mtime_ms = 1791254325608
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/9f5e26fe-f5c9-4e67-9b38-eca75ff547c6/148ad69d-aa14-40b6-b295-9c863bd7deef"
+storage_version_token = "1791254844495798"
+content_type = "text/markdown"

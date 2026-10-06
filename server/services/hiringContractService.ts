@@ -124,11 +124,7 @@ export async function createHiringContract(params: {
     const signingEntity = await getContractSigningEntity(client);
     const submissionId: string = offer.submission_id;
 
-    // Lock and verify the submission is a formal client_invitation.
-    // loadAdminFormalSubmission enforces the pipeline predicate atomically — a
-    // shortlist or application row returns not-found rather than a locked row with
-    // the wrong workflow_type. The secondary lookup distinguishes "truly missing"
-    // (404) from "wrong workflow_type" (409) when the guard rejects.
+    // Lock and verify invitation or linked organic application eligibility.
     const subGuard = await loadAdminFormalSubmission(submissionId, {
       forUpdate: true,
       txClient: client,
@@ -142,8 +138,8 @@ export async function createHiringContract(params: {
         throw new ContractError(404, { error: "Submission not found" });
       }
       throw new ContractError(409, {
-        error: "formal_invitation_required",
-        message: "A hiring contract can only be created for a formally invited submission.",
+        error: "formal_hiring_application_required",
+        message: "A hiring contract requires an eligible Client invitation or linked Find Work application.",
       });
     }
     const previousStatus: string = subGuard.row.status;
