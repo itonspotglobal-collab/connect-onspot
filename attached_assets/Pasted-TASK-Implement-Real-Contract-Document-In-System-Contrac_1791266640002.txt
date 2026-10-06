@@ -1,0 +1,714 @@
+TASK: Implement Real Contract Document + In-System Contract Signing Workflow
+
+IMPORTANT:
+Audit the existing contract, offer, organization, object-storage, email,
+notification, and hiring pipeline implementation FIRST.
+
+Then implement this feature using the existing architecture.
+
+Do NOT replace the existing hiring contract system with an unrelated
+parallel contract system.
+
+Do NOT create fake signing states.
+
+Do NOT mark a Talent as Hired until the required contract-signing workflow
+has actually completed.
+
+============================================================
+GOAL
+============================================================
+
+Implement an end-to-end contract signing workflow between:
+
+1. Client → Talent
+2. OnSpot Admin → Talent
+3. Authorized Organization representative → Talent
+
+After an offer has been accepted, an authorized Client/Admin should be
+able to prepare the employment/contractor agreement by uploading a PDF.
+
+The Talent then receives the contract inside OnSpot and can review and
+sign it.
+
+After all required signatures are completed, the existing hiring contract
+should become active and the Talent/application can transition to Hired
+according to the existing signed-contract workflow.
+
+============================================================
+EXPECTED FLOW
+============================================================
+
+Offer
+→ Talent accepts offer
+→ Prepare Contract
+→ Upload PDF
+→ Review contract
+→ Send to Talent
+→ Talent receives notification/email
+→ Talent opens contract
+→ Talent reviews PDF
+→ Talent signs
+→ Client/Admin/Organization countersigns if required
+→ Contract becomes fully executed
+→ Existing hiring workflow activates contract
+→ Application becomes Hired
+
+Do not bypass the accepted-offer requirement.
+
+============================================================
+1. CONTRACT PREPARATION POPUP
+============================================================
+
+Create a modal similar in UX quality to the existing email-template
+modals.
+
+Possible action:
+
+[ Prepare Contract ]
+
+Modal title:
+
+Prepare Contract
+
+Display context:
+- Talent name
+- Job title
+- Client / Organization
+- accepted offer rate
+- currency
+- engagement type
+- proposed/start date where available
+
+Allow the authorized sender to:
+
+- upload contract PDF
+- review selected document
+- replace document BEFORE sending
+- optionally enter contract title
+- optionally add a message to Talent
+- select/confirm signing parties where permitted
+- send contract for signature
+
+PDF ONLY for this MVP.
+
+Validate:
+- MIME type
+- extension
+- file size
+- non-empty file
+- upload success
+
+Use the EXISTING private object-storage architecture.
+
+Do not create a new public file-upload system.
+
+Do not use fabricated URLs.
+
+Do not store the PDF as base64 in the database.
+
+Persist only the permanent private object reference and appropriate
+document metadata.
+
+============================================================
+2. PRIVATE CONTRACT STORAGE
+============================================================
+
+Contracts contain sensitive information.
+
+Contract PDFs MUST NOT be publicly accessible.
+
+Use authenticated/authorized retrieval.
+
+Only authorized parties should be able to retrieve the contract:
+
+- relevant Talent
+- authorized Client
+- authorized Organization member with appropriate permission
+- authorized OnSpot Admin
+
+Client A must never retrieve Client B's contract merely by knowing an
+object ID or contract ID.
+
+Organization A must never retrieve Organization B's contract.
+
+Do not expose raw storage credentials or permanent public URLs.
+
+If signed/temporary download URLs are used, generate them server-side
+after authorization.
+
+============================================================
+3. CONTRACT RECORD / DOCUMENT VERSION
+============================================================
+
+Audit the existing hiring_contracts schema before changing it.
+
+Reuse the existing hiring contract as the canonical hiring relationship.
+
+If necessary, introduce a related contract document table instead of
+overloading hiring_contracts with document-specific fields.
+
+Suggested conceptual model:
+
+contract_documents
+
+- id
+- hiring_contract_id
+- organization_id where applicable
+- document_object_key
+- original_filename
+- mime_type
+- file_size
+- version
+- status
+- uploaded_by
+- uploaded_at
+- sent_at
+- executed_at
+- created_at
+- updated_at
+
+Do not blindly implement this exact schema if equivalent fields/tables
+already exist.
+
+Audit first and use the smallest safe schema change.
+
+============================================================
+4. CONTRACT STATES
+============================================================
+
+Use explicit states.
+
+For example:
+
+draft
+→ sent_for_signature
+→ talent_signed
+→ countersigned
+→ executed
+
+Also support terminal/superseded states where appropriate:
+
+voided
+superseded
+declined
+
+Do not infer signed status merely because a signature field contains text.
+
+Do not allow editing/replacing the underlying PDF after signatures have
+started.
+
+If a contract must be changed after being sent/signed:
+
+void/supersede the old version
+→ create new contract document version
+→ collect signatures again
+
+Never silently replace the PDF behind an existing signature.
+
+============================================================
+5. TALENT EXPERIENCE
+============================================================
+
+Add a clear Talent contract experience.
+
+For example:
+
+Contracts
+or
+My Contract
+
+Talent should see:
+
+Contract
+Job: Website Developer
+Company: <Client / Organization>
+Status: Awaiting Your Signature
+
+[ View Contract ]
+[ Sign Contract ]
+
+Talent must be able to review the actual PDF BEFORE signing.
+
+Do not make the Talent download the PDF just to review it if an existing
+secure PDF preview can reasonably be used.
+
+The signing action should require an explicit confirmation.
+
+Suggested UX:
+
+-----------------------------------
+
+Sign Contract
+
+Please review the complete contract before signing.
+
+[ PDF preview ]
+
+Full legal name
+[ __________________ ]
+
+☐ I confirm that I have reviewed this contract and intend to sign it.
+
+[ Cancel ] [ Sign Contract ]
+
+-----------------------------------
+
+Do not pre-check the consent checkbox.
+
+Do not pre-fill a fake signature.
+
+============================================================
+6. SIGNATURE RECORD
+============================================================
+
+Do not only update:
+
+talent_signed = true
+
+Create/preserve an auditable signature record.
+
+Audit existing signature fields/tables first.
+
+Each signature should capture at minimum:
+
+- contract/document ID
+- signer user ID
+- signer role
+- signer display/legal name used
+- signature method
+- signed_at
+- contract document version/hash
+- relevant audit metadata already supported by the platform
+
+Where legally/privacy appropriate within the existing system architecture,
+record security/audit information required to establish who performed the
+action.
+
+Do not expose sensitive audit information in ordinary UI.
+
+IMPORTANT:
+
+The signature MUST be bound to the exact PDF/version that was reviewed.
+
+Compute and persist a cryptographic hash such as SHA-256 for the contract
+document/version.
+
+When signing, associate the signature with that document hash.
+
+If document bytes change, the existing signatures must not remain valid
+for the changed document.
+
+============================================================
+7. CLIENT / ADMIN / ORGANIZATION SIGNATURE
+============================================================
+
+Support countersigning.
+
+Depending on the contract workflow:
+
+Talent signs
+→ authorized Client/Admin/Organization representative countersigns
+
+OR, where business rules require:
+
+Client/Admin signs
+→ Talent signs
+
+Reuse the existing contract signing order if one already exists.
+
+Do not arbitrarily change existing business rules.
+
+For an Organization contract, persist:
+
+- organization_id
+- signing user_id
+- role/authority context
+
+Example:
+
+Organization:
+ABC Logistics
+
+Signed on behalf of organization by:
+Jane Smith
+HR Manager
+
+Do NOT create a signature attributed only to "ABC Logistics" with no
+actual user associated with the action.
+
+The system must know which authenticated authorized person signed.
+
+============================================================
+8. ORGANIZATION AUTHORIZATION
+============================================================
+
+This feature must support organization accounts safely.
+
+Audit the existing:
+- organizations
+- organization membership
+- roles
+- permissions
+- client ownership model
+
+Determine which Organization roles may:
+
+- prepare contract
+- upload/replace draft
+- send contract
+- view contract
+- countersign contract
+- void contract
+
+Do not assume every Organization member can sign contracts.
+
+If there is no existing permission specifically suitable for contract
+signing, add the smallest appropriate authorization mechanism.
+
+Server-side authorization is mandatory.
+
+Hiding the button is not sufficient.
+
+============================================================
+9. ADMIN CONTRACT FLOW
+============================================================
+
+Admin should have appropriate contract-management actions.
+
+For an accepted offer:
+
+[ Prepare Contract ]
+
+For sent contract:
+
+Status:
+Awaiting Talent Signature
+
+For Talent-signed contract:
+
+Status:
+Awaiting Countersignature
+
+[ Review & Sign ]
+
+For executed contract:
+
+Status:
+Fully Executed
+
+[ View Contract ]
+
+Admin should be able to see the signature timeline/audit summary.
+
+Example:
+
+Contract uploaded
+Oct 6 — Admin User
+
+Sent to Talent
+Oct 6
+
+Signed by Talent
+Oct 7
+
+Countersigned
+Oct 7
+
+Contract activated
+Oct 7
+
+============================================================
+10. EMAIL + NOTIFICATIONS
+============================================================
+
+Use the existing Microsoft Graph email service and notification system.
+
+When a contract is sent:
+
+Talent receives:
+- in-app notification
+- email notification
+
+Email should NOT attach the sensitive PDF unless that is already an
+approved security pattern.
+
+Prefer a secure authenticated link:
+
+"Review and sign your contract"
+
+The link should take the Talent to the authenticated contract page.
+
+Do not expose a permanent public object-storage URL in email.
+
+Notify relevant parties when:
+
+- contract sent
+- Talent signs
+- countersignature required
+- contract fully executed
+- contract declined/voided where applicable
+
+Do not claim email delivery if Microsoft Graph send fails.
+
+============================================================
+11. EXECUTED PDF
+============================================================
+
+After all required signatures are complete, preserve the original signed
+document/version and its audit information.
+
+If practical within the existing PDF architecture, generate an executed
+contract PDF containing a final signature/audit page such as:
+
+--------------------------------
+
+SIGNATURES
+
+Talent
+Name: John Smith
+Signed: October 7, 2026 10:32 AM
+Document ID: ...
+
+Organization
+Name: Jane Doe
+On behalf of: ABC Logistics
+Signed: October 7, 2026 11:04 AM
+
+--------------------------------
+
+Do NOT destructively modify the originally uploaded source PDF.
+
+Store the executed copy separately.
+
+If generating an executed PDF is too large a change for the current
+architecture, preserve the immutable original PDF + signature/audit
+records first and clearly report executed-PDF generation as a remaining
+limitation.
+
+============================================================
+12. HIRING ACTIVATION
+============================================================
+
+This is critical.
+
+Currently Hired is intentionally controlled by the signed-contract
+workflow.
+
+Preserve that.
+
+Do NOT enable manual Hired selection in the generic Admin status modal.
+
+Once all required signatures are complete:
+
+contract status
+→ signed/executed
+
+then use the EXISTING canonical contract activation logic to trigger the
+appropriate downstream state:
+
+application/submission
+→ hired
+
+billing_activated_at
+→ set according to existing business rules
+
+contract
+→ active/signed according to existing schema
+
+Do not duplicate these state transitions if a canonical service already
+handles them.
+
+The contract signing implementation should call/reuse that service.
+
+============================================================
+13. FIND WORK + CLIENT INVITATION COMPATIBILITY
+============================================================
+
+This contract workflow must work for BOTH:
+
+A. Client invitation hiring
+
+Client invites Talent
+→ interview
+→ offer
+→ accepted
+→ contract
+
+AND
+
+B. Organic Find Work hiring
+
+Talent applies
+→ Client reviews
+→ interview
+→ offer
+→ accepted
+→ contract
+
+Do NOT create a duplicate client_invitation submission for an organic
+Find Work applicant.
+
+Use the same canonical accepted-offer → hiring-contract workflow.
+
+This depends on the formal pipeline eligibility fix.
+
+============================================================
+14. SECURITY REQUIREMENTS
+============================================================
+
+Treat contract documents as confidential.
+
+Required protections:
+
+- authentication
+- authorization
+- organization scoping
+- Client ownership checks
+- Talent identity checks
+- private object storage
+- immutable signed versions
+- signature audit trail
+- document hash/version binding
+- server-side signing authorization
+- CSRF/security protections already used by the application
+- safe filename handling
+- safe PDF validation
+
+Never trust:
+- client-provided signer role
+- client-provided organization ID without authorization
+- client-provided Talent ID without relationship validation
+- object-storage key without contract authorization
+- "signed=true" from frontend
+
+Server determines all canonical relationships.
+
+============================================================
+15. TESTS
+============================================================
+
+Add automated tests.
+
+CLIENT FLOW
+
+accepted offer
+→ prepare contract
+→ upload PDF
+→ send
+→ Talent can access
+→ unrelated Talent cannot access
+→ Talent signs
+→ Client countersigns
+→ contract executed
+→ canonical Hired transition occurs
+
+ADMIN FLOW
+
+accepted offer
+→ Admin prepares contract
+→ sends to Talent
+→ Talent signs
+→ Admin countersigns
+→ executed
+
+ORGANIZATION FLOW
+
+authorized Organization member
+→ prepares contract
+→ sends
+→ Talent signs
+→ authorized representative signs
+→ executed
+
+UNAUTHORIZED ORGANIZATION MEMBER
+
+must not countersign if role/permission does not permit it.
+
+CROSS-TENANT SECURITY
+
+Client A cannot:
+- retrieve Client B contract
+- sign Client B contract
+- replace Client B PDF
+- void Client B contract
+
+Talent A cannot:
+- view Talent B contract
+- sign Talent B contract
+
+DOCUMENT INTEGRITY
+
+After signing begins:
+- source PDF cannot be replaced
+- document hash remains fixed
+- new version requires new signatures
+
+STATUS INTEGRITY
+
+Application must NOT become Hired when:
+- PDF merely uploaded
+- contract merely sent
+- only one required party signed
+
+Application becomes Hired only after the existing required-signature
+condition is satisfied.
+
+============================================================
+16. MANUAL UAT
+============================================================
+
+Provide UAT results for:
+
+1. Complete real offer.
+2. Accept offer as Talent.
+3. Open Prepare Contract.
+4. Upload a real test PDF.
+5. Send contract.
+6. Log in as Talent.
+7. Receive notification.
+8. Receive contract email where email configuration is available.
+9. Open PDF.
+10. Sign contract.
+11. Log in as authorized Client/Admin/Organization signer.
+12. Countersign.
+13. Confirm fully executed status.
+14. Confirm application becomes Hired.
+15. Confirm contract appears in appropriate Client/Talent/Admin views.
+16. Confirm unauthorized account cannot retrieve PDF.
+17. Confirm signed PDF/version cannot be replaced.
+
+Never report a UAT step as PASS unless actually executed.
+
+============================================================
+DELIVERABLE
+============================================================
+
+After implementation report:
+
+1. Existing contract architecture found.
+2. Existing functionality reused.
+3. Root gaps discovered.
+4. Files changed.
+5. Migrations added.
+6. New/changed endpoints.
+7. Contract state machine.
+8. Signing authorization rules.
+9. Organization signing rules.
+10. Private PDF storage implementation.
+11. Document hashing/versioning implementation.
+12. Email/notification behavior.
+13. How final signing activates the existing Hired workflow.
+14. Automated test results.
+15. Manual UAT results.
+16. Remaining limitations.
+
+IMPORTANT:
+
+Do not claim this is equivalent to DocuSign, Adobe Sign, or another
+qualified third-party electronic-signature provider.
+
+Describe it accurately as OnSpot's in-system contract acceptance/signing
+workflow unless the project explicitly integrates a legally recognized
+external e-signature provider.
+
+Do not weaken the existing signed-contract → Hired business rule.
