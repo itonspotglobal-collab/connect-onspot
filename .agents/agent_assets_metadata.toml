@@ -783,3 +783,17 @@ mtime_ms = 1791270793503
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/b973b738-5c58-4e59-8801-2d5ff1fd12c8/be63db79-07af-4fb5-939f-bce5ab63f257"
 storage_version_token = "1791270801956489"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "YPhL7XyJvSFr0R_XlNq4P"
+uri = "file://docs/test-hire-uat-audit.md"
+type = "text"
+title = "Test Hire audit and 17-step UAT procedure"
+description = "Why no test-only utility is needed, the existing Admin preparation path, preserved security rules, and the pending Offer → Contract → Hired → Team → Clock → Timesheet checks."
+logical_id = "62e1326e-ce13-49db-89ac-9e797317b5f2"
+content_hash = "sha256:c3561f9026e190d9b6bd063ecaee2f54164112fe0d5338a7734ae434b47cc6e2"
+size = 10286
+mtime_ms = 1791278846333
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/62e1326e-ce13-49db-89ac-9e797317b5f2/aaed8533-d2f4-422b-8fe7-39f60205fded"
+storage_version_token = "1791278867019088"
+content_type = "text/markdown"

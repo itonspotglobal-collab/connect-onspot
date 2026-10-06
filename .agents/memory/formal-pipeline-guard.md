@@ -14,3 +14,11 @@ Name-reveal and invitation-established messaging remain separate, invitation-onl
 **Why:** The hiring correction was scoped to interviews, offers and contracts, not a privacy or messaging redesign.
 
 **How to apply:** Keep privacy relationship checks distinct when changing hiring predicates or adding new hiring endpoints.
+
+## Hiring UAT scope
+
+The owner states that the normal production hiring workflow is working and must not be changed merely to support testing. Do not add an interview requirement, enable manual Hired, fabricate interviews/signatures, or weaken formal hiring guards. Prefer normal Admin preparation instructions over a test-only utility when existing actions suffice.
+
+**Why:** UAT is intended to exercise real downstream Offer, Contract, signature-driven Hired, Team and Timesheet behavior, not substitute a testing pipeline for it.
+
+**How to apply:** Audit existing preparation actions first. Add a separate fail-closed, explicitly test-account-restricted utility only if normal actions cannot prepare legitimate test records. Preserve all downstream activation and ownership checks.
