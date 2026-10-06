@@ -1,0 +1,317 @@
+TASK: Add a TEMPORARY UAT bypass for the interview prerequisite so we can
+manually test Hiring → Contract Signing → Hired → Timesheet.
+
+IMPORTANT:
+This is for DEVELOPMENT / MANUAL UAT ONLY.
+
+Do NOT permanently remove the production interview requirement.
+Do NOT weaken authorization, Client ownership, organization scoping,
+contract-signature requirements, or cross-tenant security.
+
+============================================================
+GOAL
+============================================================
+
+Right now, the hiring workflow prevents progressing a Talent through the
+hiring process when the Talent has not completed the required interview.
+
+For manual testing, I need to test the downstream features independently:
+
+1. Hiring
+2. Offer / accepted offer
+3. Contract preparation
+4. Contract signing
+5. Hired activation
+6. Timesheet / clock-session functionality
+
+Add a temporary, explicit UAT bypass for ONLY the interview prerequisite.
+
+============================================================
+IMPLEMENTATION
+============================================================
+
+First audit the existing hiring/status logic and identify exactly where
+interview completion is required before:
+
+- Offer
+- Contract
+- Hire/Hired
+- hiring contract activation
+
+Do NOT simply delete those conditions.
+
+Add a server-side feature flag such as:
+
+UAT_BYPASS_INTERVIEW_REQUIREMENT=true
+
+or reuse the project's existing development/feature-flag architecture if
+one already exists.
+
+The SERVER must be authoritative.
+
+Do not implement this only as a frontend toggle.
+
+============================================================
+WHEN BYPASS IS ENABLED
+============================================================
+
+When:
+
+UAT_BYPASS_INTERVIEW_REQUIREMENT=true
+
+an otherwise eligible application/submission may progress through the
+hiring pipeline without having completed an interview.
+
+For example:
+
+Submitted / Under Review / Shortlisted
+        ↓
+Offer
+        ↓
+Talent accepts offer
+        ↓
+Prepare Contract
+        ↓
+Send Contract
+        ↓
+Required parties sign
+        ↓
+Contract fully executed
+        ↓
+Hired
+        ↓
+Timesheet / Clock Sessions
+
+The missing interview must NOT block this UAT flow.
+
+However, ALL OTHER business rules must remain active.
+
+============================================================
+DO NOT BYPASS
+============================================================
+
+The UAT flag must NOT bypass:
+
+- authentication
+- authorization
+- Client ownership
+- Organization authorization
+- Talent identity
+- valid job/submission relationship
+- accepted-offer requirements
+- contract requirements
+- required signatures
+- contract document integrity
+- Client/Organization/OnSpot signature requirements
+- cross-tenant security
+- engagement type requirements
+- billing rules
+- Timesheet authorization
+
+For example:
+
+Client A still must NOT be able to hire Client B's Talent/application.
+
+An unrelated Admin/Organization user must NOT gain contract-signing
+authority.
+
+A contract must NOT become executed merely because the interview bypass
+is enabled.
+
+============================================================
+IMPORTANT: "HIRED" STATUS
+============================================================
+
+Do NOT turn the generic Admin status dropdown into an unrestricted
+manual "Hired" button.
+
+Preserve:
+
+Hired = result of the completed contract workflow.
+
+The UAT bypass should ONLY remove:
+
+"Interview must be completed before proceeding"
+
+It should NOT remove:
+
+"Required contract signatures must be completed before Hired."
+
+Therefore the test flow should still be:
+
+No interview
+→ Offer
+→ Offer Accepted
+→ Contract
+→ Talent signs
+→ Client/Organization signs where required
+→ OnSpot signs
+→ Fully Executed
+→ Hired
+
+NOT:
+
+No interview
+→ manually select Hired
+
+============================================================
+UI
+============================================================
+
+When UAT bypass is enabled, make the downstream actions available when
+the applicant otherwise qualifies.
+
+For example, an eligible Shortlisted applicant should be able to proceed
+to Offer even if no interview record exists.
+
+If useful, display a small development/UAT indicator:
+
+"UAT mode: interview prerequisite bypassed"
+
+Do not show this in normal production operation.
+
+Do not expose the environment variable value or other environment
+configuration to users.
+
+============================================================
+PRODUCTION SAFETY
+============================================================
+
+This is critical.
+
+The bypass must default to FALSE.
+
+If the environment variable is absent:
+
+UAT_BYPASS_INTERVIEW_REQUIREMENT=false
+
+Normal interview requirements must apply.
+
+Prefer additionally preventing this bypass from operating in production.
+
+For example:
+
+bypass =
+  process.env.NODE_ENV !== "production" &&
+  process.env.UAT_BYPASS_INTERVIEW_REQUIREMENT === "true"
+
+If the existing deployment architecture has a dedicated staging/UAT
+environment identifier, use that instead of assuming NODE_ENV alone.
+
+Production must fail CLOSED.
+
+Do not allow a browser query parameter such as:
+
+?skipInterview=true
+
+Do not allow localStorage or frontend state to activate the bypass.
+
+============================================================
+AUTOMATED TESTS
+============================================================
+
+Add tests proving:
+
+TEST 1 — Normal behavior
+
+Flag OFF
++
+Talent has not completed interview
+→ interview prerequisite remains enforced.
+
+TEST 2 — UAT behavior
+
+Flag ON
++
+Talent has not completed interview
+→ otherwise eligible applicant can proceed to Offer/Contract.
+
+TEST 3 — Contract integrity
+
+Flag ON
++
+contract has missing required signatures
+→ application MUST NOT become Hired.
+
+TEST 4 — Complete downstream flow
+
+Flag ON
++
+no interview
+→ offer
+→ accepted
+→ contract
+→ all required signatures
+→ Hired
+
+must succeed.
+
+TEST 5 — Authorization
+
+Flag ON
++
+Client A attempts to progress Client B's applicant
+→ rejected.
+
+TEST 6 — Timesheet
+
+After legitimate Hired/active-contract activation through the UAT flow,
+verify the resulting Talent/Client relationship is recognized by the
+existing Timesheet/clock-session system.
+
+============================================================
+MANUAL UAT TARGET
+============================================================
+
+After implementing the bypass, I want to manually test:
+
+1. Create/use Talent application.
+2. Do NOT conduct an interview.
+3. Progress applicant to an offer-eligible state.
+4. Send offer.
+5. Talent accepts offer.
+6. Prepare/upload contract PDF.
+7. Send contract.
+8. Talent reviews and signs.
+9. Client/Organization representative signs if required.
+10. OnSpot signs.
+11. Confirm contract becomes fully executed.
+12. Confirm Talent/application becomes Hired.
+13. Confirm Talent appears in Client Team.
+14. Confirm active hiring contract exists.
+15. Talent clocks in / creates valid tracked work.
+16. Confirm Timesheet displays the work.
+17. Confirm Client can review the Timesheet as intended.
+
+============================================================
+DELIVERABLE
+============================================================
+
+Report:
+
+1. Where the interview prerequisite was enforced.
+2. Files changed.
+3. Feature flag/environment variable used.
+4. Confirmation that it defaults OFF.
+5. Confirmation that production cannot accidentally enable it.
+6. Tests added.
+7. Test results.
+8. Exact manual UAT path I should follow.
+9. Confirmation that contract signatures are STILL mandatory for Hired.
+10. Confirmation that authorization/security was NOT bypassed.
+
+IMPORTANT:
+
+This is a temporary testing mechanism.
+
+Do not remove or rewrite the real interview workflow.
+
+Do not mark Interviewing/Interview Completed artificially.
+
+The application's audit history should remain truthful: if no interview
+occurred, do not create a fake interview record merely to satisfy the
+pipeline.
+
+The purpose is to test downstream Hiring, Contract Signing, Hired
+activation, and Timesheets independently while the interview/calendar
+workflow is still being debugged.
