@@ -1,0 +1,448 @@
+TASK: Add an isolated Admin-only "Test Hire" utility for DEVELOPMENT/UAT
+so I can test Contract Signing → Hired → Client Team → Timesheets and
+related downstream features without changing the normal hiring workflow.
+
+IMPORTANT:
+The existing production hiring workflow is working and MUST NOT be
+modified just to support testing.
+
+Do NOT:
+- change normal application status rules
+- enable Hired in the normal status dropdown
+- add an interview requirement
+- remove formal pipeline guards
+- weaken authorization
+- create fake interview records
+- automatically fake contract signatures
+- make this available to ordinary Clients/Talents
+
+============================================================
+GOAL
+============================================================
+
+I have test Client/Admin/Talent accounts.
+
+I need a controlled way to take a TEST Talent/application and bootstrap it
+into the downstream hiring workflow so I can manually test:
+
+- Offer
+- Contract preparation
+- PDF upload
+- Contract sending
+- Talent signing
+- Client/Organization signing
+- OnSpot signing
+- Hired activation
+- Client Team
+- Timesheet
+- clock sessions
+- related downstream functionality
+
+This must be isolated from the real hiring workflow.
+
+============================================================
+IMPLEMENTATION APPROACH
+============================================================
+
+Create a DEVELOPMENT/UAT-only Admin action such as:
+
+[Test Hire]
+
+or:
+
+[Prepare Test Hire]
+
+This action must NOT immediately set:
+
+application.status = "hired"
+
+Instead, it should create/prepare the minimum legitimate prerequisites
+needed to enter the REAL downstream Offer/Contract workflow.
+
+The purpose is to skip upstream recruitment steps during testing while
+still testing Contract Signing and Hired activation for real.
+
+============================================================
+FEATURE FLAG
+============================================================
+
+Use an explicit server-side flag such as:
+
+ENABLE_TEST_HIRING_TOOLS=true
+
+Reuse the project's feature flag system if one already exists.
+
+Default:
+
+false
+
+The server must be authoritative.
+
+Do NOT implement this using:
+- localStorage
+- query parameters
+- frontend-only checks
+- hidden URLs
+- browser flags
+
+Prefer preventing it from operating in production entirely.
+
+For example, use the project's existing environment/deployment detection
+and fail closed in production.
+
+If production environment detection is uncertain, report that rather than
+assuming it is safe.
+
+============================================================
+TEST ACCOUNT RESTRICTION
+============================================================
+
+Do NOT allow this tool to operate on arbitrary real Talent accounts.
+
+Audit whether the system already has a safe concept of:
+- test users
+- seed users
+- development accounts
+- sandbox accounts
+
+Reuse that if available.
+
+Otherwise implement the smallest safe test-account designation.
+
+The server must verify that the selected Talent/account is explicitly
+eligible for test hiring.
+
+An Admin should NOT be able to accidentally click Test Hire on a real
+production Talent.
+
+============================================================
+ADMIN UI
+============================================================
+
+When BOTH are true:
+
+1. development/UAT environment
+2. ENABLE_TEST_HIRING_TOOLS=true
+
+show an Admin-only action on the appropriate application/Talent page:
+
+[Test Hire]
+
+Clicking it should show a confirmation modal.
+
+Example:
+
+------------------------------------------------
+
+Prepare Test Hire
+
+This testing utility skips upstream recruitment steps and prepares this
+test applicant for downstream hiring UAT.
+
+Talent:
+Frenzy Test
+
+Job:
+Website Developer
+
+Client:
+<Test Client>
+
+This will NOT mark the Talent as Hired.
+
+You will still need to complete the Offer and Contract workflow.
+
+[Cancel] [Prepare Test Hire]
+
+------------------------------------------------
+
+Include a visible:
+
+TEST / UAT ONLY
+
+indicator.
+
+============================================================
+WHAT TEST HIRE SHOULD DO
+============================================================
+
+Audit the current schema/services first.
+
+Determine the MINIMUM legitimate state required for the selected test
+application/submission to enter the real downstream hiring pipeline.
+
+Prefer using existing canonical services instead of direct database
+updates.
+
+The Test Hire preparation may, where required:
+
+- ensure a valid application/submission exists
+- associate it with the selected real test Client/job
+- move it to an appropriate offer-eligible state such as Shortlisted
+- establish formal-pipeline eligibility for this TEST submission
+- create other minimum prerequisite records required by the existing
+  downstream workflow
+
+Do NOT create unnecessary duplicate submissions.
+
+Do NOT fabricate an interview.
+
+Do NOT mark an interview completed.
+
+Do NOT create fake signatures.
+
+Do NOT mark the contract executed.
+
+Do NOT mark the Talent Hired.
+
+============================================================
+THEN USE THE REAL FLOW
+============================================================
+
+After Test Hire preparation, I want to use the normal application UI.
+
+Expected manual test:
+
+Test Talent
+→ Prepare Test Hire
+→ Send Offer
+→ Talent logs in
+→ Talent accepts Offer
+→ Admin/Client prepares Contract
+→ upload real test PDF
+→ send Contract
+→ Talent reviews PDF
+→ Talent signs
+→ Client/Organization representative signs if required
+→ OnSpot signs
+→ Contract becomes executed
+→ existing canonical logic marks Talent Hired
+→ Talent appears in Client Team
+→ Timesheet/clock-session features become available
+
+Everything after the testing bootstrap must use the REAL application
+logic.
+
+============================================================
+DO NOT BYPASS CONTRACT SIGNING
+============================================================
+
+This is extremely important.
+
+The Test Hire utility must NOT cause:
+
+Hired = true
+
+The purpose is specifically to test whether the newly implemented
+contract-signing workflow correctly causes Hired.
+
+For an OnSpot contract:
+
+Talent signature
++
+OnSpot signature
+
+must still be required.
+
+For a Client/Organization contract:
+
+Talent signature
++
+authorized Client/Organization representative signature
++
+OnSpot signature
+
+must still be required according to the implemented contract rules.
+
+Only after all required signatures should the existing canonical
+activation logic produce Hired.
+
+============================================================
+TIMESHEET TEST
+============================================================
+
+After the real signed-contract workflow marks the Talent Hired, verify
+that the resulting relationship/contract is sufficient for Timesheet
+functionality.
+
+I want to test:
+
+Talent
+→ Clock In
+→ Clock Out
+→ clock session created
+→ tracked hours calculated
+→ Timesheet displays hours
+→ Client can review the appropriate Timesheet
+→ Client Team reflects the Talent/hours correctly
+
+Do NOT create fake Timesheet records as part of Test Hire.
+
+I want to test the real Timesheet implementation.
+
+============================================================
+OPTIONAL TEST RESET
+============================================================
+
+If safe and straightforward, add a separate Admin-only:
+
+[Reset Test Hire]
+
+for explicitly designated test accounts ONLY.
+
+This should allow repeated UAT without manually deleting database records.
+
+However:
+
+DO NOT implement a dangerous cascade delete.
+
+Audit all related records first.
+
+If reliable reset semantics cannot be guaranteed, DO NOT add this feature.
+Instead document the records that must be cleaned/reset between tests.
+
+Never allow reset against non-test accounts.
+
+============================================================
+AUDIT TRAIL
+============================================================
+
+Record that the bootstrap operation was performed using the UAT utility.
+
+For example:
+
+Test hiring preparation performed
+Actor: <Admin>
+Talent: <Test Talent>
+Job: <Job>
+Timestamp: ...
+Environment: development/UAT
+
+Do not make the audit trail look like a real interview occurred.
+
+============================================================
+SECURITY
+============================================================
+
+The endpoint must require:
+
+- authenticated user
+- Admin authorization
+- feature flag enabled
+- non-production/UAT environment
+- explicitly designated test Talent
+- valid Client/job relationship
+
+If Organization is involved, preserve Organization authorization and
+scoping.
+
+Client A must still never gain access to Client B's records.
+
+The endpoint must fail closed.
+
+============================================================
+TESTS
+============================================================
+
+Add automated tests proving:
+
+1. Feature flag OFF
+   → Test Hire unavailable.
+
+2. Production environment
+   → Test Hire unavailable even if flag is accidentally true, if the
+     project's environment architecture supports reliable detection.
+
+3. Non-Admin
+   → forbidden.
+
+4. Real/non-test Talent
+   → forbidden.
+
+5. Test Talent + Admin + UAT enabled
+   → bootstrap succeeds.
+
+6. Bootstrap does NOT create interview completion.
+
+7. Bootstrap does NOT mark Talent Hired.
+
+8. Bootstrap does NOT create contract signatures.
+
+9. Test Talent can subsequently receive/accept real Offer.
+
+10. Real Contract workflow can subsequently run.
+
+11. Missing required signatures
+    → NOT Hired.
+
+12. All required signatures
+    → existing canonical Hired transition occurs.
+
+13. Resulting active contract/hiring relationship is recognized by the
+    Timesheet system.
+
+14. Cross-Client access remains rejected.
+
+============================================================
+IMPORTANT ARCHITECTURE RULE
+============================================================
+
+Do not modify the normal production pipeline merely to make the test
+utility work.
+
+Keep this conceptually separate:
+
+NORMAL:
+
+Application
+→ Review
+→ Interview if desired/required by business process
+→ Offer
+→ Contract
+→ Signatures
+→ Hired
+
+
+TEST/UAT:
+
+Test application
+→ Admin "Prepare Test Hire"
+→ Offer
+→ Contract
+→ REAL signatures
+→ REAL canonical Hired activation
+→ REAL Timesheet testing
+
+The paths should converge BEFORE the Offer/Contract downstream logic so
+the downstream functionality being tested is the same production code.
+
+============================================================
+DELIVERABLE
+============================================================
+
+Before changing code, identify:
+
+1. What currently prevents my test Talent from reaching Offer/Contract.
+2. What minimum records/status are actually required.
+3. Whether a special Test Hire utility is necessary or whether the
+   existing Admin UI can already put my test account into that state.
+
+If the existing system can already safely prepare my test Talent using
+normal Admin actions, DO NOT add unnecessary test-only code. Explain the
+exact steps instead.
+
+If test-only code is necessary, implement the isolated approach above.
+
+Afterward report:
+
+1. Root blocker found.
+2. Files changed.
+3. Endpoint/action added.
+4. Test-account restriction used.
+5. Feature flag used.
+6. Production safety mechanism.
+7. Exactly what Test Hire changes in the database.
+8. Exactly what it deliberately does NOT change.
+9. Automated test results.
+10. Exact manual UAT procedure for:
+    Offer → Contract → Signatures → Hired → Timesheet.
