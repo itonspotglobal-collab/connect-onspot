@@ -17,6 +17,12 @@ Name-reveal and invitation-established messaging remain separate, invitation-onl
 
 ## Hiring UAT scope
 
+Application milestones must reflect actual persisted transition history, not assumed completion of every stage preceding the current status.
+
+**Why:** The owner explicitly requires that the Talent timeline never advance visually without the corresponding backend event; legitimate workflows may skip stages.
+
+**How to apply:** Render recorded events and keep the live canonical status separate. An overdue offer can be annotated without fabricating an application-status transition.
+
 The owner states that the normal production hiring workflow is working and must not be changed merely to support testing. Do not add an interview requirement, enable manual Hired, fabricate interviews/signatures, or weaken formal hiring guards. Prefer normal Admin preparation instructions over a test-only utility when existing actions suffice.
 
 **Why:** UAT is intended to exercise real downstream Offer, Contract, signature-driven Hired, Team and Timesheet behavior, not substitute a testing pipeline for it.

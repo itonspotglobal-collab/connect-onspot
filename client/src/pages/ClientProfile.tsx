@@ -77,6 +77,7 @@ import {
 import { ClientJobTalentSearchDialog } from "@/components/ClientJobTalentSearchDialog";
 import { JobRichText } from "@/components/JobRichText";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
+import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -1886,6 +1887,9 @@ function ExtendOfferDialog({
                         <p className="mt-0.5 text-amber-600 dark:text-amber-400">Below expectation by {formatCurrencyAmount(Math.abs(parseFloat(o.rate_delta ?? "0")), o.rate_currency || "USD")}</p>
                       )}
                        {o.notes && <p className="mt-1 text-slate-500 italic line-clamp-2">{o.notes}</p>}
+                       {(o.status === "expired" || (o.status === "sent" && !!o.expires_at && new Date(o.expires_at).getTime() <= Date.now())) && (
+                         <OfferExpirationRenewal offerId={o.id} />
+                       )}
                        {o.status === "sent" && o.proposer_role === "talent" && (!o.expires_at || new Date(o.expires_at) >= new Date()) && (
                          <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-2 dark:border-slate-700">
                            <span className="mr-auto text-[11px] font-semibold text-indigo-700 dark:text-indigo-300">Talent counter offer — your response</span>

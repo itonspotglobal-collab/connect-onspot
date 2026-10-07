@@ -56,7 +56,7 @@ async function load(tx: PoolClient, id: string, actor: ContractActor, lock = tru
   return { row, permissions };
 }
 async function currentDocument(tx: PoolClient, id: string) {
-  return (await tx.query(`SELECT * FROM contract_documents WHERE hiring_contract_id=$1 ORDER BY version DESC LIMIT 1`, [id])).rows[0];
+  return (await tx.query(`SELECT * FROM contract_documents WHERE hiring_contract_id=$1 AND status<>'superseded' ORDER BY version DESC LIMIT 1`, [id])).rows[0];
 }
 function assertActive(row: any) {
   if (!["offer_accepted", "contract_sent"].includes(row.submission_status)) {
@@ -163,7 +163,7 @@ export async function uploadContractPdf(id: string, actor: ContractActor, file: 
       // Verify actual bytes were stored, rather than trusting an upload response.
       if (pdfHash(await blobs.read(key)) !== validation.sha256) throw new ContractError(502, { error: "upload_verification_failed" });
       if (previous) await tx.query("UPDATE contract_documents SET status='superseded' WHERE id=$1", [previous.id]);
-      const version = (previous?.version ?? 0) + 1;
+      const version = Number((await tx.query("SELECT COALESCE(max(version),0) AS version FROM contract_documents WHERE hiring_contract_id=$1",[id])).rows[0].version) + 1;
       const document = (await tx.query(
         `INSERT INTO contract_documents(hiring_contract_id,object_key,original_filename,mime_type,file_size,sha256,version,uploaded_by)
          VALUES($1,$2,$3,'application/pdf',$4,$5,$6,$7) RETURNING id,version,sha256,status,original_filename,file_size`,
@@ -173,6 +173,64 @@ export async function uploadContractPdf(id: string, actor: ContractActor, file: 
       return document;
     });
   } catch (error) { if (key) await blobs.remove(key).catch(() => {}); throw error; }
+}
+/** Supporting PDFs are never the primary signed document; freeze the package on send. */
+export async function removePrimaryDraftPdf(id:string,actor:ContractActor) {
+  return transaction(async tx=>{
+    const {row,permissions}=await load(tx,id,actor);
+    assertActive(row);
+    if(!permissions.canPrepare || row.status!=="draft") throw new ContractError(409,{error:"document_immutable"});
+    const document=await currentDocument(tx,id);
+    if(document && document.status!=="draft") throw new ContractError(409,{error:"document_immutable"});
+    if(document) {
+      await tx.query("UPDATE contract_documents SET status='superseded' WHERE id=$1",[document.id]);
+      await tx.query("UPDATE hiring_contracts SET document_path=NULL,updated_at=NOW() WHERE id=$1",[id]);
+      await event(tx,id,document.id,actor.id,"draft_pdf_removed");
+    }
+    return {removed:true};
+  });
+}
+export async function uploadContractAttachment(id: string, actor: ContractActor, file: {buffer:Buffer;originalname:string;mimetype:string}, blobs = contractBlobProvider) {
+  const validation = await validateContractPdf(file);
+  let key: string | undefined;
+  try {
+    return await transaction(async tx => {
+      const {row,permissions} = await load(tx,id,actor);
+      assertActive(row);
+      if (!permissions.canPrepare || row.status !== "draft") throw new ContractError(409,{error:"package_immutable"});
+      const count = (await tx.query("SELECT count(*)::int AS count,COALESCE(max(version),0)::int AS version FROM contract_attachments WHERE hiring_contract_id=$1",[id])).rows[0];
+      const live = (await tx.query("SELECT count(*)::int AS count FROM contract_attachments WHERE hiring_contract_id=$1 AND status<>'removed'",[id])).rows[0];
+      if(live.count>=5) throw new ContractError(400,{error:"attachment_limit",message:"Up to five supporting PDFs are allowed."});
+      key=await blobs.save(file.buffer);
+      if(pdfHash(await blobs.read(key))!==validation.sha256) throw new ContractError(502,{error:"upload_verification_failed"});
+      const attachment=(await tx.query(`INSERT INTO contract_attachments(hiring_contract_id,object_key,original_filename,file_size,sha256,version,uploaded_by)
+        VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,original_filename AS "originalFilename",file_size AS "fileSize",sha256,version,status`,
+        [id,key,validation.filename,validation.size,validation.sha256,count.version+1,actor.id])).rows[0];
+      await event(tx,id,null,actor.id,`supporting_pdf_uploaded:${attachment.id}`);
+      return attachment;
+    });
+  } catch(error) { if(key) await blobs.remove(key).catch(()=>{}); throw error; }
+}
+export async function removeContractAttachment(id:string,attachmentId:string,actor:ContractActor) {
+  return transaction(async tx=>{
+    const {row,permissions}=await load(tx,id,actor);
+    assertActive(row);
+    if(!permissions.canPrepare || row.status!=="draft") throw new ContractError(409,{error:"package_immutable"});
+    const result=await tx.query("UPDATE contract_attachments SET status='removed' WHERE id=$1 AND hiring_contract_id=$2 AND status='draft' RETURNING id",[attachmentId,id]);
+    if(!result.rows.length) throw deny();
+    await event(tx,id,null,actor.id,`supporting_pdf_removed:${attachmentId}`);
+    return {id:attachmentId,removed:true};
+  });
+}
+export async function readContractAttachment(id:string,attachmentId:string,actor:ContractActor,blobs=contractBlobProvider) {
+  return transaction(async tx=>{
+    await load(tx,id,actor,false);
+    const attachment=(await tx.query("SELECT * FROM contract_attachments WHERE id=$1 AND hiring_contract_id=$2 AND status<>'removed'",[attachmentId,id])).rows[0];
+    if(!attachment) throw deny();
+    const bytes=await blobs.read(attachment.object_key);
+    if(pdfHash(bytes)!==attachment.sha256) throw new ContractError(409,{error:"attachment_changed"});
+    return {bytes,filename:attachment.original_filename};
+  });
 }
 export async function contractDetail(id: string, actor: ContractActor) {
   return transaction(async tx => {
@@ -189,7 +247,9 @@ export async function contractDetail(id: string, actor: ContractActor) {
     // Storage references and security audit data never enter ordinary DTOs.
     const { document_path, talent_email, client_email, ...safe } = row;
     if (document) { delete document.object_key; delete document.executed_object_key; }
-    return { contract: safe, document: document ?? null, signatures, timeline, permissions };
+    const attachments = (await tx.query(`SELECT id,original_filename AS "originalFilename",file_size AS "fileSize",
+      sha256,version,status FROM contract_attachments WHERE hiring_contract_id=$1 AND status<>'removed' ORDER BY version`, [id])).rows;
+    return { contract: safe, document: document ?? null, signatures, timeline, permissions, attachments };
   });
 }
 export async function listContracts(actor: ContractActor) {
@@ -240,6 +300,11 @@ export async function sendContract(id: string, actor: ContractActor, blobs = con
     const reviewed = await tx.query("SELECT 1 FROM contract_document_reviews WHERE document_id=$1 AND user_id=$2 AND sha256=$3",
       [document.id, actor.id, document.sha256]);
     if (!reviewed.rows.length) throw new ContractError(409, { error: "review_pdf_first" });
+    const attachments = (await tx.query("SELECT object_key,sha256 FROM contract_attachments WHERE hiring_contract_id=$1 AND status='draft'", [id])).rows;
+    for (const attachment of attachments) {
+      if (pdfHash(await blobs.read(attachment.object_key)) !== attachment.sha256) throw new ContractError(409, { error: "attachment_changed" });
+    }
+    await tx.query("UPDATE contract_attachments SET status='frozen' WHERE hiring_contract_id=$1 AND status='draft'", [id]);
     await tx.query("UPDATE contract_documents SET status='sent_for_signature',sent_at=NOW() WHERE id=$1", [document.id]);
     await tx.query("UPDATE hiring_contracts SET status='sent',updated_at=NOW() WHERE id=$1", [id]);
     await tx.query("UPDATE job_submissions SET status='contract_sent',updated_at=NOW() WHERE id=$1", [row.submission_id]);

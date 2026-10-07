@@ -18,6 +18,8 @@ import { filterMessageContent } from "../lib/piiPatterns";
 import { createHiringContract, updateHiringContract } from "../services/hiringContractService";
 import * as applicationNotifications from "../services/applicationNotificationService";
 import { sendClientNewApplicationEmail } from "../services/emailCompanionService";
+import { extendOfferExpiration } from "../services/offerExpirationService";
+import { isActionableOffer, isOfferExpired } from "../../shared/offerState";
 
 const suffix = randomUUID();
 const client = `hiring-client-${suffix}`, other = `hiring-other-${suffix}`;
@@ -156,6 +158,7 @@ before(async () => {
   await query(`INSERT INTO jobs (id,client_id,title,description,category,experience_level,status,approval_status,engagement_type,billing_mode)
     VALUES ($1,$2,'Fixture Client Job','Disposable test job','Operations','Intermediate','open','approved','Standard','tracked')`, [job, client]);
   await query(readFileSync("migrations/0034_findwork_interview_calendar.sql", "utf8"));
+  await query(readFileSync("migrations/0036_offer_response_contract_package.sql", "utf8"));
   // This existing runtime-managed table is not represented in Drizzle schema.
   await query(`CREATE TABLE IF NOT EXISTS platform_settings (key text PRIMARY KEY, value text)`);
 });
@@ -167,6 +170,41 @@ after(async () => {
   await pool.end();
 });
 
+test("offer review, pending counts, response ownership, expiration and renewal use real records", async () => {
+  const id=await submission("application","shortlisted");
+  const created=await invoke("post","/api/client/offers",{submissionId:id,rate:500,rateCurrency:"USD",proposedStartDate:"2032-09-01",expiresAt:"2032-09-01T00:00:00Z"});
+  assert.equal(created.statusCode,201,JSON.stringify(created.body));
+  const offerId=created.body.id;
+  const listed=await invoke("get","/api/talent/offers",{},talent);
+  assert.equal(listed.statusCode,200);
+  assert.ok(listed.body.some((o:any)=>o.id===offerId && isActionableOffer(o)));
+  assert.equal((await invoke("get","/api/talent/offers/:id",{},talent,{id:offerId})).statusCode,200);
+  const foreign=await invoke("patch","/api/talent/offers/:id/respond",{action:"accept"},other,{id:offerId},{talentAuth:{candidateId:"missing-other-talent"}});
+  assert.equal(foreign.statusCode,404);
+  await query("UPDATE offers SET expires_at=NOW()-INTERVAL '1 second' WHERE id=$1",[offerId]);
+  const expired=await invoke("get","/api/talent/offers",{},talent);
+  const record=expired.body.find((o:any)=>o.id===offerId);
+  assert.equal(isOfferExpired(record),true);
+  assert.equal(isActionableOffer(record),false);
+  assert.equal((await invoke("patch","/api/talent/offers/:id/respond",{action:"accept"},talent,{id:offerId})).statusCode,409);
+  await assert.rejects(extendOfferExpiration(offerId,other,"2032-10-01T00:00:00Z"));
+  await extendOfferExpiration(offerId,client,"2032-10-01T00:00:00Z");
+  assert.equal((await query("SELECT count(*)::int AS count FROM offer_expiration_history WHERE offer_id=$1",[offerId])).rows[0].count,1);
+  const accepted=await invoke("patch","/api/talent/offers/:id/respond",{action:"accept"},talent,{id:offerId});
+  assert.equal(accepted.statusCode,200,JSON.stringify(accepted.body));
+  const saved=(await query("SELECT status,accepted_at,responded_by FROM offers WHERE id=$1",[offerId])).rows[0];
+  assert.equal(saved.status,"accepted"); assert.ok(saved.accepted_at); assert.equal(saved.responded_by,talent);
+  assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"offer_accepted");
+  assert.equal((await invoke("patch","/api/talent/offers/:id/respond",{action:"accept"},talent,{id:offerId})).statusCode,409);
+  await assert.rejects(extendOfferExpiration(offerId,client,"2032-11-01T00:00:00Z"));
+  const declinedId=await submission("application","shortlisted");
+  const declinedOffer=await invoke("post","/api/client/offers",{submissionId:declinedId,rate:500,rateCurrency:"USD",proposedStartDate:"2032-09-01",expiresAt:"2032-10-01T00:00:00Z"});
+  const declined=await invoke("patch","/api/talent/offers/:id/respond",{action:"decline"},talent,{id:declinedOffer.body.id});
+  assert.equal(declined.statusCode,200);
+  assert.ok((await query("SELECT declined_at FROM offers WHERE id=$1",[declinedOffer.body.id])).rows[0].declined_at);
+  assert.equal((await invoke("patch","/api/talent/offers/:id/respond",{action:"accept"},talent,{id:declinedOffer.body.id})).statusCode,409);
+  await assert.rejects(createHiringContract({offerId:declinedOffer.body.id,adminId:admin}));
+});
 test("both entry paths qualify; silent, unlinked, forged, rejected and withdrawn submissions do not", async () => {
   for (const workflow of ["application", "client_invitation"] as const) {
     const id = await submission(workflow);

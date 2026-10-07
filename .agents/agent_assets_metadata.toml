@@ -797,3 +797,17 @@ mtime_ms = 1791278846333
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/62e1326e-ce13-49db-89ac-9e797317b5f2/aaed8533-d2f4-422b-8fe7-39f60205fded"
 storage_version_token = "1791278867019088"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "CWoYyHlG3DbTR1jY9aw_h"
+uri = "file://docs/offer-contract-package-report.md"
+type = "text"
+title = "Offer acceptance and contract package report"
+description = "Requested 15-part report, automated results, and all 25 manual UAT steps marked pending."
+logical_id = "1683a512-f521-477d-8607-4dc2296beec7"
+content_hash = "sha256:fd149c5d1f78bbaffe148eaaad7479d8881a410e1c20692e1a789c960dc3ed8e"
+size = 13776
+mtime_ms = 1791342722653
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/1683a512-f521-477d-8607-4dc2296beec7/c0ec7d77-6e54-4bce-b299-abdfd8772498"
+storage_version_token = "1791342787451285"
+content_type = "text/markdown"

@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   Activity,
   ArrowUpRight,
@@ -18,11 +19,14 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import type { ContractRow } from "@/components/ContractWorkflow";
 
 type MemberStatus = "online" | "away" | "offline";
 
 interface TeamMember {
   id: string;
+  contractId?: string | null;
+  contract_id?: string | null;
   canViewTimesheets?: boolean;
   name: string;
   initials: string;
@@ -45,6 +49,30 @@ interface TeamMember {
   ratePeriod: string | null;
   engagementType: string | null;
   spendByCurrency: Array<{ currency: string; amount: number }>;
+}
+
+function MemberContractAccess({ member, organizationId }: { member: TeamMember; organizationId: string }) {
+  const [, navigate] = useLocation();
+  const { data: contracts = [] } = useQuery<ContractRow[]>({
+    queryKey: ["/api/contracts", "authorized-team-access", organizationId],
+    queryFn: async () => (await apiRequest("GET", "/api/contracts")).json(),
+    enabled: Boolean(organizationId),
+    staleTime: 30_000,
+  });
+  const belongsToMemberAndOrg = (contract: ContractRow) =>
+    contract.talent_id === member.id
+    && (contract.organization_id == null || contract.organization_id === organizationId)
+    && !["draft", "void", "voided", "declined"].includes(contract.status.toLowerCase());
+  const byId = (member.contractId || member.contract_id)
+    ? contracts.find((contract) => contract.id === (member.contractId || member.contract_id))
+    : undefined;
+  const authorizedMatch = (byId && belongsToMemberAndOrg(byId))
+    ? byId
+    : contracts.find(belongsToMemberAndOrg);
+  if (!authorizedMatch) return null;
+  return <Button type="button" size="sm" variant="outline" className="flex-1 text-xs" onClick={() => navigate(`/contracts?id=${encodeURIComponent(authorizedMatch.id)}`)}>
+    Contract &amp; Documents
+  </Button>;
 }
 
 interface TeamDashboardData {
@@ -220,6 +248,7 @@ function TeamMemberCard({ member, onAction, organizationId }: { member: TeamMemb
         </> : <p className="mt-2 text-[11px] text-slate-500">Guaranteed engagements do not require clock attendance.</p>}
         <div className="mt-4 flex gap-2">
           {member.canViewTimesheets === true && <a href={`/client/timesheets?talentId=${encodeURIComponent(member.id)}&organizationId=${encodeURIComponent(organizationId)}`} className="inline-flex flex-1 items-center justify-center rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">View Timesheets</a>}
+          <MemberContractAccess member={member} organizationId={organizationId} />
           <Button type="button" size="sm" className="flex-1 bg-[#474ead] text-xs text-white hover:bg-[#3e439c]" onClick={() => onAction(member.name)}><MessageSquare className="h-3.5 w-3.5" />Message</Button>
         </div>
       </div>

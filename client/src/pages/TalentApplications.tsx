@@ -9,6 +9,9 @@ import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
@@ -20,12 +23,14 @@ import {
   useTalentApplications, TalentApplication, ApplicationAnswer, getTalentAppsLastViewedKey,
 } from "@/hooks/useTalentApplications";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
-import { getStatusMeta, STATUS_PIPELINE, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
+import { getStatusMeta, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
 import { formatInterviewTime } from "@/lib/formatInterviewTime";
 import { formatCurrencyAmount } from "@/lib/jobUtils";
+import { bucketTalentOffers, isTalentOfferExpired } from "@/components/talentOfferState";
+import { getTalentHistoryTimeline } from "@/components/talentApplicationHistory";
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
-  CheckCircle2, Circle, AlertCircle, Loader2, ExternalLink, Clock,
+  AlertCircle, Loader2, ExternalLink, Clock,
   FileText, X, Download, MessageSquare, BookOpen, Mail,
   Check, XCircle,
 } from "lucide-react";
@@ -46,70 +51,32 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Status Timeline ──────────────────────────────────────────────────────────
-
-function StatusTimeline({ status }: { status: string }) {
-  const isTerminal = getStatusMeta(status).isTerminal;
-  // Find current step index in the normal pipeline
-  const pipelineStatus =
-    status === "new" ? "submitted"
-    : status === "reviewed" ? "under_review"
-    : status === "interview" ? "interviewing"
-    : status === "offered" ? "offer_extended"
-    : status;
-  const currentIdx = STATUS_PIPELINE.indexOf(pipelineStatus as any);
-  const isRejected = status === "rejected" || status === "withdrawn";
-
-  if (isRejected) {
-    return (
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-        <span className="text-xs text-slate-500 dark:text-slate-400">Status:</span>
-        <StatusBadge status={status} />
-      </div>
-    );
-  }
-
+function StatusTimeline({ application }: { application: TalentApplication }) {
+  const currentOfferExpired = !!application.currentOffer && isTalentOfferExpired({
+    status: application.currentOffer.status,
+    expiresAt: application.currentOffer.expiresAt,
+  });
+  const history = getTalentHistoryTimeline(application.statusHistory, application.submittedAt);
   return (
-    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-      <div className="flex items-center gap-0">
-        {STATUS_PIPELINE.map((step, idx) => {
-          const isPast = currentIdx >= 0 && idx < currentIdx;
-          const isCurrent = idx === currentIdx;
-          const isFuture = currentIdx < 0 || idx > currentIdx;
-          const meta = getStatusMeta(step);
-          const isLast = idx === STATUS_PIPELINE.length - 1;
-          return (
-            <div key={step} className="flex items-center flex-1 last:flex-none">
-              <div className="flex flex-col items-center gap-0.5">
-                <div className={[
-                  "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
-                  isPast   ? "border-emerald-500 bg-emerald-500" : "",
-                  isCurrent ? `border-[#474ead] bg-[#474ead]` : "",
-                  isFuture && !isCurrent ? "border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800" : "",
-                ].join(" ")}>
-                  {isPast   ? <CheckCircle2 className="h-3 w-3 text-white" /> : null}
-                  {isCurrent ? <Circle className="h-2 w-2 fill-white text-white" /> : null}
-                  {isFuture && !isCurrent ? <Circle className="h-2 w-2 text-slate-300 dark:text-slate-600" /> : null}
-                </div>
-                <span className={[
-                  "text-[9px] whitespace-nowrap font-medium",
-                  isPast    ? "text-emerald-600 dark:text-emerald-400" : "",
-                  isCurrent ? "text-[#474ead] dark:text-indigo-400" : "",
-                  isFuture && !isCurrent  ? "text-slate-400" : "",
-                ].join(" ")}>
-                  {meta.label}
-                </span>
-              </div>
-              {!isLast && (
-                <div className={[
-                  "h-0.5 flex-1 mb-3.5 mx-0.5",
-                  isPast ? "bg-emerald-400" : "bg-slate-200 dark:bg-slate-700",
-                ].join(" ")} />
-              )}
-            </div>
-          );
-        })}
+    <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Current application status</span>
+        <StatusBadge status={application.applicationStatus} />
       </div>
+      {currentOfferExpired && <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">The current offer has expired. The application status above remains the latest recorded application status.</p>}
+      {history.length > 0 ? (
+        <ol aria-label="Recorded application history" className="mt-3 space-y-2 border-l border-slate-200 pl-4 dark:border-slate-700">
+          {history.map((event) => (
+            <li key={event.key} className="relative">
+              <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-indigo-500 ring-1 ring-slate-300 dark:border-slate-900" />
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-200">{getStatusMeta(event.status).talentLabel}</p>
+              <p className="text-[10px] text-slate-400">{new Date(event.at).toLocaleString()}</p>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="mt-2 text-[11px] text-slate-400">No status transition history has been recorded for display.</p>
+      )}
     </div>
   );
 }
@@ -469,7 +436,7 @@ function ApplicationCard({
           </div>
         </div>
 
-        {expanded && <StatusTimeline status={app.applicationStatus} />}
+        {expanded && <StatusTimeline application={app} />}
       </CardContent>
     </Card>
   );
@@ -599,11 +566,12 @@ interface OfferCardProps {
   errorMessages: Record<string, string>;
   respondingId: string | null;
   onRespond: (id: string, action: "accept" | "decline" | "counter", payload?: Record<string, unknown>) => void;
+  onReview: (offer: TalentOffer) => void;
   isMutating: boolean;
 }
 
-function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, isMutating }: OfferCardProps) {
-    const isExpired = offer.expiresAt ? new Date(offer.expiresAt) < new Date() : false;
+function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, onReview, isMutating }: OfferCardProps) {
+    const isExpired = isTalentOfferExpired(offer);
     const expiryLabel = offer.expiresAt
       ? new Date(offer.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
       : null;
@@ -734,20 +702,8 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
         {/* Action buttons — only for genuinely pending offers */}
         {isPending && !isExpired && offer.status === "sent" && offer.proposerRole !== "talent" && (
           <div className="mt-3 flex gap-2">
-            <Button
-              size="sm"
-              className="rounded-full bg-teal-600 text-white hover:bg-teal-700 h-8 text-xs"
-              disabled={isBusy}
-              onClick={() => onRespond(offer.id, "accept")}
-            >
-              {isBusy ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <>
-                  <Check className="mr-1 h-3 w-3" />
-                  Accept Offer
-                </>
-              )}
+            <Button size="sm" className="rounded-full bg-teal-600 text-white hover:bg-teal-700 h-8 text-xs" disabled={isBusy} onClick={() => onReview(offer)}>
+              <FileText className="mr-1 h-3 w-3" /> Review Offer
             </Button>
             <Button
               size="sm"
@@ -770,17 +726,10 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
             >
               Counter
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-full h-8 text-xs text-slate-500"
-              disabled={isBusy}
-              onClick={() => onRespond(offer.id, "decline")}
-            >
-              <XCircle className="mr-1 h-3 w-3" />
-              Decline
-            </Button>
           </div>
+        )}
+        {offer.status === "sent" && isExpired && (
+          <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">This offer has expired. Ask the client to renew it before responding.</p>
         )}
       </div>
     );
@@ -788,20 +737,34 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, i
 
 function OffersSection({ refetchApplications }: { refetchApplications: () => void }) {
   const auth = loadTalentAuth();
+  const qc = useQueryClient();
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
+  const [reviewOffer, setReviewOffer] = useState<TalentOffer | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"accept" | "decline" | null>(null);
+  const [, forceClockUpdate] = useState(0);
 
-  const { data: offers = [], refetch: refetchOffers, isLoading } = useQuery<TalentOffer[]>({
+  useEffect(() => {
+    const timer = window.setInterval(() => forceClockUpdate((value) => value + 1), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const { data: offers = [], refetch: refetchOffers, isLoading, isError, error } = useQuery<TalentOffer[]>({
     queryKey: ["talent-offers"],
     queryFn: async () => {
       if (!auth) return [];
       const res = await fetch("/api/talent/offers", {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
-      if (!res.ok) return [];
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Could not load offers (${res.status})`);
+      }
       return res.json();
     },
     staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: "always",
   });
 
   const respondMutation = useMutation({
@@ -824,11 +787,19 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
     onSuccess: (_response, variables) => {
       trackEvent("offer_responded", { action: variables.action });
       setRespondingId(null);
-      refetchOffers();
-      refetchApplications();
+      setConfirmAction(null);
+      setReviewOffer(null);
+      void Promise.all([
+        refetchOffers(),
+        refetchApplications(),
+        qc.invalidateQueries({ queryKey: ["/api/contracts"] }),
+        qc.invalidateQueries({ queryKey: ["talent-hiring-contracts"] }),
+        qc.invalidateQueries({ queryKey: ["talent-applications"] }),
+      ]);
     },
     onError: (err: any, variables) => {
       setRespondingId(null);
+      setConfirmAction(null);
       const friendly =
         err.code === "offer_expired"
           ? "This offer has expired and can no longer be responded to."
@@ -839,11 +810,16 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
     },
   });
 
-  if (isLoading || offers.length === 0) return null;
+  if (isLoading) return <div className="mb-8 h-20 animate-pulse rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900" />;
+  if (isError) return <div role="alert" className="mb-8 flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"><span>{error instanceof Error ? error.message : "Offers could not be loaded."}</span><Button size="sm" variant="outline" onClick={() => refetchOffers()}>Retry</Button></div>;
+  if (offers.length === 0) return null;
 
-  const pendingOffers = offers.filter((o) => o.status === "sent" && o.proposerRole !== "talent");
-  const waitingForClientOffers = offers.filter((o) => o.status === "sent" && o.proposerRole === "talent");
-  const pastOffers = offers.filter((o) => o.status !== "sent");
+  const { pending: pendingOffers, waitingForClient: waitingForClientOffers, past: pastOffers } = bucketTalentOffers(offers);
+  const isExpiredNow = (offer: TalentOffer) => isTalentOfferExpired(offer);
+  const respondFromDialog = (action: "accept" | "decline") => {
+    if (!reviewOffer || !confirmAction) return;
+    respondMutation.mutate({ id: reviewOffer.id, action });
+  };
 
   return (
     <div className="mb-8">
@@ -879,6 +855,7 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
             errorMessages={errorMessages}
             respondingId={respondingId}
             onRespond={(id, action, payload) => respondMutation.mutate({ id, action, payload })}
+            onReview={setReviewOffer}
             isMutating={respondMutation.isPending}
           />
         ))}
@@ -890,6 +867,7 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
             errorMessages={errorMessages}
             respondingId={respondingId}
             onRespond={(id, action, payload) => respondMutation.mutate({ id, action, payload })}
+            onReview={setReviewOffer}
             isMutating={respondMutation.isPending}
           />
         ))}
@@ -901,10 +879,60 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
             errorMessages={errorMessages}
             respondingId={respondingId}
             onRespond={(id, action, payload) => respondMutation.mutate({ id, action, payload })}
+            onReview={setReviewOffer}
             isMutating={respondMutation.isPending}
           />
         ))}
       </div>
+      <Dialog open={!!reviewOffer} onOpenChange={(open) => { if (!open && !respondMutation.isPending) { setReviewOffer(null); setConfirmAction(null); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Offer Details</DialogTitle>
+            <DialogDescription>Review the terms carefully before you respond.</DialogDescription>
+          </DialogHeader>
+          {reviewOffer && <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Position</p>
+              <p className="mt-1 font-semibold text-slate-900">{reviewOffer.job.title}</p>
+              <p className="text-sm text-slate-600">{reviewOffer.job.company}{reviewOffer.job.location ? ` · ${reviewOffer.job.location}` : ""}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><p className="text-xs text-slate-500">Offered rate</p><p className="mt-1 font-semibold">{formatRate(reviewOffer.rate, reviewOffer.rateCurrency, reviewOffer.engagementType)}</p></div>
+              <div><p className="text-xs text-slate-500">Engagement</p><p className="mt-1 font-semibold">{reviewOffer.engagementType || "—"}</p></div>
+              <div><p className="text-xs text-slate-500">Start date</p><p className="mt-1 font-semibold">{reviewOffer.proposedStartDate ? new Date(reviewOffer.proposedStartDate).toLocaleDateString() : "—"}</p></div>
+              <div><p className="text-xs text-slate-500">Offer expires</p><p className="mt-1 font-semibold">{reviewOffer.expiresAt ? new Date(reviewOffer.expiresAt).toLocaleDateString() : "No expiration specified"}</p></div>
+            </div>
+            {reviewOffer.notes && <div className="rounded-lg border border-slate-200 p-3"><p className="text-xs font-semibold text-slate-500">Note from the client</p><p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{reviewOffer.notes}</p></div>}
+            {errorMessages[reviewOffer.id] && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{errorMessages[reviewOffer.id]}</p>}
+            {isExpiredNow(reviewOffer) && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">This offer has expired. Contact the client to request a renewal.</p>}
+          </div>}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" disabled={respondMutation.isPending} onClick={() => { setReviewOffer(null); setConfirmAction(null); }}>Close</Button>
+            {reviewOffer && !isExpiredNow(reviewOffer) && reviewOffer.status === "sent" && reviewOffer.proposerRole !== "talent" && <>
+              <Button variant="outline" disabled={respondMutation.isPending} onClick={() => setConfirmAction("decline")}>Decline offer</Button>
+              <Button className="bg-teal-700 text-white hover:bg-teal-800" disabled={respondMutation.isPending} onClick={() => setConfirmAction("accept")}>Accept offer</Button>
+            </>}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!confirmAction} onOpenChange={(open) => { if (!open && !respondMutation.isPending) setConfirmAction(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{confirmAction === "accept" ? "Accept this offer?" : "Decline this offer?"}</DialogTitle>
+            <DialogDescription>
+              {reviewOffer && confirmAction === "accept"
+                ? `You are accepting the offer for ${reviewOffer.job.title} at ${reviewOffer.job.company}.`
+                : reviewOffer ? `You are declining the offer for ${reviewOffer.job.title} at ${reviewOffer.job.company}.` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" disabled={respondMutation.isPending} onClick={() => setConfirmAction(null)}>Cancel</Button>
+            <Button disabled={respondMutation.isPending || !reviewOffer || isExpiredNow(reviewOffer)} variant={confirmAction === "decline" ? "destructive" : "default"} onClick={() => respondFromDialog(confirmAction!)}>
+              {respondMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Submitting…</> : confirmAction === "accept" ? "Confirm acceptance" : "Confirm decline"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

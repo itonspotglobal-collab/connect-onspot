@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction, RequestHandler } from "express";
 import { buildLedgerCurrencySummary, ledgerCurrencySummarySql } from "./services/ledgerCurrencySummary";
 import sanitizeHtml from "sanitize-html";
+import { extendOfferExpiration } from "./services/offerExpirationService";
 
 // ── Profile rich-text sanitizer (server-side) ─────────────────────────────────
 // Mirrors the client-side DOMPurify allowlist in ProfileRichTextRenderer.tsx.
@@ -7630,6 +7631,10 @@ export async function registerRoutes(
            js.resume_url   AS "resumeUrl",
            js.cover_letter AS "coverLetter",
            js.answers      AS "answers",
+           COALESCE((SELECT json_agg(json_build_object('status',h.new_status,'at',h.created_at) ORDER BY h.created_at,h.id)
+             FROM job_application_status_history h WHERE h.application_id=js.id),'[]'::json) AS "statusHistory",
+           (SELECT json_build_object('id',o.id,'status',o.status,'expiresAt',o.expires_at)
+              FROM offers o WHERE o.submission_id=js.id ORDER BY o.created_at DESC LIMIT 1) AS "currentOffer",
            j.id      AS "jobId",
            j.title   AS "jobTitle",
            j.company AS "jobCompany",
@@ -7659,6 +7664,8 @@ export async function registerRoutes(
           status: row.jobStatus || undefined,
         },
         applicationStatus: row.status,
+        statusHistory: row.statusHistory,
+        currentOffer: row.currentOffer,
         submittedAt: row.submittedAt,
         updatedAt: row.updatedAt,
         resume: (row.resumeFileName || row.resumeUrl)
@@ -19591,7 +19598,10 @@ export async function registerRoutes(
                   u.first_name AS "talentFirstName", u.last_name AS "talentLastName",
                   c.id AS "candidateId",
                   c.resume_url AS "candidateResumeUrl", c.resume_file_name AS "candidateResumeFileName",
-                  accepted_offer.id AS "acceptedOfferId"
+                  accepted_offer.id AS "acceptedOfferId",
+                  (SELECT json_build_object('id',latest.id,'status',latest.status,'expiresAt',latest.expires_at,
+                      'proposerRole',latest.proposer_role,'job',json_build_object('title',j.title,'company',j.company))
+                     FROM offers latest WHERE latest.submission_id=js.id ORDER BY latest.created_at DESC LIMIT 1) AS "latestOffer"
            FROM job_submissions js
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users u ON u.id = js.talent_id
@@ -21282,6 +21292,20 @@ export async function registerRoutes(
   //   Never fake FX conversion.
 
   // POST /api/client/offers — client creates a formal offer for a submission
+  for (const expirationPath of ["/api/client/offers/:id/expiration", "/api/admin/offers/:id/expiration"]) {
+    app.post(expirationPath, pipelineMutationLimiter, authenticateJWT, async (req:Request,res:Response)=>{
+      try {
+        const user=(req as any).user;
+        if(!user?.id) return res.status(401).json({error:"Unauthorized"});
+        if(expirationPath.startsWith("/api/admin") && user.role!=="admin") return res.status(403).json({error:"Forbidden"});
+        return res.json(await extendOfferExpiration(req.params.id,user.id,req.body?.expiresAt));
+      } catch(error:any) {
+        if(error instanceof ContractError) return res.status(error.status).json(error.body);
+        console.error("[offer-expiration] operation failed",error?.name);
+        return res.status(500).json({error:"offer_expiration_failed"});
+      }
+    });
+  }
   // Body: { submissionId, rate, rateCurrency?, proposedStartDate?, expiresAt?, notes? }
   // engagement_type is snapshotted from the jobs row — NOT accepted from the body.
   app.post("/api/client/offers", pipelineMutationLimiter, authenticateJWT, async (req: Request, res: Response) => {
@@ -21731,7 +21755,7 @@ export async function registerRoutes(
     const { id } = req.params;
 
     const candRow = await query(
-      `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+      `SELECT id, email, user_id FROM candidates WHERE id = $1 LIMIT 1`,
       [candidateId],
     );
     if (!candRow.rows.length) {
@@ -21740,8 +21764,9 @@ export async function registerRoutes(
     }
     const candidateEmail = candRow.rows[0].email as string;
     const userRow = await query(
-      `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-      [candidateEmail],
+      `SELECT id FROM users WHERE role='talent' AND
+        (id=$2::text OR ($2::text IS NULL AND lower(email)=lower($1))) LIMIT 1`,
+      [candidateEmail, candRow.rows[0].user_id ?? null],
     );
     const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
 
@@ -21756,7 +21781,8 @@ export async function registerRoutes(
          AND (
            ($2::text IS NOT NULL AND js.talent_id = $2::text)
            OR (js.talent_id IS NULL AND lower(js.email) = lower($3))
-         )`,
+         )
+         AND js.${FORMAL_PIPELINE_PREDICATE}`,
       [id, linkedUserId, candidateEmail],
     );
     if (offerResult.rows.length === 0) {
@@ -21772,7 +21798,7 @@ export async function registerRoutes(
       const { candidateId } = (req as any).talentAuth;
 
       const candRow = await query(
-        `SELECT id, email FROM candidates WHERE id = $1 LIMIT 1`,
+        `SELECT id, email, user_id FROM candidates WHERE id = $1 LIMIT 1`,
         [candidateId],
       );
       if (!candRow.rows.length) {
@@ -21780,8 +21806,9 @@ export async function registerRoutes(
       }
       const candidateEmail = candRow.rows[0].email as string;
       const userRow = await query(
-        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-        [candidateEmail],
+        `SELECT id FROM users WHERE role='talent' AND
+          (id=$2::text OR ($2::text IS NULL AND lower(email)=lower($1))) LIMIT 1`,
+        [candidateEmail,candRow.rows[0].user_id ?? null],
       );
       const linkedUserId: string | null = userRow.rows[0]?.id ?? null;
 
@@ -21930,12 +21957,22 @@ export async function registerRoutes(
       let respondedOffer: any;
       try {
         await txClient.query("BEGIN");
+        const currentSubmission = await txClient.query(`SELECT js.status FROM job_submissions js
+          WHERE js.id=$1 AND js.talent_id=$2 AND js.${FORMAL_PIPELINE_PREDICATE} FOR UPDATE OF js`,
+          [offer.submission_id, linkedUserId]);
+        if (!currentSubmission.rows.length || currentSubmission.rows[0].status !== "offer_extended") {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({error:"application_not_offer_pending"});
+        }
         const updated = await txClient.query(
           `UPDATE offers
-           SET status = $1, responded_at = NOW(), updated_at = NOW()
-           WHERE id = $2 AND status = 'sent'
+           SET status = $1, responded_at = NOW(), updated_at = NOW(),
+             responded_by = $3,
+             accepted_at = CASE WHEN $1='accepted' THEN NOW() ELSE NULL END,
+             declined_at = CASE WHEN $1='declined' THEN NOW() ELSE NULL END
+           WHERE id = $2 AND status = 'sent' AND (expires_at IS NULL OR expires_at>NOW())
            RETURNING *`,
-          [action === "counter" ? "countered" : newOfferStatus, offer.id],
+          [action === "counter" ? "countered" : newOfferStatus, offer.id, linkedUserId],
         );
         if (updated.rows.length === 0) {
           await txClient.query("ROLLBACK");

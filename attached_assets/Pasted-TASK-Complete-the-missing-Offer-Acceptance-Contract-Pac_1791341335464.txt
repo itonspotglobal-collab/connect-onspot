@@ -1,0 +1,695 @@
+TASK: Complete the missing Offer Acceptance → Contract Package → Signing
+workflow discovered during manual UAT.
+
+IMPORTANT:
+This task is based on ACTUAL manual testing.
+
+Observed current state:
+
+ADMIN:
+Application successfully progresses to:
+Shortlisted → Offer Extended
+
+TALENT:
+Application timeline correctly shows:
+Offer Extended
+
+Talent Offers section also shows the offer.
+
+PROBLEM:
+The Talent can see the offer/notification but currently has no usable
+Accept / Decline action or offer-review popup.
+
+Because the Talent cannot accept the offer, we cannot proceed naturally
+into contract preparation/signing.
+
+Do not fabricate acceptance.
+Implement the real Talent response workflow.
+
+============================================================
+PART 1 — FIX TALENT OFFER REVIEW
+============================================================
+
+When a Talent has a pending, non-expired offer, show clear actions:
+
+[ Review Offer ]
+
+and/or directly:
+
+[ Accept Offer ] [ Decline ]
+
+Preferred UX:
+
+Clicking the offer or Review Offer opens:
+
+------------------------------------------------
+Offer Details
+
+Job
+Website Developer
+
+Company
+OnSpot
+
+Offered Rate
+$500 / Standard
+
+Engagement
+Standard
+
+Start Date
+Oct 7, 2026
+
+Offer Expiration
+Oct X, 2026
+
+<Client/Admin offer notes if present>
+
+[ Decline Offer ]       [ Accept Offer ]
+------------------------------------------------
+
+Use the EXISTING offer record and offer response endpoint.
+
+Do NOT create a second offer system.
+
+Audit:
+- Talent Offers UI
+- Talent application UI
+- offer API
+- PATCH /api/client/offers/:id/respond or current equivalent
+- formal pipeline guard
+- notifications
+- application/submission status synchronization
+
+============================================================
+PART 2 — ACCEPT OFFER
+============================================================
+
+When Talent clicks Accept:
+
+Show confirmation:
+
+Accept Offer
+
+"You are accepting the offer for Website Developer at <Company>."
+
+[Cancel] [Accept Offer]
+
+Server must validate:
+
+- authenticated Talent
+- offer belongs to that Talent
+- offer exists
+- offer is pending
+- offer is not expired
+- submission/application relationship is valid
+- offer has not already been accepted/declined/superseded
+
+On success:
+
+offer
+→ accepted
+
+application/submission
+→ Offer Accepted
+
+Record:
+- accepted_at
+- responding user
+- appropriate audit/history entry
+
+Refresh UI immediately.
+
+Talent application timeline should become:
+
+Submitted
+→ Under Review
+→ Shortlisted
+→ Offer Extended
+→ Offer Accepted
+
+Do NOT mark Hired.
+
+============================================================
+PART 3 — DECLINE OFFER
+============================================================
+
+Talent must also be able to decline.
+
+Show confirmation before declining.
+
+Optionally allow a reason if the existing schema supports it.
+
+On decline:
+
+offer
+→ declined
+
+Persist:
+- declined_at
+- appropriate audit/history
+
+Do not mark application Hired.
+
+Do not allow contract preparation from a declined offer.
+
+============================================================
+PART 4 — FIX EXPIRED OFFER STATE
+============================================================
+
+Manual UAT also revealed a possible UI inconsistency:
+
+The Talent Offers section displays:
+
+"1 pending"
+
+while the visible offer is marked:
+
+"Expired"
+
+Audit the pending count/query.
+
+Expired offers must NOT count as actionable pending offers unless the
+existing product semantics intentionally define pending differently.
+
+An expired offer must not display an enabled Accept button.
+
+Instead show:
+
+Expired
+
+with appropriate messaging.
+
+Provide an authorized Client/Admin action to:
+
+[ Extend Expiration ]
+
+or
+
+[ Reissue Offer ]
+
+depending on the existing offer architecture.
+
+Do NOT silently change expiration dates.
+
+If extending an existing offer is safe in the current schema, preserve
+audit history showing the old and new expiration dates.
+
+If reissuing is the existing/correct architecture, supersede the old
+offer and create a new one.
+
+============================================================
+PART 5 — CONTRACT PREPARATION STARTS AFTER ACCEPTANCE
+============================================================
+
+Once:
+
+Offer = Accepted
+
+the Admin should be able to proceed with:
+
+[ Prepare Contract ]
+
+This is where contract documents/files are attached.
+
+Do not require a fake interview.
+
+Do not manually set Hired.
+
+Use the existing contract implementation already created.
+
+============================================================
+PART 6 — CONTRACT PACKAGE MODAL
+============================================================
+
+After Offer Accepted, Admin should have a clear action:
+
+[ Prepare Contract ]
+
+Open a modal similar in UX to the existing email-template dialogs.
+
+Example:
+
+------------------------------------------------
+
+Prepare Contract
+
+Talent
+Frenzy Test
+
+Job
+Website Developer
+
+Client / Organization
+OnSpot
+
+Offer
+$500 / Standard
+
+CONTRACT DOCUMENTS
+
+[ Upload PDF / File ]
+
+Employment Agreement.pdf
+[ Preview ] [ Remove ]
+
+Optional Supporting Document.pdf
+[ View ] [ Remove ]
+
+Message to Talent
+[                                      ]
+
+Required Signers
+
+✓ Talent
+✓ OnSpot
+
+For Client/Organization engagement:
+
+✓ Talent
+✓ Authorized Client/Organization Representative
+✓ OnSpot
+
+[ Save Draft ]             [ Send for Signature ]
+
+------------------------------------------------
+
+============================================================
+PART 7 — CONTRACT FILES / ATTACHMENTS
+============================================================
+
+The primary signable contract should remain PDF.
+
+Support additional contract-related attachments if appropriate, such as:
+
+- contract PDF
+- policy/addendum
+- job-specific agreement
+- onboarding document
+- supporting document
+
+Audit existing object-storage/file validation before expanding accepted
+types.
+
+Do NOT allow arbitrary unsafe file types.
+
+The PRIMARY contract that signatures are bound to must remain clearly
+identified and immutable after signing starts.
+
+Supporting attachments should also be versioned/audited appropriately.
+
+Use PRIVATE object storage.
+
+Do not use public permanent URLs.
+
+============================================================
+PART 8 — EMAIL DELIVERY
+============================================================
+
+When Admin clicks:
+
+Send for Signature
+
+send the Talent an email using the existing Microsoft Graph email
+service.
+
+Suggested email:
+
+Subject:
+Contract ready for review — Website Developer
+
+Body:
+
+Hi <Talent>,
+
+Your contract for the Website Developer position at <Company> is ready
+for review and signature.
+
+[ Review and Sign Contract ]
+
+You can also access this contract anytime from your OnSpot account.
+
+Regards,
+OnSpot
+
+IMPORTANT SECURITY DESIGN:
+
+Prefer sending a secure authenticated OnSpot link instead of relying on
+the PDF attachment as the canonical contract.
+
+If business requires the PDF to also be attached to the email, audit the
+existing Graph attachment implementation and security requirements first.
+
+The OnSpot-stored document must remain the SOURCE OF TRUTH regardless of
+email attachment delivery.
+
+Email failure must not be reported as successful email delivery.
+
+Record email/send status appropriately.
+
+============================================================
+PART 9 — PERMANENT TALENT DOCUMENT ACCESS
+============================================================
+
+Talent must be able to access contract documents later.
+
+Do NOT make the notification the only way to find the contract.
+
+Add/reuse a permanent location associated with the Talent's employment/job.
+
+Preferred structure:
+
+Talent
+→ My Jobs / My Engagements
+→ Website Developer
+→ Contract & Documents
+
+Example:
+
+Website Developer
+OnSpot
+
+Status: Hired / Contract Pending
+
+Contract & Documents
+
+Employment Agreement
+Signed / Awaiting Signature
+[ View ] [ Download ]
+
+Supporting Documents
+- Addendum.pdf
+- Job Policy.pdf
+
+Signature History
+...
+
+Use existing Talent navigation/components where possible.
+
+Do not create a redundant top-level page if an existing Job/Engagement
+details area is appropriate.
+
+============================================================
+PART 10 — CLIENT / ORGANIZATION DOCUMENT ACCESS
+============================================================
+
+The same contract package should be accessible to the authorized
+Client/Organization.
+
+Preferred:
+
+Client / Organization
+→ Team
+→ Talent
+→ Employment / Engagement
+→ Contract & Documents
+
+Authorized users should see:
+
+- current contract
+- executed contract
+- related attachments
+- signature status
+- signature history
+- contract version
+- relevant offer details
+
+Do NOT expose documents to every Organization member automatically.
+
+Respect organization roles/permissions.
+
+============================================================
+PART 11 — ADMIN DOCUMENT ACCESS
+============================================================
+
+Admin should also have a permanent Contract & Documents section accessible
+from the application/hire/contract record.
+
+Admin should not need to search old emails to find the contract.
+
+============================================================
+PART 12 — SIGNING WORKFLOW
+============================================================
+
+Preserve the previously implemented signature rules.
+
+ONSPOT CONTRACT:
+
+Talent
++
+OnSpot
+
+CLIENT/ORGANIZATION CONTRACT:
+
+Talent
++
+authorized Client/Organization representative
++
+OnSpot
+
+All required signatures remain mandatory.
+
+After Admin sends the contract:
+
+Talent:
+[ Review Contract ] [ Sign ]
+
+After Talent signs:
+
+appropriate Client/Organization signer:
+[ Review ] [ Sign ]
+
+OnSpot:
+[ Review ] [ Sign ]
+
+Only after every required signature:
+
+Contract
+→ Fully Executed
+
+Application
+→ Hired
+
+Billing/contract activation
+→ use existing canonical activation logic
+
+============================================================
+PART 13 — DOCUMENT IMMUTABILITY
+============================================================
+
+Once signing starts:
+
+DO NOT allow the primary contract PDF to be replaced.
+
+If changes are required:
+
+old version
+→ superseded/voided
+
+new PDF
+→ new version
+→ signatures collected again
+
+Existing signatures must remain bound to the exact document hash/version
+that was reviewed.
+
+============================================================
+PART 14 — APPLICATION TIMELINE
+============================================================
+
+Keep the Talent application timeline synchronized with real backend state.
+
+Expected progression:
+
+Submitted
+✓
+
+Under Review
+✓
+
+Shortlisted
+✓
+
+Offer Extended
+✓
+
+Offer Accepted
+✓
+
+Contract Sent
+✓
+
+Hired
+✓
+
+Do not advance these visually unless the corresponding backend event
+actually occurred.
+
+If Offer is declined/expired, represent that accurately rather than
+showing a misleading completed progression.
+
+============================================================
+PART 15 — NOTIFICATIONS
+============================================================
+
+Use in-app notifications AND email where configured.
+
+Talent:
+
+Offer Extended
+→ notification
+
+Contract Sent
+→ notification + email
+
+Contract fully executed
+→ notification + email where appropriate
+
+Admin/Client:
+
+Talent accepted offer
+→ notification
+
+Talent signed contract
+→ notification
+
+Signature required
+→ notification
+
+Contract executed
+→ notification
+
+Do not make notification records the source of truth for offer/contract
+status.
+
+============================================================
+PART 16 — AUTHORIZATION
+============================================================
+
+Maintain strict server-side authorization.
+
+Talent can only:
+- view their own offers
+- accept/decline their own offers
+- view their own contract documents
+- sign where they are an expected signer
+
+Client can only:
+- access contracts associated with its jobs/engagements
+
+Organization members:
+- must have appropriate membership/permission
+
+OnSpot Admin:
+- use existing Admin authorization
+
+Knowing:
+
+offer ID
+contract ID
+object key
+document ID
+
+must NOT grant access.
+
+============================================================
+PART 17 — TESTS
+============================================================
+
+Add/update automated tests for:
+
+OFFER:
+
+1. Talent sees pending offer.
+2. Talent can review pending offer.
+3. Correct Talent can accept.
+4. Other Talent cannot accept.
+5. Talent can decline.
+6. Expired offer cannot be accepted.
+7. Accepted offer cannot be accepted twice.
+8. Declined offer cannot be accepted.
+9. Pending count excludes expired offers if that is the intended semantic.
+10. Application becomes Offer Accepted after real acceptance.
+
+CONTRACT:
+
+11. Prepare Contract only available after accepted offer.
+12. Admin uploads private PDF.
+13. Talent can access own document.
+14. Other Talent cannot access document.
+15. Client/Org authorization works.
+16. Contract sent creates correct signature requirements.
+17. PDF becomes immutable once signing begins.
+18. All required signatures produce Executed.
+19. Missing signature does NOT produce Hired.
+20. Executed contract produces canonical Hired state.
+
+DOCUMENT ACCESS:
+
+21. Talent can retrieve contract later from Job/Engagement.
+22. Client/Organization can retrieve authorized contract.
+23. Admin can retrieve contract.
+24. Cross-tenant access fails.
+
+============================================================
+MANUAL UAT AFTER IMPLEMENTATION
+============================================================
+
+Resume my current UAT from the existing Offer Extended application.
+
+Because the current screenshot shows the offer as EXPIRED, first create
+or extend/reissue a valid non-expired test offer through the legitimate
+Client/Admin flow.
+
+Then test:
+
+1. Talent opens Offers.
+2. Valid offer displays Review/Accept/Decline.
+3. Open Review Offer.
+4. Verify offer details.
+5. Accept.
+6. Application becomes Offer Accepted.
+7. Admin opens application.
+8. Prepare Contract becomes available.
+9. Upload test contract PDF.
+10. Preview PDF.
+11. Send for Signature.
+12. Verify Talent receives in-app notification.
+13. Verify real email receipt separately.
+14. Talent opens Contract & Documents.
+15. Verify same PDF.
+16. Talent signs.
+17. Client/Organization signs if required.
+18. OnSpot signs.
+19. Contract becomes Fully Executed.
+20. Application becomes Hired automatically.
+21. Talent can still access executed contract later.
+22. Client/Organization can access it from the Talent engagement.
+23. Continue to Client Team.
+24. Continue to Clock In/Out.
+25. Verify Timesheet.
+
+============================================================
+DELIVERABLE
+============================================================
+
+Report:
+
+1. Why the Talent had no Accept/Decline action.
+2. Why an expired offer was counted/displayed as pending, if confirmed.
+3. Files changed.
+4. API endpoints reused/changed.
+5. Offer acceptance implementation.
+6. Expiration handling.
+7. Contract package implementation.
+8. Private document storage implementation.
+9. Permanent Talent document location.
+10. Client/Organization document location.
+11. Email behavior.
+12. Signing behavior.
+13. Automated test results.
+14. Manual UAT results.
+15. Anything still pending production verification.
+
+Do not claim manual UAT PASS unless actually tested through signed-in
+accounts.

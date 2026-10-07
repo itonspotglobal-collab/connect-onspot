@@ -1729,6 +1729,9 @@ export const offers = pgTable("offers", {
   rateDelta:                 decimal("rate_delta", { precision: 12, scale: 2 }),
   sentAt:                    timestamp("sent_at").notNull().defaultNow(),
   respondedAt:               timestamp("responded_at"),
+  acceptedAt:                timestamp("accepted_at", { withTimezone: true }),
+  declinedAt:                timestamp("declined_at", { withTimezone: true }),
+  respondedBy:               varchar("responded_by").references(() => users.id),
   expiresAt:                 timestamp("expires_at"),
   // Stamped only after a confirmed successful reminder email delivery.
   // NULL = reminder not yet sent (or send failed — eligible for retry).
@@ -1801,6 +1804,24 @@ export const hiringContracts = pgTable("hiring_contracts", {
   `),
 ]);
 
+export const offerExpirationHistory = pgTable("offer_expiration_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  offerId: uuid("offer_id").notNull().references(()=>offers.id),
+  actorUserId: varchar("actor_user_id").notNull().references(()=>users.id),
+  previousExpiresAt: timestamp("previous_expires_at",{withTimezone:true}),
+  newExpiresAt: timestamp("new_expires_at",{withTimezone:true}).notNull(),
+  changedAt: timestamp("changed_at",{withTimezone:true}).notNull().defaultNow(),
+});
+export const contractAttachments = pgTable("contract_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hiringContractId: uuid("hiring_contract_id").notNull().references(()=>hiringContracts.id),
+  objectKey:text("object_key").notNull().unique(), originalFilename:text("original_filename").notNull(),
+  fileSize:integer("file_size").notNull(), sha256:text("sha256").notNull(), version:integer("version").notNull(),
+  status:text("status").notNull().default("draft"), uploadedBy:varchar("uploaded_by").notNull().references(()=>users.id),
+  uploadedAt:timestamp("uploaded_at",{withTimezone:true}).notNull().defaultNow(),
+},table=>[uniqueIndex("contract_attachments_contract_version").on(table.hiringContractId,table.version),
+  check("contract_attachments_status_check",sql`${table.status} IN ('draft','frozen','removed')`),
+  check("contract_attachments_size_check",sql`${table.fileSize} BETWEEN 1 AND 10485760`)]);
 export const contractDocuments = pgTable("contract_documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id),

@@ -20,6 +20,8 @@ export interface TalentApplication {
     status?: string; // open | closed — for disabling "View Job" on closed roles
   };
   applicationStatus: string;
+  statusHistory?: Array<{status:string;at:string}>;
+  currentOffer?: {id:string;status:string;expiresAt?:string|null}|null;
   submittedAt: string;
   updatedAt: string;
   resume?: { fileName?: string; url?: string };

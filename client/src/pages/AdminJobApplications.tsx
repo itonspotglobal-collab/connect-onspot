@@ -24,6 +24,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InterviewSection, ScheduleInterviewDialog } from "@/components/InterviewWorkflowUi";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
+import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
+import { isTalentOfferExpired } from "@/components/talentOfferState";
 import {
   Users, Search, Filter, RefreshCw, ChevronLeft, ChevronRight,
   ExternalLink, Eye, AlertTriangle, Loader2, Clock, CheckCircle2,
@@ -127,6 +129,13 @@ interface StatusHistory {
 interface ApplicationDetail extends Application {
   candidateId?: string;
   acceptedOfferId?: string | null;
+  latestOffer?: {
+    id: string;
+    status: string;
+    expiresAt?: string | null;
+    proposerRole?: string | null;
+    job?: { title?: string | null; company?: string | null } | null;
+  } | null;
   resumeUrl?: string;
   resumeFileName?: string;
   resumeSource?: "application" | "talent_profile" | null;
@@ -301,7 +310,7 @@ function DetailDialog({
     }
   }, [open]);
 
-  const { data: detail, isLoading, isError } = useQuery<ApplicationDetail>({
+  const { data: detail, isLoading, isError, refetch: refetchDetail } = useQuery<ApplicationDetail>({
     queryKey: ["/api/admin/job-applications", applicationId],
     queryFn: () => apiFetch(`/api/admin/job-applications/${applicationId}`),
     enabled: !!applicationId && open,
@@ -557,6 +566,39 @@ function DetailDialog({
                 )
               )}
             </section>
+
+            {detail.hiringPipelineEligible === true
+              && detail.latestOffer
+              && detail.latestOffer.proposerRole !== "talent"
+              && isTalentOfferExpired({
+                status: detail.latestOffer.status,
+                expiresAt: detail.latestOffer.expiresAt,
+              })
+              && (
+                <section className="rounded-lg border border-amber-200 bg-amber-50/70 p-4">
+                  <div className="flex items-start gap-3">
+                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-semibold text-amber-900">Offer expired</h3>
+                      <p className="mt-1 text-xs text-amber-800">
+                        {detail.latestOffer.job?.title || detail.jobTitle}
+                        {(detail.latestOffer.job?.company || detail.jobCompany)
+                          ? ` · ${detail.latestOffer.job?.company || detail.jobCompany}`
+                          : ""}
+                        {" · "}Terms stay unchanged when the expiration is renewed.
+                      </p>
+                      <OfferExpirationRenewal
+                        offerId={detail.latestOffer.id}
+                        endpointBase="/api/admin/offers"
+                        onRenewed={async () => {
+                          await queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
+                          await refetchDetail();
+                        }}
+                      />
+                    </div>
+                  </div>
+                </section>
+              )}
 
              <InterviewSection
                role="admin"

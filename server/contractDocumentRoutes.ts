@@ -47,6 +47,23 @@ export function contractDocumentRouter(authenticate: RequestHandler, limiter: Re
   router.post("/", limiter, assertOffer, handle(async (req, res) => res.status(201).json(await contracts.prepareContract(req.contractActor, req.body))));
   router.get("/:id", handle(async (req, res) => res.json(await contracts.contractDetail(req.params.id, req.contractActor))));
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_CONTRACT_PDF_BYTES, files: 1, fields: 0 } }).single("file");
+  router.delete("/:id/document",limiter,handle(async(req,res)=>res.json(await contracts.removePrimaryDraftPdf(req.params.id,req.contractActor))));
+  router.put("/:id/attachments", limiter, handle(async (req,res)=>{
+    const detail=await contracts.contractDetail(req.params.id,req.contractActor);
+    if(!detail.permissions.canPrepare) throw new ContractError(409,{error:"package_immutable"});
+    await new Promise<void>((resolve,reject)=>upload(req,res,error=>error?reject(error):resolve()));
+    res.status(201).json(await contracts.uploadContractAttachment(req.params.id,req.contractActor,req.file));
+  }));
+  router.delete("/:id/attachments/:attachmentId",limiter,handle(async(req,res)=>{
+    res.json(await contracts.removeContractAttachment(req.params.id,req.params.attachmentId,req.contractActor));
+  }));
+  router.get("/:id/attachments/:attachmentId/pdf",handle(async(req,res)=>{
+    const pdf=await contracts.readContractAttachment(req.params.id,req.params.attachmentId,req.contractActor);
+    res.set({"Content-Type":"application/pdf","Content-Length":String(pdf.bytes.length),
+      "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff",
+      "Content-Disposition":`inline; filename="${pdf.filename}"`});
+    res.send(pdf.bytes);
+  }));
   router.put("/:id/document", limiter,
     handle(async (req, res) => {
       const detail = await contracts.contractDetail(req.params.id, req.contractActor);

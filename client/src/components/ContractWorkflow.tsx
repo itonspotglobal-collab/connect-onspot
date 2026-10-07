@@ -15,8 +15,10 @@ import { AlertCircle, CheckCircle2, Download, FileText, Loader2, LockKeyhole, Pe
 
 export interface ContractRow {
   id: string;
+  talent_message?: string | null;
   offer_id: string;
   submission_id: string;
+  talent_id?: string | null;
   status: string;
   title: string | null;
   party_type: "onspot" | "client" | "organization";
@@ -46,9 +48,10 @@ interface ContractContext {
 interface ContractDetail {
   contract: ContractRow;
   document: null | { id: string; version: number; sha256: string; original_filename: string; mime_type: string; file_size: number; status: string; sent_at: string | null; executed_at: string | null };
+  attachments?: Array<{ id: string; originalFilename: string; fileSize: number; sha256: string; version: number; status: string }>;
   signatures: Array<{ signer_role: string; legal_name: string; signed_at: string; organization_name: string | null }>;
   timeline: Array<{ action: string; actor_name: string | null; created_at: string }>;
-  permissions: { canPrepare: boolean; canSend: boolean; canSign: boolean; canVoid: boolean; canDecline: boolean; signerRole: string | null };
+  permissions: { canPrepare: boolean; canManage?: boolean; canSend: boolean; canSign: boolean; canVoid: boolean; canDecline: boolean; signerRole: string | null };
 }
 
 async function jsonRequest<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -109,11 +112,19 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
   const [serverReviewError, setServerReviewError] = useState("");
   const [serverPdfUrl, setServerPdfUrl] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [supportingFile, setSupportingFile] = useState<File | null>(null);
+  const [supportingBusy, setSupportingBusy] = useState(false);
+  const [supportingPreview, setSupportingPreview] = useState<{ url: string; name: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { data: context, isLoading, isError, refetch } = useQuery<ContractContext>({
     queryKey: ["/api/contracts/context", offerId],
     queryFn: () => jsonRequest("GET", `/api/contracts/context?offerId=${encodeURIComponent(offerId)}`),
     enabled: open && !!offerId,
+  });
+  const { data: savedDraft, refetch: refetchSavedDraft } = useQuery<ContractDetail>({
+    queryKey: ["/api/contracts", draftId],
+    queryFn: () => jsonRequest("GET", `/api/contracts/${encodeURIComponent(draftId!)}`),
+    enabled: open && !!draftId,
   });
   useEffect(() => {
     if (context?.allowedPartyTypes.length) setPartyType(context.allowedPartyTypes[0]);
@@ -128,6 +139,69 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
     return () => URL.revokeObjectURL(url);
   }, [file]);
   useEffect(() => () => { if (serverPdfUrl) URL.revokeObjectURL(serverPdfUrl); }, [serverPdfUrl]);
+  useEffect(() => () => { if (supportingPreview) URL.revokeObjectURL(supportingPreview.url); }, [supportingPreview]);
+
+  async function uploadSupportingFile() {
+    if (!draftId || !supportingFile) return;
+    if (supportingFile.type !== "application/pdf" || !supportingFile.name.toLowerCase().endsWith(".pdf") || supportingFile.size <= 0 || supportingFile.size > 10 * 1024 * 1024) {
+      toast({ title: "Invalid supporting PDF", description: "Choose a non-empty PDF of 10 MB or less.", variant: "destructive" });
+      return;
+    }
+    setSupportingBusy(true);
+    try {
+      const form = new FormData();
+      form.append("file", supportingFile);
+      const response = await fetch(`/api/contracts/${encodeURIComponent(draftId)}/attachments`, { method: "PUT", headers: bearerHeaders(), credentials: "include", body: form });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Attachment upload failed (${response.status})`);
+      }
+      setSupportingFile(null);
+      await refetchSavedDraft();
+      toast({ title: "Supporting PDF saved", description: "It is private and separate from the signable primary document." });
+    } catch (error) {
+      toast({ title: "Could not upload supporting PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setSupportingBusy(false); }
+  }
+  async function removeSupportingFile(attachmentId: string) {
+    if (!draftId) return;
+    setSupportingBusy(true);
+    try {
+      const response = await fetch(`/api/contracts/${encodeURIComponent(draftId)}/attachments/${encodeURIComponent(attachmentId)}`, { method: "DELETE", headers: bearerHeaders(), credentials: "include" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Attachment removal failed (${response.status})`);
+      }
+      await refetchSavedDraft();
+      toast({ title: "Supporting PDF removed" });
+    } catch (error) {
+      toast({ title: "Could not remove supporting PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setSupportingBusy(false); }
+  }
+  async function reviewSupportingFile(attachment: NonNullable<ContractDetail["attachments"]>[number], download = false) {
+    if (!draftId) return;
+    try {
+      const response = await fetch(`/api/contracts/${encodeURIComponent(draftId)}/attachments/${encodeURIComponent(attachment.id)}/pdf`, { headers: bearerHeaders(), credentials: "include" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Unable to load attachment (${response.status})`);
+      }
+      const blob = await response.blob();
+      if (blob.type !== "application/pdf") throw new Error("The authorized attachment response was not a PDF.");
+      const url = URL.createObjectURL(blob);
+      if (download) {
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = attachment.originalFilename;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      } else {
+        setSupportingPreview((old) => { if (old) URL.revokeObjectURL(old.url); return { url, name: attachment.originalFilename }; });
+      }
+    } catch (error) {
+      toast({ title: "Could not review supporting PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    }
+  }
 
   const selectedFileKey = file ? `${file.name}:${file.size}:${file.lastModified}` : "";
   async function reviewUploadedPdf(contractId: string, fileKey: string) {
@@ -150,6 +224,46 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
       await reviewUploadedPdf(draftId, selectedFileKey);
     } catch (error) {
       toast({ title: "Could not review uploaded PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setBusy(false); }
+  }
+  async function removePersistedPrimary() {
+    if (!draftId) return;
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/contracts/${encodeURIComponent(draftId)}/document`, {
+        method: "DELETE", headers: bearerHeaders(), credentials: "include",
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Could not remove saved PDF (${response.status})`);
+      }
+      setFile(null);
+      setUploadedKey("");
+      setReviewedKey("");
+      setServerReviewError("");
+      setServerPdfUrl((old) => { if (old) URL.revokeObjectURL(old); return null; });
+      await qc.invalidateQueries({ queryKey: ["/api/contracts"] });
+      toast({ title: "Saved primary PDF removed", description: "The draft remains. A later upload will be stored as a new document version." });
+    } catch (error) {
+      toast({ title: "Could not remove saved primary PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setBusy(false); }
+  }
+  async function persistDraft() {
+    if (!context || draftId) return;
+    setBusy(true);
+    try {
+      const created = await jsonRequest<{ id: string }>("POST", "/api/contracts", {
+        offerId, partyType, ...(partyType === "organization" ? { organizationId } : {}),
+        ...(title.trim() ? { title: title.trim() } : {}), ...(message.trim() ? { message: message.trim() } : {}),
+      });
+      setDraftId(created.id);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["/api/contracts"] }),
+        qc.invalidateQueries({ queryKey: ["/api/contracts/accepted-offers"] }),
+      ]);
+      toast({ title: "Contract draft saved", description: "You can upload the signable PDF and supporting documents before sending." });
+    } catch (error) {
+      toast({ title: "Could not save contract draft", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     } finally { setBusy(false); }
   }
   async function uploadDraft() {
@@ -214,6 +328,7 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
       setBusy(false);
     }
   }
+  const canSendDraft = !!draftId && !!file && uploadedKey === selectedFileKey && reviewedKey === selectedFileKey && !!serverPdfUrl;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[94dvh] max-w-3xl overflow-y-auto">
@@ -252,18 +367,44 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
                 {file ? <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB</span> : <span className="text-sm text-slate-500">PDF only · up to 10 MB</span>}
               </div>
             </div>
-            {pdfUrl && <div className="overflow-hidden rounded-xl border border-slate-200"><div className="flex items-center justify-between border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"><span>{reviewedKey === selectedFileKey && serverPdfUrl ? "Uploaded private PDF · original review recorded" : "Local selection preview — upload to review stored PDF"}</span><button onClick={() => setFile(null)} className="text-slate-500 hover:text-rose-600" aria-label="Remove selected PDF"><X className="h-4 w-4" /></button></div><iframe title="Selected contract PDF preview" src={serverPdfUrl && reviewedKey === selectedFileKey ? serverPdfUrl : pdfUrl} className="h-[360px] w-full bg-slate-100" /></div>}
+            {pdfUrl && <div className="overflow-hidden rounded-xl border border-slate-200"><div className="flex items-center justify-between border-b bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600"><span>{reviewedKey === selectedFileKey && serverPdfUrl ? "Uploaded private PDF · original review recorded" : "Local selection preview — upload to review stored PDF"}</span><button onClick={() => {
+              if (draftId && uploadedKey === selectedFileKey) void removePersistedPrimary();
+              else setFile(null);
+            }} disabled={busy} className="text-slate-500 hover:text-rose-600 disabled:opacity-50" aria-label={draftId && uploadedKey === selectedFileKey ? "Remove saved primary PDF" : "Clear selected primary PDF"}><X className="h-4 w-4" /></button></div><iframe title="Selected contract PDF preview" src={serverPdfUrl && reviewedKey === selectedFileKey ? serverPdfUrl : pdfUrl} className="h-[360px] w-full bg-slate-100" /></div>}
+            {draftId && savedDraft?.permissions.canManage && <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+              <div><h3 className="text-sm font-semibold text-slate-900">Supporting documents</h3><p className="mt-1 text-xs text-slate-500">Upload private supporting PDFs after the draft exists. These do not change the primary signature document.</p></div>
+              {(savedDraft.attachments ?? []).length ? <div className="space-y-2">
+                {savedDraft.attachments!.map((attachment) => <div key={attachment.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <FileText className="h-4 w-4 text-indigo-600" />
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{attachment.originalFilename}</p><p className="text-[10px] text-slate-500">Version {attachment.version} · {(attachment.fileSize / 1024).toFixed(0)} KB · SHA-256 {attachment.sha256.slice(0, 12)}…</p></div>
+                  <Button size="sm" variant="outline" onClick={() => reviewSupportingFile(attachment)}><FileText className="mr-1 h-3.5 w-3.5" />Review</Button>
+                  <Button size="sm" variant="outline" onClick={() => reviewSupportingFile(attachment, true)}><Download className="mr-1 h-3.5 w-3.5" />Download</Button>
+                  <Button size="sm" variant="outline" disabled={supportingBusy} onClick={() => removeSupportingFile(attachment.id)}><X className="mr-1 h-3.5 w-3.5" />Remove</Button>
+                </div>)}
+              </div> : <p className="text-xs text-slate-500">No supporting documents attached.</p>}
+              <div className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
+                <label className="min-w-0 flex-1 text-xs font-medium text-slate-600">Add a supporting PDF
+                  <input aria-label="Supporting PDF" type="file" accept="application/pdf,.pdf" className="mt-1 block max-w-full text-xs" onChange={(event) => setSupportingFile(event.target.files?.[0] ?? null)} />
+                </label>
+                <Button size="sm" variant="outline" disabled={!supportingFile || supportingBusy} onClick={uploadSupportingFile}>{supportingBusy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />}Upload attachment</Button>
+              </div>
+              {supportingPreview && <div className="overflow-hidden rounded-lg border border-slate-200"><div className="flex items-center justify-between bg-slate-50 px-3 py-2 text-xs"><span>{supportingPreview.name} · private preview</span><Button size="sm" variant="ghost" onClick={() => { URL.revokeObjectURL(supportingPreview.url); setSupportingPreview(null); }}><X className="h-4 w-4" /></Button></div><iframe title={`Supporting PDF preview ${supportingPreview.name}`} src={supportingPreview.url} className="h-[320px] w-full bg-slate-100" /></div>}
+            </section>}
             {serverReviewError && <p role="alert" className="flex items-center gap-2 text-sm text-rose-700"><AlertCircle className="h-4 w-4" />{serverReviewError}</p>}
           </div>}
         <DialogFooter className="gap-2 sm:justify-between">
           <p className="flex items-center gap-1.5 text-xs text-slate-500"><LockKeyhole className="h-3.5 w-3.5" />Only authorized contract parties can access this document.</p>
+          {!draftId && <Button variant="outline" onClick={persistDraft} disabled={!context || busy || (partyType === "organization" && !organizationId)}>
+            {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
+          </Button>}
           {!draftId || uploadedKey !== selectedFileKey ? <Button onClick={uploadDraft} disabled={!context || !file || busy || (partyType === "organization" && !organizationId)} className="bg-[#474ead] text-white hover:bg-[#3d439c]">
             {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading…</> : <><Upload className="mr-2 h-4 w-4" />{draftId ? "Upload replacement PDF" : "Create draft & upload"}</>}
           </Button> : reviewedKey !== selectedFileKey || !serverPdfUrl ? <Button onClick={retryServerReview} disabled={busy} variant="outline">
             {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Opening private PDF…</> : <><FileText className="mr-2 h-4 w-4" />Review uploaded PDF</>}
-          </Button> : <Button onClick={sendDraft} disabled={busy} className="bg-[#474ead] text-white hover:bg-[#3d439c]">
-            {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending…</> : <><Send className="mr-2 h-4 w-4" />Send for signature</>}
-          </Button>}
+          </Button> : null}
+          <Button onClick={sendDraft} disabled={busy || !canSendDraft} className="bg-[#474ead] text-white hover:bg-[#3d439c]">
+            {busy && canSendDraft ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending…</> : <><Send className="mr-2 h-4 w-4" />Send for Signature</>}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -287,6 +428,9 @@ function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; o
   const [reasonAction, setReasonAction] = useState<"void" | "decline" | null>(null);
   const [draftFile, setDraftFile] = useState<File | null>(null);
   const [draftBusy, setDraftBusy] = useState(false);
+  const [supportingFile, setSupportingFile] = useState<File | null>(null);
+  const [supportingBusy, setSupportingBusy] = useState(false);
+  const [supportingPreview, setSupportingPreview] = useState<{ url: string; name: string } | null>(null);
   const { data, isLoading, isError, refetch } = useQuery<ContractDetail>({
     queryKey: ["/api/contracts", id],
     queryFn: () => jsonRequest("GET", `/api/contracts/${encodeURIComponent(id!)}`),
@@ -306,6 +450,7 @@ function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; o
   }, [id, open]);
   useEffect(() => () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); }, [pdfUrl]);
   useEffect(() => () => { if (executedPdfUrl) URL.revokeObjectURL(executedPdfUrl); }, [executedPdfUrl]);
+  useEffect(() => () => { if (supportingPreview?.url) URL.revokeObjectURL(supportingPreview.url); }, [supportingPreview]);
   async function loadPdf() {
     if (!id) return;
     setPdfLoading(true); setPdfError("");
@@ -377,6 +522,86 @@ function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; o
     } catch (error) { toast({ title: "Could not upload PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }); }
     finally { setDraftBusy(false); }
   }
+  async function removePersistedDocument() {
+    if (!id || !window.confirm("Remove the saved primary contract PDF from this draft? The draft remains and a later upload creates a new document version.")) return;
+    setDraftBusy(true);
+    try {
+      const response = await fetch(`/api/contracts/${encodeURIComponent(id)}/document`, { method: "DELETE", headers: bearerHeaders(), credentials: "include" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Could not remove PDF (${response.status})`);
+      }
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+      await refetch();
+      await qc.invalidateQueries({ queryKey: ["/api/contracts"] });
+      toast({ title: "Saved primary PDF removed", description: "The draft stays available. A later upload is recorded as a new version." });
+    } catch (error) {
+      toast({ title: "Could not remove saved PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setDraftBusy(false); }
+  }
+  async function uploadSupporting() {
+    if (!supportingFile || !id) return;
+    if (supportingFile.type !== "application/pdf" || !supportingFile.name.toLowerCase().endsWith(".pdf") || supportingFile.size <= 0 || supportingFile.size > 10 * 1024 * 1024) {
+      toast({ title: "Invalid supporting PDF", description: "Choose a non-empty PDF of 10 MB or less.", variant: "destructive" });
+      return;
+    }
+    setSupportingBusy(true);
+    try {
+      const form = new FormData();
+      form.append("file", supportingFile);
+      const response = await fetch(`/api/contracts/${encodeURIComponent(id)}/attachments`, { method: "PUT", headers: bearerHeaders(), credentials: "include", body: form });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Attachment upload failed (${response.status})`);
+      }
+      setSupportingFile(null);
+      await refetch();
+      toast({ title: "Supporting document added", description: "It is stored privately and does not alter the signable contract PDF." });
+    } catch (error) {
+      toast({ title: "Could not upload supporting document", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setSupportingBusy(false); }
+  }
+  async function removeSupporting(attachmentId: string) {
+    if (!id) return;
+    setSupportingBusy(true);
+    try {
+      const response = await fetch(`/api/contracts/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}`, { method: "DELETE", headers: bearerHeaders(), credentials: "include" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Attachment removal failed (${response.status})`);
+      }
+      await refetch();
+      toast({ title: "Supporting document removed" });
+    } catch (error) {
+      toast({ title: "Could not remove supporting document", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setSupportingBusy(false); }
+  }
+  async function openSupporting(attachment: NonNullable<ContractDetail["attachments"]>[number], download = false) {
+    if (!id) return;
+    try {
+      const response = await fetch(`/api/contracts/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachment.id)}/pdf`, { headers: bearerHeaders(), credentials: "include" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Unable to open attachment (${response.status})`);
+      }
+      const blob = await response.blob();
+      if (blob.type !== "application/pdf") throw new Error("The authorized attachment response was not a PDF.");
+      if (download) {
+        const downloadUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.download = attachment.originalFilename;
+        anchor.click();
+        URL.revokeObjectURL(downloadUrl);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      setSupportingPreview((old) => { if (old) URL.revokeObjectURL(old.url); return { url, name: attachment.originalFilename }; });
+    } catch (error) {
+      toast({ title: "Could not open supporting document", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    }
+  }
   const detail = data;
   const canSign = !!detail?.permissions.canSign && !!detail.document;
   const signed = detail?.signatures ?? [];
@@ -394,6 +619,7 @@ function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; o
               <div><p className="text-sm font-semibold text-slate-900">{detail.contract.talent_name} · {detail.contract.job_title}</p><p className="mt-1 text-xs text-slate-600">{detail.contract.client_name || detail.contract.signing_entity || "OnSpot"}{detail.contract.rate ? ` · ${currencyLabel(detail.contract.rate, detail.contract.rate_currency)}` : ""}{detail.contract.engagement_type ? ` · ${detail.contract.engagement_type}` : ""}</p><p className="mt-2 text-xs text-slate-500">{detail.document ? `Original · Version ${detail.document.version} · ${detail.document.original_filename}` : "No PDF uploaded"}{detail.document?.executed_at ? ` · Executed ${dateLabel(detail.document.executed_at)}` : ""}</p>{detail.document && <p className="mt-1 break-all font-mono text-[10px] text-slate-500">Original SHA-256 · {detail.document.sha256}</p>}</div>
               <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-800">{statusLabel(detail.contract.status)}</span>
             </div>
+            {detail.contract.talent_message && <section className="rounded-xl border border-slate-200 p-4"><h3 className="text-sm font-semibold">Message from the preparer</h3><p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{detail.contract.talent_message}</p></section>}
             {detail.document && <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={loadPdf} disabled={pdfLoading}>{pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}{pdfUrl ? "Reload private preview" : "Review PDF"}</Button>
               {pdfUrl && <Button size="sm" variant="outline" onClick={() => { const anchor = document.createElement("a"); anchor.href = pdfUrl; anchor.download = detail.document?.original_filename || "contract.pdf"; anchor.click(); }}><Download className="mr-2 h-4 w-4" />Download authorized copy</Button>}</div>}
             {detail.contract.status === "draft" && detail.permissions.canPrepare && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3">
@@ -401,8 +627,28 @@ function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; o
                 <input type="file" accept="application/pdf,.pdf" className="mt-1 block max-w-full text-xs" onChange={(event) => setDraftFile(event.target.files?.[0] ?? null)} />
               </label>
               <Button size="sm" variant="outline" disabled={!draftFile || draftBusy} onClick={uploadReplacement}>{draftBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Upload PDF</Button>
+              {detail.document && detail.permissions.canManage && <Button size="sm" variant="outline" disabled={draftBusy} onClick={removePersistedDocument}><X className="mr-2 h-4 w-4" />Remove saved PDF</Button>}
               {detail.permissions.canSend && <Button size="sm" className="bg-[#474ead] text-white hover:bg-[#3d439c]" disabled={!detail.document || draftBusy} onClick={() => runMutation(`/api/contracts/${encodeURIComponent(id!)}/send`, {})}><Send className="mr-2 h-4 w-4" />Send for signature</Button>}
             </div>}
+            <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+              <div><h3 className="text-sm font-semibold text-slate-900">Supporting documents</h3><p className="mt-1 text-xs text-slate-500">Private attachments are separate from the primary PDF and are never part of its signature hash.</p></div>
+              {(detail.attachments ?? []).length ? <div className="space-y-2">
+                {detail.attachments!.map((attachment) => <div key={attachment.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <FileText className="h-4 w-4 shrink-0 text-indigo-600" />
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-800">{attachment.originalFilename}</p><p className="text-[10px] text-slate-500">Version {attachment.version} · {(attachment.fileSize / 1024).toFixed(0)} KB · SHA-256 {attachment.sha256.slice(0, 12)}…</p></div>
+                  <Button size="sm" variant="outline" onClick={() => openSupporting(attachment)}><FileText className="mr-1 h-3.5 w-3.5" />Review</Button>
+                  <Button size="sm" variant="outline" onClick={() => openSupporting(attachment, true)}><Download className="mr-1 h-3.5 w-3.5" />Download</Button>
+                  {detail.contract.status === "draft" && detail.permissions.canManage && <Button size="sm" variant="outline" disabled={supportingBusy} onClick={() => removeSupporting(attachment.id)}><X className="mr-1 h-3.5 w-3.5" />Remove</Button>}
+                </div>)}
+              </div> : <p className="text-xs text-slate-500">No supporting documents attached.</p>}
+              {detail.contract.status === "draft" && detail.permissions.canManage && <div className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
+                <label className="min-w-0 flex-1 text-xs font-medium text-slate-600">Add a supporting PDF
+                  <input aria-label="Supporting PDF" type="file" accept="application/pdf,.pdf" className="mt-1 block max-w-full text-xs" onChange={(event) => setSupportingFile(event.target.files?.[0] ?? null)} />
+                </label>
+                <Button size="sm" variant="outline" disabled={!supportingFile || supportingBusy} onClick={uploadSupporting}>{supportingBusy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Upload className="mr-1 h-4 w-4" />}Upload attachment</Button>
+              </div>}
+              {supportingPreview && <div className="overflow-hidden rounded-lg border border-slate-200"><div className="flex items-center justify-between bg-slate-50 px-3 py-2 text-xs"><span className="truncate">{supportingPreview.name} · private preview</span><Button size="sm" variant="ghost" onClick={() => { URL.revokeObjectURL(supportingPreview.url); setSupportingPreview(null); }}><X className="h-4 w-4" /></Button></div><iframe title={`Private supporting document ${supportingPreview.name}`} src={supportingPreview.url} className="h-[min(52dvh,560px)] w-full bg-slate-100" /></div>}
+            </section>
             {pdfError && <p role="alert" className="flex items-center gap-2 text-sm text-rose-700"><AlertCircle className="h-4 w-4" />{pdfError}</p>}
             {pdfUrl && <div className="overflow-hidden rounded-xl border border-slate-200"><iframe title="Private contract PDF preview" src={pdfUrl} className="h-[min(62dvh,680px)] w-full bg-slate-100" /></div>}
             {hasExecutedCopy && <section className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">

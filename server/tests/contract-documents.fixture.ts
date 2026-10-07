@@ -36,6 +36,7 @@ before(async () => {
     throw new Error("Unexpected external HTTP request denied");
   };
   await query(readFileSync("migrations/0035_private_contract_documents.sql", "utf8"));
+  await query(readFileSync("migrations/0036_offer_response_contract_package.sql", "utf8"));
   await query(`CREATE TABLE IF NOT EXISTS platform_settings(key text PRIMARY KEY,value text)`);
   for (const [id, role] of [[client, "client"], [other, "client"], [admin, "admin"], [talent, "talent"], [otherTalent, "talent"], [owner, "client"], [member, "client"]]) {
     await query(`INSERT INTO users(id,email,role,password_hash,first_name,last_name) VALUES($1,$2,$3,'not-a-login-hash','Fixture','Person')`, [id, `${id}@fixture.example`, role]);
@@ -148,6 +149,44 @@ test("draft replacement is immutable history; sent/signed replacements and unrev
   const oldSignatures = (await query("SELECT * FROM contract_signatures WHERE document_id=$1", [second.id])).rows;
   assert.equal(oldSignatures.length, 1); assert.equal(oldSignatures[0].document_sha256, second.sha256);
   assert.equal((await query(`SELECT COUNT(*)::int AS n FROM contract_signatures s JOIN contract_documents d ON d.id=s.document_id WHERE d.hiring_contract_id=$1`, [next.id])).rows[0].n, 0);
+});
+test("private supporting PDFs are audited, scoped, removable only in draft and frozen on send", async()=>{
+  const {submission,offer}=await acceptedOffer("application");
+  const draft=await documents.prepareContract(actor(admin),{offerId:offer,partyType:"onspot"});
+  const file={buffer:pdf,mimetype:"application/pdf",originalname:"Policy.pdf"};
+  const primary=await documents.uploadContractPdf(draft.id,actor(admin),file,externalBlobTransport);
+  const removed=await documents.uploadContractAttachment(draft.id,actor(admin),file,externalBlobTransport);
+  await documents.removeContractAttachment(draft.id,removed.id,actor(admin));
+  await assert.rejects(documents.readContractAttachment(draft.id,removed.id,actor(admin),externalBlobTransport));
+  const attached=await documents.uploadContractAttachment(draft.id,actor(admin),file,externalBlobTransport);
+  assert.ok(attached.version>removed.version);
+  await assert.rejects(documents.readContractAttachment(draft.id,attached.id,actor(talent),externalBlobTransport));
+  await assert.rejects(documents.uploadContractAttachment(draft.id,actor(other),file,externalBlobTransport));
+  await documents.contractPdf(draft.id,actor(admin),false,externalBlobTransport);
+  await documents.sendContract(draft.id,actor(admin),externalBlobTransport);
+  const detail=await documents.contractDetail(draft.id,actor(talent));
+  assert.equal(detail.attachments.length,1);
+  assert.equal(detail.attachments[0].status,"frozen");
+  assert.equal((await documents.readContractAttachment(draft.id,attached.id,actor(talent),externalBlobTransport)).bytes.equals(pdf),true);
+  assert.equal((await documents.readContractAttachment(draft.id,attached.id,actor(client),externalBlobTransport)).bytes.equals(pdf),true);
+  await assert.rejects(documents.readContractAttachment(draft.id,attached.id,actor(otherTalent),externalBlobTransport));
+  await assert.rejects(documents.removeContractAttachment(draft.id,attached.id,actor(admin)));
+  await assert.rejects(documents.uploadContractAttachment(draft.id,actor(admin),file,externalBlobTransport));
+  await assert.rejects(documents.removePrimaryDraftPdf(draft.id,actor(admin)));
+  assert.equal(await status(submission),"contract_sent");
+  assert.equal(primary.sha256,pdfHash(pdf));
+});
+test("removing a draft primary preserves history and next upload increments version",async()=>{
+  const {offer}=await acceptedOffer("application");
+  const draft=await documents.prepareContract(actor(admin),{offerId:offer,partyType:"onspot"});
+  const file={buffer:pdf,mimetype:"application/pdf",originalname:"Agreement.pdf"};
+  const original=await documents.uploadContractPdf(draft.id,actor(admin),file,externalBlobTransport);
+  await documents.removePrimaryDraftPdf(draft.id,actor(admin));
+  assert.equal((await documents.contractDetail(draft.id,actor(admin))).document,null);
+  await assert.rejects(documents.sendContract(draft.id,actor(admin),externalBlobTransport));
+  const next=await documents.uploadContractPdf(draft.id,actor(admin),file,externalBlobTransport);
+  assert.equal(next.version,original.version+1);
+  assert.equal((await query("SELECT status FROM contract_documents WHERE id=$1",[original.id])).rows[0].status,"superseded");
 });
 test("tampered stored bytes cannot be viewed or signed and do not activate", async () => {
   const prepared = await prepare("application", "client");
