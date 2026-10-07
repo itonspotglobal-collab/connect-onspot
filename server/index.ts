@@ -10,6 +10,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupAuth } from "./replitAuth";
 import { ogMiddleware } from "./ogMiddleware";
 import { query } from "./db";
+import { legacyAppRedirect } from "./lib/legacyAppRedirect";
 
 // Extend Request interface to include requestId
 declare global {
@@ -21,6 +22,7 @@ declare global {
 }
 
 const app = express();
+app.use(legacyAppRedirect);
 const server = createServer(app);
 let applicationReady = false;
 

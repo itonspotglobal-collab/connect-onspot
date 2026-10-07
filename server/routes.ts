@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction, RequestHandler } from "e
 import { buildLedgerCurrencySummary, ledgerCurrencySummarySql } from "./services/ledgerCurrencySummary";
 import sanitizeHtml from "sanitize-html";
 import { extendOfferExpiration } from "./services/offerExpirationService";
+import { buildAppUrl, buildTalentApplicationsUrl, buildClientApplicationUrl } from "./lib/appUrl";
 
 // ── Profile rich-text sanitizer (server-side) ─────────────────────────────────
 // Mirrors the client-side DOMPurify allowlist in ProfileRichTextRenderer.tsx.
@@ -1424,7 +1425,7 @@ async function fireInvitationEmail(opts: {
     // mail or depends on Microsoft Graph credentials.
     if (process.env.INVITATION_EMAIL_TRANSPORT === "noop") return { success: true };
     const { sendApplicantEmail } = await import("./services/microsoftGraphEmailService.ts");
-    const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout, TALENT_APPLICATIONS_URL } =
+    const { buildEmailContext, renderApplicantEmail, renderBrandedEmailLayout } =
       await import("./services/emailVariableResolver.ts");
 
     const safeName  = escHtml(opts.talentName);
@@ -1475,7 +1476,7 @@ async function fireInvitationEmail(opts: {
         email: opts.talentEmail,
         jobTitle: opts.jobTitle,
         jobDescription: opts.jobDescription,
-        portalUrlOverride: TALENT_APPLICATIONS_URL,
+        portalUrlOverride: buildTalentApplicationsUrl({ applicationId: opts.submissionId }),
       }),
     );
     if (rendered.unresolvedKeys.length > 0) {
@@ -9720,6 +9721,7 @@ export async function registerRoutes(
         // Transactional email (fire-and-forget — failure never rolls back the scheduling)
         if (isDirectConfirm) {
           sendInterviewConfirmedEmail({
+            interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id,
             talentUserId: submission.talent_id as string,
             jobTitle: submission.job_title,
             confirmedTime: directConfirmedTime!,
@@ -9731,6 +9733,7 @@ export async function registerRoutes(
           }).catch((e: any) => console.error("admin interview confirmation email failed:", e));
         } else {
           sendInterviewProposalEmail({
+            interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id,
             talentUserId: submission.talent_id as string,
             jobTitle: submission.job_title,
             proposedTimes: normalizedProposedTimes,
@@ -9973,6 +9976,7 @@ export async function registerRoutes(
               ? Number(durationMinutes)
               : (interview.duration_minutes ?? null);
           sendInterviewConfirmedEmail({
+            interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id,
             talentUserId: interview.talent_id as string,
             jobTitle: interview.job_title,
             confirmedTime: confirmedIsoForTx,
@@ -9989,6 +9993,7 @@ export async function registerRoutes(
       // the client is always notified even when no talent user is linked yet.
       if (notifType === "interview_rescheduled") {
         sendInterviewRescheduledEmail({
+          applicationId: interview.submission_id, jobId: interview.job_id,
           talentUserId: interview.talent_id ? String(interview.talent_id) : null,
           clientUserId: interview.client_id ?? null,
           jobTitle: interview.job_title,
@@ -10003,6 +10008,7 @@ export async function registerRoutes(
       }
       if (notifType === "interview_cancelled") {
         sendInterviewCancelledEmail({
+          applicationId: interview.submission_id, jobId: interview.job_id,
           talentUserId: interview.talent_id ? String(interview.talent_id) : null,
           clientUserId: interview.client_id ?? null,
           jobTitle: interview.job_title,
@@ -15352,21 +15358,10 @@ export async function registerRoutes(
     let emailStatus = "failed";
     let emailError = "Invitation email could not be sent.";
     try {
-      const rawBase =
-        process.env.PUBLIC_APP_URL ??
-        process.env.APP_URL ??
-        process.env.PUBLIC_BASE_URL ??
-        (process.env.REPLIT_DOMAINS
-          ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-          : null);
-      if (!rawBase) {
-        throw new Error("No public application URL is configured.");
-      }
-      const baseUrl = rawBase.replace(/\/$/, "");
       // Use tokenized URL when available; fall back to generic sign-in URL.
       const signInUrl = invitationRawToken
-        ? `${baseUrl}/organization-invite/${encodeURIComponent(invitationRawToken)}`
-        : `${baseUrl}/sign-in?portal=client&email=${encodeURIComponent(invitation.email)}&returnTo=${encodeURIComponent("/organization-invitations")}`;
+        ? buildAppUrl(`/organization-invite/${encodeURIComponent(invitationRawToken)}`)
+        : buildAppUrl(`/sign-in?portal=client&email=${encodeURIComponent(invitation.email)}&returnTo=${encodeURIComponent("/organization-invitations")}`);
       const { isEmailServiceConfigured, sendOrganizationInvitationEmail } =
         await import("./services/microsoftGraphEmailService.ts");
       if (!isEmailServiceConfigured()) {
@@ -18407,12 +18402,13 @@ export async function registerRoutes(
 
       // Fire-and-forget confirmation emails when talent accepts — failure never rolls back the accept
       if (confirmedEmailParams) {
-        sendInterviewConfirmedEmail(confirmedEmailParams).catch((e: any) =>
+        sendInterviewConfirmedEmail({ ...confirmedEmailParams, interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id }).catch((e: any) =>
           console.error("talent accept interview confirmation email failed:", e),
         );
         // Also notify the client that the talent confirmed a time
         if (interview.client_id) {
           sendInterviewConfirmedEmailToClient({
+            interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id,
             clientUserId: interview.client_id,
             talentUserId: confirmedEmailParams.talentUserId,
             jobTitle: confirmedEmailParams.jobTitle,
@@ -18431,6 +18427,7 @@ export async function registerRoutes(
       // Fire-and-forget counter-proposal email to client when talent counters
       if (action === "counter" && interview.client_id && counterProposedTimes) {
         sendInterviewCounterEmailToClient({
+          interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id,
           clientUserId: interview.client_id,
           talentUserId: userId,
           jobTitle: interview.job_title,
@@ -20578,6 +20575,7 @@ export async function registerRoutes(
 
         // Transactional email to talent (fire-and-forget — failure never rolls back the scheduling)
         sendInterviewProposalEmail({
+          interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id,
           talentUserId: submission.talent_id as string,
           jobTitle: submission.job_title,
           proposedTimes: normalizedProposedTimes,
@@ -21102,6 +21100,7 @@ export async function registerRoutes(
 
         if (status === "confirmed" && talentUserId && confirmedTimeForHistory && confirmedTimeZoneForHistory) {
           sendInterviewConfirmedEmail({
+            interviewId: interview.id, applicationId: interview.submission_id, jobId: interview.job_id,
             talentUserId,
             jobTitle,
             confirmedTime: confirmedTimeForHistory,
@@ -21114,6 +21113,7 @@ export async function registerRoutes(
         } else if ((status === "rescheduled" || proposalTimesForHistory) && talentUserId) {
          // Email: talent gets rescheduled proposal; client initiated so no client email
          sendInterviewRescheduledEmail({
+           applicationId: interview.submission_id, jobId: interview.job_id,
            talentUserId,
            clientUserId: null,
            jobTitle,
@@ -21136,6 +21136,7 @@ export async function registerRoutes(
          }).catch((e: any) => console.error("interview_cancelled notification failed:", e));
          // Email: talent is notified; client already knows they cancelled
          sendInterviewCancelledEmail({
+           applicationId: interview.submission_id, jobId: interview.job_id,
            talentUserId,
            clientUserId: null,
            jobTitle,
@@ -21539,6 +21540,7 @@ export async function registerRoutes(
               applicantName: submission.applicant_name,
               email: talentEmail,
               jobTitle: submission.job_title,
+              portalUrlOverride: buildTalentApplicationsUrl({ offerId: offer.id }),
             }),
           );
           if (rendered.unresolvedKeys.length > 0) {
@@ -22069,19 +22071,7 @@ export async function registerRoutes(
               return;
             }
 
-            const rawBase =
-              process.env.PUBLIC_APP_URL ??
-              process.env.APP_URL ??
-              process.env.PUBLIC_BASE_URL ??
-              (process.env.REPLIT_DOMAINS
-                ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-                : null);
-            if (!rawBase) {
-              console.warn("PATCH /api/talent/offers/:id/respond — no base URL configured; skipping client email");
-              return;
-            }
-            const baseUrl = rawBase.replace(/\/$/, "");
-            const pipelineUrl = `${baseUrl}/hiring-pipeline`;
+            const pipelineUrl = buildClientApplicationUrl({ applicationId: offer.submission_id });
 
             const jobTitle: string = offer.job_title ?? "the role";
             const decisionVerb = action === "accept" ? "accepted" : action === "counter" ? "countered" : "declined";

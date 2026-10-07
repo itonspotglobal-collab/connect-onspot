@@ -15,6 +15,7 @@ import { AlertCircle, ArrowLeft, CheckCircle2, Download, FileText, Loader2, Lock
 import { useAuth } from "@/contexts/AuthContext";
 import { fallbackContractsLocation, getContractListLocation, getTrustedPreviousLocation, getContractNavigationDocumentId } from "@/lib/contractNavigation";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
+import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 
 export interface ContractRow {
   id: string;
@@ -709,9 +710,9 @@ export default function ContractsPage() {
   const [, navigate] = useLocation();
   const search = useSearch();
   const { user } = useAuth();
-  const params = new URLSearchParams(search);
-  const offerId = params.get("offerId");
-  const selectedId = params.get("id");
+  const resourceIds = getDeepLinkResourceIds(search);
+  const offerId = resourceIds.offerId;
+  const selectedId = resourceIds.contractId;
   const [prepareOpen, setPrepareOpen] = useState(Boolean(offerId));
   const [prepareOfferId, setPrepareOfferId] = useState<string | null>(offerId);
   const qc = useQueryClient();
@@ -818,7 +819,9 @@ export default function ContractsPage() {
           : <Card className="border-dashed"><CardContent className="flex flex-col items-center px-6 py-16 text-center"><div className="rounded-full bg-indigo-50 p-4"><FileText className="h-7 w-7 text-indigo-600" /></div><h2 className="mt-4 text-lg font-semibold text-slate-900">No contracts yet</h2><p className="mt-1 max-w-md text-sm text-slate-500">Contracts appear here after an offer is accepted and an authorized party prepares the PDF.</p></CardContent></Card>}
       </div>
       {prepareOfferId && <PrepareContractDialog offerId={prepareOfferId} open={prepareOpen} onOpenChange={closePrepare} onCreated={onCreated} />}
-      <ContractDetailDialog id={selected?.id || (selectedId && isLoading ? selectedId : null)} open={Boolean(selectedId)} onOpenChange={(open) => { if (!open) returnToContractsList(); }} onBackToList={returnToContractsList} />
+      {/* Fetch the requested private contract directly even when list pagination/cache omits it.
+          GET /api/contracts/:id remains the authorization authority. */}
+      <ContractDetailDialog id={selectedId} open={Boolean(selectedId)} onOpenChange={(open) => { if (!open) returnToContractsList(); }} onBackToList={returnToContractsList} />
     </main>
   );
 }

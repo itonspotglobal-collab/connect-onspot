@@ -811,3 +811,17 @@ mtime_ms = 1791342722653
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/1683a512-f521-477d-8607-4dc2296beec7/c0ec7d77-6e54-4bce-b299-abdfd8772498"
 storage_version_token = "1791342787451285"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "_rMZr_-9MShYvmaucvOk6"
+uri = "file://docs/email-deep-link-report.md"
+type = "text"
+title = "OnSpot email deep-link audit and rollout report"
+description = "Root causes, canonical URL configuration, transactional CTA inventory, authentication safeguards, test results, and pending production/email-client UAT."
+logical_id = "7b026301-ce19-4c25-a299-e4542a440cdb"
+content_hash = "sha256:a4b9844a89ad807c0bd321d014e276fec7be8c00cc4a1a9af8d52c0a3d855efe"
+size = 17476
+mtime_ms = 1791347570228
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/7b026301-ce19-4c25-a299-e4542a440cdb/5c72ac45-da0c-4531-9553-54cde81562dd"
+storage_version_token = "1791347718330698"
+content_type = "text/markdown"

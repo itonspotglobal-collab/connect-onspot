@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, randomInt, randomUUID, timingSafeE
 import { z } from "zod";
 import { validatePasswordStrength } from "../../shared/passwordPolicy";
 import { hasEmailOwnership } from "../lib/emailOwnership";
+import { getSafeReturnTo } from "../../shared/internalRedirect";
 
 export const signupDetailsSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -46,8 +47,7 @@ export function signupCodeHmac(key: string, row: any, code: string): string {
   ])).digest("hex");
 }
 export function safeSignupReturnTo(value?: string): string | null {
-  if (!value || !/^\/(?!\/)/.test(value) || /[\\\r\n]/.test(value)) return null;
-  return value;
+  return getSafeReturnTo(value);
 }
 const seconds = (date: Date, now: Date) => Math.max(1, Math.ceil((date.getTime() - now.getTime()) / 1000));
 

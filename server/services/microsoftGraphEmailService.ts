@@ -1,3 +1,4 @@
+import { canonicalizeApplicationEmailLinks } from "../lib/appUrl";
 /**
  * Microsoft Graph Email Service
  * Sends transactional emails via Microsoft Graph API using client credentials OAuth.
@@ -220,7 +221,7 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
       subject: opts.subject,
       body: {
         contentType: "HTML",
-        content: opts.bodyHtml,
+        content: canonicalizeApplicationEmailLinks(opts.bodyHtml),
       },
       toRecipients: [
         {

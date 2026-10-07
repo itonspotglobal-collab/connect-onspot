@@ -113,6 +113,7 @@ import PortalLogin from "@/pages/PortalLogin";
 import PortalSignupPage from "@/pages/PortalSignupPage";
 import { PortalChooser } from "@/components/PortalChooser";
 import { installContractNavigationTracker } from "@/lib/contractNavigation";
+import { buildLoginReturnUrl } from "@/lib/returnTo";
 
 // Scroll to the top of the page whenever the route changes
 import Messages from "@/pages/Messages";
@@ -356,12 +357,14 @@ function ContractsRoute() {
   const talentAuth = loadTalentAuth();
   const [, navigate] = useLocation();
   useEffect(() => {
-    if (!isLoading && !user && !talentAuth) navigate("/login");
+    if (!isLoading && !user && !talentAuth) {
+      navigate(buildLoginReturnUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`), { replace: true });
+    }
   }, [isLoading, user, talentAuth, navigate]);
   if (isLoading) return null;
   if (user?.role === "client") return <ClientRouter />;
   if (user?.role === "admin") return <AdminProtectedRoute><ContractsPage /></AdminProtectedRoute>;
-  if (user?.role === "talent" || talentAuth) return <TalentRouter />;
+  if (user?.role === "talent" || (!user && talentAuth)) return <TalentRouter />;
   return null;
 }
 
@@ -459,7 +462,9 @@ function TalentRouter() {
     if (user && user.role !== "talent") {
       navigate(user.role === "client" ? "/hire-talent" : "/");
     } else if (!user && !talentOnlyAuth) {
-      navigate("/get-hired");
+      navigate(buildLoginReturnUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`, {
+        loginPath: "/portal-login", portal: "talent",
+      }), { replace: true });
     }
   }, [isLoading, user, talentOnlyAuth, navigate]);
 
@@ -522,7 +527,7 @@ function SettingsRoute() {
   // talent-only session either.
   useEffect(() => {
     if (!isLoading && !user && !talentOnlyAuth) {
-      navigate("/login");
+      navigate(buildLoginReturnUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`), { replace: true });
     }
   }, [isLoading, user, talentOnlyAuth]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -540,7 +545,7 @@ function SettingsRoute() {
   }
 
   // Talent-only session (separate from JWT auth) — render directly.
-  if (talentOnlyAuth) {
+  if (!user && talentOnlyAuth) {
     return (
       <div className="min-h-screen bg-background">
         <ProfileSettings />

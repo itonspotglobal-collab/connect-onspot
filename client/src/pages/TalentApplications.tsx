@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect, useRef } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { trackEvent } from "@/lib/analytics";
@@ -26,6 +26,12 @@ import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { getStatusMeta, ACTIVE_STATUSES, COMPLETED_STATUSES } from "@/lib/applicationStatus";
 import { formatInterviewTime } from "@/lib/formatInterviewTime";
 import { formatCurrencyAmount } from "@/lib/jobUtils";
+import { buildLoginReturnUrl } from "@/lib/returnTo";
+import {
+  getDeepLinkResourceIds,
+  matchesRequestedInterview,
+  shouldOpenTalentApplicationDrawer,
+} from "@/lib/deepLinks";
 import { bucketTalentOffers, isTalentOfferExpired } from "@/components/talentOfferState";
 import { getTalentHistoryTimeline } from "@/components/talentApplicationHistory";
 import {
@@ -731,12 +737,20 @@ function OfferCard({ offer, isPending, errorMessages, respondingId, onRespond, o
         {offer.status === "sent" && isExpired && (
           <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">This offer has expired. Ask the client to renew it before responding.</p>
         )}
+        {!(isPending && !isExpired && offer.status === "sent" && offer.proposerRole !== "talent") && (
+          <Button size="sm" variant="outline" className="mt-3 h-8 rounded-full text-xs" onClick={() => onReview(offer)}>
+            View offer details
+          </Button>
+        )}
       </div>
     );
 }
 
-function OffersSection({ refetchApplications }: { refetchApplications: () => void }) {
+function OffersSection({ refetchApplications, requestedOfferId }: { refetchApplications: () => void; requestedOfferId: string | null }) {
   const auth = loadTalentAuth();
+  // Offer endpoints explicitly require the candidate-scoped Talent JWT; the
+  // main application JWT is not interchangeable and must never widen access.
+  const authToken = auth?.token || "";
   const qc = useQueryClient();
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
@@ -749,12 +763,39 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
     return () => window.clearInterval(timer);
   }, []);
 
-  const { data: offers = [], refetch: refetchOffers, isLoading, isError, error } = useQuery<TalentOffer[]>({
-    queryKey: ["talent-offers"],
+  const { data: linkedOffer, isLoading: linkedOfferLoading, isError: linkedOfferError, refetch: refetchLinkedOffer } = useQuery<TalentOffer>({
+    queryKey: ["talent-offer", authToken, requestedOfferId],
     queryFn: async () => {
-      if (!auth) return [];
+      const res = await fetch(`/api/talent/offers/${encodeURIComponent(requestedOfferId!)}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || body.error || `Could not load offer (${res.status})`);
+      }
+      return res.json();
+    },
+    enabled: !!requestedOfferId && !!authToken,
+    refetchInterval: (query) => {
+      const offer = query.state.data;
+      return document.visibilityState === "visible" && offer?.status === "sent" && !isTalentOfferExpired(offer) ? 30_000 : false;
+    },
+    refetchOnWindowFocus: true,
+  });
+  const openedDeepOfferId = useRef<string | null>(null);
+  useEffect(() => {
+    if (linkedOffer && openedDeepOfferId.current !== linkedOffer.id) {
+      openedDeepOfferId.current = linkedOffer.id;
+      setReviewOffer(linkedOffer);
+    }
+  }, [linkedOffer]);
+
+  const { data: offers = [], refetch: refetchOffers, isLoading, isError, error } = useQuery<TalentOffer[]>({
+    queryKey: ["talent-offers", authToken],
+    queryFn: async () => {
+      if (!authToken) return [];
       const res = await fetch("/api/talent/offers", {
-        headers: { Authorization: `Bearer ${auth.token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -763,7 +804,8 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
       return res.json();
     },
     staleTime: 30_000,
-    refetchInterval: 60_000,
+    refetchInterval: (query) => document.visibilityState === "visible" &&
+      (query.state.data ?? []).some((offer) => offer.status === "sent" && !isTalentOfferExpired(offer)) ? 60_000 : false,
     refetchOnWindowFocus: "always",
   });
 
@@ -773,7 +815,7 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${auth?.token ?? ""}`,
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({ action, ...(payload ?? {}) }),
       });
@@ -810,6 +852,9 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
     },
   });
 
+  if (requestedOfferId && !authToken) return <div role="alert" className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This offer is unavailable. Sign in to the Talent Portal to view an owned offer.</div>;
+  if (requestedOfferId && linkedOfferLoading) return <div className="mb-8 h-24 animate-pulse rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900" aria-label="Loading requested offer" />;
+  if (requestedOfferId && linkedOfferError) return <div role="alert" className="mb-8 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><span>This offer is unavailable or is not associated with your account.</span><Button size="sm" variant="outline" onClick={() => refetchLinkedOffer()}>Retry</Button></div>;
   if (isLoading) return <div className="mb-8 h-20 animate-pulse rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900" />;
   if (isError) return <div role="alert" className="mb-8 flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800"><span>{error instanceof Error ? error.message : "Offers could not be loaded."}</span><Button size="sm" variant="outline" onClick={() => refetchOffers()}>Retry</Button></div>;
   if (offers.length === 0) return null;
@@ -893,7 +938,12 @@ function OffersSection({ refetchApplications }: { refetchApplications: () => voi
           {reviewOffer && <div className="space-y-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Position</p>
-              <p className="mt-1 font-semibold text-slate-900">{reviewOffer.job.title}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-slate-900">{reviewOffer.job.title}</p>
+                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold capitalize text-slate-600">
+                  {isExpiredNow(reviewOffer) ? "Expired" : reviewOffer.status.replaceAll("_", " ")}
+                </span>
+              </div>
               <p className="text-sm text-slate-600">{reviewOffer.job.company}{reviewOffer.job.location ? ` · ${reviewOffer.job.location}` : ""}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -1138,18 +1188,20 @@ interface TalentInterview {
   nudge: boolean;
 }
 
-function InterviewsSection({ refetchApplications }: { refetchApplications: () => void }) {
+function InterviewsSection({ refetchApplications, requestedInterviewId }: { refetchApplications: () => void; requestedInterviewId: string | null }) {
   const auth = loadTalentAuth();
+  const authToken = auth?.token || "";
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [counterTimes, setCounterTimes] = useState<Record<string, string>>({});
   const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
   const [selectedInterview, setSelectedInterview] = useState<TalentInterview | null>(null);
+  const openedRequestedInterviewId = useRef<string | null>(null);
   const { data: interviews = [], isLoading, refetch } = useQuery<TalentInterview[]>({
-    queryKey: ["talent-interviews"],
+    queryKey: ["talent-interviews", authToken],
     queryFn: async () => {
-      if (!auth) return [];
+      if (!authToken) return [];
       const res = await fetch("/api/talent/interviews", {
-        headers: { Authorization: `Bearer ${auth.token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       if (!res.ok) return [];
       return res.json();
@@ -1166,7 +1218,7 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
         : { action, ...(selectedTime ? { selectedTime: new Date(selectedTime).toISOString() } : {}) };
       const res = await fetch(`/api/talent/interviews/${interview.id}/respond`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth?.token ?? ""}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
@@ -1183,9 +1235,22 @@ function InterviewsSection({ refetchApplications }: { refetchApplications: () =>
     (i) => i.status === "proposed" || i.status === "rescheduled" || i.status === "confirmed",
   );
   const cancelledInterviews = interviews.filter((i) => i.status === "cancelled");
-  if (isLoading || interviews.length === 0) return null;
+  const requestedApplicationId = getDeepLinkResourceIds(window.location.search).applicationId;
+  useEffect(() => {
+    if (!requestedInterviewId || openedRequestedInterviewId.current === requestedInterviewId) return;
+    const interview = interviews.find((item) =>
+      matchesRequestedInterview(item, requestedInterviewId, requestedApplicationId));
+    if (interview) {
+      openedRequestedInterviewId.current = requestedInterviewId;
+      setSelectedInterview(interview);
+    }
+  }, [interviews, requestedInterviewId, requestedApplicationId]);
+  const requestedInterviewMissing = !!requestedInterviewId && !isLoading && !interviews.some((item) =>
+    matchesRequestedInterview(item, requestedInterviewId, requestedApplicationId));
+  if (isLoading || (interviews.length === 0 && !requestedInterviewId)) return null;
   return (
     <div className="mb-8">
+      {requestedInterviewMissing && <p role="alert" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This interview is unavailable or is not associated with your account.</p>}
       <div className="flex items-center gap-2 mb-3">
         <Calendar className="h-4 w-4 text-indigo-500" />
         <h2 className="text-base font-semibold text-slate-900 dark:text-white">Interviews</h2>
@@ -1359,12 +1424,19 @@ interface TalentInvitation {
   description: string | null;
 }
 
-function InvitationsSection({ refetchApplications }: { refetchApplications: () => void }) {
+function InvitationsSection({
+  refetchApplications,
+  requestedInvitationId,
+}: {
+  refetchApplications: () => void;
+  requestedInvitationId: string | null;
+}) {
   const auth = loadTalentAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const invitationCardRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: invitations = [], refetch: refetchInvitations, isLoading } = useQuery<TalentInvitation[]>({
+  const { data: invitations = [], refetch: refetchInvitations, isLoading, isError } = useQuery<TalentInvitation[]>({
     queryKey: ["talent-invitations"],
     queryFn: async () => {
       if (!auth) return [];
@@ -1376,6 +1448,14 @@ function InvitationsSection({ refetchApplications }: { refetchApplications: () =
     },
     staleTime: 30_000,
   });
+  const requestedInvitation = invitations.find((invite) => invite.id === requestedInvitationId);
+  useEffect(() => {
+    if (!requestedInvitation) return;
+    requestAnimationFrame(() => {
+      invitationCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      invitationCardRef.current?.focus({ preventScroll: true });
+    });
+  }, [requestedInvitation?.id]);
 
   const respondMutation = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: "accept" | "decline" }) => {
@@ -1410,7 +1490,15 @@ function InvitationsSection({ refetchApplications }: { refetchApplications: () =
     },
   });
 
-  if (isLoading || invitations.length === 0) return null;
+  if (isLoading) return null;
+  if (requestedInvitationId && (!requestedInvitation || isError)) {
+    return (
+      <p role="alert" className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        This invitation is no longer available or is not associated with your account.
+      </p>
+    );
+  }
+  if (invitations.length === 0) return null;
 
   return (
     <div className="mb-8">
@@ -1431,6 +1519,9 @@ function InvitationsSection({ refetchApplications }: { refetchApplications: () =
         {invitations.map((invite) => (
           <div
             key={invite.id}
+            ref={requestedInvitation?.id === invite.id ? invitationCardRef : undefined}
+            tabIndex={requestedInvitation?.id === invite.id ? -1 : undefined}
+            aria-label={requestedInvitation?.id === invite.id ? `Requested invitation for ${invite.jobTitle}` : undefined}
             className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 dark:border-indigo-800/40 dark:bg-indigo-950/20"
           >
             <div className="flex items-start justify-between gap-3">
@@ -1495,7 +1586,10 @@ function InvitationsSection({ refetchApplications }: { refetchApplications: () =
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function TalentApplications() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  const search = useSearch();
+  const { applicationId: requestedApplicationId, offerId: requestedOfferId, interviewId: requestedInterviewId } =
+    getDeepLinkResourceIds(search);
   const { user, isLoading: authLoading } = useAuth();
   const talentAuth = loadTalentAuth();
   const talentSessionId = user?.role === "talent" ? user.id : talentAuth?.candidateId ?? null;
@@ -1503,8 +1597,21 @@ export default function TalentApplications() {
   const unreadMessagesCount = useUnreadMessagesCount();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [drawerApp, setDrawerApp] = useState<TalentApplication | null>(null);
+  const openedApplicationId = useRef<string | null>(null);
 
   const { data: applications, isLoading, isError, refetch } = useTalentApplications();
+  const requestedApplication = applications?.find((app) => app.id === requestedApplicationId);
+  useEffect(() => {
+    // Client-created invitations have separate, inline Accept/Decline actions;
+    // opening the generic submission drawer would cover those controls.
+    if (requestedApplication && shouldOpenTalentApplicationDrawer(
+      requestedApplication.applicationStatus,
+      !!requestedInterviewId,
+    ) && openedApplicationId.current !== requestedApplication.id) {
+      openedApplicationId.current = requestedApplication.id;
+      setDrawerApp(requestedApplication);
+    }
+  }, [requestedApplication, requestedInterviewId]);
   const { data: messageThreadData } = useQuery<{
     threads: Array<{ jobId: string | null; unreadCount: number }>;
   }>({
@@ -1528,9 +1635,11 @@ export default function TalentApplications() {
 
   useEffect(() => {
     if (!authLoading && !hasTalentSession) {
-      navigate("/portal-login?portal=talent&returnTo=/my-applications");
+      navigate(buildLoginReturnUrl(`${location}${window.location.search}${window.location.hash}`, {
+        loginPath: "/portal-login", portal: "talent",
+      }));
     }
-  }, [authLoading, hasTalentSession, navigate]);
+  }, [authLoading, hasTalentSession, navigate, location]);
 
   if (authLoading) {
     return (
@@ -1548,6 +1657,7 @@ export default function TalentApplications() {
   }
 
   const apps = applications ?? [];
+  const deepLinkResourceNotFound = !!requestedApplicationId && !isLoading && !requestedApplication;
   const unreadByJobId = new Map(
     (messageThreadData?.threads ?? [])
       .filter((thread) => thread.jobId)
@@ -1577,6 +1687,11 @@ export default function TalentApplications() {
       <TopNavigation />
 
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-8 md:px-6">
+        {deepLinkResourceNotFound && (
+          <div role="alert" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            This application or interview is unavailable, or it is not associated with your account.
+          </div>
+        )}
         {/* Page header */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
@@ -1737,13 +1852,16 @@ export default function TalentApplications() {
         </div>
 
         {/* Interviews — schedule negotiation and confirmed meeting details */}
-        <InterviewsSection refetchApplications={refetch} />
+        <InterviewsSection refetchApplications={refetch} requestedInterviewId={requestedInterviewId} />
 
         {/* Offers — rate/engagement offers from clients that talent can accept, decline, or counter */}
-        <OffersSection refetchApplications={refetch} />
+        <OffersSection refetchApplications={refetch} requestedOfferId={requestedOfferId} />
 
         {/* Role Invitations — client-initiated invites the talent can accept/decline */}
-        <InvitationsSection refetchApplications={refetch} />
+        <InvitationsSection
+          refetchApplications={refetch}
+          requestedInvitationId={requestedApplication?.applicationStatus === "invited" ? requestedApplicationId : null}
+        />
 
         {/* Matched Jobs — scored matches for this talent */}
         <div className="mb-8" id="matched-jobs">

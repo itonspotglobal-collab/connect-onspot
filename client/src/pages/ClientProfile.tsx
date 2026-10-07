@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLocation, Link } from "wouter";
+import { useLocation, Link, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +78,7 @@ import { ClientJobTalentSearchDialog } from "@/components/ClientJobTalentSearchD
 import { JobRichText } from "@/components/JobRichText";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
+import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -156,12 +157,14 @@ interface OfferRecord {
 }
 function ViewSubmissionModal({
   submission,
+  requestedInterviewId,
   onClose,
   onStatusChange,
   onExtendOffer,
   nameRevealThreshold = "submitted",
 }: {
   submission: JobSubmission;
+  requestedInterviewId: string | null;
   onClose: () => void;
   onStatusChange: (id: string, status: string) => void;
   onExtendOffer: (sub: JobSubmission) => void;
@@ -177,13 +180,13 @@ function ViewSubmissionModal({
     queryKey: ["/api/client/job-submissions", submission.id, "status-change-request"],
     queryFn: async () => (await apiRequest("GET", `/api/client/job-submissions/${submission.id}/status-change-request`)).json(),
   });
-  const { data: interviewRows = [], refetch: refetchInterviews } = useQuery<any[]>({
+  const { data: interviewRows = [], isLoading: interviewRowsLoading, refetch: refetchInterviews } = useQuery<any[]>({
     queryKey: ["/api/client/interviews", submission.id],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/client/interviews?submissionId=${submission.id}`);
       return res.ok ? res.json() : [];
     },
-    enabled: Boolean(submission.interviewId),
+    enabled: Boolean(submission.interviewId || requestedInterviewId),
   });
   const { data: submissionOffers = [] } = useQuery<OfferRecord[]>({
     queryKey: ["/api/client/offers", submission.id],
@@ -193,9 +196,17 @@ function ViewSubmissionModal({
   const acceptedOfferId = submission.acceptedOfferId || submissionOffers.find((offer) => offer.status === "accepted")?.id || null;
   const [meetingLinkDraft, setMeetingLinkDraft] = useState("");
   const [interviewBusy, setInterviewBusy] = useState(false);
-  const currentInterview = interviewRows.find((row: any) => row.id === submission.interviewId);
+  const requestedInterview = requestedInterviewId
+    ? interviewRows.find((row: any) => row.id === requestedInterviewId)
+    : null;
+  const currentInterview = requestedInterviewId
+    ? requestedInterview
+    : interviewRows.find((row: any) => row.id === submission.interviewId);
+  const requestedInterviewNotFound = !!requestedInterviewId && !interviewRowsLoading && !requestedInterview;
+  const requestedInterviewIsHistorical = !!requestedInterviewId &&
+    requestedInterviewId !== submission.interviewId && !!requestedInterview;
   const respondToInterview = async (payload: Record<string, unknown>) => {
-    const interviewId = submission.interviewId;
+    const interviewId = currentInterview?.id;
     if (!interviewId) return;
     setInterviewBusy(true);
     try {
@@ -302,14 +313,27 @@ function ViewSubmissionModal({
           )}
 
            {/* Interview coordination */}
-           {submission.interviewId ? (
+            {submission.interviewId || requestedInterviewId ? (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 dark:border-indigo-800/40 dark:bg-indigo-950/20">
+               {requestedInterviewNotFound ? (
+                 <p role="alert" className="text-sm text-amber-800 dark:text-amber-300">
+                   This interview is unavailable or is not associated with this application and your account.
+                 </p>
+               ) : interviewRowsLoading && requestedInterviewId ? (
+                 <p className="text-sm text-slate-500">Loading requested interview…</p>
+               ) : (
+               <>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Initial interview</p>
+                 <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                   {requestedInterviewId ? `Interview round ${currentInterview?.round_number ?? currentInterview?.roundNumber ?? ""}` : "Initial interview"}
+                 </p>
                 <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold capitalize text-indigo-700 dark:bg-slate-800 dark:text-indigo-300">
                    {currentInterview?.status ?? submission.interviewStatus ?? "proposed"}
                 </span>
               </div>
+               {requestedInterviewIsHistorical && (
+                 <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">This is an earlier interview round. It is shown read-only because a newer round is current.</p>
+               )}
               {(currentInterview?.confirmed_time ?? submission.confirmedTime) ? (
                 <p className="mt-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                   Confirmed: {formatInterviewTime(
@@ -328,7 +352,8 @@ function ViewSubmissionModal({
               )}
               {(() => {
                 const interview = currentInterview;
-                const canRespond = interview && ["proposed", "rescheduled"].includes(interview.status) && interview.current_proposal_owner === "client";
+                 const canRespond = interview && !requestedInterviewIsHistorical &&
+                   ["proposed", "rescheduled"].includes(interview.status) && interview.current_proposal_owner === "client";
                 if (!interview || !canRespond) return null;
                 return (
                   <div className="mt-3 space-y-2">
@@ -344,16 +369,18 @@ function ViewSubmissionModal({
                   </div>
                 );
               })()}
-              {(currentInterview?.status ?? submission.interviewStatus) === "confirmed" && (
+               {!requestedInterviewIsHistorical && (currentInterview?.status ?? submission.interviewStatus) === "confirmed" && (
                 <div className="mt-3 flex gap-2">
                   <Input aria-label="Meeting link" value={meetingLinkDraft || submission.meetingLink || ""} onChange={(event) => setMeetingLinkDraft(event.target.value)} placeholder="Add a meeting link" className="h-9 text-xs" />
                   <Button size="sm" variant="outline" className="h-9 text-xs" disabled={interviewBusy || !meetingLinkDraft} onClick={() => respondToInterview({ meetingLink: meetingLinkDraft })}>Save link</Button>
                 </div>
               )}
-              {submission.meetingLink && (currentInterview?.status ?? submission.interviewStatus) === "confirmed" && (
-                <a href={submission.meetingLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"><ExternalLink className="h-3 w-3" /> Open meeting link</a>
+               {(currentInterview?.meeting_link ?? submission.meetingLink) && (currentInterview?.status ?? submission.interviewStatus) === "confirmed" && (
+                 <a href={currentInterview?.meeting_link ?? submission.meetingLink ?? undefined} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"><ExternalLink className="h-3 w-3" /> Open meeting link</a>
               )}
               {submission.interviewNudge && <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-400">Several time proposals have been exchanged. Consider the talent’s suggested availability.</p>}
+               </>
+               )}
             </div>
            ) : (
              <InterviewSection
@@ -808,6 +835,7 @@ function ProfileField({
 export default function ClientProfile() {
   const { user, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { toast } = useToast();
   const unreadMessagesCount = useUnreadMessagesCount();
 
@@ -817,6 +845,7 @@ export default function ClientProfile() {
   const [talentSearchJob, setTalentSearchJob] = useState<{ id: string; title: string } | null>(null);
   const [viewingSubmission, setViewingSubmission] = useState<JobSubmission | null>(null);
   const [extendingOfferFor, setExtendingOfferFor] = useState<JobSubmission | null>(null);
+  const { applicationId: requestedApplicationId, interviewId: requestedInterviewId } = getDeepLinkResourceIds(search);
 
   // ─── Redirect if not client ───────────────────────────────────────────────
   if (!isAuthenticated || user?.role !== "client") {
@@ -1300,6 +1329,8 @@ export default function ClientProfile() {
         <JobSubmissionsSection
           onView={(sub) => setViewingSubmission(sub)}
           onExtendOffer={(sub) => setExtendingOfferFor(sub)}
+          requestedApplicationId={requestedApplicationId}
+          requestedInterviewId={requestedInterviewId}
           nameRevealThreshold={nameRevealThreshold}
         />
 
@@ -1330,6 +1361,7 @@ export default function ClientProfile() {
       {viewingSubmission && (
         <ViewSubmissionModal
           submission={viewingSubmission}
+          requestedInterviewId={requestedInterviewId}
           onClose={() => setViewingSubmission(null)}
           onStatusChange={(id, status) =>
             setViewingSubmission((prev) => prev && prev.id === id ? { ...prev, status } : prev)
@@ -1358,10 +1390,14 @@ export default function ClientProfile() {
 function JobSubmissionsSection({
   onView,
   onExtendOffer,
+  requestedApplicationId,
+  requestedInterviewId,
   nameRevealThreshold = "submitted",
 }: {
   onView: (sub: JobSubmission) => void;
   onExtendOffer: (sub: JobSubmission) => void;
+  requestedApplicationId: string | null;
+  requestedInterviewId: string | null;
   nameRevealThreshold?: string;
 }) {
   const [, navigate] = useLocation();
@@ -1375,6 +1411,19 @@ function JobSubmissionsSection({
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
+  const onViewRef = useRef(onView);
+  onViewRef.current = onView;
+  const openedDeepLink = useRef<string | null>(null);
+  useEffect(() => {
+    if (!requestedApplicationId || isLoading || openedDeepLink.current === requestedApplicationId) return;
+    const submission = submissions.find((item) => item.id === requestedApplicationId);
+    if (submission) {
+      openedDeepLink.current = requestedApplicationId;
+      onViewRef.current(submission);
+    }
+  }, [requestedApplicationId, isLoading, submissions]);
+  const deepLinkUnavailable = !!requestedApplicationId && !isLoading &&
+    !submissions.some((item) => item.id === requestedApplicationId);
   const { data: messageThreadData } = useQuery<{
     threads: Array<{ jobId: string | null; unreadCount: number }>;
   }>({
@@ -1454,6 +1503,11 @@ function JobSubmissionsSection({
         </div>
       </div>
 
+      {deepLinkUnavailable && (
+        <p role="alert" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          This application or interview is unavailable, or is not associated with your account.
+        </p>
+      )}
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}

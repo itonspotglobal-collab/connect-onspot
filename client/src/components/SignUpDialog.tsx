@@ -22,9 +22,10 @@ import { PASSWORD_POLICY_HINT, validatePasswordStrength } from "@shared/password
 import { signupRetryDelayMs } from "@/lib/signupRetry";
 import { saveTalentAuth } from "@/components/TalentLoginModal";
 import { SignupEmailVerification } from "@/components/SignupEmailVerification";
-import { SignupPendingState, isSignupPending, signupStatus, safeSignupReturnTo as safeReturnPath } from "@/lib/signupVerification";
+import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import "./SignUpDialog.css";
+import { getSafeReturnTo } from "@shared/internalRedirect";
 
 type UserType = "client" | "talent" | null;
 type SignupStep = "user-type" | "signup";
@@ -151,7 +152,9 @@ export function SignUpDialog({
       setAccountCreated(true);
       return;
     }
-    const safeReturnTo = safeReturnPath(signupResponse.returnTo) ?? safeReturnPath(returnTo) ?? "/hire-talent";
+    const safeReturnTo = getSafeReturnTo(signupResponse.returnTo) ??
+      getSafeReturnTo(returnTo) ??
+      (accountType === "talent" ? "/get-hired" : "/hire-talent");
     const hasTalentSession = accountType !== "talent"
       || Boolean(signupResponse.talentToken && signupResponse.candidateId);
     if (signupResponse.token && signupResponse.user && hasTalentSession) {
@@ -168,7 +171,7 @@ export function SignUpDialog({
       toast({ title: signupResponse.accountCreated === true ? "Account created" : "Account verified", description: `Welcome to your OnSpot ${accountType} portal.` });
       setOpen(false);
       resetDialog();
-      window.location.href = accountType === "talent" ? (safeReturnPath(signupResponse.returnTo) ?? "/get-hired") : safeReturnTo;
+      window.location.replace(safeReturnTo);
     } else {
       setAccountCreated(true);
       showSignupError("Account created", "Automatic sign-in could not be completed. Use the sign-in link below to access your new account.");
@@ -233,7 +236,7 @@ export function SignUpDialog({
     setIsLoading(true);
     try {
       const signupData = {
-        returnTo: safeReturnPath(returnTo) ?? undefined,
+        returnTo: getSafeReturnTo(returnTo) ?? undefined,
         email: values.email,
         username: values.email.split("@")[0],
         password: values.password,
@@ -241,7 +244,7 @@ export function SignUpDialog({
         last_name: values.lastName,
         role: userType,
         ...(userType === "client" && { company: values.company }),
-        ...(returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? { returnTo } : {}),
+        ...(getSafeReturnTo(returnTo) ? { returnTo: getSafeReturnTo(returnTo)! } : {}),
       };
 
       const signupResponse = await authAPI.signup(signupData);

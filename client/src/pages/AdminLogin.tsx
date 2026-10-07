@@ -6,10 +6,12 @@ import { Eye, EyeOff, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
+import { getSafeReturnTo } from "@shared/internalRedirect";
 
 export default function AdminLogin() {
   const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const returnTo = getSafeReturnTo(new URLSearchParams(window.location.search).get("returnTo"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +21,7 @@ export default function AdminLogin() {
   // If already logged in as admin, go straight to dashboard
   useEffect(() => {
     if (!authLoading && isAuthenticated && user?.role === "admin") {
-      window.location.href = "/admin/dashboard";
+      window.location.replace(returnTo || "/admin/dashboard");
     }
   }, [authLoading, isAuthenticated, user]);
 
@@ -45,7 +47,7 @@ export default function AdminLogin() {
         // check server-side and will bounce non-admins to /login. We don't
         // read user.role here because the AuthContext state update is async
         // and the value may still be stale in this closure.
-        window.location.href = "/admin/dashboard";
+        window.location.replace(returnTo || "/admin/dashboard");
       } else {
         toast({
           title: "Login failed",

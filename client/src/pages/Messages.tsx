@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useRoute } from "wouter";
+import { useLocation, useRoute, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useInvalidateUnreadMessages } from "@/hooks/useUnreadMessagesCount";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, MessageSquare, Send, ArrowLeft } from "lucide-react";
+import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 
 interface MessageThread {
   id: string;
@@ -269,9 +270,10 @@ function ThreadView({
 
 export default function Messages() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const queryClient = useQueryClient();
   const [matched, params] = useRoute("/messages/:threadId");
-  const activeThreadId = matched ? params?.threadId : undefined;
+  const activeThreadId = matched ? params?.threadId : getDeepLinkResourceIds(search).threadId || undefined;
   const { user } = useAuth();
   const { toast } = useToast();
   const isTalent = user?.role === "talent" || Boolean(loadTalentAuth());
@@ -372,6 +374,11 @@ export default function Messages() {
 
       <div className="flex h-[70vh] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
         {/* Thread list */}
+        {activeThreadId && !isLoading && !activeThread && (
+          <div role="alert" className="m-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2">
+            This conversation is unavailable or you do not have access to it.
+          </div>
+        )}
         <div
           className={`w-full shrink-0 overflow-y-auto border-r border-slate-200 dark:border-slate-700 md:w-72 ${
             activeThread ? "hidden md:block" : "block"

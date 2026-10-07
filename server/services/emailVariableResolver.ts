@@ -6,6 +6,7 @@
  * reports every unresolved token so callers can block delivery safely.
  */
 import { htmlToPlainText } from "../lib/htmlToPlainText.js";
+import { buildAppUrl, buildTalentApplicationsUrl } from "../lib/appUrl";
 
 export interface EmailVariableContext {
   applicantFirstName?: string;
@@ -36,8 +37,8 @@ export interface EmailVariableContext {
   jobUrl?: string;
 }
 
-/** Canonical destination for Talent invitation CTAs. */
-export const TALENT_APPLICATIONS_URL = "https://onspotglobal.com/my-applications";
+/** Resolve at send time so configuration changes cannot leave a stale constant. */
+export const getTalentApplicationsUrl = buildTalentApplicationsUrl;
 
 const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
   applicant_first_name: "applicantFirstName",
@@ -103,20 +104,6 @@ function toSafeHttpsUrl(value: string | undefined): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-function resolvePublicBaseUrl(): string | undefined {
-  const configured = [
-    process.env.PUBLIC_APP_URL,
-    process.env.APP_URL,
-    process.env.PUBLIC_BASE_URL,
-    process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : undefined,
-  ];
-  for (const candidate of configured) {
-    const safeUrl = toSafeHttpsUrl(candidate);
-    if (safeUrl) return safeUrl.replace(/\/$/, "");
-  }
-  return undefined;
 }
 
 function unique(values: string[]): string[] {
@@ -269,12 +256,11 @@ export function buildEmailContext(opts: {
   const firstName = opts.firstName?.trim() ?? opts.applicantName?.trim().split(/\s+/)[0] ?? "";
   const lastName = opts.lastName?.trim() ?? (opts.applicantName?.trim().split(/\s+/).slice(1).join(" ") ?? "");
   const fullName = [firstName, lastName].filter(Boolean).join(" ") || opts.applicantName?.trim() || opts.email;
-  const baseUrl = resolvePublicBaseUrl();
   const portalUrl = opts.portalUrlOverride !== undefined
     ? toSafeHttpsUrl(opts.portalUrlOverride)
-    : (baseUrl ? `${baseUrl}/my-applications` : undefined);
+    : buildTalentApplicationsUrl({ applicationId: opts.applicationId ?? undefined });
   const logoUrl = toSafeHttpsUrl(process.env.ONSPOT_EMAIL_LOGO_URL) ?? (
-    baseUrl ? `${baseUrl}/new-onspot.png` : undefined
+    buildAppUrl("/new-onspot.png")
   );
   const companyName =
     opts.jobCompany?.trim() ||
@@ -326,11 +312,10 @@ export function buildClientEmailContext(opts: {
   const firstName = opts.clientFirstName?.trim() || "";
   const lastName = opts.clientLastName?.trim() || "";
   const clientName = [firstName, lastName].filter(Boolean).join(" ") || opts.clientEmail;
-  const baseUrl = resolvePublicBaseUrl();
-  const portalUrl = baseUrl ? `${baseUrl}/client-profile` : undefined;
-  const jobUrl = baseUrl ? `${baseUrl}/client/jobs/${encodeURIComponent(opts.jobId)}/edit` : undefined;
+  const portalUrl = buildAppUrl("/client-profile");
+  const jobUrl = buildAppUrl(`/client/jobs/${encodeURIComponent(opts.jobId)}/edit`);
   const logoUrl = toSafeHttpsUrl(process.env.ONSPOT_EMAIL_LOGO_URL) ?? (
-    baseUrl ? `${baseUrl}/new-onspot.png` : undefined
+    buildAppUrl("/new-onspot.png")
   );
 
   return {

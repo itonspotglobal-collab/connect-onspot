@@ -18,18 +18,13 @@ import {
   renderBrandedEmailLayout,
 } from './emailVariableResolver';
 import { storage } from '../storage';
+import { buildAppUrl, buildTalentApplicationsUrl, getAppBaseUrl } from "../lib/appUrl";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function getBaseUrl(): string | null {
-  const raw =
-    process.env.PUBLIC_APP_URL ??
-    process.env.APP_URL ??
-    process.env.PUBLIC_BASE_URL ??
-    (process.env.REPLIT_DOMAINS
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : null);
-  return raw ? raw.replace(/\/$/, '') : null;
+  try { return getAppBaseUrl(); }
+  catch { console.warn("offerExpiryService: PUBLIC_APP_URL configuration unavailable"); return null; }
 }
 
 function escapeHtml(value: string): string {
@@ -52,7 +47,7 @@ function renderScheduledApplicantEmail(contentHtml: string, portalUrl: string): 
       companyName: 'OnSpot',
       portalUrl,
       logoUrl: process.env.ONSPOT_EMAIL_LOGO_URL ?? (
-        baseUrl ? `${baseUrl}/new-onspot.png` : undefined
+        baseUrl ? buildAppUrl("/new-onspot.png") : undefined
       ),
     },
   );
@@ -191,9 +186,8 @@ export async function processExpiryReminders(): Promise<void> {
 
   console.log(`⏰ offerExpiryService: claimed ${rows.length} offer(s) for reminder emails`);
 
-  const portalUrl = `${baseUrl}/my-applications`;
-
   for (const row of rows) {
+    const portalUrl = buildTalentApplicationsUrl({ offerId: row.id });
     const expiresAt = new Date(row.expires_at);
     const deadlineStr = formatDeadline(expiresAt);
     const subject = `Action needed: your offer expires on ${deadlineStr} — OnSpot Careers`;
@@ -340,7 +334,7 @@ export async function processExpiredOffers(): Promise<void> {
 
       // Client email
       if (emailEnabled && row.client_email && baseUrl) {
-        const clientPortalUrl = `${baseUrl}/client-profile`;
+        const clientPortalUrl = buildAppUrl(`/client-profile?applicationId=${encodeURIComponent(row.submission_id)}`);
         const jobTitle: string = row.job_title ?? 'the role';
         const clientSubject = `Your offer has expired without a response — OnSpot Careers`;
         try {
@@ -380,7 +374,7 @@ export async function processExpiredOffers(): Promise<void> {
       continue;
     }
 
-    const portalUrl = `${baseUrl}/my-applications`;
+    const portalUrl = buildTalentApplicationsUrl({ offerId: row.id });
     const subject = `Your offer has expired — OnSpot Careers`;
 
     try {

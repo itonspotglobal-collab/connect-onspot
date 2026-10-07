@@ -1,10 +1,7 @@
 import { getClient } from "../db";
 import { sendApplicantEmail, isEmailServiceConfigured } from "./microsoftGraphEmailService";
 import { escHtml } from "../lib/escHtml";
-
-// Verified published URL obtained through deployment metadata; explicit existing
-// application URL configuration wins. Never derive production links from dev domains.
-const VERIFIED_PUBLIC_ORIGIN = "https://connect.onspotglobal.com";
+import { buildAppUrl } from "../lib/appUrl";
 export async function deliverContractEmails(contractId: string) {
   const tx = await getClient();
   let failed = false, accepted = false, skipped = false;
@@ -27,11 +24,9 @@ export async function deliverContractEmails(contractId: string) {
         let status: "accepted" | "failed" | "skipped" = "skipped";
         if (isEmailServiceConfigured()) {
           try {
-            const configured = process.env.PUBLIC_APP_URL || process.env.APP_URL || process.env.PUBLIC_BASE_URL || VERIFIED_PUBLIC_ORIGIN;
-            const url = new URL(`/contracts?id=${encodeURIComponent(contractId)}`, configured);
-            if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new Error("Invalid app origin");
+            const url = buildAppUrl(`/contracts?id=${encodeURIComponent(contractId)}`);
             const result = await sendApplicantEmail({ to: event.email, subject: "Review your OnSpot contract",
-              bodyHtml: `<p>Your contract has been ${escHtml(event.event_type.replace(/_/g, " "))}.</p><p><a href="${escHtml(url.href)}">Review the contract and required signatures in OnSpot</a></p><p>Sign in to view the private document. No sensitive PDF is attached.</p>`,
+              bodyHtml: `<p>Your contract has been ${escHtml(event.event_type.replace(/_/g, " "))}.</p><p><a href="${escHtml(url)}">Review the contract and required signatures in OnSpot</a></p><p>Sign in to view the private document. No sensitive PDF is attached.</p>`,
               redactErrors: true });
             status = result.success ? "accepted" : "failed";
           } catch { status = "failed"; }

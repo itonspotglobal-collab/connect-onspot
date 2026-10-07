@@ -4,7 +4,7 @@ import {
   buildEmailContext,
   renderApplicantEmail,
   resolveVariables,
-  TALENT_APPLICATIONS_URL,
+  getTalentApplicationsUrl,
 } from "../services/emailVariableResolver.js";
 import { htmlToPlainText } from "../lib/htmlToPlainText.js";
 
@@ -110,12 +110,12 @@ describe("email-safe job descriptions", () => {
 
   it("uses the trusted Talent invitation destination without changing shared public URL configuration", () => {
     const previousPublicAppUrl = process.env.PUBLIC_APP_URL;
-    process.env.PUBLIC_APP_URL = "https://talent.onspotglobal.com";
+    process.env.PUBLIC_APP_URL = "https://correct-domain.example";
 
     try {
       const context = buildEmailContext({
         email: "talent@example.com",
-        portalUrlOverride: TALENT_APPLICATIONS_URL,
+        portalUrlOverride: getTalentApplicationsUrl({ applicationId: "application-123" }),
       });
       const rendered = renderApplicantEmail(
         {
@@ -127,7 +127,7 @@ describe("email-safe job descriptions", () => {
 
       assert.equal(rendered.unresolvedKeys.length, 0);
       assert.equal(
-        (rendered.bodyHtml.match(/https:\/\/onspotglobal\.com\/my-applications/g) ?? []).length,
+        (rendered.bodyHtml.match(/https:\/\/correct-domain\.example\/my-applications\?applicationId=application-123/g) ?? []).length,
         2,
       );
       assert.doesNotMatch(rendered.bodyHtml, /talent\.onspotglobal\.com/);

@@ -12,6 +12,7 @@
  */
 
 import { query } from "../db.js";
+import { buildTalentApplicationsUrl, buildClientApplicationUrl } from "../lib/appUrl";
 import { sendApplicantEmail, isEmailServiceConfigured } from "./microsoftGraphEmailService.js";
 import {
   buildEmailContext,
@@ -135,7 +136,13 @@ async function resolveTalentRecipient(
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export interface InterviewConfirmedEmailOptions {
+interface InterviewEmailDestination {
+  interviewId?: string | null;
+  applicationId?: string | null;
+  jobId?: string | null;
+}
+
+export interface InterviewConfirmedEmailOptions extends InterviewEmailDestination {
   talentUserId: string;
   jobTitle: string;
   confirmedTime: string;        // ISO timestamp
@@ -235,6 +242,7 @@ export async function sendInterviewConfirmedEmail(
       applicantName: fullName,
       email: recipient.email,
       jobTitle: opts.jobTitle,
+      portalUrlOverride: buildTalentApplicationsUrl({interviewId: opts.interviewId ?? undefined, applicationId: opts.applicationId ?? undefined}),
     }),
   );
 
@@ -259,7 +267,7 @@ export async function sendInterviewConfirmedEmail(
 
 // ── Client confirmation email (talent accepted a slot) ────────────────────────
 
-export interface InterviewConfirmedEmailToClientOptions {
+export interface InterviewConfirmedEmailToClientOptions extends InterviewEmailDestination {
   clientUserId: string;
   talentUserId: string;   // resolved to name only; never exposed to client
   jobTitle: string;
@@ -373,6 +381,7 @@ export async function sendInterviewConfirmedEmailToClient(
       applicantName: clientFullName,
       email: clientEmail,
       jobTitle: opts.jobTitle,
+      portalUrlOverride: buildClientApplicationUrl(opts),
     }),
   );
 
@@ -397,7 +406,7 @@ export async function sendInterviewConfirmedEmailToClient(
 
 // ── Client counter-proposal notification email ────────────────────────────────
 
-export interface InterviewCounterEmailToClientOptions {
+export interface InterviewCounterEmailToClientOptions extends InterviewEmailDestination {
   clientUserId: string;
   talentUserId: string;   // resolved to display name only
   jobTitle: string;
@@ -501,6 +510,7 @@ export async function sendInterviewCounterEmailToClient(
       applicantName: clientFullName,
       email: clientEmail,
       jobTitle: opts.jobTitle,
+      portalUrlOverride: buildClientApplicationUrl(opts),
     }),
   );
 
@@ -523,7 +533,7 @@ export async function sendInterviewCounterEmailToClient(
   }
 }
 
-export interface InterviewProposalEmailOptions {
+export interface InterviewProposalEmailOptions extends InterviewEmailDestination {
   talentUserId: string;
   jobTitle: string;
   proposedTimes: InterviewTimeSlot[];
@@ -615,6 +625,7 @@ export async function sendInterviewProposalEmail(
       applicantName: fullName,
       email: recipient.email,
       jobTitle: opts.jobTitle,
+      portalUrlOverride: buildTalentApplicationsUrl({interviewId: opts.interviewId ?? undefined, applicationId: opts.applicationId ?? undefined}),
     }),
   );
 
@@ -639,7 +650,7 @@ export async function sendInterviewProposalEmail(
 
 // ── Interview Rescheduled Email ────────────────────────────────────────────────
 
-export interface InterviewRescheduledEmailOptions {
+export interface InterviewRescheduledEmailOptions extends InterviewEmailDestination {
   talentUserId: string | null;
   /** Client user ID — only populated when admin reschedules */
   clientUserId?: string | null;
@@ -749,7 +760,8 @@ ${durationLine}
         const subject = `Interview rescheduled: ${opts.jobTitle}${round} — please review new times`;
         const rendered = renderApplicantEmail(
           { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
-          buildEmailContext({ applicantName: fullName, email: recipient.email, jobTitle: opts.jobTitle }),
+          buildEmailContext({ applicantName: fullName, email: recipient.email, jobTitle: opts.jobTitle,
+            portalUrlOverride: buildTalentApplicationsUrl({interviewId: opts.interviewId ?? undefined, applicationId: opts.applicationId ?? undefined}) }),
         );
         const talentResult = await sendApplicantEmail({
           to: recipient.email,
@@ -820,7 +832,8 @@ ${durationLine}
         const subject = `Interview rescheduled: ${opts.jobTitle}${round}`;
         const rendered = renderApplicantEmail(
           { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
-          buildEmailContext({ applicantName: clientFullName, email: clientEmail, jobTitle: opts.jobTitle }),
+          buildEmailContext({ applicantName: clientFullName, email: clientEmail, jobTitle: opts.jobTitle,
+            portalUrlOverride: buildClientApplicationUrl(opts) }),
         );
         const clientEmailResult = await sendApplicantEmail({
           to: clientEmail,
@@ -847,7 +860,7 @@ ${durationLine}
 
 // ── Interview Cancelled Email ─────────────────────────────────────────────────
 
-export interface InterviewCancelledEmailOptions {
+export interface InterviewCancelledEmailOptions extends InterviewEmailDestination {
   talentUserId: string | null;
   /** Client user ID — populated when admin cancels so they are also notified. */
   clientUserId?: string | null;
@@ -941,7 +954,8 @@ ${reasonSection}
         const subject = `Interview cancelled: ${opts.jobTitle}${round}`;
         const rendered = renderApplicantEmail(
           { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
-          buildEmailContext({ applicantName: fullName, email: recipient.email, jobTitle: opts.jobTitle }),
+          buildEmailContext({ applicantName: fullName, email: recipient.email, jobTitle: opts.jobTitle,
+            portalUrlOverride: buildTalentApplicationsUrl({interviewId: opts.interviewId ?? undefined, applicationId: opts.applicationId ?? undefined}) }),
         );
         const talentResult = await sendApplicantEmail({
           to: recipient.email,
@@ -1008,7 +1022,8 @@ ${reasonSection}
         const subject = `Interview cancelled: ${opts.jobTitle}${round}`;
         const rendered = renderApplicantEmail(
           { subject, bodyHtml: renderBrandedEmailLayout(contentHtml) },
-          buildEmailContext({ applicantName: clientFullName, email: clientEmail, jobTitle: opts.jobTitle }),
+          buildEmailContext({ applicantName: clientFullName, email: clientEmail, jobTitle: opts.jobTitle,
+            portalUrlOverride: buildClientApplicationUrl(opts) }),
         );
         const clientEmailResult = await sendApplicantEmail({
           to: clientEmail,

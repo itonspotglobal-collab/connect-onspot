@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 import { saveTalentAuth } from "@/components/TalentLoginModal";
+import { getSafeReturnTo } from "@shared/internalRedirect";
 import { PASSWORD_POLICY_HINT, validatePasswordStrength } from "@shared/passwordPolicy";
 import { signupRetryDelayMs } from "@/lib/signupRetry";
 import { SignupEmailVerification } from "@/components/SignupEmailVerification";
@@ -65,9 +66,7 @@ export default function TalentSignupFromApplication() {
   const searchParams = new URLSearchParams(window.location.search);
   const applicationToken = searchParams.get("applicationToken") ?? "";
   const requestedReturnTo = searchParams.get("returnTo") ?? "";
-  const returnTo = requestedReturnTo.startsWith("/") && !requestedReturnTo.startsWith("//")
-    ? requestedReturnTo
-    : "";
+  const returnTo = getSafeReturnTo(requestedReturnTo) ?? "";
   const talentSignInUrl = (() => {
     const params = new URLSearchParams({
       portal: "talent",
@@ -327,7 +326,7 @@ export default function TalentSignupFromApplication() {
           password: values.password,
           role: "talent",
           username: values.email.split("@")[0],
-          ...(returnTo.startsWith("/") && !returnTo.startsWith("//") ? { returnTo } : {}),
+          ...(getSafeReturnTo(returnTo) ? { returnTo } : {}),
         }),
       });
 
@@ -392,7 +391,7 @@ export default function TalentSignupFromApplication() {
     setPendingVerification(null);
     if (isAccountFirstMode) {
       toast({ title: signupData.accountCreated === true ? "Account created" : "Account verified", description: "Your Talent account is ready. Continue to your saved application.", duration: 6000 });
-      navigate(returnTo);
+      navigate(returnTo, { replace: true });
       return;
     }
     try {

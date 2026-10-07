@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { buildLoginReturnUrl } from '@/lib/returnTo';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -24,7 +25,13 @@ export function ProtectedRoute({
     if (!isLoading) {
       if (!isAuthenticated) {
         console.log('🚫 ProtectedRoute: User not authenticated, redirecting to:', fallbackPath);
-        setLocation(fallbackPath);
+        const destination = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        const loginPath = fallbackPath === "/admin/login"
+          ? buildLoginReturnUrl(destination, { loginPath: "/admin/login" })
+          : fallbackPath === "/" || fallbackPath === "/get-hired" || fallbackPath === "/login"
+            ? buildLoginReturnUrl(destination)
+            : fallbackPath;
+        setLocation(loginPath, { replace: true });
         return;
       }
 
@@ -102,7 +109,7 @@ export function AdminProtectedRoute({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute 
       requiredRole="admin" 
-      fallbackPath="/login"
+      fallbackPath="/admin/login"
       loadingMessage="Verifying admin access..."
     >
       {children}

@@ -32,6 +32,7 @@ import {
   XCircle, UserCheck, Briefcase, Trash2, Mail, FileText, Download, Video, Play,
 } from "lucide-react";
 import { lazy, Suspense } from "react";
+import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 
 const ApplicantEmailComposer = lazy(() => import("@/components/ApplicantEmailComposer"));
 
@@ -1041,6 +1042,7 @@ function BulkConfirm({
 export default function AdminJobApplications() {
   const [, navigate] = useLocation();
   const rawSearch = useSearch();
+  const requestedApplicationId = getDeepLinkResourceIds(rawSearch).applicationId;
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -1057,6 +1059,9 @@ export default function AdminJobApplications() {
 
   // ── Dialog state ──────────────────────────────────────────────────────────
   const [detailId, setDetailId] = useState<string | null>(null);
+  useEffect(() => {
+    if (requestedApplicationId) setDetailId(requestedApplicationId);
+  }, [requestedApplicationId]);
   const [statusDialog, setStatusDialog] = useState<{ id: string; current: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<Application | null>(null);
   const [emailDialog, setEmailDialog] = useState<Application | null>(null);

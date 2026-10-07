@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowLeft, ArrowRight, Building2, UserRound } from "lucide-react";
+import { getSafeReturnTo } from "@shared/internalRedirect";
 
 type ChooserKind = "login" | "signup";
 
@@ -9,7 +10,16 @@ interface PortalChooserProps {
 
 export function PortalChooser({ kind }: PortalChooserProps) {
   const isLogin = kind === "login";
-  const search = typeof window === "undefined" ? "" : window.location.search;
+  const search = typeof window === "undefined" ? "" : (() => {
+    const params = new URLSearchParams(window.location.search);
+    const target = getSafeReturnTo(params.get("returnTo"));
+    if (params.has("returnTo")) {
+      params.delete("returnTo");
+      if (target) params.set("returnTo", target);
+    }
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  })();
   const portalHref = (portal: "client" | "talent") =>
     `${isLogin ? "/login" : "/signup"}/${portal}${search}`;
 
@@ -48,7 +58,7 @@ export function PortalChooser({ kind }: PortalChooserProps) {
           </p>
 
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link href={portalHref("client")}>
+            <Link href={portalHref("client")} replace>
               <span className="group flex h-full cursor-pointer flex-col items-center rounded-2xl border border-[#D7DCEF] bg-white p-6 text-center transition-all hover:-translate-y-1 hover:border-[#6D5EF7] hover:shadow-lg">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#6D5EF7]/10 text-[#6D5EF7]">
                   <Building2 className="h-7 w-7" />
@@ -65,7 +75,7 @@ export function PortalChooser({ kind }: PortalChooserProps) {
               </span>
             </Link>
 
-            <Link href={portalHref("talent")}>
+            <Link href={portalHref("talent")} replace>
               <span className="group flex h-full cursor-pointer flex-col items-center rounded-2xl border border-[#D7DCEF] bg-white p-6 text-center transition-all hover:-translate-y-1 hover:border-[#D97706] hover:shadow-lg">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D97706]/10 text-[#D97706]">
                   <UserRound className="h-7 w-7" />

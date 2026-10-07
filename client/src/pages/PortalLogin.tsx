@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, ArrowRight, Building, User, ArrowLeft } from "lucide-react";
 import { PortalChooser } from "@/components/PortalChooser";
+import { getSafeReturnTo } from "@shared/internalRedirect";
 
 type PageStep = "login" | "setup-password" | "forgot-password";
 
@@ -174,7 +175,7 @@ export default function PortalLogin() {
 
   // Optional return destination after login (e.g. the job detail page the user came from)
   const [returnTo] = useState(() => {
-    try { return new URLSearchParams(window.location.search).get("returnTo") || ""; }
+    try { return getSafeReturnTo(new URLSearchParams(window.location.search).get("returnTo")) || ""; }
     catch { return ""; }
   });
 
@@ -225,8 +226,8 @@ export default function PortalLogin() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === "admin") { navigate("/admin/find-work"); return; }
-      if (user.role === "client") { navigate(returnTo || "/hire-talent"); return; }
+      if (user.role === "admin") { navigate(returnTo || "/admin/find-work", { replace: true }); return; }
+      if (user.role === "client") { navigate(returnTo || "/hire-talent", { replace: true }); return; }
     }
     // Skip auto-redirect when arriving from a job application flow — the user
     // must explicitly log in so the application token can be linked correctly.
@@ -236,7 +237,7 @@ export default function PortalLogin() {
       if (talentAuth?.candidateId) {
         // If we arrived from a specific page (e.g. the job apply gate), send the
         // user there instead of their profile so they don't lose their place.
-        navigate(returnTo || `/talent-profile/${talentAuth.candidateId}`);
+        navigate(returnTo || `/talent-profile/${talentAuth.candidateId}`, { replace: true });
       }
     } catch {
       // localStorage read failure — ignore and show login form
@@ -317,18 +318,18 @@ export default function PortalLogin() {
         // stays as pending_login and admins can see it.
       } catch (_) { /* non-fatal — just navigate */ }
       // Return to the job page the user came from, or fall back to the jobs listing
-      navigate(returnTo || "/find-work/jobs");
+      navigate(returnTo || "/find-work/jobs", { replace: true });
       return;
     }
 
     // If the user arrived here from a protected page (e.g. the job apply gate),
     // honour the returnTo param so they land back where they started.
     if (returnTo) {
-      navigate(returnTo);
+      navigate(returnTo, { replace: true });
       return;
     }
 
-    navigate(result.redirectTo);
+    navigate(result.redirectTo, { replace: true });
   }
 
   if (!activePortal && step === "login") {
@@ -356,7 +357,7 @@ export default function PortalLogin() {
         return;
       }
       toast({ title: "Password created!", description: `Welcome, ${result.auth.fullName}!` });
-      navigate(returnTo || result.redirectTo);
+      navigate(returnTo || result.redirectTo, { replace: true });
     } finally {
       setSetupLoading(false);
     }
@@ -510,7 +511,7 @@ export default function PortalLogin() {
             : "Sign in to manage your profile and opportunities."}
         </p>
         <button type="button" disabled={isLoading || retrySeconds > 0}
-          onClick={() => { if (!signInPending.current) navigate(`/login${currentSearch}`); }}
+          onClick={() => { if (!signInPending.current) navigate(`/login${currentSearch}`, { replace: true }); }}
           className="mb-7 inline-flex items-center gap-1 text-xs font-medium text-[#6D5EF7] hover:underline disabled:cursor-not-allowed disabled:opacity-50">
           <ArrowLeft className="h-3 w-3" /> Choose another portal
         </button>

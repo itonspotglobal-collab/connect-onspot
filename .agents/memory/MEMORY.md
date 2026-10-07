@@ -45,6 +45,7 @@
 - [Job approval transition alerts](job-approval-transition-alerts.md) — approval alerts are per-transition events; retries no-op, while later re-entry creates a fresh Client alert.
 - [Job application method](job-application-method.md) — applicationMethod alone selects built-in vs external flow; creator/source must never influence it.
 - [Email companion service](email-companion-service.md) — non-blocking companion emails for job approval, new applications, interview reschedule/cancel, and unread messages; delivery ledger + cooldown tables in Migration 0013.
+- [Email destination verification](email-link-verification.md) — published-origin authority; generated href tests are not real external-email/login/resource UAT.
 - [Job posting drafts](job-posting-drafts.md) — unfinished Admin/Client postings reuse jobs rows with status=draft; drafts stay private and submit in place.
 - [Client event notification details](client-event-notification-details.md) — event alerts are idempotent, but clicks resolve current authorized state only after mark-read succeeds.
 - [Client invitation next step](client-invitation-next-step.md) — accepting a Client role invitation stays on My Applications so the existing Interview becomes the immediate next action.

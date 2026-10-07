@@ -21,6 +21,7 @@
  */
 
 import { query } from "../db.js";
+import { buildAppUrl, buildClientApplicationUrl } from "../lib/appUrl";
 import {
   sendApplicantEmail,
   isEmailServiceConfigured,
@@ -59,25 +60,12 @@ function escHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function getBaseUrl(): string | null {
-  const raw =
-    process.env.PUBLIC_APP_URL ??
-    process.env.APP_URL ??
-    process.env.PUBLIC_BASE_URL ??
-    (process.env.REPLIT_DOMAINS
-      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-      : null);
-  return raw ? raw.replace(/\/$/, "") : null;
+function resolveClientPortalUrl(jobId: string): string {
+  return buildAppUrl(`/client/jobs/${encodeURIComponent(jobId)}/edit`);
 }
 
-function resolveClientPortalUrl(): string {
-  const base = getBaseUrl();
-  return base ? `${base}/client-profile` : "#";
-}
-
-function resolveMessagesUrl(): string {
-  const base = getBaseUrl();
-  return base ? `${base}/messages` : "#";
+function resolveMessagesUrl(threadId: string): string {
+  return buildAppUrl(`/messages?thread=${encodeURIComponent(threadId)}`);
 }
 
 // ── Delivery Ledger — Atomic Claim ────────────────────────────────────────────
@@ -291,7 +279,7 @@ export async function sendJobApprovalCompanionEmail(
       bodyHtml = reviewedContent.bodyHtml;
     } else {
       const safeTitle = escHtml(jobTitle);
-      const portalUrl = resolveClientPortalUrl();
+      const portalUrl = resolveClientPortalUrl(jobId);
       let contentHtml: string;
 
       if (newStatus === "approved") {
@@ -558,7 +546,7 @@ export async function sendClientNewApplicationEmail(
 
     const safeApplicant = escHtml((applicantDisplayName || "A new applicant").trim());
     const safeJobTitle = jobTitle ? escHtml(jobTitle) : "your job";
-    const portalUrl = resolveClientPortalUrl();
+    const portalUrl = buildClientApplicationUrl({ applicationId: submissionId });
     const subject = `New application received for "${jobTitle ?? "your job"}"`;
 
     const contentHtml = `
@@ -753,7 +741,7 @@ export async function sendUnreadMessageEmail(opts: UnreadMessageEmailOptions): P
     if (!cooldownResult.rows.length) return;
 
     const safeSender = escHtml((senderName || "Someone").trim());
-    const messagesUrl = resolveMessagesUrl();
+    const messagesUrl = resolveMessagesUrl(threadId);
     const subject = `New message from ${(senderName || "someone").trim()} on OnSpot`;
 
     const contentHtml = `

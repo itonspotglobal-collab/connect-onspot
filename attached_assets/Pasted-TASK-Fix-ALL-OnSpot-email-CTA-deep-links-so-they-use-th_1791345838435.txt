@@ -1,0 +1,602 @@
+TASK: Fix ALL OnSpot email CTA/deep links so they use the correct
+application domain and navigate to the exact authenticated destination.
+
+This issue was confirmed during real manual UAT.
+
+============================================================
+OBSERVED BUG
+============================================================
+
+Emails are successfully being delivered.
+
+Examples:
+
+1. Offer email:
+   "You have a new offer"
+   CTA: "Review Offer"
+
+2. Contract email:
+   "Your contract has been executed"
+   CTA:
+   "Review the contract and required signatures in OnSpot"
+
+However, clicking these links does NOT navigate to the intended
+Offer/Contract page.
+
+Instead, the user is redirected to the public website/homepage.
+
+Additionally, the generated URL is using the WRONG domain:
+
+talent.onspotglobal.com
+
+This must be fixed SYSTEM-WIDE.
+
+Do NOT patch only the Offer and Contract templates.
+
+Audit every transactional email that generates an OnSpot application URL.
+
+============================================================
+1. IDENTIFY THE CANONICAL APP URL
+============================================================
+
+First audit the current deployment/environment configuration.
+
+Determine the actual canonical production URL for the OnSpot application
+where authenticated Talent, Client, Organization and Admin pages are
+served.
+
+DO NOT assume talent.onspotglobal.com is correct.
+
+DO NOT hardcode another domain before checking the existing deployment
+configuration.
+
+Look for configuration such as:
+
+APP_URL
+BASE_URL
+PUBLIC_APP_URL
+FRONTEND_URL
+CLIENT_URL
+SITE_URL
+REPLIT_DOMAINS
+or equivalent.
+
+Also search the entire repository for:
+
+talent.onspotglobal.com
+onspotglobal.com
+http://
+https://
+
+especially inside:
+
+- email services
+- email templates
+- notification services
+- offer emails
+- contract emails
+- interview emails
+- password/auth emails
+- organization invitations
+- Client invitations
+- application emails
+- onboarding emails
+
+Identify where the incorrect domain originates.
+
+============================================================
+2. CREATE ONE CANONICAL URL BUILDER
+============================================================
+
+Do NOT allow individual email templates to construct application URLs
+independently.
+
+Create/reuse one server-side helper such as:
+
+getAppBaseUrl()
+
+and:
+
+buildAppUrl(path)
+
+or equivalent.
+
+Example conceptual behavior:
+
+buildAppUrl("/talent/offers/123")
+
+→
+
+https://<CANONICAL_APP_DOMAIN>/talent/offers/123
+
+The actual implementation must match the project's routing architecture.
+
+All transactional emails should use this centralized URL builder.
+
+============================================================
+3. ENVIRONMENT CONFIGURATION
+============================================================
+
+The canonical application origin should come from trusted server-side
+configuration.
+
+For example:
+
+APP_BASE_URL=https://<correct-production-app-domain>
+
+Use the project's existing environment-variable naming if one already
+exists.
+
+Do NOT hardcode:
+
+talent.onspotglobal.com
+
+inside templates.
+
+Do NOT derive security-sensitive URLs from arbitrary request Host headers.
+
+Production should have one explicitly configured canonical application
+origin.
+
+Development/staging may use their corresponding configured origins.
+
+Validate and normalize the configured origin.
+
+Avoid malformed URLs such as:
+
+https://domain.com//path
+
+============================================================
+4. OFFER EMAIL DEEP LINK
+============================================================
+
+The "Review Offer" button must navigate to the actual offer experience.
+
+Prefer a specific destination when supported:
+
+/talent/offers/:offerId
+
+or the existing equivalent.
+
+If the application currently handles offers inside My Applications rather
+than a dedicated route, deep-link using the existing routing/state model,
+for example:
+
+/talent/applications/:applicationId?offer=<offerId>
+
+DO NOT invent a route that the frontend does not support.
+
+Audit the router first.
+
+The important requirement is:
+
+Review Offer
+→ exact actionable offer
+→ Talent can Review / Accept / Decline
+
+NOT:
+
+Review Offer
+→ homepage
+
+and preferably NOT:
+
+Review Offer
+→ generic dashboard requiring the Talent to search manually.
+
+============================================================
+5. CONTRACT EMAIL DEEP LINK
+============================================================
+
+Contract-related email links must navigate directly to the relevant
+contract.
+
+Prefer:
+
+/contracts/:contractId
+
+or the application's existing equivalent.
+
+Examples:
+
+"Review and Sign Contract"
+→ exact contract requiring signature
+
+"Contract Executed"
+→ exact executed contract
+
+The destination should show the appropriate actions according to status.
+
+For example:
+
+Awaiting Talent Signature
+→ Review + Sign
+
+Fully Executed
+→ View/Download executed contract
+
+Again, use existing routes where possible.
+
+============================================================
+6. AUTHENTICATION + RETURN-TO DESTINATION
+============================================================
+
+This is critical.
+
+Email links will frequently be opened when the user is NOT logged in.
+
+The application must preserve the requested destination through login.
+
+Expected behavior:
+
+User clicks:
+
+https://<app>/contracts/ABC123
+
+If authenticated:
+→ immediately open ABC123.
+
+If unauthenticated:
+→ redirect to Login
+→ authenticate
+→ return to /contracts/ABC123
+
+NOT:
+
+email link
+→ login
+→ generic dashboard
+
+Implement/reuse a safe returnTo/redirect mechanism.
+
+Example concept:
+
+/login?returnTo=%2Fcontracts%2FABC123
+
+After successful login:
+
+validate returnTo
+→ navigate there
+
+============================================================
+7. PREVENT OPEN REDIRECTS
+============================================================
+
+Do NOT blindly trust returnTo.
+
+Only permit internal application paths.
+
+Safe example:
+
+/contracts/123
+
+Reject values such as:
+
+https://evil.example
+//evil.example
+javascript:...
+
+The redirect target must remain inside the configured OnSpot application.
+
+============================================================
+8. ROLE-AWARE AUTHORIZATION
+============================================================
+
+A deep link must NOT bypass authorization.
+
+Examples:
+
+Talent receives contract link
+→ Talent can access THEIR contract.
+
+Another Talent copies that URL
+→ access denied.
+
+Client contract link
+→ only authorized Client/Organization users can access.
+
+Admin link
+→ Admin authorization remains required.
+
+Offer link:
+→ only the intended Talent can respond.
+
+Knowing an ID from an email must never grant access.
+
+============================================================
+9. FIX ALL TRANSACTIONAL EMAIL LINKS
+============================================================
+
+Audit every current email CTA.
+
+At minimum check:
+
+- Review Offer
+- Accept/Review invitation
+- Review application
+- Interview details
+- Interview invitation
+- Contract ready for signature
+- Contract signature required
+- Contract executed
+- Client/Organization contract notifications
+- Organization invitations
+- Talent invitations
+- password/account setup emails if applicable
+- onboarding links
+- application/status links
+- any Client/Admin action emails
+
+Create an inventory in the final report:
+
+EMAIL
+CTA
+OLD DESTINATION
+NEW DESTINATION
+
+Do not change links that intentionally point to public marketing pages.
+
+============================================================
+10. FRONTEND ROUTING
+============================================================
+
+Audit App.tsx / router configuration.
+
+Ensure every email destination actually resolves when entered DIRECTLY
+in the browser.
+
+This is important for mobile email apps because they open a fresh URL
+rather than navigating through the React application first.
+
+Test:
+
+paste deep URL directly into browser
+→ correct application route renders.
+
+If SPA hosting currently rewrites unknown routes incorrectly to the
+marketing website, fix the deployment/router fallback appropriately.
+
+Do NOT confuse:
+
+React route handling
+
+with:
+
+server/deployment routing.
+
+Both must support deep links.
+
+============================================================
+11. OFFER EXPIRATION
+============================================================
+
+If the Talent clicks an expired Offer email:
+
+still open the exact offer.
+
+Show:
+
+Offer Expired
+
+Do NOT redirect to homepage merely because the offer is no longer
+actionable.
+
+Accept should be disabled.
+
+The Client/Admin may then extend/reissue according to the existing
+workflow.
+
+============================================================
+12. CONTRACT LINK BEHAVIOR
+============================================================
+
+If a contract is already executed and the Talent clicks an older:
+
+"Review and Sign"
+
+email, still open the contract.
+
+Show its current state:
+
+Fully Executed
+
+and appropriate View/Download actions.
+
+Do not produce an error simply because the email reflects an older
+contract state.
+
+============================================================
+13. MOBILE TESTING
+============================================================
+
+This bug was reproduced from a mobile email client.
+
+Test links from a fresh browser session.
+
+Required scenarios:
+
+A. Logged in
+
+Email
+→ Review Offer
+→ exact Offer
+
+Email
+→ Review Contract
+→ exact Contract
+
+
+B. Logged out
+
+Email
+→ Review Offer
+→ Login
+→ successful login
+→ exact Offer
+
+Email
+→ Review Contract
+→ Login
+→ successful login
+→ exact Contract
+
+Do not lose destination after authentication.
+
+============================================================
+14. AUTOMATED TESTS
+============================================================
+
+Add tests for the central URL builder.
+
+Verify:
+
+configured base:
+https://correct-domain.example
+
+path:
+/contracts/123
+
+produces exactly:
+
+https://correct-domain.example/contracts/123
+
+Test normalization of slashes.
+
+Test Offer email generation contains the correct application origin and
+correct deep route.
+
+Test Contract email generation contains the correct application origin
+and correct deep route.
+
+Test at least the major transactional email types.
+
+Test returnTo validation:
+
+/contracts/123
+→ allowed
+
+/talent/offers/123
+→ allowed
+
+https://external.example
+→ rejected
+
+//external.example
+→ rejected
+
+javascript:...
+→ rejected
+
+============================================================
+15. DO NOT BREAK EMAIL DESIGN
+============================================================
+
+The current Offer email visual design is working.
+
+Do NOT redesign the email template as part of this task.
+
+Only fix:
+
+- canonical application URL
+- destination/deep-link route
+- authentication return flow
+- related routing bugs
+
+Keep existing email branding and content unless a CTA label must be
+clarified.
+
+============================================================
+16. CONFIGURATION / DEPLOYMENT
+============================================================
+
+Report exactly which environment variable controls the canonical app URL.
+
+IMPORTANT:
+
+Changing source code alone may not fix already deployed emails if the
+production environment variable is still wrong.
+
+Verify the production deployment configuration separately.
+
+Do NOT print secret environment-variable values.
+
+The application URL itself is not secret, but report configuration
+carefully.
+
+If the production configuration still points to:
+
+talent.onspotglobal.com
+
+mark production verification as FAILED/PENDING until corrected and
+republished.
+
+============================================================
+17. EXISTING EMAILS
+============================================================
+
+Existing emails already delivered to inboxes may contain the old incorrect
+URL.
+
+Do not claim those historical email links will magically change.
+
+The fix applies to newly generated emails unless the old domain itself is
+configured to redirect safely.
+
+If feasible and desired, determine whether:
+
+talent.onspotglobal.com
+
+should permanently redirect to the canonical application domain while
+preserving the complete path and query string.
+
+Example:
+
+OLD:
+/contracts/123?foo=bar
+
+redirects to:
+
+NEW:
+/contracts/123?foo=bar
+
+Do NOT redirect every old link merely to the homepage.
+
+Only implement domain-level redirect if this repository/deployment
+actually controls that domain.
+
+============================================================
+DELIVERABLE
+============================================================
+
+After implementation report:
+
+1. Root cause of talent.onspotglobal.com being generated.
+2. Canonical application domain/configuration used.
+3. Files changed.
+4. Central URL builder created/reused.
+5. Every transactional email CTA audited.
+6. Offer email destination.
+7. Contract email destination.
+8. Interview email destination.
+9. Other email destinations corrected.
+10. Authentication returnTo behavior.
+11. Open-redirect protection.
+12. Direct browser deep-link behavior.
+13. Mobile verification.
+14. Automated test results.
+15. Production configuration status.
+16. Whether republishing/redeployment is required.
+17. Whether previously delivered emails remain broken.
+18. Any legacy-domain redirect implemented.
+
+IMPORTANT:
+Do not report this as fixed merely because generated HTML contains the
+right-looking URL.
+
+For manual UAT, actually click a NEWLY GENERATED email link from an
+external email client and verify the complete journey:
+
+Email
+→ correct OnSpot application domain
+→ login if required
+→ exact resource page.
