@@ -52,6 +52,7 @@
 - [Notification role allow-lists](notification-role-allowlists.md) — a persisted notification remains invisible unless its type is enabled for the recipient role’s bell and unread count.
 - [One-time event popups](one-time-event-popups.md) — cross-device transactional popups must atomically claim the canonical notification without consuming its bell read state.
 - [Controlled dialog focus](controlled-dialog-focus.md) — custom card-opened Radix dialogs need explicit focus restoration if the card should regain focus after close.
+- [Contracts navigation](contracts-navigation-policy.md) — Back stays inside OnSpot; genuine internal history first, role-based fallback for direct or refreshed entries.
 - [Approved Manifesto design](approved-manifesto-design.md) — preserve the approved reference; do not reinterpret the overlapping headline or dark reading layout during later edits.
 - [USD currency policy](usd-currency-policy.md) — new pricing is USD worldwide; historical denominations remain unchanged, and text prices count even when numeric budgets are zero.
 - [Account-count audit](account-counter-audit.md) — candidate registration flags can be set without an auth account; verify sign-in evidence before public counting.

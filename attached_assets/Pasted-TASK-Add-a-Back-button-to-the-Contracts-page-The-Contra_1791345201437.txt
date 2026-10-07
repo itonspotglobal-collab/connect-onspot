@@ -1,0 +1,121 @@
+TASK: Add a Back button to the Contracts page.
+
+The Contracts page currently has no visible way for the user to return
+to the previous page.
+
+CURRENT PAGE:
+
+ONSPOT · PRIVATE AGREEMENTS
+Contracts
+
+"Review agreements and follow each signature through one accountable
+hiring flow."
+
+Add a Back button in the upper-left area of the page, above the
+"ONSPOT · PRIVATE AGREEMENTS" label / Contracts heading.
+
+Example:
+
+← Back
+
+ONSPOT · PRIVATE AGREEMENTS
+Contracts
+Review agreements and follow each signature through one accountable
+hiring flow.
+
+============================================================
+BEHAVIOR
+============================================================
+
+The Back button should return the user to the page they came from.
+
+Use the application's existing React routing/navigation implementation.
+
+Prefer browser/router history navigation, for example the equivalent of:
+
+navigate(-1)
+
+rather than hardcoding the button to one route.
+
+This is important because Contracts may be accessed from different
+locations depending on the user's role and workflow.
+
+However, provide a safe fallback if there is no usable application
+history.
+
+Use the appropriate role-based landing page or existing contracts-entry
+route as the fallback.
+
+Do NOT navigate the user outside the OnSpot application.
+
+============================================================
+UI / DESIGN
+============================================================
+
+Match the existing OnSpot design system.
+
+The button should look like a lightweight navigation control, not a
+primary CTA.
+
+Preferred appearance:
+
+← Back
+
+Place it above the existing page header with appropriate spacing.
+
+It should:
+- have a left-arrow icon using the project's existing icon library
+- have visible hover state
+- have keyboard focus state
+- use a semantic button
+- have an accessible label
+- work on desktop and mobile
+
+Do not redesign the rest of the Contracts page.
+
+============================================================
+IMPORTANT
+============================================================
+
+Check whether the project already has a reusable BackButton,
+PageHeader, or navigation component.
+
+If one exists, reuse it instead of introducing another implementation.
+
+Do not modify:
+- contract logic
+- signature logic
+- contract status
+- document storage
+- authorization
+- hiring status
+
+This is only a navigation/UI improvement.
+
+============================================================
+VERIFY
+============================================================
+
+Test at minimum:
+
+1. Talent enters Contracts from another Talent page.
+2. Click Back.
+3. Returns to the previous Talent page.
+
+Also test:
+
+4. Open a contract with "View contract".
+5. If the contract detail page also lacks navigation, ensure it has an
+   appropriate Back action to return to the Contracts list.
+
+6. Browser Back continues to work normally.
+7. Refresh Contracts page and verify the fallback navigation behaves
+   safely.
+8. Mobile layout does not overlap the Contracts heading.
+
+Report:
+- file(s) changed
+- routing/navigation method used
+- fallback behavior
+- whether an existing reusable Back component was reused
+- verification results

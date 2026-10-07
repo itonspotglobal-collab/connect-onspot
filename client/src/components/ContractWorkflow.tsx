@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, CheckCircle2, Download, FileText, Loader2, LockKeyhole, PenLine, Plus, RefreshCw, Send, ShieldCheck, Upload, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Download, FileText, Loader2, LockKeyhole, PenLine, Plus, RefreshCw, Send, ShieldCheck, Upload, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { fallbackContractsLocation, getContractListLocation, getTrustedPreviousLocation, getContractNavigationDocumentId } from "@/lib/contractNavigation";
+import { loadTalentAuth } from "@/components/TalentLoginModal";
 
 export interface ContractRow {
   id: string;
@@ -411,7 +414,12 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
   );
 }
 
-function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
+  id: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onBackToList?: () => void;
+}) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -611,7 +619,12 @@ function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[94dvh] max-w-4xl overflow-y-auto">
-        <DialogHeader><DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-indigo-600" />{detail?.contract.title || "Contract"}</DialogTitle><DialogDescription>Private agreement · {detail?.contract.job_title || "Contract details"}</DialogDescription></DialogHeader>
+        <DialogHeader>
+          {onBackToList && <Button type="button" variant="ghost" size="sm" className="-ml-2 w-fit text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-indigo-500" aria-label="Back to contracts list" onClick={onBackToList}>
+            <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />Back to Contracts
+          </Button>}
+          <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-indigo-600" />{detail?.contract.title || "Contract"}</DialogTitle><DialogDescription>Private agreement · {detail?.contract.job_title || "Contract details"}</DialogDescription>
+        </DialogHeader>
         {isLoading ? <div className="space-y-3 py-6"><div className="h-20 animate-pulse rounded bg-slate-100" /><div className="h-64 animate-pulse rounded bg-slate-100" /></div>
           : isError || !detail ? <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p>Unable to load this contract. Access is restricted to its authorized parties.</p><Button size="sm" variant="outline" className="mt-3" onClick={() => refetch()}>Retry</Button></div>
           : <div className="space-y-5">
@@ -695,6 +708,7 @@ function ContractDetailDialog({ id, open, onOpenChange }: { id: string | null; o
 export default function ContractsPage() {
   const [, navigate] = useLocation();
   const search = useSearch();
+  const { user } = useAuth();
   const params = new URLSearchParams(search);
   const offerId = params.get("offerId");
   const selectedId = params.get("id");
@@ -737,9 +751,34 @@ export default function ContractsPage() {
   };
   const selected = selectedId ? rows?.find((row) => row.id === selectedId) : null;
   const canPrepareFromContext = Boolean(offerId);
+  const safeBack = () => {
+    const documentId = getContractNavigationDocumentId();
+    const previous = documentId
+      ? getTrustedPreviousLocation(window.history.state, documentId, window.location.origin)
+      : null;
+    if (previous) window.history.back();
+    else navigate(fallbackContractsLocation(user?.role || (loadTalentAuth() ? "talent" : null)));
+  };
+  const returnToContractsList = () => {
+    const documentId = getContractNavigationDocumentId();
+    const previous = documentId
+      ? getTrustedPreviousLocation(window.history.state, documentId, window.location.origin)
+      : null;
+    if (previous) {
+      const previousUrl = new URL(previous, window.location.origin);
+      if (previousUrl.pathname === "/contracts" && !previousUrl.searchParams.has("offerId")) {
+        window.history.back();
+        return;
+      }
+    }
+    navigate(getContractListLocation(search, previous), { replace: true });
+  };
   return (
     <main className="min-h-[100dvh] bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
+        <Button type="button" variant="ghost" size="sm" onClick={safeBack} aria-label="Go back to the previous OnSpot page" className="-ml-2 mb-3 text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-indigo-500">
+          <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />Back
+        </Button>
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">OnSpot · Private agreements</p><h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Contracts</h1><p className="mt-2 max-w-xl text-sm text-slate-600">Review agreements and follow each signature through one accountable hiring flow.</p></div>
           {canPrepareFromContext && <Button onClick={() => setPrepareOpen(true)} className="bg-[#474ead] text-white hover:bg-[#3d439c]"><Plus className="mr-2 h-4 w-4" />Prepare Contract</Button>}
@@ -779,7 +818,7 @@ export default function ContractsPage() {
           : <Card className="border-dashed"><CardContent className="flex flex-col items-center px-6 py-16 text-center"><div className="rounded-full bg-indigo-50 p-4"><FileText className="h-7 w-7 text-indigo-600" /></div><h2 className="mt-4 text-lg font-semibold text-slate-900">No contracts yet</h2><p className="mt-1 max-w-md text-sm text-slate-500">Contracts appear here after an offer is accepted and an authorized party prepares the PDF.</p></CardContent></Card>}
       </div>
       {prepareOfferId && <PrepareContractDialog offerId={prepareOfferId} open={prepareOpen} onOpenChange={closePrepare} onCreated={onCreated} />}
-      <ContractDetailDialog id={selected?.id || (selectedId && isLoading ? selectedId : null)} open={Boolean(selectedId)} onOpenChange={(open) => { if (!open) navigate("/contracts"); }} />
+      <ContractDetailDialog id={selected?.id || (selectedId && isLoading ? selectedId : null)} open={Boolean(selectedId)} onOpenChange={(open) => { if (!open) returnToContractsList(); }} onBackToList={returnToContractsList} />
     </main>
   );
 }

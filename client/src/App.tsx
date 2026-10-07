@@ -112,6 +112,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import PortalLogin from "@/pages/PortalLogin";
 import PortalSignupPage from "@/pages/PortalSignupPage";
 import { PortalChooser } from "@/components/PortalChooser";
+import { installContractNavigationTracker } from "@/lib/contractNavigation";
 
 // Scroll to the top of the page whenever the route changes
 import Messages from "@/pages/Messages";
@@ -126,6 +127,13 @@ import ContractsPage from "@/components/ContractWorkflow";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
+function ContractNavigationHistoryTracker() {
+  useEffect(() => {
+    return installContractNavigationTracker();
+  }, []);
   return null;
 }
 
@@ -761,6 +769,7 @@ function App() {
               <HeadSEO />
               <DomainRouter>
                 <NewUserOnboardingWrapper>
+                  <ContractNavigationHistoryTracker />
                   <AppContent />
                 </NewUserOnboardingWrapper>
               </DomainRouter>
