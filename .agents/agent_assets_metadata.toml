@@ -825,3 +825,17 @@ mtime_ms = 1791347570228
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/7b026301-ce19-4c25-a299-e4542a440cdb/5c72ac45-da0c-4531-9553-54cde81562dd"
 storage_version_token = "1791347718330698"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "3TQosZiwfFKJgcM3IBDy0"
+uri = "file://docs/talent-clock-timesheet-report.md"
+type = "text"
+title = "Talent Clock and Timesheet Report"
+description = "Architecture, changed files, timezone policy, API behavior, 56 passing tests, and the pending real-account UAT checklist."
+logical_id = "afb72287-f301-4ac0-abad-53a3df958527"
+content_hash = "sha256:8ee3e8a53ba6fe6b5100a6a688172d34c85806b22563f63a323bfb0a21d87214"
+size = 12171
+mtime_ms = 1791350864936
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/afb72287-f301-4ac0-abad-53a3df958527/e8aa52fa-829a-483a-af40-dd1726ebd453"
+storage_version_token = "1791350911568209"
+content_type = "text/markdown"

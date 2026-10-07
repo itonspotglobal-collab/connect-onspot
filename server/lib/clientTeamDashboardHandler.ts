@@ -56,7 +56,7 @@ const MEMBERS_SQL = `WITH authorized_clients AS (
          js.client_id, js.talent_id, js.job_id, j.title AS project,
          j.division AS team, NULL::text AS contract_type, o.rate::numeric AS rate,
          o.rate_currency, 'period'::text AS rate_period, o.engagement_type,
-         hc.billing_mode, j.time_zone AS work_timezone, hc.effective_start_date,
+         hc.billing_mode, COALESCE(hc.work_timezone, j.time_zone) AS work_timezone, hc.effective_start_date,
          hc.effective_end_date, o.proposed_start_date AS start_date, NULL::date AS end_date
     FROM hiring_contracts hc
     INNER JOIN offers o ON o.id = hc.offer_id
@@ -170,10 +170,11 @@ SELECT ge.talent_id,
     SELECT SUM(day_hours) AS hours_logged, ARRAY_AGG(day_hours ORDER BY day_index) AS weekly_activity
       FROM (
         SELECT days.day_index,
-                COALESCE(SUM(GREATEST(0, EXTRACT(EPOCH FROM (
+                COALESCE(SUM(CASE WHEN te.start_time IS NULL OR te.effective_end IS NULL THEN 0
+                ELSE GREATEST(0, EXTRACT(EPOCH FROM (
                   LEAST(te.effective_end, DATE_TRUNC('week', CURRENT_DATE) + ((days.day_index + 1) * INTERVAL '1 day'))
                   - GREATEST(te.start_time, DATE_TRUNC('week', CURRENT_DATE) + (days.day_index * INTERVAL '1 day'))
-                )) / 3600)), 0)::numeric AS day_hours
+                )) / 3600) END), 0)::numeric AS day_hours
           FROM GENERATE_SERIES(0, 6) AS days(day_index)
            LEFT JOIN LATERAL (
              SELECT entry.start_time,

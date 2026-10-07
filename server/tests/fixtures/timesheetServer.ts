@@ -4,6 +4,7 @@ import type { Express, RequestHandler } from "express";
 import pg from "pg";
 import jwt from "jsonwebtoken";
 import { registerTimesheetRoutes } from "../../routes/timesheets";
+import { registerClockRoutes } from "../../routes/clock";
 
 const url = process.env.TIMESHEET_TEST_DATABASE_URL;
 if (!url) throw new Error("Run timesheet tests with: node scripts/test-timesheets-isolated.mjs");
@@ -22,10 +23,12 @@ export async function initializeFixture() {
       first_name text, last_name text, company text, profile_image_url text);
     CREATE TABLE jobs (id varchar PRIMARY KEY DEFAULT gen_random_uuid()::text, client_id varchar REFERENCES users,
       title text, description text, category text, experience_level text, status text,
-      engagement_type text, billing_mode text, time_zone text, division text);
+      engagement_type text, billing_mode text, time_zone text, division text,
+      created_via text DEFAULT 'client', approval_status text DEFAULT 'approved');
     CREATE TABLE job_submissions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), job_id varchar REFERENCES jobs,
       client_id varchar REFERENCES users, talent_id varchar REFERENCES users, email text,
-      applicant_name text, status text, initiated_by text, workflow_type text);
+      applicant_name text, status text, initiated_by text, workflow_type text,
+      registration_status text DEFAULT 'linked');
     CREATE TABLE offers (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), submission_id uuid REFERENCES job_submissions,
       engagement_type text, billing_mode text, rate numeric, rate_currency text, status text, proposed_start_date date);
     CREATE TABLE hiring_contracts (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), offer_id uuid REFERENCES offers,
@@ -41,13 +44,15 @@ export async function initializeFixture() {
     CREATE TABLE contracts (id varchar PRIMARY KEY, client_id varchar, talent_id varchar, job_id varchar,
       title text, contract_type text, rate numeric, start_date date, end_date date, status text);
     CREATE TABLE time_entries (contract_id varchar, status text, start_time timestamptz, end_time timestamptz, duration numeric);
-    CREATE TABLE invoice_periods (id uuid PRIMARY KEY);
-    CREATE TABLE invoices (period_id uuid, hiring_contract_id uuid, currency text, amount numeric, status text);
-    CREATE TABLE payments (contract_id varchar, currency text, amount numeric, status text);`);
+    CREATE TABLE invoice_periods (id uuid PRIMARY KEY, period_start date, period_end date);
+    CREATE TABLE invoices (period_id uuid, hiring_contract_id uuid, currency text, amount numeric, status text,
+      created_at timestamptz DEFAULT now());
+    CREATE TABLE payments (contract_id varchar, currency text, amount numeric, status text,
+      created_at timestamptz DEFAULT now());`);
   // Real Timesheet/Clock DDL, including append-only history triggers.
   const files = ["scripts/migration-reconciliation.sql", "migrations/0019_clock_sessions.sql",
     "migrations/0020_clock_exception_reviews.sql", "migrations/0021_timesheets.sql",
-    "migrations/0022_timesheet_revision_timezone.sql"];
+    "migrations/0022_timesheet_revision_timezone.sql", "migrations/0037_contract_work_timezone.sql"];
   const sql = await Promise.all(files.map((path) => readFile(path, "utf8")));
   const client = await pool.connect();
   try { await client.query(sql.join("\n")); } finally { client.release(); }
@@ -68,6 +73,11 @@ export async function registerRoutes(app: Express) {
   registerTimesheetRoutes(app, {
     authenticateJWT, requireTalent: requireRole("talent"), requireClient: requireRole("client"),
     requireAdmin: requireRole("admin"), requireAdminSubRole: () => requireRole("admin"),
+    getTalentBillingUserId: async (req) => req.user.id,
+    query, getClient: () => pool.connect(),
+  });
+  registerClockRoutes(app, {
+    authenticateJWT, requireTalent: requireRole("talent"),
     getTalentBillingUserId: async (req) => req.user.id,
     query, getClient: () => pool.connect(),
   });

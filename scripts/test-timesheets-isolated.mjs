@@ -1,13 +1,19 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:net";
 import pg from "pg";
 
 // Never inherit application credentials into fixture workers or PostgreSQL.
-const env = Object.fromEntries(["PATH", "HOME", "LANG", "TZ", "TMPDIR", "LD_LIBRARY_PATH", "NODE_PATH"]
+const env = Object.fromEntries(["PATH", "HOME", "LANG", "TZ", "TMPDIR", "LD_LIBRARY_PATH", "NODE_PATH",
+  "PLAYWRIGHT_BROWSERS_PATH", "PLAYWRIGHT_EXECUTABLE_PATH"]
   .filter((key) => process.env[key]).map((key) => [key, process.env[key]]));
+if (!env.PLAYWRIGHT_EXECUTABLE_PATH) {
+  try {
+    env.PLAYWRIGHT_EXECUTABLE_PATH = execFileSync("which", ["chromium"], { env, encoding: "utf8" }).trim();
+  } catch { /* Use Playwright's own installed browser when no host wrapper exists. */ }
+}
 function run(command, args, commandEnv = env) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { env: commandEnv, stdio: "inherit" });
@@ -42,7 +48,9 @@ try {
   if (!ready) throw new Error("Owned PostgreSQL fixture failed to start");
   const url = `postgresql://timesheet_fixture@127.0.0.1:${port}/onspot_timesheet_fixture`;
   await run(process.execPath, ["--import", "tsx", "--test", "--test-concurrency=1",
-    "server/tests/timesheets.test.ts", "server/tests/organization-timesheets.test.ts"], {
+    "server/tests/timesheets.test.ts", "server/tests/organization-timesheets.test.ts",
+    "server/tests/clock-live.test.ts", "server/tests/client-team-dashboard.test.ts",
+    "browser-tests/clock-live.browser.test.ts"], {
     ...env, DATABASE_URL: url, TIMESHEET_TEST_DATABASE_URL: url,
     JWT_SECRET: "timesheet-fixture-only", DISABLE_AUTH: "false",
   });

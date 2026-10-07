@@ -1,0 +1,524 @@
+TASK: Complete the Talent Clock → Live Timer → Timesheet experience and
+implement explicit Talent/work timezone support.
+
+This task is based on real manual UAT.
+
+============================================================
+CURRENT UI
+============================================================
+
+Talent Timesheets currently shows:
+
+CLOCK-DERIVED HOURS
+Timesheets
+
+Engagement:
+Website Developer
+
+Period total:
+0.00 hours
+
+Work timezone:
+Not specified
+
+Recorded sessions:
+No clock sessions were recorded for this period.
+
+There is an:
+
+[ Open Clock ]
+
+button.
+
+The underlying architecture already uses clock_sessions as the canonical
+source for tracked hours.
+
+PRESERVE THIS.
+
+Do NOT introduce another independent timer/timesheet hour source.
+
+============================================================
+GOAL
+============================================================
+
+The Talent should have a real Clock experience:
+
+Current local time
+→ Clock In
+→ live elapsed timer
+→ Clock Out
+→ completed clock_session
+→ Timesheet automatically reflects recorded duration
+
+Timesheet should also show whether the Talent is currently working.
+
+============================================================
+1. TALENT TIMEZONE
+============================================================
+
+Add/reuse an explicit Talent/work timezone.
+
+Use IANA timezone identifiers.
+
+Examples:
+
+Asia/Manila
+America/New_York
+Europe/London
+Australia/Sydney
+
+Do NOT store only:
+PST
+EST
+CST
+
+Do NOT infer the canonical timezone from IP address.
+
+Do NOT continuously track physical location.
+
+Audit whether timezone already exists on:
+- user
+- Talent profile
+- hiring contract
+- engagement/workspace
+
+Reuse the appropriate existing field if available.
+
+Otherwise introduce the smallest safe schema change.
+
+============================================================
+2. TIMEZONE SETUP
+============================================================
+
+Allow Talent to configure:
+
+Work timezone / Local timezone
+
+Example:
+
+Time Zone
+[ Asia/Manila (UTC+08:00) ]
+
+Optionally use the browser's timezone as a SUGGESTED initial value via:
+
+Intl.DateTimeFormat().resolvedOptions().timeZone
+
+but allow the Talent to confirm/change it.
+
+Persist the selected IANA timezone.
+
+Do not use browser timezone as an invisible permanent truth.
+
+============================================================
+3. DISPLAY LOCAL TIME
+============================================================
+
+On Clock page display:
+
+LOCAL TIME
+
+10:42 AM
+Wednesday, October 7, 2026
+
+Asia/Manila
+UTC+08:00
+
+The clock should update live.
+
+Use the Talent/work timezone, not merely the browser's local rendering.
+
+Handle DST correctly for regions that use daylight saving time.
+
+Use a timezone-aware library already present in the project where
+possible.
+
+============================================================
+4. CLOCK PAGE
+============================================================
+
+Improve the existing Clock page rather than building another independent
+tracking system.
+
+When NOT working:
+
+--------------------------------
+
+Website Developer
+Val Test · Testinguuu
+
+LOCAL TIME
+10:42:16 AM
+Asia/Manila
+
+Ready to start work
+
+00:00:00
+
+[ Clock In ]
+
+--------------------------------
+
+When Talent clicks Clock In:
+
+Create a real clock_session server-side.
+
+Persist canonical start timestamp.
+
+Do not trust a browser-supplied start time as authoritative.
+
+============================================================
+5. LIVE TIMER
+============================================================
+
+After Clock In:
+
+--------------------------------
+
+CURRENT SESSION
+
+Working
+
+01:24:37
+
+Started
+9:17 AM
+
+Local Time
+10:42 AM
+
+Timezone
+Asia/Manila
+
+[ Clock Out ]
+
+--------------------------------
+
+The elapsed timer should update every second in the UI.
+
+IMPORTANT:
+
+Do NOT persist a database update every second.
+
+Calculate:
+
+current server/client display time - persisted started_at
+
+for visual elapsed duration.
+
+The persisted clock_session is the source of truth.
+
+============================================================
+6. REFRESH / CLOSE BROWSER
+============================================================
+
+The live timer must survive:
+
+- page refresh
+- navigating to Timesheets
+- navigating elsewhere
+- closing/reopening browser
+- signing out/in
+
+If an open clock_session exists:
+
+GET active session
+→ retrieve started_at
+→ calculate elapsed duration
+→ resume visual timer
+
+Do not reset to 00:00:00.
+
+============================================================
+7. CLOCK OUT
+============================================================
+
+Talent clicks:
+
+[ Clock Out ]
+
+Server:
+
+- finds authenticated Talent's active session
+- records canonical end timestamp
+- calculates/stores duration according to existing architecture
+- closes session
+
+Then UI shows:
+
+Session completed
+
+Started:
+9:17 AM
+
+Ended:
+10:42 AM
+
+Duration:
+1h 25m
+
+Timesheet should then reflect the session.
+
+============================================================
+8. PREVENT DUPLICATE ACTIVE CLOCKS
+============================================================
+
+Talent must not accidentally Clock In twice for the same engagement.
+
+Server should enforce appropriate active-session uniqueness.
+
+If active session already exists:
+
+Clock In
+→ return existing state / meaningful conflict
+
+Do not create overlapping duplicate sessions accidentally.
+
+Audit whether multiple simultaneous engagements are allowed by current
+business rules before enforcing global vs per-contract uniqueness.
+
+============================================================
+9. TIMESHEET ACTIVE SESSION
+============================================================
+
+Timesheet should make active work visible.
+
+Currently it only shows recorded/completed sessions.
+
+When an active clock_session exists, show something like:
+
+--------------------------------
+
+CURRENTLY WORKING
+
+Website Developer
+
+Started
+9:17 AM
+
+Elapsed
+01:25:14
+
+Timezone
+Asia/Manila
+
+[ Open Clock ]
+
+--------------------------------
+
+This timer may update live.
+
+Again:
+do NOT write to DB every second.
+
+============================================================
+10. TIMESHEET RECORDED SESSIONS
+============================================================
+
+After Clock Out, show sessions clearly.
+
+Example:
+
+RECORDED SESSIONS
+
+Oct 7
+
+9:17 AM – 10:42 AM
+1h 25m
+Asia/Manila
+
+Daily total
+1h 25m
+
+Period total
+1.42 hours
+
+Use existing calculation/business rules for decimal hours.
+
+Do not independently invent different totals on frontend.
+
+============================================================
+11. TIME STORAGE RULE
+============================================================
+
+Canonical timestamps should remain timezone-safe.
+
+Prefer UTC timestamps in persistence.
+
+Example concept:
+
+started_at:
+2026-10-07T01:17:00Z
+
+ended_at:
+2026-10-07T02:42:00Z
+
+work_timezone:
+Asia/Manila
+
+Display:
+
+9:17 AM – 10:42 AM
+Asia/Manila
+
+Do NOT store only formatted local strings.
+
+============================================================
+12. "ACTUAL TIME OF THE REGION"
+============================================================
+
+Requirement:
+
+Show the current time corresponding to the Talent's selected work
+timezone/region.
+
+Example:
+
+Local time
+10:42 AM
+
+Timezone
+Asia/Manila (UTC+08:00)
+
+Do NOT attempt GPS tracking.
+
+Do NOT claim this proves the Talent is physically located in that region.
+
+Label it accurately as:
+
+Work timezone
+or
+Local timezone
+
+not:
+Verified physical location.
+
+============================================================
+13. CONTRACT / ENGAGEMENT RELATIONSHIP
+============================================================
+
+Clock must only allow time tracking for eligible active tracked
+engagements/contracts.
+
+For the current test:
+
+Website Developer
+Val Test
+Client workspace: Testinguuu
+
+should be tied to the actual active hiring contract.
+
+Do not allow clocking time against:
+- unsigned contract
+- inactive contract
+- unrelated Client
+- Guaranteed/not-tracked engagement if existing business rules say it
+  does not use tracked hours
+
+============================================================
+14. TIMESHEET SUBMISSION
+============================================================
+
+Preserve:
+
+[ Submit for review ]
+
+Submission should use completed clock-derived sessions for the period.
+
+An actively running session should NOT be silently treated as a completed
+session.
+
+If Talent attempts to submit while clocked in, either:
+
+- prevent submission with clear message
+
+or
+
+- follow existing documented business behavior.
+
+Prefer preventing submission until the current session is clocked out
+unless existing requirements specify otherwise.
+
+============================================================
+15. CLIENT VISIBILITY
+============================================================
+
+After Talent records time:
+
+Client should see the correct tracked hours in its Timesheet/Team views.
+
+Verify the same canonical clock_sessions are used.
+
+Do not reintroduce legacy time_entries as a competing source.
+
+============================================================
+16. TESTS
+============================================================
+
+Add tests for:
+
+1. Active tracked contract → Clock In allowed.
+2. Unsigned/inactive contract → rejected.
+3. Clock In creates clock_session.
+4. Duplicate Clock In does not create duplicate active session.
+5. Active session survives page/API reload.
+6. Clock Out closes correct session.
+7. Duration derives correctly.
+8. Timesheet reads completed clock sessions.
+9. Active session displayed separately.
+10. Timezone persists.
+11. UTC timestamps display correctly in Asia/Manila.
+12. DST-aware timezone displays correctly.
+13. Client sees same tracked total.
+14. Guaranteed/not-tracked behavior remains correct.
+15. Cross-Talent/Client access remains rejected.
+
+============================================================
+MANUAL UAT
+============================================================
+
+Using the hired test Talent:
+
+1. Set work timezone.
+2. Select Asia/Manila for test.
+3. Verify current local time is correct.
+4. Open Clock.
+5. Select Website Developer engagement.
+6. Clock In.
+7. Verify timer starts.
+8. Wait several minutes.
+9. Navigate away.
+10. Return to Clock.
+11. Verify timer did NOT reset.
+12. Open Timesheets while working.
+13. Verify Currently Working state.
+14. Return to Clock.
+15. Clock Out.
+16. Verify start/end/local timezone.
+17. Open Timesheets.
+18. Verify recorded session.
+19. Verify daily total.
+20. Verify period total.
+21. Submit for review.
+22. Log in as Client.
+23. Verify same tracked hours are visible.
+
+============================================================
+DELIVERABLE
+============================================================
+
+Report:
+
+- existing clock architecture found
+- files changed
+- timezone field reused/added
+- active-session API behavior
+- timer implementation
+- refresh/recovery behavior
+- Clock Out implementation
+- Timesheet integration
+- Client integration
+- automated tests
+- manual UAT status
+
+Do not report live timer UAT as PASS unless an actual Clock In → wait →
+refresh/navigation → Clock Out test was performed.

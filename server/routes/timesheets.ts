@@ -138,7 +138,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
 
   async function loadPeriods(scopeSql: string, scopeArgs: unknown[], eligibilityOnly = false) {
     const contractResult = await query(
-      `SELECT hc.id, hc.effective_end_date, j.time_zone, ${eligibilityOnly ? "hc.billing_mode" : TIMESHEET_CONTEXT_SQL} FROM hiring_contracts hc
+      `SELECT hc.id, hc.effective_end_date, COALESCE(hc.work_timezone, j.time_zone) AS time_zone, ${eligibilityOnly ? "hc.billing_mode" : TIMESHEET_CONTEXT_SQL} FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
        JOIN jobs j ON j.id = js.job_id
        LEFT JOIN users client ON client.id = js.client_id
@@ -235,8 +235,9 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
         ? new Date(rawEnd) > periodEnd ? periodEnd : new Date(rawEnd)
         : null;
       const effectiveEnd = unresolved || !clippedEnd || clippedEnd <= clippedStart ? null : clippedEnd;
-      const status = unresolved ? `exception_${row.exception_status}` : effectiveEnd ? "eligible" : "unresolved";
-      if (status !== "eligible") problems.push(`Session ${row.id} requires explicit OnSpot Admin resolution.`);
+      const status = unresolved ? `exception_${row.exception_status}` : effectiveEnd ? "eligible" : !rawEnd ? "active" : "unresolved";
+      if (status === "active") problems.push("Clock out before submitting this timesheet.");
+      else if (status !== "eligible") problems.push(`Session ${row.id} requires explicit OnSpot Admin resolution.`);
       return {
         id: row.id, startedAt: clippedStart.toISOString(), endedAt: row.ended_at ?? null,
         effectiveEndAt: effectiveEnd?.toISOString() ?? null, status,
@@ -268,7 +269,16 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       workTimezone: workTimezone ?? null, jobTitle: period.job_title, clientName: period.client_name ?? null,
       days, totalHours: Math.round(days.reduce((sum, day) => sum + day.hours, 0) * 10000) / 10000,
       approvalBlocked: problems.length > 0, blockingIssues: Array.from(new Set(problems)),
-      sessions: outputSessions,
+      serverNow: new Date().toISOString(),
+      activeSession: sessions.rows.find((row: any) => !row.ended_at && row.exception_status !== "approved")
+        ? (() => {
+          const row = sessions.rows.find((item: any) => !item.ended_at && item.exception_status !== "approved");
+          return { id: row.id, hiringContractId: period.hiring_contract_id,
+            startedAt: new Date(row.started_at).toISOString(), workTimezone: workTimezone ?? null,
+            status: row.exception_status ? `exception_${row.exception_status}` : "active" };
+        })()
+        : null,
+      sessions: outputSessions.filter((session: any) => session.status !== "active"),
       revisions: revisions.rows.map((row: any) => ({
         id: row.id, version: row.version, reason: row.reason,
         exceptionApproved: row.exception_approved, workTimezone: row.work_timezone, createdAt: row.created_at,
@@ -352,6 +362,8 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
+      // Same lock as Clock In/Out: submission cannot race a new open session.
+      await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [talentId]);
       const locked = await client.query(
          `SELECT tp.* FROM timesheet_periods tp
          JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
@@ -362,6 +374,14 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       if (!locked.rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ error: "Timesheet period not found" }); }
       if (!["open", "rejected"].includes(locked.rows[0].status)) {
         await client.query("ROLLBACK"); return res.status(409).json({ error: "Timesheet cannot be submitted in its current status" });
+      }
+      const open = await client.query(`SELECT id FROM clock_sessions
+        WHERE talent_id = $1 AND hiring_contract_id = $2 AND ended_at IS NULL
+          AND exception_status IS DISTINCT FROM 'approved' LIMIT 1`,
+        [talentId, locked.rows[0].hiring_contract_id]);
+      if (open.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "Clock out before submitting this timesheet." });
       }
       await client.query(`UPDATE timesheet_periods SET status = 'submitted', submitted_at = now(), updated_at = now() WHERE id = $1`, [req.params.id]);
       await client.query(`INSERT INTO timesheet_audit (timesheet_period_id, actor_id, action) VALUES ($1, $2, 'submitted')`, [req.params.id, talentId]);

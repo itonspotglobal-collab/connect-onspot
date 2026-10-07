@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertCircle, Clock3, RefreshCw } from "lucide-react";
+import { useServerClock } from "@/hooks/useServerClock";
+import { elapsedSeconds, formatElapsed, formatWorkTime, isValidTimeZone, workLocalInput, workLocalInputInstant } from "@/lib/workClockTime";
 
 type Role = "talent" | "client" | "admin";
 type Session = { id: string; startedAt: string; endedAt: string | null; effectiveEndAt: string | null; status: string };
+type ActiveSession = { id: string; hiringContractId: string; startedAt: string; status: string; workTimezone: string | null };
 type Correction = { id: string; sessionId: string; requestedStartedAt: string | null; requestedEndAt: string | null; reason: string; status: string; decisionReason: string | null; createdAt: string; decidedAt: string | null };
 type Workspace = { id: string; name: string };
 type Engagement = {
@@ -32,6 +35,7 @@ type Period = {
   jobId?: string | null; talentId?: string | null; talentName?: string | null; talentAvatar?: string | null;
   clientId?: string | null; organizations?: Workspace[]; billingMode?: string | null;
   totalHours: number; approvalBlocked: boolean; blockingIssues: string[]; sessions: Session[];
+  activeSession?: ActiveSession | null; serverNow?: string;
   revisions: Array<{ id: string; version: number; reason: string; exceptionApproved: boolean; createdAt: string }>;
   corrections: Correction[];
   disputes: Array<{ id: string; reason: string; status: string; resolutionReason: string | null; createdAt: string; resolvedAt: string | null }>;
@@ -39,42 +43,7 @@ type Period = {
 
 const fmt = (instant: string | null | undefined, timezone?: string | null) => {
   if (!instant) return "Not recorded";
-  const date = new Date(instant);
-  if (Number.isNaN(date.getTime())) return "Not recorded";
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short", ...(timezone ? { timeZone: timezone } : {}) }).format(date);
-};
-const zonedParts = (date: Date, timezone: string) => {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
-  }).formatToParts(date);
-  return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
-};
-const inputInstant = (value: string, timezone?: string | null) => {
-  if (!value) return undefined;
-  if (!timezone) return new Date(value).toISOString();
-  const [datePart, timePart] = value.split("T");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute] = timePart.split(":").map(Number);
-  const target = Date.UTC(year, month - 1, day, hour, minute);
-  let instant = target;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const parts = zonedParts(new Date(instant), timezone);
-    const represented = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
-    instant += target - represented;
-  }
-  return new Date(instant).toISOString();
-};
-const localInput = (value?: string | null, timezone?: string | null) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  if (timezone) {
-    const p = zonedParts(date, timezone);
-    return `${String(p.year).padStart(4, "0")}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}T${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
-  }
-  const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return shifted.toISOString().slice(0, 16);
+  return formatWorkTime(instant, timezone);
 };
 
 export default function Timesheets({ role }: { role: Role }) {
@@ -107,9 +76,12 @@ export default function Timesheets({ role }: { role: Role }) {
     engagements?: Engagement[];
     eligible?: boolean;
     trackedEligible?: boolean;
+    serverNow?: string;
   }>({
     queryKey: [queryEndpoint],
     queryFn: async () => (await apiRequest("GET", queryEndpoint)).json(),
+    refetchOnWindowFocus: true,
+    refetchInterval: role === "talent" ? 60_000 : false,
   });
   const periods = data?.periods ?? [];
   const engagements = data?.engagements ?? [];
@@ -138,6 +110,31 @@ export default function Timesheets({ role }: { role: Role }) {
   const noPeriodEngagements = filteredEngagements.filter((item) => !periodContractIds.has(item.hiringContractId));
   const activeId = selectedId && filteredPeriods.some((period) => period.id === selectedId) ? selectedId : filteredPeriods[0]?.id;
   const period = useMemo(() => filteredPeriods.find((item) => item.id === activeId), [filteredPeriods, activeId]);
+  const activeEntry = useMemo(() => {
+    if (role !== "talent") return null;
+    const bySessionId = new Map<string, { session: ActiveSession; period: Period }>();
+    periods.forEach((candidate) => {
+      const session = candidate.activeSession;
+      if (!session || bySessionId.has(session.id)) return;
+      bySessionId.set(session.id, { session, period: candidate });
+    });
+    const entries = Array.from(bySessionId.values());
+    return entries.find(({ session }) => periods.some((candidate) => candidate.hiringContractId === session.hiringContractId))
+      ?? entries[0]
+      ?? null;
+  }, [role, periods]);
+  const activeSession = activeEntry?.session ?? null;
+  const activePeriod = activeSession
+    ? periods.find((candidate) => candidate.hiringContractId === activeSession.hiringContractId) ?? activeEntry?.period
+    : undefined;
+  const activeEngagement = activeSession
+    ? engagements.find((candidate) => candidate.hiringContractId === activeSession.hiringContractId)
+    : undefined;
+  const activeJobTitle = activePeriod?.jobTitle || activeEngagement?.jobTitle || "Tracked engagement";
+  const activeClientName = activePeriod?.clientName || activeEngagement?.clientName;
+  const activeOrganizations = activePeriod?.organizations || activeEngagement?.organizations || [];
+  const serverNow = useServerClock(activeEntry?.period.serverNow ?? period?.serverNow ?? data?.serverNow);
+  const activeSessionForPeriod = !!activeSession && !!period && activeSession.hiringContractId === period.hiringContractId;
   const refresh = () => queryClient.invalidateQueries({ queryKey: [queryEndpoint] });
   useEffect(() => {
     setCorrectionSession("");
@@ -168,16 +165,39 @@ export default function Timesheets({ role }: { role: Role }) {
   });
   const submitCorrection = () => {
     if (!period || !correctionSession || !correctionReason.trim() || (!correctionStart && !correctionEnd)) return;
+    if (!isValidTimeZone(period.workTimezone)) {
+      toast({ title: "Work timezone required", description: "Timestamp corrections require the engagement's saved work timezone.", variant: "destructive" });
+      return;
+    }
+    let startedAt: string | undefined;
+    let endedAt: string | undefined;
+    try {
+      startedAt = correctionStart ? workLocalInputInstant(correctionStart, period.workTimezone) : undefined;
+      endedAt = correctionEnd ? workLocalInputInstant(correctionEnd, period.workTimezone) : undefined;
+    } catch (error) {
+      toast({ title: "Invalid local timestamp", description: error instanceof Error ? error.message : "Check the selected work timezone and time.", variant: "destructive" });
+      return;
+    }
     mutate.mutate({
       path: `${endpoint}/${period.id}/corrections`,
-      body: { corrections: [{ sessionId: correctionSession, ...(correctionStart ? { startedAt: inputInstant(correctionStart, period.workTimezone) } : {}), ...(correctionEnd ? { endedAt: inputInstant(correctionEnd, period.workTimezone) } : {}), reason: correctionReason.trim() }] },
+      body: { corrections: [{ sessionId: correctionSession, ...(startedAt ? { startedAt } : {}), ...(endedAt ? { endedAt } : {}), reason: correctionReason.trim() }] },
     });
     setCorrectionStart(""); setCorrectionEnd(""); setCorrectionReason(""); setCorrectionSession("");
   };
   const review = (decision: "approve" | "reject" | "edit" | "exception") => {
     if (!period || !reviewReason.trim()) return;
-    const edits = Object.entries(sessionEdits).filter(([, times]) => times.startedAt && times.endedAt)
-      .map(([sessionId, times]) => ({ sessionId, startedAt: inputInstant(times.startedAt, period.workTimezone), endedAt: inputInstant(times.endedAt, period.workTimezone) }));
+    if (!isValidTimeZone(period.workTimezone)) {
+      toast({ title: "Work timezone required", description: "Timestamp edits require the engagement's saved work timezone.", variant: "destructive" });
+      return;
+    }
+    let edits: Array<{ sessionId: string; startedAt: string; endedAt: string }>;
+    try {
+      edits = Object.entries(sessionEdits).filter(([, times]) => times.startedAt && times.endedAt)
+        .map(([sessionId, times]) => ({ sessionId, startedAt: workLocalInputInstant(times.startedAt, period.workTimezone!), endedAt: workLocalInputInstant(times.endedAt, period.workTimezone!) }));
+    } catch (error) {
+      toast({ title: "Invalid local timestamp", description: error instanceof Error ? error.message : "Check the selected work timezone and time.", variant: "destructive" });
+      return;
+    }
     const decisions = period.corrections.filter((item) => item.status === "pending").map((item) => ({
       correctionId: item.id, decision: correctionDecisions[item.id], reason: reviewReason.trim(),
     }));
@@ -198,7 +218,7 @@ export default function Timesheets({ role }: { role: Role }) {
             <p className="mt-2 text-sm text-slate-600">{role === "talent" ? "Review and submit recorded work for your active Client engagements." : role === "client" ? "Review recorded work for your hired Talent." : "Review submitted periods, correction proposals and clock anomalies."}</p>
           </div>
           <div className="flex items-center gap-2">
-            {role === "talent" && data?.trackedEligible === true && <Button variant="outline" asChild><Link href="/talent/clock"><Clock3 className="mr-2 h-4 w-4" />Open Clock</Link></Button>}
+            {role === "talent" && data?.trackedEligible === true && <Button variant="outline" asChild><Link href={`/talent/clock${period ? `?hiringContractId=${encodeURIComponent(period.hiringContractId)}` : ""}`}><Clock3 className="mr-2 h-4 w-4" />Open Clock</Link></Button>}
             <Button variant="outline" onClick={() => refetch()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
           </div>
         </header>
@@ -238,6 +258,23 @@ export default function Timesheets({ role }: { role: Role }) {
             {deepLinkedOrganizationId && <p className="sm:col-span-2 lg:col-span-5 text-xs text-slate-500">Showing records available to this Client for the selected workspace.</p>}
           </section>
         )}
+        {role === "talent" && !isLoading && !isError && activeSession && <Card className="mb-5 border-indigo-200 bg-indigo-50/70"><CardContent className="flex flex-wrap items-center justify-between gap-4 p-5 md:p-6">
+          <div>
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-indigo-700">
+              {activeSession.status === "active" && <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-600" />}
+              {activeSession.status === "active" ? "Currently working" : "Open session · needs review"}
+            </p>
+            <h3 className="mt-2 font-semibold text-slate-950">{activeJobTitle}</h3>
+            {activeClientName && <p className="mt-1 text-sm text-slate-600">Client: {activeClientName}</p>}
+            {activeOrganizations.length > 0 && <p className="mt-1 text-xs text-slate-500">Client workspaces: {activeOrganizations.map((workspace) => workspace.name).join(", ")}</p>}
+            <p className="mt-1 text-sm text-slate-600">Started {fmt(activeSession.startedAt, activeSession.workTimezone || activePeriod?.workTimezone)}</p>
+            <p className="mt-1 text-xs text-slate-500">Work timezone: {activeSession.workTimezone || activePeriod?.workTimezone || "Not specified"} · Contract {activeSession.hiringContractId}</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right"><p className="text-xs font-medium text-indigo-700">Elapsed</p><p className="text-xl font-semibold tabular-nums text-slate-950">{formatElapsed(elapsedSeconds(activeSession.startedAt, serverNow))}</p></div>
+            <Button variant="outline" asChild><Link href={`/talent/clock?hiringContractId=${encodeURIComponent(activeSession.hiringContractId)}`}><Clock3 className="mr-2 h-4 w-4" />Open active engagement</Link></Button>
+          </div>
+        </CardContent></Card>}
         {isLoading ? <p className="py-12 text-center text-sm text-slate-500">Loading timesheets…</p>
           : isError ? <Card><CardContent className="p-6 text-sm text-red-700">Unable to load timesheets: {(error as Error).message}<Button variant="outline" size="sm" className="ml-3" onClick={() => refetch()}>Retry</Button></CardContent></Card>
           : role === "talent" && data?.eligible === false && engagements.length === 0 && !periods.length
@@ -317,8 +354,8 @@ export default function Timesheets({ role }: { role: Role }) {
                     <div className="flex flex-wrap justify-between gap-2"><span className="text-xs font-medium text-slate-500">Session {session.id}</span><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">{session.status}</span></div>
                     <p className="mt-2 text-sm text-slate-800">{fmt(session.startedAt, period.workTimezone)} → {fmt(end, period.workTimezone)}</p>
                     {role === "admin" && <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <label className="text-xs text-slate-600">Final start timestamp ({period.workTimezone || "browser timezone"})<input aria-label={`Final start for session ${session.id}`} type="datetime-local" className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm" value={sessionEdits[session.id]?.startedAt ?? localInput(session.startedAt, period.workTimezone)} onChange={(e) => setSessionEdits({ ...sessionEdits, [session.id]: { startedAt: e.target.value, endedAt: sessionEdits[session.id]?.endedAt ?? localInput(end, period.workTimezone) } })} /></label>
-                      <label className="text-xs text-slate-600">Final end timestamp ({period.workTimezone || "browser timezone"})<input aria-label={`Final end for session ${session.id}`} type="datetime-local" className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm" value={sessionEdits[session.id]?.endedAt ?? localInput(end, period.workTimezone)} onChange={(e) => setSessionEdits({ ...sessionEdits, [session.id]: { startedAt: sessionEdits[session.id]?.startedAt ?? localInput(session.startedAt, period.workTimezone), endedAt: e.target.value } })} /></label>
+                      <label className="text-xs text-slate-600">Final start timestamp ({period.workTimezone || "work timezone not set"})<input disabled={!isValidTimeZone(period.workTimezone)} aria-label={`Final start for session ${session.id}`} type="datetime-local" className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm" value={sessionEdits[session.id]?.startedAt ?? workLocalInput(session.startedAt, period.workTimezone)} onChange={(e) => setSessionEdits({ ...sessionEdits, [session.id]: { startedAt: e.target.value, endedAt: sessionEdits[session.id]?.endedAt ?? workLocalInput(end, period.workTimezone) } })} /></label>
+                      <label className="text-xs text-slate-600">Final end timestamp ({period.workTimezone || "work timezone not set"})<input disabled={!isValidTimeZone(period.workTimezone)} aria-label={`Final end for session ${session.id}`} type="datetime-local" className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm" value={sessionEdits[session.id]?.endedAt ?? workLocalInput(end, period.workTimezone)} onChange={(e) => setSessionEdits({ ...sessionEdits, [session.id]: { startedAt: sessionEdits[session.id]?.startedAt ?? workLocalInput(session.startedAt, period.workTimezone), endedAt: e.target.value } })} /></label>
                     </div>}
                     {role === "talent" && !["approved", "disputed"].includes(period.status) && <details className="mt-3">
                       <summary className="cursor-pointer text-xs font-semibold text-indigo-700">{pending ? "Correction pending" : "Request a timestamp correction"}</summary>
@@ -335,7 +372,7 @@ export default function Timesheets({ role }: { role: Role }) {
 
               {period.corrections.length > 0 && <Card><CardContent className="p-5 md:p-6"><h3 className="font-semibold text-slate-900">Timestamp correction requests</h3><div className="mt-3 space-y-2">{period.corrections.map((item) => <div key={item.id} className="rounded-lg bg-slate-50 p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><b className="text-slate-800">Session {item.sessionId}</b><span className="text-xs capitalize text-slate-500">{item.status}</span></div><p className="mt-1 text-xs text-slate-600">{item.reason}</p><p className="mt-1 text-xs text-slate-500">Requested: {item.requestedStartedAt ? fmt(item.requestedStartedAt, period.workTimezone) : "start unchanged"} – {item.requestedEndAt ? fmt(item.requestedEndAt, period.workTimezone) : "end unchanged"}</p>{role !== "client" && item.decisionReason && <p className="mt-1 text-xs text-slate-500">Decision note: {item.decisionReason}</p>}{role === "admin" && item.status === "pending" && <div className="mt-2 flex gap-2"><Button size="sm" variant={correctionDecisions[item.id] === "approve" ? "default" : "outline"} onClick={() => setCorrectionDecisions({ ...correctionDecisions, [item.id]: "approve" })}>Approve</Button><Button size="sm" variant={correctionDecisions[item.id] === "reject" ? "default" : "outline"} onClick={() => setCorrectionDecisions({ ...correctionDecisions, [item.id]: "reject" })}>Reject</Button></div>}</div>)}</div></CardContent></Card>}
 
-              {role === "talent" && ["open", "rejected"].includes(period.status) && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Submit timesheet</h3><p className="mt-1 text-sm text-slate-500">Submission sends the recorded clock-derived period to OnSpot Admin for review.</p><Button className="mt-3" disabled={mutate.isPending || !period.sessions.length} onClick={() => mutate.mutate({ path: `${endpoint}/${period.id}/submit`, body: {} })}>Submit for review</Button></CardContent></Card>}
+              {role === "talent" && ["open", "rejected"].includes(period.status) && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Submit timesheet</h3><p className="mt-1 text-sm text-slate-500">Submission sends the recorded clock-derived period to OnSpot Admin for review.</p>{activeSessionForPeriod && <p className="mt-2 text-sm text-amber-800">{activeSession?.status === "active" ? "Clock out of this engagement before submitting. Its open session is not included in recorded period hours." : "This engagement has an open session that needs review before its timesheet can be submitted."}</p>}<Button className="mt-3" disabled={mutate.isPending || !period.sessions.length || activeSessionForPeriod} onClick={() => mutate.mutate({ path: `${endpoint}/${period.id}/submit`, body: {} })}>Submit for review</Button></CardContent></Card>}
               {role === "client" && period.status === "approved" && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Dispute this approved timesheet</h3><p className="mt-1 text-sm text-slate-500">A clear reason is required and will be reviewed by the timesheet administrator.</p><textarea maxLength={2000} rows={3} className="mt-3 w-full rounded-md border border-slate-300 p-2 text-sm" value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Describe the issue with this approved period" /><Button className="mt-3" variant="destructive" disabled={mutate.isPending || !disputeReason.trim()} onClick={() => mutate.mutate({ path: `${endpoint}/${period.id}/dispute`, body: { reason: disputeReason.trim() } })}>Submit dispute</Button></CardContent></Card>}
               {role === "admin" && ["submitted", "disputed"].includes(period.status) && <Card><CardContent className="p-5 md:p-6"><h3 className="font-semibold text-slate-900">Review decision</h3><p className="mt-1 text-sm text-slate-500">Provide a decision reason. For approved corrections, include the final timestamps in the session fields above.</p><label className="mt-4 block text-xs font-medium text-slate-600">Decision reason<textarea rows={3} className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm" value={reviewReason} onChange={(e) => setReviewReason(e.target.value)} placeholder="Record why this review decision is being made" /></label><div className="mt-4 flex flex-wrap gap-2">{(["approve", "reject", "edit", "exception"] as const).map((choice) => <Button key={choice} variant={choice === "reject" ? "destructive" : reviewDecision === choice ? "default" : "outline"} onClick={() => setReviewDecision(choice)} className="capitalize">{choice}</Button>)}<Button className="ml-auto" disabled={mutate.isPending || !reviewReason.trim() || (reviewDecision === "edit" && !Object.keys(sessionEdits).length) || period.corrections.some((item) => item.status === "pending" && !correctionDecisions[item.id])} onClick={() => review(reviewDecision)}>Record {reviewDecision} decision</Button></div></CardContent></Card>}
               {role !== "client" && period.revisions.length > 0 && <Card><CardContent className="p-5"><h3 className="font-semibold text-slate-900">Approved revisions</h3><div className="mt-2 space-y-2">{period.revisions.map((item) => <p key={item.id} className="text-sm text-slate-600">Version {item.version}{item.exceptionApproved ? " · exception approved" : ""} · {item.reason} <span className="text-xs text-slate-400">({fmt(item.createdAt, period.workTimezone)})</span></p>)}</div></CardContent></Card>}

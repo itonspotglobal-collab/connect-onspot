@@ -1772,6 +1772,7 @@ export const hiringContracts = pgTable("hiring_contracts", {
   status:          text("status").notNull().default("draft"),
   // Snapshotted from platform_settings('contract_signing_entity') at row creation
   signingEntity:   text("signing_entity").notNull().default("OnSpot Technologies Inc."),
+  workTimezone: text("work_timezone"),
   billingMode:     text("billing_mode"),
   effectiveStartDate: date("effective_start_date"),
   effectiveEndDate: date("effective_end_date"),

@@ -1037,7 +1037,7 @@ export async function runTalentInvoiceAutomation(now = new Date()) {
     `SELECT hc.id, hc.offer_id, hc.billing_mode, hc.submission_id,
             hc.effective_start_date, hc.billing_activated_at, hc.effective_end_date,
             o.rate, o.rate_currency, o.engagement_type,
-            js.talent_id, js.client_id, j.time_zone
+            js.talent_id, js.client_id, COALESCE(hc.work_timezone, j.time_zone) AS time_zone
        FROM hiring_contracts hc
        JOIN offers o ON o.id = hc.offer_id
        JOIN job_submissions js ON js.id = hc.submission_id
