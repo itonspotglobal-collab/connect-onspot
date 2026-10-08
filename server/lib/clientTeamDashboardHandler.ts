@@ -137,7 +137,7 @@ SELECT ge.talent_id,
              ELSE NULL END)) AS latest_activity_at,
            BOOL_OR(cs.started_at <= $2::timestamptz AND cs.ended_at IS NULL
              AND cs.exception_status IS NULL AND cs.exception_type IS NULL
-             AND cs.started_at > $2::timestamptz - INTERVAL '30 minutes') AS is_currently_clocked_in,
+             AND cs.started_at >= $2::timestamptz - INTERVAL '16 hours') AS is_currently_clocked_in,
            COUNT(*) FILTER (WHERE (
              cs.exception_status IS DISTINCT FROM 'approved'
              AND (cs.ended_at IS NULL OR cs.exception_status IS NOT NULL)

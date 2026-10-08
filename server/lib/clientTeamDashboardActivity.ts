@@ -203,7 +203,9 @@ export function calculateModernDashboardActivity(
         && session.endedAt == null
         && (!contractStart || startedAt >= contractStart)
         && (!contractEnd || nowInstant < contractEnd)
-        && nowInstant.getTime() - startedAt.getTime() < 30 * 60 * 1000
+        // Match the canonical Clock's 16-hour missed-out threshold. Work
+        // sessions do not become offline merely because they exceed 30 minutes.
+        && nowInstant.getTime() - startedAt.getTime() <= 16 * 60 * 60 * 1000
       ) {
         isCurrentlyClockedIn = true;
       }

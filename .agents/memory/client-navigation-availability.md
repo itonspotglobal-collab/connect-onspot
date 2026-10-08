@@ -5,7 +5,7 @@ description: Owner-approved distinction between visible Client functionality and
 
 Client navigation must lead to implemented destinations appropriate for the Client role. Do not expose unavailable functionality merely because a named route or placeholder exists.
 
-**Why:** The owner approved removing Contracts, Payments, Projects, Performance, and ROI Analytics from visible desktop/mobile Client navigation after auditing their actual destinations.
+**Why:** The owner approved removing then-unavailable destinations from visible desktop/mobile Client navigation after auditing their actual destinations. That cleanup was not a permanent ban on a destination later given real functionality.
 
 **How to apply:** Verify the outer router, role dispatch/guard, destination, and all navigation surfaces before adding or retargeting a Client link. Preserve working navigation and business logic.
 

@@ -34,7 +34,7 @@ type AdminActiveContract = ActiveContract & {
   talent_email?: string;
 };
 const adminContractDescription = (contract: AdminActiveContract) =>
-  `${contract.job_title} · Client: ${contract.client_email || "identity unavailable"} · Talent: ${contract.talent_email || "identity unavailable"} · ${contract.billing_mode} · signed ${prettyDate(contract.effective_start_date)}`;
+  `${contract.job_title} · Client: ${contract.client_email || "identity unavailable"} · Talent: ${contract.talent_email || "identity unavailable"} · ${contract.billing_mode} · signed ${prettyDate(contract.effective_start_date)}${contract.effective_end_date ? ` · approved final service date ${prettyDate(contract.effective_end_date)}` : ""}`;
 
 const todayInNewYork = () => new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
@@ -93,10 +93,12 @@ function PartyEndRequests({ role }: { role: RequesterRole }) {
   const contractsQuery = useQuery<{ contracts: ActiveContract[] }>({
     queryKey: [`${root}/active-hiring-contracts`],
     queryFn: () => json(`${root}/active-hiring-contracts`),
+    refetchOnWindowFocus: "always",
   });
   const requestsQuery = useQuery<{ requests: EndRequest[] }>({
     queryKey: [`${root}/hiring-contract-termination-requests`],
     queryFn: () => json(`${root}/hiring-contract-termination-requests`),
+    refetchOnWindowFocus: "always",
   });
   const [contractId, setContractId] = useState("");
   const [endDate, setEndDate] = useState(todayInNewYork);
@@ -148,7 +150,7 @@ function PartyEndRequests({ role }: { role: RequesterRole }) {
               })}
             </select>
           </label>
-          {selectedContract && <p id="end-request-contract-note" className="mt-2 text-xs text-slate-500">Signed {selectedContract.billing_mode} agreement · effective from {prettyDate(selectedContract.effective_start_date)}</p>}
+          {selectedContract && <p id="end-request-contract-note" className="mt-2 text-xs text-slate-500">Signed {selectedContract.billing_mode} agreement · effective from {prettyDate(selectedContract.effective_start_date)}{selectedContract.effective_end_date && <> · approved final service date {prettyDate(selectedContract.effective_end_date)}</>}</p>}
           <label className="mt-4 block text-sm font-medium text-slate-700">Requested final service date
             <input type="date" required min={todayInNewYork()} value={endDate} onChange={(event) => setEndDate(event.target.value)} className="mt-1 w-full rounded-md border border-slate-300 bg-white p-2.5 sm:max-w-xs" />
             <span className="mt-1 block text-xs font-normal text-slate-500">Use today or a future date. Past end dates require a separate Admin resolution.</span>
@@ -181,10 +183,12 @@ function AdminEndRequests() {
   const contractsQuery = useQuery<{ contracts: AdminActiveContract[] }>({
     queryKey: ["/api/admin/active-hiring-contracts"],
     queryFn: () => json("/api/admin/active-hiring-contracts"),
+    refetchOnWindowFocus: "always",
   });
   const requestsQuery = useQuery<{ requests: EndRequest[] }>({
     queryKey: ["/api/admin/hiring-contract-termination-requests", "open"],
     queryFn: () => json("/api/admin/hiring-contract-termination-requests?status=open"),
+    refetchOnWindowFocus: "always",
   });
   const decision = useMutation({
     mutationFn: async ({ id, choice }: { id: string; choice: "approve" | "reject" }) => (await apiRequest("POST", `/api/admin/hiring-contract-termination-requests/${id}/decision`, {
@@ -193,6 +197,7 @@ function AdminEndRequests() {
     onSuccess: (_data, variables) => {
       setReasons((current) => ({ ...current, [variables.id]: "" }));
       void qc.invalidateQueries({ queryKey: ["/api/admin/hiring-contract-termination-requests"] });
+      void qc.invalidateQueries({ queryKey: ["/api/admin/active-hiring-contracts"] });
       toast({ title: `Contract end request ${variables.choice === "approve" ? "approved" : "rejected"}` });
     },
     onError: (error: Error) => toast({ title: "Could not decide end request", description: error.message, variant: "destructive" }),
@@ -256,7 +261,7 @@ function AdminEndRequests() {
               })}
             </select>
           </label>
-          {selectedDirectContract && <p className="mt-2 text-xs text-slate-500">Signed {selectedDirectContract.billing_mode} agreement · effective from {prettyDate(selectedDirectContract.effective_start_date)}</p>}
+          {selectedDirectContract && <p className="mt-2 text-xs text-slate-500">Signed {selectedDirectContract.billing_mode} agreement · effective from {prettyDate(selectedDirectContract.effective_start_date)}{selectedDirectContract.effective_end_date && <> · approved final service date {prettyDate(selectedDirectContract.effective_end_date)}</>}</p>}
           <label className="mt-4 block text-sm font-medium text-slate-700">Final service date
             <input type="date" required min={todayInNewYork()} value={directEndDate} onChange={(event) => setDirectEndDate(event.target.value)} className="mt-1 w-full rounded-md border border-slate-300 bg-white p-2.5 sm:max-w-xs" />
             <span className="mt-1 block text-xs font-normal text-slate-500">Use today or a future date in Eastern Time.</span>

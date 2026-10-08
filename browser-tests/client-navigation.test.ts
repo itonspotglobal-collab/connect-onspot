@@ -8,15 +8,17 @@ import {
 const outer = routesInFunction("AppContent");
 const client = routesInFunction("ClientRouter");
 const publicRoutes = routesInFunction("PublicRouter");
-const removed = ["/contracts", "/payments", "/projects", "/performance", "/roi"];
+// Contracts gained a real role-aware document/signing implementation after the
+// original navigation audit. Payments and Coming Soon items remain unexposed.
+const removed = ["/payments", "/projects", "/performance", "/roi"];
 const retained = [
   "/dashboard", "/hire-talent", "/messages", "/client/interviews", "/clients",
   "/client/billing", "/client/monthly-invoices", "/client/contract-endings",
-  "/client/timesheets", "/client-profile", "/settings",
+  "/client/timesheets", "/client-profile", "/settings", "/contracts",
 ];
 
 describe("Client navigation and production router coverage", () => {
-  it("retains every working primary item exactly once and removes only the five approved entries", () => {
+  it("retains every currently working primary item exactly once and hides unavailable entries", () => {
     assert.deepEqual(navigationItems.map((item) => item.url).sort(), [...retained].sort());
     assert.equal(new Set(navigationItems.map((item) => item.title)).size, navigationItems.length);
   });
@@ -27,7 +29,11 @@ describe("Client navigation and production router coverage", () => {
       assert.ok(client.has(url), `Missing Client route for ${url}`);
       assert.doesNotMatch(client.get(url)!.component, /NotFound|Coming Soon|Admin|TalentProtectedRoute/);
       const dispatch = outer.get(url)!.component;
-      assert.match(dispatch, /^(ClientRouter|ClientHireTalentRoute|MessagesRoute|SettingsRoute)$/);
+      assert.match(dispatch, /^(ClientRouter|ClientHireTalentRoute|MessagesRoute|SettingsRoute|ContractsRoute)$/);
+      if (dispatch === "ContractsRoute") {
+        assert.match(functionSource(dispatch), /if \(user\?\.role === "client"\) return <ClientRouter/);
+        assert.equal(client.get(url)!.component, "ContractsPage");
+      }
       if (dispatch === "ClientHireTalentRoute") {
         assert.match(functionSource(dispatch), /user\?\.role === "client" \? <ClientRouter/);
       }
@@ -44,14 +50,14 @@ describe("Client navigation and production router coverage", () => {
     });
   }
 
-  it("does not mount or redirect the obsolete Contracts/Payments destinations", () => {
-    for (const url of removed.slice(0, 2)) {
+  it("does not mount or redirect the obsolete Payments destination", () => {
+    for (const url of removed.slice(0, 1)) {
       assert.ok(!outer.has(url) && !client.has(url) && !publicRoutes.has(url));
     }
   });
 
   it("keeps existing Coming Soon routes/components intact but unexposed", () => {
-    for (const url of removed.slice(2)) {
+    for (const url of removed.slice(1)) {
       assert.equal(outer.get(url)?.component, "ClientRouter");
       assert.match(client.get(url)?.component ?? "", /Coming Soon/);
     }
@@ -92,7 +98,8 @@ describe("Client navigation and production router coverage", () => {
       assert.ok(outer.has(match[1]), `Unregistered Client dropdown path ${match[1]}`);
       assert.ok(client.has(match[1]), `Missing Client destination ${match[1]}`);
     }
-    assert.doesNotMatch(clientDropdown, /\/contracts|\/payments|\/projects|\/performance|\/roi/);
+    assert.match(clientDropdown, /route: "\/contracts"/);
+    assert.doesNotMatch(clientDropdown, /\/payments|\/projects|\/performance|\/roi/);
   });
 
   it("uses one production sidebar for desktop/mobile without changing active-state matching", () => {
@@ -122,6 +129,6 @@ describe("Client navigation and production router coverage", () => {
     const getHired = readFileSync("client/src/pages/GetHired.tsx", "utf8");
     assert.match(getHired, /<GetHiredAssessment/);
     assert.doesNotMatch(getHired, /LinkedInImport|\/api\/linkedin\/|\/api\/objects\/upload|92%|March.*2024/);
-    assert.doesNotMatch(appSource, /<Route path="\/(contracts|payments)"/);
+    assert.doesNotMatch(appSource, /<Route path="\/payments"/);
   });
 });

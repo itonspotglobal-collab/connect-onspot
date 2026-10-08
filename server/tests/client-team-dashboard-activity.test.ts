@@ -61,6 +61,20 @@ describe("Client Team Dashboard recorded-hour aggregation", () => {
     assert.equal(result.incompleteSessionCount, 1);
     assert.equal(result.isCurrentlyClockedIn, false);
   });
+  it("preserves currently clocked-in presence after two hours without inventing completed hours", () => {
+    const startedAt = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
+    const result = calculate([session({ startedAt, endedAt: null })]);
+    assert.equal(result.isCurrentlyClockedIn, true);
+    assert.equal(result.hoursLogged, 0);
+    assert.deepEqual(result.weeklyActivity, [0, 0, 0, 0, 0, 0, 0]);
+    assert.equal(result.incompleteSessionCount, 1);
+  });
+  it("does not label an untreated missed-out clock beyond sixteen hours as currently working", () => {
+    const startedAt = new Date(now.getTime() - (16 * 60 * 60 * 1000 + 1000)).toISOString();
+    const result = calculate([session({ startedAt, endedAt: null })]);
+    assert.equal(result.isCurrentlyClockedIn, false);
+    assert.equal(result.hoursLogged, 0);
+  });
 
   it("excludes an unresolved stale missed-clock-out exception", () => {
     const result = calculate([session({
@@ -264,6 +278,7 @@ describe("Client Team Dashboard recorded-hour aggregation", () => {
     assert.match(dashboardSql, /cs\.hiring_contract_id::text = ANY\(ge\.modern_tracked_contract_ids\)/);
     assert.match(dashboardSql, /MAX\(GREATEST\(\s*cs\.started_at,\s*CASE\s+WHEN cs\.ended_at > cs\.started_at AND cs\.ended_at <= \$2::timestamptz THEN cs\.ended_at\s+ELSE NULL\s+END\s*\)\) AS latest_activity_at/);
     assert.match(dashboardSql, /cs\.ended_at IS NULL\s+AND cs\.exception_status IS NULL\s+AND cs\.exception_type IS NULL/);
+    assert.match(dashboardSql, /cs\.started_at >= \$2::timestamptz - INTERVAL '16 hours'/);
     assert.match(dashboardSql, /JSONB_AGG\(DISTINCT JSONB_BUILD_OBJECT/);
     assert.match(dashboardSql, /hours_engagement_rank/);
     assert.match(dashboardSql, /modern_activity\.clock_sessions/);

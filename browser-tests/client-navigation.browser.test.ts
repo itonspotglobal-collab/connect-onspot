@@ -14,7 +14,7 @@ import { functionSource, navigationItems } from "./helpers/clientNavigationSourc
 // intercepted. This verifies routing—not live authentication or business UI.
 const routerNames = [
   "AppContent", "PublicRouter", "ClientRouter", "SettingsRoute",
-  "ClientHireTalentRoute", "ClientTalentRoute", "MessagesRoute", "TalentRouter",
+  "ClientHireTalentRoute", "ClientTalentRoute", "MessagesRoute", "TalentRouter", "ContractsRoute",
 ];
 const routerSource = routerNames.map(functionSource).join("\n");
 const realComponents = new Set([
@@ -32,6 +32,7 @@ const expectedPages: Record<string, string> = {
   "/hire-talent": "HireTalentPage",
   "/messages": "Messages",
   "/client/interviews": "ClientInterviews",
+  "/contracts": "ContractsPage",
   "/clients": "ClientTeamDashboard",
   "/client/billing": "Billing",
   "/client/monthly-invoices": "Invoicing",
@@ -151,7 +152,7 @@ for (const width of [1280, 390]) {
       await f.page.getByTestId("page-Dashboard").waitFor({ timeout: 60_000 });
       for (const item of navigationItems) {
         await openSidebar(f.page, width < 768);
-        for (const path of ["/contracts", "/payments", "/projects", "/performance", "/roi"]) {
+        for (const path of ["/payments", "/projects", "/performance", "/roi"]) {
           assert.equal(await f.page.locator(`a[href="${path}"]`).count(), 0);
         }
         const link = f.page.getByTestId(`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`);
@@ -194,7 +195,7 @@ test("nested invoice active state, browser back/forward, and existing Client Job
 test("removed routes are not retargeted and Coming Soon routes remain untouched", { timeout: 45_000 }, async () => {
   const f = await fixture(1280);
   try {
-    for (const path of ["/contracts", "/payments"]) {
+    for (const path of ["/payments"]) {
       await f.page.goto(`${baseUrl}${path}`);
       await f.page.getByTestId("page-NotFound").waitFor();
       assert.equal(new URL(f.page.url()).pathname, path);

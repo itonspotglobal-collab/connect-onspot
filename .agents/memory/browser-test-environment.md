@@ -68,3 +68,9 @@ With a frozen Playwright clock, changing device metrics can leave viewport-unit 
 **Why:** The browser retained desktop viewport-based padding during a mobile resize; advancing the fake clock did not correct it, but a fresh navigation did. This produced a false mobile-overflow failure.
 
 **How to apply:** Use a fresh navigation or separate page for each device-size layout check under a frozen clock. Preserve strict overflow assertions; do not change product CSS to accommodate stale test-browser styles.
+
+A documented specialized testing-agent kind may be unavailable in the current workspace.
+
+**Why:** The callback can reject the documented testing configuration before any verification runs; dispatching a job is not test evidence.
+
+**How to apply:** Use the existing isolated Playwright suites directly when this happens, with credential-scrubbed processes and an owned fixture target. Do not substitute a production session, bypass authentication, or report an unsupported tester dispatch as a pass.

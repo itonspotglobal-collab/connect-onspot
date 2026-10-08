@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn, execFileSync } from "node:child_process";
@@ -47,13 +47,50 @@ try {
   }
   if (!ready) throw new Error("Owned PostgreSQL fixture failed to start");
   const url = `postgresql://timesheet_fixture@127.0.0.1:${port}/onspot_timesheet_fixture`;
+  const workerEnv = {
+    ...env, DATABASE_URL: url, TIMESHEET_TEST_DATABASE_URL: url,
+    JWT_SECRET: "timesheet-fixture-only", DISABLE_AUTH: "false",
+  };
+  // Optional broader verification reuses the same owned database and credential
+  // isolation. Never point these finance integration tests at application data.
+  if (process.argv.includes("--mvp")) {
+    const schemaDir = join(root, "fresh-schema");
+    await run(process.execPath, ["node_modules/drizzle-kit/bin.cjs", "generate",
+      "--dialect", "postgresql", "--schema", "./shared/schema.ts", "--out", schemaDir], workerEnv);
+    const client = new pg.Client({ connectionString: url });
+    try {
+      await client.connect();
+      await client.query("BEGIN");
+      // pg_temp helpers need a temporary namespace on this same connection.
+      await client.query("CREATE TEMP TABLE fixture_session_bootstrap (id integer)");
+      // Reuse the real reconciliation helpers, on this same owned connection,
+      // before migrations that call their session-local pg_temp functions.
+      await client.query(await readFile("scripts/migration-reconciliation.sql", "utf8"));
+      for (const file of (await readdir(schemaDir)).filter((name) => name.endsWith(".sql")).sort()) {
+        await client.query(await readFile(join(schemaDir, file), "utf8"));
+      }
+      // Current Drizzle tables omit SQL-only financial guards. Install the
+      // finance/clock migrations, not retired pre-finance transformations that
+      // reference columns deliberately removed from the current schema.
+      for (const file of (await readdir("migrations"))
+        .filter((name) => /^\d+.*\.sql$/.test(name) && Number(name.slice(0, 4)) >= 18).sort()) {
+        await client.query(await readFile(join("migrations", file), "utf8"));
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw error;
+    } finally { await client.end(); }
+    await run(process.execPath, ["--import", "tsx", "--test", "--test-concurrency=1",
+      "server/tests/talent-invoicing.integration.test.ts",
+      "server/tests/talent-invoice-calculations.test.ts",
+      "server/tests/talent-invoices-usd-guard.test.ts",
+      "server/tests/contract-termination-usd-errors.test.ts"], workerEnv);
+  }
   await run(process.execPath, ["--import", "tsx", "--test", "--test-concurrency=1",
     "server/tests/timesheets.test.ts", "server/tests/organization-timesheets.test.ts",
     "server/tests/clock-live.test.ts", "server/tests/client-team-dashboard.test.ts",
-    "browser-tests/clock-live.browser.test.ts"], {
-    ...env, DATABASE_URL: url, TIMESHEET_TEST_DATABASE_URL: url,
-    JWT_SECRET: "timesheet-fixture-only", DISABLE_AUTH: "false",
-  });
+    "browser-tests/clock-live.browser.test.ts"], workerEnv);
 } finally {
   if (postgres && postgres.exitCode === null) {
     const exited = new Promise((resolve) => postgres.once("exit", resolve));

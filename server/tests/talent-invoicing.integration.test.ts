@@ -16,6 +16,13 @@ import { registerTalentInvoiceRoutes } from "../routes/talentInvoices.ts";
 import { registerContractTerminationRoutes } from "../routes/contractTerminations.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET || "test-only-secret";
+const fixtureUrl = new URL(process.env.DATABASE_URL || "postgresql://invalid");
+if (fixtureUrl.hostname !== "127.0.0.1"
+    || fixtureUrl.username !== "timesheet_fixture"
+    || fixtureUrl.pathname !== "/onspot_timesheet_fixture"
+    || process.env.TIMESHEET_TEST_DATABASE_URL !== process.env.DATABASE_URL) {
+  throw new Error("Financial integration requires the owned disposable database: node scripts/test-timesheets-isolated.mjs --mvp");
+}
 const app = express();
 app.use(express.json());
 
@@ -200,7 +207,7 @@ const createContract = async (params: {
   await query(
     `INSERT INTO offers
        (id, submission_id, status, rate, rate_currency, engagement_type, billing_mode, proposed_start_date)
-     VALUES ($1,$2,'accepted',$3,'PHP',$4,$5,$6::date)`,
+     VALUES ($1,$2,'accepted',$3,'USD',$4,$5,$6::date)`,
     [offerId, submissionId, params.rate, params.billingMode === "tracked" ? "Standard" : "Standard",
       params.billingMode, params.start],
   );
@@ -213,7 +220,7 @@ const createContract = async (params: {
   );
   await query(
     `INSERT INTO security_deposits (hiring_contract_id, amount, currency, status)
-     VALUES ($1,$2,'PHP','held')`,
+     VALUES ($1,$2,'USD','held')`,
     [id, (params.deposit ?? 100000).toFixed(2)],
   );
   return { id, jobId, submissionId, offerId, clientId: params.clientId, talentId: params.talentId };
@@ -558,7 +565,7 @@ it("covers authenticated claims, correction credits, monthly close, deposit cove
     assert.equal(mismatchTopUp.status, 409);
     const replenishment = await api.post(`/api/admin/security-deposits/${deposit.rows[0].id}/replenishments`)
       .set("Authorization", `Bearer ${tokens.admin}`)
-      .send({ amount: 187.5, currency: "PHP", reference: "phase3b integration replenishment" });
+      .send({ amount: 187.5, currency: "USD", reference: "phase3b integration replenishment" });
     assert.equal(replenishment.status, 201);
     assert.equal(Number(replenishment.body.replenishment.amount), 187.5);
 
@@ -986,7 +993,7 @@ it("ends signed engagements safely, preserves locked ledgers, and stops invoices
          (hiring_contract_id, offer_id, talent_id, client_id, billing_mode,
           period_start, period_end, currency, monthly_rate, amount, base_amount,
           credit_amount, commission_rate, status, drafted_at, auto_send_at, payout_due_on)
-       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'PHP',3100,$7,$7,0,0.2000,
+       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'USD',3100,$7,$7,0,0.2000,
                'draft',now(),now() + interval '100 years',$6::date)
        RETURNING id`,
       [guaranteed.id, guaranteed.offerId, ids.talent, ids.client, fullGuaranteedPeriod.start,
@@ -1100,7 +1107,7 @@ it("ends signed engagements safely, preserves locked ledgers, and stops invoices
     const futureCreditMemo = await query(
       `INSERT INTO talent_credit_memos
          (original_invoice_id, corrected_revision_id, talent_id, hiring_contract_id, currency, amount)
-       VALUES ($1,$2,$3,$4,'PHP',100) RETURNING id`,
+       VALUES ($1,$2,$3,$4,'USD',100) RETURNING id`,
       [sourceSentInvoice.id, creditRevision.rows[0].id, ids.talent, guaranteed.id],
     );
     const futureDraft = await query(
@@ -1108,7 +1115,7 @@ it("ends signed engagements safely, preserves locked ledgers, and stops invoices
          (hiring_contract_id, offer_id, talent_id, client_id, billing_mode,
           period_start, period_end, currency, monthly_rate, amount, base_amount,
           credit_amount, commission_rate, status, drafted_at, auto_send_at, payout_due_on)
-       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'PHP',3100,1000,1000,0,0.2000,
+       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'USD',3100,1000,1000,0,0.2000,
                'draft',now(),now() + interval '100 years',$6::date)
        RETURNING id`,
       [guaranteed.id, guaranteed.offerId, ids.talent, ids.client,
@@ -1129,7 +1136,7 @@ it("ends signed engagements safely, preserves locked ledgers, and stops invoices
          (hiring_contract_id, offer_id, talent_id, client_id, billing_mode,
           period_start, period_end, currency, monthly_rate, amount, base_amount,
           credit_amount, commission_rate, status, drafted_at, auto_send_at, payout_due_on)
-       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'PHP',3100,1500,1500,0,0.2000,
+       VALUES ($1,$2,$3,$4,'guaranteed',$5::date,$6::date,'USD',3100,1500,1500,0,0.2000,
                'draft',now(),now() + interval '100 years',$6::date)
        RETURNING id`,
       [raceContract.id, raceContract.offerId, ids.foreignTalent, ids.foreignClient,
@@ -1321,7 +1328,7 @@ it("ends signed engagements safely, preserves locked ledgers, and stops invoices
           period_start, period_end, currency, monthly_rate, amount, base_amount,
           credit_amount, hours, standard_hours, hourly_equivalent, commission_rate,
           timesheet_revision_id, status, drafted_at, auto_send_at, payout_due_on)
-       VALUES ($1,$2,$3,$4,'tracked',$5::date,$6::date,'PHP',3100,$7,$7,0,26,80,19.375,0.2000,
+       VALUES ($1,$2,$3,$4,'tracked',$5::date,$6::date,'USD',3100,$7,$7,0,26,80,19.375,0.2000,
                $8,'draft',now(),now() + interval '100 years',$6::date)
        RETURNING id`,
       [tracked.id, tracked.offerId, ids.foreignTalent, ids.foreignClient,

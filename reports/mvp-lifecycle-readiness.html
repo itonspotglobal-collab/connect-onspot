@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ONSpot Connect — MVP lifecycle readiness</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5f8;color:#192536;font:15px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1120px;margin:32px auto;padding:36px;background:white;border:1px solid #dde3ec;border-radius:12px}h1{font-size:29px;line-height:1.25;margin:0 0 10px}h2{font-size:21px;margin:32px 0 12px}h3{font-size:17px;margin:22px 0 8px}p{margin:9px 0}li{margin:6px 0}.muted{color:#58667a}.notice{padding:16px 20px;background:#fff4da;border-left:4px solid #ba7600;margin:22px 0}.table{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid #dfe5ed}th{background:#f0f3f8}code{font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;background:#f0f3f8;padding:2px 4px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f3f8;padding:14px;font:13px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}.pass{color:#166534;font-weight:700}.blocked{color:#8c5600;font-weight:700}.fail{color:#b42318;font-weight:700}.untested{color:#536174;font-weight:700}@media(max-width:640px){main{margin:0;padding:20px;border:0;border-radius:0}h1{font-size:24px}th,td{padding:9px}table{min-width:620px}}@media print{body{background:white}main{border:0;margin:0;padding:0}.table{overflow:visible}h2{break-after:avoid}tr{break-inside:avoid}}
+</style>
+</head>
+<body><main>
+<header>
+<h1>ONSpot Connect — MVP lifecycle readiness</h1>
+<p class="muted">8 October 2026 · Repository named in the request: itonspotglobal-collab/connect-onspot</p>
+<p>Inspected local HEAD, checked before and after the work: <code>534f774afeab9f8e99c874c4a524f8a2661a4966</code>. This identifies the inspected commit; the changes below are working-tree changes, not a newly published release.</p>
+</header>
+<div class="notice"><strong>Final assessment: BLOCKED — not yet release-verified.</strong><br>Targeted source defects are fixed and the safe regression checks pass. Termination/billing API integration, the complete authenticated lifecycle, actual recipient email delivery, and restart/redeployment persistence still require verification. No publish was performed.</div>
+
+<h2>1. What already existed</h2>
+<p>The initial audit was presented before edits. Current source, not older documentation, determined the scope.</p>
+<ul>
+<li>Client/Talent Contract End Requests routes, Admin decisions, effective end-date guards, eligible draft rebuilding, proration and locked-ledger protections already existed. No second termination workflow was created.</li>
+<li>The Client Team dashboard already combined modern Clock sessions and legacy time entries, with timezone/week grouping, incomplete-session exclusions and Guaranteed/non-attendance distinctions.</li>
+<li>Retired LinkedIn import endpoints already returned unavailable responses without simulated identity/skill writes. Manual URL editing and authentication remained separate.</li>
+<li>Get Hired already used private object references and profile-persistence handlers. Fake assessment results had already been removed; the honest unavailable state was retained.</li>
+<li>A real, role-aware Contracts page now existed. Older navigation assertions incorrectly treated it as an obsolete destination. It was preserved, not recreated.</li>
+<li>Clock, Timesheet, invoice/deposit/payment/payout ledger and Microsoft Graph/Object Storage services already existed. Their presence alone was not treated as production verification.</li>
+</ul>
+
+<h2>2. Confirmed fixes and current evidence</h2>
+<div class="table"><table>
+<thead><tr><th>MVP area</th><th>Finding/action</th><th>Current evidence and limit</th></tr></thead>
+<tbody>
+<tr><td>Contract endings</td><td>Admin approval/rejection refreshed requests but could leave active contracts stale. Infinite query freshness also prevented ordinary focus refetch. Refresh both resources, use focus refetch “always”, and display the approved final service date.</td><td><span class="pass">PASS</span> isolated real-component tests: Client/Talent submit, reload, pending/approved/rejected history, duplicate option exclusion, external approval refresh, mobile overflow; Admin decisions/cache refresh and failed-save handling. <span class="blocked">BLOCKED</span> financial API integration.</td></tr>
+<tr><td>Engagement dashboard</td><td>A healthy two-hour open Clock session lost presence after 30 minutes. Use the canonical 16-hour missed-out window in both normalization and SQL. Do not turn unfinished sessions into recorded or billable hours.</td><td><span class="pass">PASS</span> regression tests and disposable database-backed Team/Clock/Timesheet suite. Legacy presence rules and explicit profile availability precedence remain unchanged.</td></tr>
+<tr><td>LinkedIn safety</td><td>No new source defect found; preserve retired import behavior and historical profiles.</td><td><span class="pass">PASS</span> disabled-import safety checks. <span class="untested">NOT TESTED</span> real external LinkedIn sign-in and real-account manual URL editing.</td></tr>
+<tr><td>Get Hired uploads</td><td>No confirmed replacement needed. Preserve validation, formats/limits and success only after persistence.</td><td><span class="pass">PASS</span> document helper, browser and private-document handler tests. Live storage transport/ACL canary also passes. <span class="untested">NOT TESTED</span> actual résumé/video → authenticated profile database → refresh/download/restart chain.</td></tr>
+<tr><td>Assessment</td><td>Preserve unavailable assessment; no fake scores, rankings, dates or submission workflow.</td><td><span class="pass">PASS</span> targeted source/browser safety checks for the unavailable state. Real assessment delivery remains intentionally out of scope.</td></tr>
+<tr><td>Client navigation</td><td>Update stale tests to recognize implemented Contracts and the current early-return Client router. Keep obsolete Payments and hidden planned destinations out of primary navigation.</td><td><span class="pass">PASS</span> desktop/mobile navigation and destination wiring fixtures. <span class="untested">NOT TESTED</span> every destination’s real-account data and actions.</td></tr>
+<tr><td>Microsoft Graph</td><td>Required credential configuration and sender fallback are present. Authentication-only request acquired a token; no email sent.</td><td><span class="pass">PASS</span> workspace configuration/OAuth. <span class="blocked">BLOCKED</span> Graph send acceptance and recipient delivery until an approved recipient is supplied. Mailbox/send permission and production binding are unverified.</td></tr>
+<tr><td>Object Storage</td><td>Private/public path configuration present; real sidecar-backed controlled upload/read/ACL checks performed using only a fresh non-sensitive object.</td><td><span class="pass">PASS</span> signed PUT 200, exact bytes, private ACL, owner allowance, foreign/anonymous denial, fresh-client read, unsigned provider GET 403 and cleanup. <span class="untested">NOT TESTED</span> full application restart/redeployment and authenticated profile download.</td></tr>
+</tbody></table></div>
+
+<h2>3. Exact files changed</h2>
+<ul>
+<li><code>client/src/pages/ContractEndings.tsx</code> — active-contract invalidation, reliable focus refresh and approved-date presentation.</li>
+<li><code>server/lib/clientTeamDashboardActivity.ts</code> — healthy open-session presence through the 16-hour guard, without adding unfinished hours.</li>
+<li><code>server/lib/clientTeamDashboardHandler.ts</code> — matching SQL presence window; legacy handling retained.</li>
+<li><code>server/tests/client-team-dashboard-activity.test.ts</code> — two-hour/open and over-guard regressions plus SQL assertion.</li>
+<li><code>server/tests/client-team-dashboard.test.ts</code> — database-backed two-hour open-session fixture.</li>
+<li><code>browser-tests/client-navigation.test.ts</code> — correct current Contracts/Client route expectations.</li>
+<li><code>browser-tests/client-navigation.browser.test.ts</code> — preserve real Contracts destination; exclude obsolete routes correctly.</li>
+<li><code>browser-tests/contract-endings.browser.test.ts</code> — isolated requester/Admin UI, history, refresh, mobile, failure and empty-state coverage; all API responses are test fixtures, not production implementations.</li>
+<li><code>server/tests/talent-invoicing.integration.test.ts</code> — explicit owned-local-database safety guard and USD for new synthetic fixtures. Historical records were not converted; legacy-currency negative tests remain.</li>
+<li><code>scripts/test-timesheets-isolated.mjs</code> — optional owned financial fixture preparation, current schema generation and real transactional reconciliation support. Default suite passes; optional financial mode is not verified passing.</li>
+<li><code>scripts/verify-mvp-storage.ts</code> — explicit controlled-upload flag, sanitized results and owner-checked removal of only the newly generated canary.</li>
+<li><code>.agents/memory/native-fixture-schema.md</code> — disposable baseline/reconciliation lessons.</li>
+<li><code>.agents/memory/browser-test-environment.md</code> — safe direct-suite fallback when specialized testing dispatch is unsupported.</li>
+<li><code>.agents/memory/client-navigation-availability.md</code> — clarify that an old unavailable-link cleanup is not a permanent prohibition on later implemented destinations.</li>
+<li><code>reports/mvp-lifecycle-readiness.html</code> — this report.</li>
+</ul>
+<p>No termination calculation, production schema, payment provider, signing requirement or historical financial record was rewritten.</p>
+
+<h2>4. Executed checks</h2>
+<div class="table"><table>
+<thead><tr><th>Check</th><th>Result</th><th>Evidence/qualification</th></tr></thead><tbody>
+<tr><td><code>npm run check</code></td><td class="pass">PASS</td><td>Final TypeScript check completed after the edits.</td></tr>
+<tr><td><code>npm run build</code></td><td class="pass">PASS</td><td>Production build completed; bundle/tooling warnings do not establish runtime UAT.</td></tr>
+<tr><td><code>npx vitest run client/src/lib/getHiredDocuments.test.ts</code></td><td class="pass">PASS</td><td>24 helper tests.</td></tr>
+<tr><td>Team activity, LinkedIn safety, Client navigation and Get Hired browser/component checks</td><td class="pass">PASS</td><td>80 unchanged checks passed in the combined run. Its two Contract Endings synchronization failures were subsequently resolved and that entire five-test suite rerun successfully.</td></tr>
+<tr><td><code>browser-tests/contract-endings.browser.test.ts</code></td><td class="pass">PASS</td><td>Final 5/5 tests, including both requester roles’ rejected history. Dedicated Vite/browser fixture with intercepted APIs; not real-account billing proof.</td></tr>
+<tr><td><code>node scripts/test-timesheets-isolated.mjs</code></td><td class="pass">PASS</td><td>53/53 tests in owned temporary PostgreSQL; real API/database Clock/Timesheet/Team checks and a two-minute live browser timer. Database shut down and removed.</td></tr>
+<tr><td>Private document handler, invoice calculation, USD guard and termination error mapping tests</td><td class="pass">PASS</td><td>20/20; credential-scrubbed workers and unreachable fixture URL for import-only setup. No live application database queries.</td></tr>
+<tr><td><code>node scripts/test-timesheets-isolated.mjs --mvp</code></td><td class="blocked">BLOCKED</td><td>Last attempt stopped before financial API tests: reconciliation rejected <code>clock_sessions_talent_recent</code> index options <code>0 1</code> versus expected <code>0 3</code> (descending NULL-order difference). Preparation also required avoiding retired transformations and using real session-local helpers. The transaction-lifetime correction is included; this optional mode has not subsequently passed. No production guard was weakened.</td></tr>
+<tr><td><code>npx tsx scripts/verify-mvp-storage.ts --run-controlled-upload</code></td><td class="pass">PASS</td><td>Actual provider checks, not intercepted HTTP. Signed upload 200; direct unsigned read 403; cleanup confirmed.</td></tr>
+<tr><td>Graph authentication-only probe</td><td class="pass">PASS</td><td>Configured true; token acquired true. Token HTTP 200 is not Graph send acceptance. No message was sent.</td></tr>
+<tr><td>Read-only unauthenticated development probes</td><td class="pass">PASS</td><td>Admin jobs and private object route returned 401. This is not a complete role authorization audit.</td></tr>
+<tr><td>Existing managed <code>admin-auth-check</code> workflow</td><td class="fail">FAIL</td><td>Existing workflow logs reported connection/fetch failures, not proof of bypassed authorization. Its mutative probes were not rerun against an unproven database.</td></tr>
+<tr><td>Public application screenshot</td><td class="pass">PASS</td><td>Landing page rendered. Real signed-in UI was not verified there. Existing optional Lindy embed authorization error remains; Stripe-key warning is not a request to add a payment provider.</td></tr>
+</tbody></table></div>
+<p>Initial audit run: 33 passed, 7 failed. Six failures were stale navigation assertions; the seventh was missing database environment during module initialization. Those were test/setup issues, not seven navigation defects. Full root <code>npm test</code> was not run because it starts application code against inherited infrastructure.</p>
+<pre>Credential-scrubbed Node checks used:
+node --import tsx --test --test-concurrency=1
+  server/tests/client-team-dashboard-activity.test.ts
+  server/tests/linkedin-import-disabled.test.ts
+  browser-tests/client-navigation.test.ts
+  browser-tests/client-navigation.browser.test.ts
+  browser-tests/get-hired.browser.test.ts
+  browser-tests/contract-endings.browser.test.ts
+
+Separate safe handler/calculation checks:
+node --import tsx --test --test-concurrency=1
+  server/tests/talent-document-url.test.ts
+  server/tests/talent-invoice-calculations.test.ts
+  server/tests/talent-invoices-usd-guard.test.ts
+  server/tests/contract-termination-usd-errors.test.ts
+
+Workers received only PATH/HOME/LANG, needed browser/library paths,
+and where necessary DATABASE_URL=postgresql://fixture@127.0.0.1:1/unreachable_fixture.
+Native workers received only their owned local database and fixture credentials.</pre>
+
+<h2>5. End-to-end evidence versus UAT</h2>
+<p><strong>Verified narrow chains:</strong> real API/database Clock-in → live timer → Clock-out, plus separate Timesheet and Team recorded-hour cases in disposable fixtures; requester/Admin Contract Endings UI against controlled responses; real signed storage upload → persisted bytes → private ACL checks → fresh-client retrieval → cleanup.</p>
+<p><strong>NOT TESTED as one real-account chain:</strong> onboarding → application → interview → offer → all required signatures → Clock → Timesheet → invoice → termination → final bill. The isolated tests do not substitute for that acceptance run.</p>
+<ol>
+<li>Use an approved separate staging project/database/storage and disposable Client, Talent and Admin accounts. Do not use a Test Hire shortcut, interview bypass or authentication bypass as normal-lifecycle evidence.</li>
+<li>Upload actual non-sensitive valid résumé/video files, persist to the real profile, reload and retrieve with owner authentication. Verify foreign denial and repeat after a controlled restart. Keep current size/format limits.</li>
+<li>Complete the normal interview and offer process. Client/Organization agreements require Talent + Client/Organization + OnSpot signatures.</li>
+<li>Compare Clock, Timesheet and Client Team totals against the authoritative database; include incomplete/invalid activity, legacy and Guaranteed engagements, multiple contracts, week boundaries and work zones.</li>
+<li>Verify final service-day boundaries, including cross-zone Clock/Timesheet/billing behavior; new duplicate/date restrictions; Guaranteed proration; Tracked cutoff; eligible draft rebuilding; sent/locked record preservation.</li>
+<li>Visit every primary Client destination on desktop/mobile with real permissions and inspect its actual data/actions.</li>
+</ol>
+
+<h2>6. External dependencies and release blockers</h2>
+<ul>
+<li><strong>Financial verification:</strong> establish a migration-consistent owned fixture baseline, then run the real termination/invoicing API suite. A fixture preparation error is not a failed business-calculation assertion, but it leaves those rules unverified.</li>
+<li><strong>Email:</strong> obtain an approved recipient for one non-sensitive controlled send. Verify sender mailbox and Mail.Send permission, Graph acceptance, then actual inbox receipt. Test interview/offer/status templates and authenticated CTA/resource access separately. <code>MICROSOFT_SENDER_EMAIL</code> is absent, but existing <code>APPLICATION_EMAIL_FROM</code> supplies the configured fallback; no secret values were printed.</li>
+<li><strong>Staging and safe rollout:</strong> isolation from customer/production data is not proven. Main application startup runs migrations/backfills/billing side effects, so the managed backend was deliberately not restarted. Patched backend behavior was verified in fresh isolated fixtures, not claimed live in the existing backend process.</li>
+<li><strong>Storage:</strong> workspace sidecar/path and transport checks passed; production bindings and survival through a real application restart/redeployment remain unverified.</li>
+<li><strong>Existing currency warnings:</strong> workspace billing logs show legacy non-USD generation warnings. Those records were neither classified nor edited. Determine whether active customer engagements are affected before release; do not convert historical financial data without separate approval.</li>
+</ul>
+<p>Semi-manual payments remain the accepted MVP scope. No Stripe/PayPal or other provider was added. Existing heuristic matching was preserved, not claimed as model-backed AI. Homepage hero/network previews remain illustrative content, not evidence of real hiring activity or model output; cosmetic replacement was not prioritized over functional verification.</p>
+
+<h2>7. Safety and final decision</h2>
+<p>No production user data or historical financial records were modified. Only owned disposable database fixtures and fresh non-sensitive storage canaries were created; canaries were removed. No existing profile/files were cleaned, no secrets disclosed, no new provider integration, no automatic publish, and no duplicate business workflow.</p>
+<p><strong>Release decision: BLOCKED.</strong> Keep the targeted fixes, resolve the financial test baseline, verify controlled email delivery and complete authenticated staging UAT before labeling the MVP ready. Three actionable follow-up checks have been proposed for those remaining gates.</p>
+</main></body></html>

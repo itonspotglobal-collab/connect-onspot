@@ -270,7 +270,7 @@ describe("GET /api/client/team-dashboard handler with an isolated query fixture"
       members: [member({
         modern_tracked_contracts: [trackedContract],
         modern_clock_sessions: [modernSession({
-          startedAt: "2024-03-13T11:45:00.000Z",
+          startedAt: "2024-03-13T10:00:00.000Z",
           endedAt: null,
         })],
         modern_is_currently_clocked_in: true,
