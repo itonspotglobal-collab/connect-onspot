@@ -1,0 +1,138 @@
+## URGENT: OnSpot Production Server Recovery and Deployment Verification
+
+Our OnSpot production website (https://onspotglobal.com) is currently experiencing an HTTP 500 Internal Server Error.
+
+Our Replit subscription and credits have now been restored. Previously, our account ran out of credits, causing Replit Cloud services, published applications, and database/storage access to be suspended.
+
+**Your primary objective is to investigate the root cause, restore application functionality safely, and verify that our latest approved changes are correctly reflected in production.**
+
+### PHASE 1 — Investigate the HTTP 500 Error
+
+Before modifying any code:
+
+1. Check the current Replit deployment status.
+2. Inspect production deployment logs and server startup logs.
+3. Verify whether the application restarted successfully after the subscription was restored.
+4. Check whether the production database is accessible.
+5. Verify required environment variables and secrets without exposing their values.
+6. Check whether the server is listening on the correct host and port.
+7. Identify any startup failures, database connection errors, missing dependencies, or deployment configuration issues.
+8. Compare the currently deployed version with the latest intended production version.
+
+Identify the actual root cause using available logs and evidence. Do not assume the issue is solely related to the previous credit exhaustion.
+
+### PHASE 2 — Fix Confirmed Server Issues
+
+After identifying the root cause:
+
+1. Apply only the changes necessary to resolve confirmed errors.
+2. Preserve all existing application functionality.
+3. Do not reset, recreate, or delete the production database.
+4. Do not modify existing users, passwords, contracts, invoices, or financial records.
+5. Do not remove working features to resolve deployment issues.
+6. Do not introduce unrelated refactoring or new features.
+7. Do not overwrite recent development changes or restore older checkpoints without approval.
+
+If the issue can be resolved by restarting a service or correcting a deployment configuration, prioritize that over unnecessary code modifications.
+
+### PHASE 3 — Verify Login Functionality
+
+Once the server is working, verify the authentication functionality for all three roles:
+
+- Admin
+- Client
+- Talent
+
+Check:
+
+1. Login API responses and session handling.
+2. Authentication middleware and role-based access.
+3. Database connectivity for authentication.
+4. Cookie, session, and production environment configuration.
+5. Whether the previous login fixes are present in the intended production code.
+
+Use automated tests and authorized test accounts where available.
+
+Do not reset passwords, modify real user accounts, or create production test users without approval.
+
+### PHASE 4 — Verify Missing Homepage Updates
+
+Previously, several homepage changes were visible in the Replit development environment but missing from the live website.
+
+Specifically, investigate the Talent Network Preview section:
+
+**"Talent ready to join a team like yours."**
+
+The component exists in:
+
+`client/src/pages/Home.tsx`
+
+Tasks:
+
+1. Verify that the section is present in the current source code.
+2. Check whether it is included in the production build.
+3. Investigate whether conditional rendering, API responses, or CSS are preventing it from displaying.
+4. Compare the deployed build with the intended source version.
+5. Preserve the existing homepage design and functionality.
+
+Do not redesign the homepage or remove existing sections.
+
+### PHASE 5 — Run Verification Tests
+
+After applying the necessary fixes:
+
+1. Run relevant server startup and health checks.
+2. Verify the homepage loads without HTTP 500 errors.
+3. Run authentication regression tests.
+4. Verify Admin, Client, and Talent routes.
+5. Confirm the homepage sections render correctly.
+6. Check for JavaScript runtime errors.
+7. Verify database connectivity using safe, non-destructive checks.
+8. Confirm that the production build completes successfully.
+
+Clearly distinguish automated test results from actual production verification.
+
+### PHASE 6 — Deployment Safety
+
+**Do not automatically publish or redeploy the application.**
+
+Before publishing:
+
+1. Summarize the confirmed root cause.
+2. List all files and configurations changed.
+3. Report test results.
+4. Confirm that production data remains untouched.
+5. Identify any outstanding risks.
+6. Explain whether deployment is required.
+
+Wait for my explicit approval before publishing any changes to production.
+
+### PHASE 7 — Final Report
+
+Provide a concise report containing:
+
+- Root cause of the HTTP 500 error
+- Current server and database status
+- Fixes completed
+- Files modified
+- Test results
+- Login functionality status for each role
+- Homepage update verification
+- Current deployment version
+- Remaining issues
+- Recommended next action
+
+### IMPORTANT RESTRICTIONS
+
+- Preserve all existing user data and financial records.
+- Do not reset or recreate the database.
+- Do not modify unrelated features.
+- Do not publish without approval.
+- Do not revert recent fixes.
+- Do not expose secrets.
+- Do not claim that production is fixed unless verified.
+- Work incrementally and avoid unnecessary Agent usage.
+
+**Priority: Restore server functionality first, verify login second, and investigate missing homepage updates third.**
+
+Begin with production logs and deployment diagnostics before making any code changes.

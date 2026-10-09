@@ -69,3 +69,4 @@
 - [Timesheet access boundaries](timesheet-access-boundaries.md) — Team roster membership is not payroll permission; navigation eligibility must remain read-only.
 - [Investors visual scope](investors-visual-scope.md) — continue the actual home hero; account gauges are the only statistics, with three equal-weight inquiry CTAs.
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
+- [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
