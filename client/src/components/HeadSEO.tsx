@@ -34,8 +34,8 @@ interface HeadSEOProps {
 }
 
 export function HeadSEO({ 
-  title = "Work Without Limits | OnSpot",
-  description = "Work Without Limits. OnSpot connects companies with vetted, accountable talent — no marketplace chaos, no outsourcing overhead.",
+  title: providedTitle,
+  description: providedDescription,
   ogImage = "https://onspotglobal.com/onspot-social-preview-2026-v3.png",
   ogType = "website",
   canonical,
@@ -43,6 +43,12 @@ export function HeadSEO({
 }: HeadSEOProps) {
   const [location] = useLocation();
   const region = getRegionForPath(location);
+  const title = providedTitle ?? (location === "/join-onspot"
+    ? "Join OnSpot | OnSpot"
+    : "Work Without Limits | OnSpot");
+  const description = providedDescription ?? (location === "/join-onspot"
+    ? "Join OnSpot — the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it."
+    : "Work Without Limits. OnSpot connects companies with vetted, accountable talent — no marketplace chaos, no outsourcing overhead.");
 
   useEffect(() => {
     // Update page title

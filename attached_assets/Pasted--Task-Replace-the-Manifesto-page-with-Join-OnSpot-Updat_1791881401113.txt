@@ -1,0 +1,66 @@
+## Task: Replace the "Manifesto" page with "Join OnSpot"
+
+Update the existing OnSpot website by replacing the current **"The OnSpot Manifesto"** page with a new page titled **"Join OnSpot"**.
+
+### 1. Update Page Title and Navigation
+
+- Rename "Manifesto" to "Join OnSpot" throughout the website navigation, including desktop and mobile menus.
+- Replace the current page heading "The OnSpot Manifesto" with **"Join OnSpot"**.
+- Update the page's browser title and SEO metadata accordingly.
+- If the existing page uses a `/manifesto` route, introduce `/join-onspot` and update all internal navigation links. Add a redirect from `/manifesto` to `/join-onspot` so existing links continue working.
+- Keep the existing "← About OnSpot" back link and make sure it works correctly.
+
+### 2. Replace the Existing Page Content
+
+Remove all existing Manifesto text and replace it with the following content, preserving the exact wording, punctuation, and paragraph breaks.
+
+**Page Heading: Join OnSpot**
+
+Hi, I’m Nur Laminero and I’m the Co-Founder and CEO of OnSpot. We’re the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it.
+
+We’re building a platform for small and medium businesses to solve the broken choice between freelance chaos and enterprise BPO overhead.
+
+Today, businesses that need operational support have to either manage unreliable freelancers on their own or pay enterprise prices for BPO services that were never designed for them. Meanwhile talented professionals around the world spend their time searching for clients instead of doing the work they are great at — and earn a fraction of what they are worth.
+
+With OnSpot, businesses will be able to find, hire, and manage vetted global talent in as fast as 7 days — with the accountability of a managed service and none of the overhead — while talent sets their own rate, keeps every dollar, and builds a real international career.
+
+My co-founders Jake and Mark and I spent four years running a BPO before building this platform — which means we did not guess at the problem. We lived inside it, encoded everything we learned into the platform, and built OnSpot from operational truth rather than theory.
+
+We built OnSpot for you. If you are a business owner tired of managing contractors who disappear — this is your platform. If you are a talented professional earning less than your work is worth — this is your platform. We are opening our doors and we want you to be part of what we are building together.
+
+Our mission is to liberate how the world does meaningful work — a world where anyone can work anywhere, and every company can hire anyone, without limits.
+
+Join us in this journey. Sign up for OnSpot today.
+
+### 3. Preserve the Existing Design
+
+Use the attached screenshot of the current Manifesto page as the visual reference.
+
+- Maintain the existing dark navy background, typography, brand colors, and overall visual style.
+- Retain the large heading treatment, updating it to "Join OnSpot".
+- Preserve the clean, centered content container with left-aligned paragraphs.
+- Use consistent paragraph spacing for readability.
+- Ensure the new content looks professional on desktop, tablet, and mobile.
+- Do not redesign unrelated pages or modify global styling unnecessarily.
+
+### 4. Add a Call-to-Action
+
+At the bottom of the content, add a prominent button labeled:
+
+**Join OnSpot**
+
+- Follow the website's existing button styles.
+- Link the button to the existing OnSpot signup or registration flow.
+- Reuse the existing signup functionality and routes instead of creating a new registration process.
+- If there are separate signup paths for businesses and talent, use the existing signup selection page or present both existing signup options clearly.
+- Do not use placeholder links.
+
+### 5. Verify the Changes
+
+- Confirm the new page displays all provided text correctly.
+- Check that no old Manifesto content remains on the updated page.
+- Confirm the navigation, old-page redirect, back link, and CTA all work.
+- Ensure the page is responsive and has no text overflow or layout issues.
+- Check that no unrelated pages, features, or backend functionality have been affected.
+
+**Important:** This is a targeted content and page-name update, not a complete website redesign. Reuse existing components and styling wherever possible. Do not modify the provided copy.

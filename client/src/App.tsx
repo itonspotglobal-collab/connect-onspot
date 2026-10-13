@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -222,6 +222,7 @@ function PublicRouter() {
   const hideTopNav =
     location === "/why-onspot/about" ||
     location === "/manifesto" ||
+    location === "/join-onspot" ||
     location === "/insights" ||
     location.startsWith("/insights/");
 
@@ -258,7 +259,8 @@ function PublicRouter() {
           <Route path="/get-hired" component={GetHired} />
           <Route path="/why-onspot" component={WhyOnSpot} />
           <Route path="/why-onspot/about" component={WhyOnSpotAbout} />
-          <Route path="/manifesto" component={Manifesto} />
+          <Route path="/manifesto"><Redirect to="/join-onspot" replace /></Route>
+          <Route path="/join-onspot" component={Manifesto} />
           <Route path="/why-onspot/case-studies" component={WhyOnSpotCaseStudies} />
           <Route path="/why-onspot/reviews" component={WhyOnSpotReviews} />
           <Route path="/why-onspot/experience" component={WhyOnSpotExperience} />
@@ -609,6 +611,7 @@ function AppContent() {
       <Route path="/" component={PublicRouter} />
       <Route path="/contracts" component={ContractsRoute} />
       <Route path="/manifesto" component={PublicRouter} />
+      <Route path="/join-onspot" component={PublicRouter} />
       <Route path="/hire-talent" component={ClientHireTalentRoute} />
       <Route path="/talent-pool" component={PublicRouter} />
       <Route path="/find-work" component={PublicRouter} />
@@ -709,8 +712,8 @@ function GlobalVanessaWidget() {
   const { showVanessaChat, isMinimized, openVanessa, closeVanessa } = useVanessa();
   const [location] = useLocation();
 
-  // Keep the manifesto's standalone reading layout free of floating controls.
-  if (location === "/manifesto") return null;
+  // Keep the standalone founder letter free of floating controls.
+  if (location === "/manifesto" || location === "/join-onspot") return null;
 
   return (
     <>

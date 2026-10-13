@@ -1,12 +1,5 @@
 import { Link } from "wouter";
 
-const freedoms = [
-  "Freedom to choose the work that's actually worth your time.",
-  "Freedom to earn what your work is actually worth.",
-  "Freedom to hire the right person, wherever they are.",
-  "Freedom to build a team without unnecessary layers in the way.",
-];
-
 export default function Manifesto() {
   return (
     <div className="manifesto-page">
@@ -99,170 +92,85 @@ export default function Manifesto() {
           line-height: 1.8;
         }
 
-        .manifesto-page .manifesto-emphasis {
-          margin: 48px 0;
-          color: #F5A623;
-          font-family: Caveat, cursive;
-          font-size: 30px;
-          font-weight: 600;
-          line-height: 1.3;
-        }
-
-        .manifesto-page .manifesto-divider {
-          width: 48px;
-          height: 2px;
-          margin: 56px 0;
-          background: linear-gradient(90deg, #F5A623 0 8px, #6F72A0 8px 100%);
-          opacity: 0.4;
-        }
-
-        .manifesto-page .manifesto-freedoms {
-          margin: 0 0 32px;
-          padding: 0;
-          list-style: none;
-        }
-
-        .manifesto-page .manifesto-freedoms li {
-          position: relative;
-          margin: 0 0 20px;
-          padding-left: 24px;
-          color: #B8BAD6;
-          font-size: 19px;
-          line-height: 1.7;
-        }
-
-        .manifesto-page .manifesto-freedoms li::before {
-          position: absolute;
-          top: 11px;
-          left: 0;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #F5A623;
-          content: "";
-        }
-
-        .manifesto-page .manifesto-signature {
-          margin: 72px 0 56px;
-        }
-
-        .manifesto-page .manifesto-signature-line {
-          margin: 0 0 8px;
-          color: #F5A623;
-          font-family: Caveat, cursive;
-          font-size: 38px;
-          font-weight: 600;
-        }
-
-        .manifesto-page .manifesto-signature-role {
-          margin: 0;
-          color: #6F72A0;
-          font-size: 15px;
-        }
-
-        .manifesto-page .manifesto-closing {
-          display: flex;
+        .manifesto-page .manifesto-join-link {
+          display: inline-flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 24px;
-          margin-bottom: 64px;
-          padding: 36px 40px;
-          border-radius: 16px;
-          background: #12183F;
-        }
-
-        .manifesto-page .manifesto-closing-copy {
-          max-width: 460px;
-          line-height: 1.8;
-          margin: 0;
-          color: #B8BAD6;
-          font-size: 17px;
-        }
-
-        .manifesto-page .manifesto-closing-link {
+          justify-content: center;
+          min-height: 56px;
+          margin: 16px 0 64px;
+          padding: 0 28px;
+          border-radius: 8px;
+          background: #F5A623;
+          color: #0A0F2E;
           font-family: "Manifesto Inter", Inter, sans-serif;
-          color: #F5A623;
           font-size: 16px;
           font-weight: 700;
           text-decoration: none;
           white-space: nowrap;
+          transition: transform 160ms ease, background-color 160ms ease;
         }
 
-        .manifesto-page .manifesto-closing-link:hover {
-          color: #FFFFFF;
+        .manifesto-page .manifesto-join-link:hover {
+          background: #FFC05A;
+          transform: translateY(-2px);
+        }
+
+        .manifesto-page .manifesto-join-link:focus-visible {
+          outline: 2px solid #FFFFFF;
+          outline-offset: 4px;
         }
 
         @media (max-width: 600px) {
-          .manifesto-page .manifesto-closing {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 28px 24px;
+          .manifesto-page .manifesto-wrap {
+            padding: 88px 24px 0;
           }
         }
       `}</style>
 
       <main className="manifesto-wrap">
         <h1 className="manifesto-headline">
-          <span className="manifesto-headline-row">The OnSpot</span>
-          <span className="manifesto-headline-row">Manifesto</span>
+          <span className="manifesto-headline-row">Join</span>
+          <span className="manifesto-headline-row">OnSpot</span>
         </h1>
         <Link href="/why-onspot/about" className="manifesto-about-link">
           ← About OnSpot
         </Link>
 
         <p className="manifesto-lead">
-          Somewhere along the way, work got complicated. Not the work itself — the systems built up around it.
+          Hi, I’m Nur Laminero and I’m the Co-Founder and CEO of OnSpot. We’re the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it.
         </p>
 
         <p className="manifesto-copy">
-          Talent stopped setting their own value. Someone else decided what you were worth, where you could work, who you could work for, and how much of what the client paid would actually reach you.
+          We’re building a platform for small and medium businesses to solve the broken choice between freelance chaos and enterprise BPO overhead.
         </p>
 
         <p className="manifesto-copy">
-          Businesses got boxed in too — by headcount, by geography, by recruiting cycles that take months, by layer after layer of markup standing between a great person and the company that needed them.
-        </p>
-
-        <div className="manifesto-emphasis">We don't accept that.</div>
-
-        <p className="manifesto-copy">
-          The problem was never each other. It was everything standing in between — and how much of it stayed hidden.
+          Today, businesses that need operational support have to either manage unreliable freelancers on their own or pay enterprise prices for BPO services that were never designed for them. Meanwhile talented professionals around the world spend their time searching for clients instead of doing the work they are great at — and earn a fraction of what they are worth.
         </p>
 
         <p className="manifesto-copy">
-          People should be free to work on their terms. Businesses should be free to grow on theirs.
-        </p>
-
-        <ul className="manifesto-freedoms">
-          {freedoms.map((freedom) => (
-            <li key={freedom}>{freedom}</li>
-          ))}
-        </ul>
-
-        <div className="manifesto-divider" aria-hidden="true" />
-
-        <p className="manifesto-copy">
-          This isn't a freelance platform. It isn't an outsourcing firm. Freedom is the reason any of this exists at all.
+          With OnSpot, businesses will be able to find, hire, and manage vetted global talent in as fast as 7 days — with the accountability of a managed service and none of the overhead — while talent sets their own rate, keeps every dollar, and builds a real international career.
         </p>
 
         <p className="manifesto-copy">
-          We're not free either — we don't pretend to be. OnSpot takes a fee, same as anyone standing between a client and the work getting done. The difference is what that fee is, and what it isn't.
+          My co-founders Jake and Mark and I spent four years running a BPO before building this platform — which means we did not guess at the problem. We lived inside it, encoded everything we learned into the platform, and built OnSpot from operational truth rather than theory.
         </p>
 
         <p className="manifesto-copy">
-          It's small. It's the only cut anywhere in the transaction — not one of several nobody can see. Talent sets a rate and keeps every bit of it.
+          We built OnSpot for you. If you are a business owner tired of managing contractors who disappear — this is your platform. If you are a talented professional earning less than your work is worth — this is your platform. We are opening our doors and we want you to be part of what we are building together.
         </p>
 
-        <div className="manifesto-signature">
-          <div className="manifesto-signature-line">Work Without Limits.</div>
-          <div className="manifesto-signature-role">— Nur Laminero, Co-Founder &amp; CEO</div>
-        </div>
+        <p className="manifesto-copy">
+          Our mission is to liberate how the world does meaningful work — a world where anyone can work anywhere, and every company can hire anyone, without limits.
+        </p>
 
-        <div className="manifesto-closing">
-          <p className="manifesto-closing-copy">
-            OnSpot exists to make the way work happens more direct, more visible, and more fair.
-          </p>
-          <Link href="/why-onspot/about" className="manifesto-closing-link">
-            More about OnSpot →
+        <p className="manifesto-copy">
+          Join us in this journey. Sign up for OnSpot today.
+        </p>
+
+        <div>
+          <Link href="/signup" className="manifesto-join-link">
+            Join OnSpot
           </Link>
         </div>
       </main>

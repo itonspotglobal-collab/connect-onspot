@@ -747,10 +747,10 @@ export default function WhyOnSpotAbout() {
               <ArrowUpRight size={15} />
             </Link>
             <Link
-              to="/manifesto"
+              to="/join-onspot"
               style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.82)", background: "rgba(255,255,255,0.12)", padding: "13px 26px", borderRadius: 8, textDecoration: "none", border: "1px solid rgba(255,255,255,0.15)" }}
             >
-              Read our manifesto
+              Join OnSpot
               <ArrowUpRight size={15} />
             </Link>
           </div>

@@ -49,7 +49,7 @@ const VARIANT_STYLES = {
 
 const NAV_LINKS = [
   { href: "/why-onspot/about",    label: "About" },
-  { href: "/manifesto",           label: "Manifesto" },
+  { href: "/join-onspot",         label: "Join OnSpot" },
   { href: "/insights",            label: "Insights" },
   { href: "/how-it-works",        label: "How It Works" },
   { href: "/hire-talent",         label: "Hire Talent" },

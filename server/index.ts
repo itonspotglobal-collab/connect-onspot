@@ -23,6 +23,7 @@ declare global {
 
 const app = express();
 app.use(legacyAppRedirect);
+app.get("/manifesto", (_req, res) => res.redirect(301, "/join-onspot"));
 const server = createServer(app);
 let applicationReady = false;
 
