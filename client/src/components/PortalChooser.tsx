@@ -55,43 +55,43 @@ export function PortalChooser({ kind }: PortalChooserProps) {
           }}
         >
           <h1 className="text-2xl sm:text-3xl font-bold text-[#172554]">
-            {isLogin ? "Welcome back" : "Create your OnSpot account"}
+            {isLogin ? "Welcome back" : "Get started with OnSpot"}
           </h1>
           <p className="mt-2 text-[#64748B] text-sm sm:text-base">
-            {isLogin ? "Choose how you want to access OnSpot." : "Choose how you'll use OnSpot."}
+            {isLogin ? "Choose how you want to access OnSpot." : "Choose how you’d like to join OnSpot."}
           </p>
 
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link href={portalHref("client")} replace>
+            <Link href={portalHref("client")} replace className={isLogin ? undefined : "rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5EF7] focus-visible:ring-offset-4"}>
               <span className="group flex h-full cursor-pointer flex-col items-center rounded-2xl border border-[#D7DCEF] bg-white p-6 text-center transition-all hover:-translate-y-1 hover:border-[#6D5EF7] hover:shadow-lg">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#6D5EF7]/10 text-[#6D5EF7]">
                   <Building2 className="h-7 w-7" />
                 </span>
                 <span className="mt-4 text-lg font-semibold text-[#172554]">
-                  Client
+                  {isLogin ? "Client" : "I’m Hiring"}
                 </span>
                 <span className="mt-2 text-sm leading-relaxed text-[#64748B]">
-                  {isLogin ? "Hire and manage outsourcing talent." : "Hire talent and build your team."}
+                  {isLogin ? "Hire and manage outsourcing talent." : "Find and manage vetted global talent for your business."}
                 </span>
                 <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#6D5EF7]">
-                  Continue <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  {isLogin ? "Continue" : "Get Started"} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
               </span>
             </Link>
 
-            <Link href={portalHref("talent")} replace>
+            <Link href={portalHref("talent")} replace className={isLogin ? undefined : "rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5EF7] focus-visible:ring-offset-4"}>
               <span className="group flex h-full cursor-pointer flex-col items-center rounded-2xl border border-[#D7DCEF] bg-white p-6 text-center transition-all hover:-translate-y-1 hover:border-[#D97706] hover:shadow-lg">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D97706]/10 text-[#D97706]">
                   <UserRound className="h-7 w-7" />
                 </span>
                 <span className="mt-4 text-lg font-semibold text-[#172554]">
-                  Talent
+                  {isLogin ? "Talent" : "I’m Looking for Work"}
                 </span>
                 <span className="mt-2 text-sm leading-relaxed text-[#64748B]">
-                  {isLogin ? "Find jobs and manage your career profile." : "Find work and grow your career."}
+                  {isLogin ? "Find jobs and manage your career profile." : "Discover global opportunities and grow your career."}
                 </span>
                 <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D97706]">
-                  Continue <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  {isLogin ? "Continue" : "Get Started"} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
               </span>
             </Link>

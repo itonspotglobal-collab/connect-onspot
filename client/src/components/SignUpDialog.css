@@ -1,3 +1,147 @@
+/* Signup-only styling: keep the existing navy card while improving legibility
+   and making the scroll / sticky-action layout resilient on compact screens. */
+.signup-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.signup-header {
+  overflow-wrap: anywhere;
+}
+
+.signup-scroll {
+  scrollbar-color: rgba(180, 193, 255, 0.42) transparent;
+  scrollbar-width: thin;
+}
+
+.signup-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.signup-scroll::-webkit-scrollbar-thumb {
+  background: rgba(180, 193, 255, 0.38);
+  border-radius: 99px;
+}
+
+.signup-form,
+.signup-name-fields,
+.signup-name-fields > div {
+  min-width: 0;
+}
+
+.signup-field {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 0.75rem;
+  font-size: 16px;
+  line-height: 1.4;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+.signup-field::placeholder {
+  color: rgba(221, 226, 255, 0.68);
+  opacity: 1;
+}
+
+.signup-field:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(130, 148, 255, 0.32);
+}
+
+.signup-required {
+  margin-left: 0.25rem;
+  color: #c5ceff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+}
+
+.signup-password-hint {
+  max-width: 48ch;
+  overflow-wrap: anywhere;
+}
+
+.signup-form a {
+  color: #c5ceff;
+  text-underline-offset: 3px;
+}
+
+.signup-form a:hover,
+.signup-form a:focus-visible {
+  color: #ffffff;
+}
+
+.signup-form a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid #b9c4ff;
+  outline-offset: 3px;
+}
+
+.signup-role-card {
+  min-width: 0;
+  min-height: 12rem;
+  overflow-wrap: anywhere;
+}
+
+.signup-role-card:focus-visible,
+.signup-footer button:focus-visible {
+  outline: 2px solid #b9c4ff;
+  outline-offset: 3px;
+}
+
+.signup-footer {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.signup-footer > div:last-child button {
+  min-height: 40px;
+  padding: 0.45rem 0.25rem;
+}
+
+.signup-footer a {
+  color: #c5ceff;
+}
+
+@media (max-width: 420px) {
+  .signup-header {
+    padding-right: 2.75rem;
+  }
+
+  .signup-name-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signup-role-card {
+    min-height: 0;
+    padding: 1rem;
+  }
+}
+
+@media (max-height: 620px) {
+  .signup-header {
+    padding-top: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .signup-header > div:first-child {
+    margin-bottom: 0.35rem;
+  }
+
+  .signup-header img {
+    height: 1.6rem;
+  }
+
+  .signup-scroll {
+    padding-bottom: 0.75rem;
+  }
+
+  .signup-footer {
+    padding-top: 0.75rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
 /* The fixed assistant launcher overlaps the sticky signup action on phones.
    Restore it automatically as soon as the signup form closes. */
 body:has(#signup-form) button[aria-label="Open Vanessa AI assistant"] {

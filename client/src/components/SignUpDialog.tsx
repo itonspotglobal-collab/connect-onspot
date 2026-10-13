@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, ArrowRight, Briefcase, Loader2 } from "lucide-react";
+import { UserPlus, Eye, EyeOff, Mail, Building, User, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
@@ -341,8 +341,8 @@ export function SignUpDialog({
   };
 
   // Shared dark input style
-  const darkInput = "bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-[#3A3AF8] focus-visible:border-[#3A3AF8] h-10";
-  const darkLabel = "text-white/80 text-sm font-medium";
+  const darkInput = "signup-field bg-white/10 border-white/25 text-white placeholder:text-white/55 focus-visible:ring-[#8294FF] focus-visible:border-[#8294FF] h-11";
+  const darkLabel = "text-white/90 text-sm font-semibold";
 
   return (
     <Dialog
@@ -369,7 +369,7 @@ export function SignUpDialog({
       {/* p-0 + bg-transparent lets our inner div own all the styling */}
       <DialogContent
         className={[
-          "p-0 border-0 bg-transparent shadow-none overflow-visible",
+          "p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
           !standalone && "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
           currentStep === "user-type"
             ? "w-[min(680px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
@@ -382,7 +382,7 @@ export function SignUpDialog({
       >
         {/* Dark card — flex column with capped height + internal scroll */}
         <div
-          className="flex flex-col max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-9rem)] rounded-2xl overflow-hidden"
+          className="signup-card flex flex-col max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-9rem)] rounded-2xl overflow-hidden"
           style={{
             background: "linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 40%, #1e1e55 70%, #1a1a4e 100%)",
             border: "1px solid rgba(91,124,255,0.2)",
@@ -390,7 +390,7 @@ export function SignUpDialog({
           }}
         >
           {/* ── Sticky header (never scrolls away) ── */}
-          <div className="shrink-0 px-6 pt-5 pb-3 pr-12 text-center">
+          <div className="signup-header shrink-0 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 pr-12 text-center">
             {standalone && currentStep === "signup" && (
               <div className="mb-4 flex justify-start">
                 <AuthBackButton
@@ -407,11 +407,11 @@ export function SignUpDialog({
 
             {currentStep === "user-type" && (
               <>
-                <DialogTitle className="text-xl font-light text-white" style={{ letterSpacing: "-0.02em" }}>
-                  Join OnSpot
+                <DialogTitle className="text-2xl font-semibold leading-tight text-white" style={{ letterSpacing: "-0.02em" }}>
+                  Get started with OnSpot
                 </DialogTitle>
-                <DialogDescription className="text-white/50 text-sm mt-0.5">
-                  Choose how you&apos;d like to get started
+                <DialogDescription className="text-white/75 text-sm leading-relaxed mt-2">
+                  Choose how you&apos;d like to join OnSpot.
                 </DialogDescription>
               </>
             )}
@@ -428,20 +428,20 @@ export function SignUpDialog({
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>}
-                <DialogTitle className="text-xl font-light text-white" style={{ letterSpacing: "-0.02em" }}>
+                <DialogTitle className="text-2xl font-semibold leading-tight text-white" style={{ letterSpacing: "-0.02em" }}>
                   {userType === "client" ? "Hire Talent" : "Find Work"}
                 </DialogTitle>
-                <DialogDescription className="text-white/50 text-sm mt-0.5">
+                <DialogDescription className="text-white/75 text-sm leading-relaxed mt-2">
                   {userType === "client"
-                    ? "Create your client account to start hiring"
-                    : "Create your talent profile to find opportunities"}
+                    ? "Create your account and start building your remote team."
+                    : "Create your profile and connect with global opportunities."}
                 </DialogDescription>
               </div>
             )}
           </div>
 
           {/* ── Scrollable body ── */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pb-4">
+          <div className="signup-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 pb-4">
 
             {/* ── Role selection step ── */}
             {currentStep === "user-type" && (
@@ -450,44 +450,42 @@ export function SignUpDialog({
                 <button
                   type="button"
                   onClick={() => handleSelectUserType("client")}
-                  className="relative flex flex-col items-center gap-2.5 rounded-xl p-4 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#5B7CFF]/60 group"
+                  className="signup-role-card relative flex flex-col items-center gap-2.5 rounded-xl p-5 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#8294FF]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BAAFF] group"
                   data-testid="card-client-signup"
                 >
                   <div className="w-11 h-11 rounded-full bg-[#3A3AF8]/15 flex items-center justify-center group-hover:bg-[#3A3AF8]/30 transition-colors">
                     <Building className="w-5 h-5 text-[#5B7CFF]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-1">I&apos;m a client hiring for talent</h3>
-                    <p className="text-white/45 text-xs leading-relaxed">
-                      Build your team with vetted professionals. Scale faster and reduce costs.
+                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m Hiring</h3>
+                    <p className="text-white/75 text-sm leading-relaxed">
+                      Find and manage vetted global talent for your business.
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-white/35">
-                    <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5 text-[#5B7CFF]" />70% Savings</span>
-                    <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5 text-[#5B7CFF]" />8X Growth</span>
-                  </div>
+                  <span className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#B9C4FF]">
+                    Get Started <ArrowRight className="h-4 w-4" />
+                  </span>
                 </button>
 
                 {/* Talent card */}
                 <button
                   type="button"
                   onClick={() => handleSelectUserType("talent")}
-                  className="relative flex flex-col items-center gap-2.5 rounded-xl p-4 text-center transition-all duration-200 border border-white/15 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-400/50 group"
+                  className="signup-role-card relative flex flex-col items-center gap-2.5 rounded-xl p-5 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 group"
                   data-testid="card-talent-signup"
                 >
                   <div className="w-11 h-11 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
                     <User className="w-5 h-5 text-yellow-400" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-1">I&apos;m a talent looking for work</h3>
-                    <p className="text-white/45 text-xs leading-relaxed">
-                      Join our elite network. Access premium opportunities and competitive rates.
+                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m Looking for Work</h3>
+                    <p className="text-white/75 text-sm leading-relaxed">
+                      Discover global opportunities and grow your career.
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-white/35">
-                    <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5 text-yellow-400" />Premium Jobs</span>
-                    <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5 text-yellow-400" />Secure Pay</span>
-                  </div>
+                  <span className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-yellow-200">
+                    Get Started <ArrowRight className="h-4 w-4" />
+                  </span>
                 </button>
               </div>
             )}
@@ -514,7 +512,7 @@ export function SignUpDialog({
                       type="button"
                       onClick={handleGoogleSignup}
                       disabled={isLoading}
-                      className="w-full flex items-center justify-center gap-3 h-10 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                       data-testid="button-google-signup"
                     >
                       <FaGoogle className="w-4 h-4 text-red-400" />
@@ -525,7 +523,7 @@ export function SignUpDialog({
                     type="button"
                     onClick={handleLinkedInSignup}
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-3 h-10 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-3 h-11 rounded-xl border border-white/20 bg-white/5 text-white/75 hover:bg-white/10 hover:text-white transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                     data-testid="button-linkedin-signup"
                   >
                     <FaLinkedin className="w-4 h-4 text-blue-400" />
@@ -540,7 +538,7 @@ export function SignUpDialog({
                   </div>
                   <div className="relative flex justify-center">
                     <span
-                      className="px-3 text-xs uppercase tracking-wider text-white/30"
+                      className="px-3 text-xs uppercase tracking-wider text-white/65"
                       style={{ background: "#1a1a4e" }}
                     >
                       Or create account with email
@@ -549,10 +547,10 @@ export function SignUpDialog({
                 </div>
 
                 {/* Email form — id lets the sticky footer button submit it */}
-                <form id="signup-form" onSubmit={handleSubmit} noValidate className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="firstName" className={darkLabel}>First Name</Label>
+                <form id="signup-form" onSubmit={handleSubmit} noValidate className="signup-form space-y-3">
+                  <div className="signup-name-fields grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="firstName" className={darkLabel}>First Name <span className="signup-required">Required</span></Label>
                       <Input
                         id="firstName"
                         name="firstName"
@@ -564,8 +562,8 @@ export function SignUpDialog({
                         className={darkInput}
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="lastName" className={darkLabel}>Last Name</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="lastName" className={darkLabel}>Last Name <span className="signup-required">Required</span></Label>
                       <Input
                         id="lastName"
                         name="lastName"
@@ -580,8 +578,8 @@ export function SignUpDialog({
                   </div>
 
                   {userType === "client" && (
-                    <div className="space-y-1">
-                      <Label htmlFor="company" className={darkLabel}>Company Name</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="company" className={darkLabel}>Company Name <span className="signup-required">Required</span></Label>
                       <Input
                         id="company"
                         name="company"
@@ -595,8 +593,8 @@ export function SignUpDialog({
                     </div>
                   )}
 
-                  <div className="space-y-1">
-                    <Label htmlFor="email" className={darkLabel}>Email</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className={darkLabel}>Email <span className="signup-required">Required</span></Label>
                     <Input
                       id="email"
                       name="email"
@@ -610,8 +608,8 @@ export function SignUpDialog({
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="password" className={darkLabel}>Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password" className={darkLabel}>Password <span className="signup-required">Required</span></Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -629,18 +627,18 @@ export function SignUpDialog({
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         aria-label={showPassword ? "Hide password" : "Show password"}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors"
+                        className="absolute right-0 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg text-white/65 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B9C4FF]"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p id="signup-password-hint" className="text-xs leading-relaxed text-white/60">
+                    <p id="signup-password-hint" className="signup-password-hint text-xs leading-relaxed text-white/80">
                       {PASSWORD_POLICY_HINT}
                     </p>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label htmlFor="confirmPassword" className={darkLabel}>Confirm Password</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirmPassword" className={darkLabel}>Confirm Password <span className="signup-required">Required</span></Label>
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
@@ -666,7 +664,7 @@ export function SignUpDialog({
                       data-testid="checkbox-terms"
                       className="mt-0.5 border-white/30 data-[state=checked]:bg-[#3A3AF8] data-[state=checked]:border-[#3A3AF8]"
                     />
-                    <Label htmlFor="terms" className="text-xs text-white/45 leading-relaxed cursor-pointer">
+                    <Label htmlFor="terms" className="text-sm text-white/80 leading-relaxed cursor-pointer">
                       I agree to the{" "}
                       <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="text-white/65 underline hover:text-white transition-colors">
                         Terms of Service
@@ -686,7 +684,7 @@ export function SignUpDialog({
           {/* ── Sticky footer — CTA always visible, never scrolls away ── */}
           {currentStep === "signup" && !pendingVerification && (
             <div
-              className="shrink-0 px-6 py-4 border-t border-white/10"
+              className="signup-footer shrink-0 px-5 sm:px-6 py-4 border-t border-white/15"
               style={{ background: "linear-gradient(to bottom, transparent, #1a1a4e 20%)" }}
             >
               {submitError && (
@@ -705,7 +703,7 @@ export function SignUpDialog({
                 form="signup-form"
                 disabled={isLoading || retrySeconds > 0 || accountCreated}
                 data-testid="button-submit-signup"
-                className="w-full px-6 py-2.5 text-sm font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                className="signup-submit w-full min-h-12 px-6 py-3 text-sm font-semibold text-white rounded-xl transition-all duration-300 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B9C4FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1a4e] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                 style={{
                   background: "linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)",
                   boxShadow: "0 8px 30px rgba(58,58,248,0.35)",
@@ -733,7 +731,7 @@ export function SignUpDialog({
                   type="button"
                   onClick={handleBackToUserType}
                   disabled={isLoading || accountCreated}
-                  className="text-xs text-white/35 hover:text-white/65 transition-colors"
+                  className="text-xs text-white/75 hover:text-white transition-colors"
                 >
                   {standalone ? "Back to Portal" : "← Back to options"}
                 </button>
@@ -746,7 +744,7 @@ export function SignUpDialog({
                     onSignInInstead?.();
                   }}
                   data-testid="button-signin-instead"
-                  className="text-xs text-white/55 hover:text-white underline transition-colors"
+                  className="text-xs text-white/80 hover:text-white underline transition-colors"
                 >
                   Already have an account? Sign in
                 </button>

@@ -11,6 +11,6 @@ Diagnose apparent signup loops using server rejection status and visible form fe
 
 Check sticky actions and errors against the actual viewport, not just whether a browser locator is visible.
 
-**Why:** Playwright automatically scrolls controls into view, which can hide initial footer clipping. The shared dialog's outer vertical padding also reduces the space available to its inner card.
+**Why:** Playwright automatically scrolls controls into view, which can hide initial footer clipping. The shared dialog's outer vertical padding also reduces the space available to its inner card. A visible primary signup button does not prove that the secondary Back and Sign In actions fit.
 
-**How to apply:** Account for container padding in height budgets and verify complete action/error bounding boxes on short mobile and desktop viewports.
+**How to apply:** Account for container padding in height budgets and verify complete action/error bounding boxes, including secondary footer links, on short mobile and desktop viewports.
