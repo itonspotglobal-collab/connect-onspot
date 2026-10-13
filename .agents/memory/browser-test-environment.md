@@ -74,3 +74,9 @@ A documented specialized testing-agent kind may be unavailable in the current wo
 **Why:** The callback can reject the documented testing configuration before any verification runs; dispatching a job is not test evidence.
 
 **How to apply:** Use the existing isolated Playwright suites directly when this happens, with credential-scrubbed processes and an owned fixture target. Do not substitute a production session, bypass authentication, or report an unsupported tester dispatch as a pass.
+
+Native-autofill verification must check the resulting session identity, not only the outgoing request.
+
+**Why:** A signup request contained the correct autofilled names while the persisted Talent session name was blank because a later step still used stale React state.
+
+**How to apply:** Populate native inputs without React change events, then assert both submitted values and persisted identity fields. Keep name assertions strict; a correct request payload alone does not prove the full signup flow preserved the user's identity.

@@ -70,3 +70,4 @@
 - [Investors visual scope](investors-visual-scope.md) — continue the actual home hero; account gauges are the only statistics, with three equal-weight inquiry CTAs.
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
+- [Authentication cancellation](auth-cancellation-policy.md) — forms return to the chooser; choosers return to the original page, independently of successful-auth redirects.

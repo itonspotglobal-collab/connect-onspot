@@ -520,7 +520,7 @@ test("desktop rapid double-submit sends only one signup POST while the request i
     await testPage.page.getByTestId("button-submit-signup").click();
     await signupRequest;
 
-    const headerBack = testPage.page.getByTestId("button-back");
+    const headerBack = testPage.page.getByTestId("auth-back-to-portal");
     assert.equal(await headerBack.isDisabled(), true, "header back must be disabled during submission");
     await headerBack.dispatchEvent("click");
     assert.equal(testPage.page.url(), routeBeforeSubmit, "back must not change routes while signup is pending");
@@ -712,9 +712,9 @@ test("desktop signup success without an auth token offers manual sign-in and can
       return button?.disabled === true;
     });
     assert.equal(await submit.innerText(), "Account created — sign in below");
-    assert.equal(await testPage.page.getByTestId("button-back").isDisabled(), true,
+    assert.equal(await testPage.page.getByTestId("auth-back-to-portal").isDisabled(), true,
       "the header back action stays disabled after account creation");
-    assert.equal(await testPage.page.getByRole("button", { name: /Back to options/ }).isDisabled(), true,
+    assert.equal(await testPage.page.getByRole("button", { name: "Back to Portal", exact: true }).isDisabled(), true,
       "the footer back action stays disabled after account creation");
 
     await testPage.page.evaluate(() => {
@@ -829,6 +829,8 @@ test("account-first application signup submits autofilled DOM values as a talent
       email: values.email,
       password: VALID_PASSWORD,
       role: "talent",
+      username: values.email.split("@")[0],
+      returnTo,
     });
     assert.equal(testPage.signupPostCount(), 1);
     assert.equal(testPage.linkPostCount(), 0);
@@ -877,7 +879,7 @@ test("application link failure offers link-only recovery without repeating confi
 
     const inlineError = testPage.page.getByTestId("application-signup-error");
     await inlineError.waitFor({ state: "visible" });
-    assert.match(await inlineError.innerText(), /account was created/i);
+    assert.match(await inlineError.innerText(), /account is active/i);
     assert.match(await inlineError.innerText(), /retry linking/i);
     assert.equal(await testPage.page.getByTestId("application-signup-first-name").inputValue(), "Avery");
     assert.equal(await testPage.page.getByTestId("application-signup-email").inputValue(), "avery.applicant@example.test");

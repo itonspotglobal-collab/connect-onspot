@@ -14,7 +14,7 @@ import {
 import { UserPlus, Eye, EyeOff, Mail, Shield, Zap, Building, User, ArrowLeft, ArrowRight, Briefcase, Loader2 } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { isFirebaseAvailable } from "@/lib/firebase";
 import { authAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +26,8 @@ import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupV
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import "./SignUpDialog.css";
 import { getSafeReturnTo } from "@shared/internalRedirect";
+import { AuthBackButton } from "@/components/AuthBackButton";
+import { authPortalHref } from "@/lib/authBackNavigation";
 
 type UserType = "client" | "talent" | null;
 type SignupStep = "user-type" | "signup";
@@ -57,6 +59,7 @@ export function SignUpDialog({
   onChooseAnotherAccountType,
   standalone = false,
 }: SignUpDialogProps = {}) {
+  const authSearch = useSearch();
   const [internalOpen, setInternalOpen] = useState(false);
 
   const isControlled = openProp !== undefined;
@@ -388,6 +391,16 @@ export function SignUpDialog({
         >
           {/* ── Sticky header (never scrolls away) ── */}
           <div className="shrink-0 px-6 pt-5 pb-3 pr-12 text-center">
+            {standalone && currentStep === "signup" && (
+              <div className="mb-4 flex justify-start">
+                <AuthBackButton
+                  href={authPortalHref("signup", authSearch)}
+                  variant="dark"
+                  disabled={isLoading || accountCreated}
+                  testId="auth-back-to-portal"
+                />
+              </div>
+            )}
             <div className="flex justify-center mb-2.5">
               <img src={onspotLogo} alt="OnSpot" className="h-8 w-auto" />
             </div>
@@ -405,7 +418,7 @@ export function SignUpDialog({
 
             {currentStep === "signup" && (
               <div className="relative">
-                <button
+                {!standalone && <button
                   type="button"
                   onClick={handleBackToUserType}
                   disabled={isLoading || accountCreated}
@@ -414,7 +427,7 @@ export function SignUpDialog({
                   data-testid="button-back"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                </button>
+                </button>}
                 <DialogTitle className="text-xl font-light text-white" style={{ letterSpacing: "-0.02em" }}>
                   {userType === "client" ? "Hire Talent" : "Find Work"}
                 </DialogTitle>
@@ -722,7 +735,7 @@ export function SignUpDialog({
                   disabled={isLoading || accountCreated}
                   className="text-xs text-white/35 hover:text-white/65 transition-colors"
                 >
-                  ← Back to options
+                  {standalone ? "Back to Portal" : "← Back to options"}
                 </button>
                 <button
                   type="button"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { usePortalLogin, PortalType } from "@/hooks/usePortalLogin";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, ArrowRight, Building, User, ArrowLeft } from "lucide-react";
 import { PortalChooser } from "@/components/PortalChooser";
 import { getSafeReturnTo } from "@shared/internalRedirect";
+import { AuthBackButton } from "@/components/AuthBackButton";
+import { authPortalHref } from "@/lib/authBackNavigation";
 
 type PageStep = "login" | "setup-password" | "forgot-password";
 
@@ -149,7 +151,8 @@ export default function PortalLogin() {
   const { signInToPortal, setupTalentPassword, isLoading } = usePortalLogin();
   const { toast } = useToast();
   const pathname = location.split("?")[0];
-  const currentSearch = typeof window === "undefined" ? "" : window.location.search;
+  const search = useSearch();
+  const currentSearch = search ? `?${search}` : "";
   const routePortal: PortalType | null =
     pathname === "/login/client" ? "client" :
     pathname === "/login/talent" ? "talent" :
@@ -179,12 +182,8 @@ export default function PortalLogin() {
     catch { return ""; }
   });
 
-  const [selectedPortal, setSelectedPortal] = useState<PortalType | null>(() => {
-    try {
-      const v = new URLSearchParams(window.location.search).get("portal");
-      return v === "client" || v === "talent" ? v : null;
-    } catch { return null; }
-  });
+  const requestedPortal = new URLSearchParams(search).get("portal");
+  const selectedPortal = requestedPortal === "client" || requestedPortal === "talent" ? requestedPortal : null;
   const [email, setEmail] = useState(() => {
     try { return new URLSearchParams(window.location.search).get("email") || ""; }
     catch { return ""; }
@@ -502,6 +501,12 @@ export default function PortalLogin() {
   return (
     <>
       <CardShell>
+        <AuthBackButton
+          href={authPortalHref("login", currentSearch)}
+          disabled={isLoading || retrySeconds > 0}
+          className="mb-6"
+          testId="auth-back-to-portal"
+        />
         <h2 className="text-[1.625rem] font-bold text-[#172554] mb-1" style={{ letterSpacing: "-0.02em" }}>
           {activePortal === "client" ? "Client Login" : "Talent Login"}
         </h2>
@@ -510,12 +515,6 @@ export default function PortalLogin() {
             ? "Sign in to manage your team and talent."
             : "Sign in to manage your profile and opportunities."}
         </p>
-        <button type="button" disabled={isLoading || retrySeconds > 0}
-          onClick={() => { if (!signInPending.current) navigate(`/login${currentSearch}`, { replace: true }); }}
-          className="mb-7 inline-flex items-center gap-1 text-xs font-medium text-[#6D5EF7] hover:underline disabled:cursor-not-allowed disabled:opacity-50">
-          <ArrowLeft className="h-3 w-3" /> Choose another portal
-        </button>
-
         <form id="portal-login-form" noValidate onSubmit={handleSignIn}>
           {/* Email */}
           <div className="space-y-2 mb-4">
@@ -585,12 +584,6 @@ export default function PortalLogin() {
                </span>
              </Link>
           </p>
-          <Link href="/">
-            <span className="flex items-center justify-center gap-1 text-xs font-medium transition-colors duration-200 hover:underline cursor-pointer"
-              style={{ color: BRAND }}>
-              <ArrowLeft className="w-3 h-3" /> Back to Home
-            </span>
-          </Link>
         </div>
       </CardShell>
 

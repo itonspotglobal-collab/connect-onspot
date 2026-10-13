@@ -399,7 +399,7 @@ test("rapid portal double-submit sends one POST and portal switching stays block
     await testPage.page.getByTestId("button-submit-portal-login").click();
     await request;
     const routeBeforeSubmit = testPage.page.url();
-    const switchPortal = testPage.page.getByRole("button", { name: /Choose another portal/ });
+    const switchPortal = testPage.page.getByTestId("auth-back-to-portal");
     assert.equal(await switchPortal.isDisabled(), true);
     await switchPortal.dispatchEvent("click");
     assert.equal(testPage.page.url(), routeBeforeSubmit);

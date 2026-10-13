@@ -1,6 +1,8 @@
-import { Link } from "wouter";
-import { ArrowLeft, ArrowRight, Building2, UserRound } from "lucide-react";
+import { Link, useSearch } from "wouter";
+import { ArrowRight, Building2, UserRound } from "lucide-react";
 import { getSafeReturnTo } from "@shared/internalRedirect";
+import { AuthBackButton } from "@/components/AuthBackButton";
+import { authBackDestination, authBackLabel } from "@/lib/authBackNavigation";
 
 type ChooserKind = "login" | "signup";
 
@@ -10,8 +12,10 @@ interface PortalChooserProps {
 
 export function PortalChooser({ kind }: PortalChooserProps) {
   const isLogin = kind === "login";
+  const currentSearch = useSearch();
+  const destination = authBackDestination(currentSearch);
   const search = typeof window === "undefined" ? "" : (() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(currentSearch);
     const target = getSafeReturnTo(params.get("returnTo"));
     if (params.has("returnTo")) {
       params.delete("returnTo");
@@ -93,11 +97,9 @@ export function PortalChooser({ kind }: PortalChooserProps) {
             </Link>
           </div>
 
-          <Link href="/">
-            <span className="mt-8 inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[#6D5EF7] hover:underline">
-              <ArrowLeft className="h-4 w-4" /> Back to Home
-            </span>
-          </Link>
+          <AuthBackButton href={destination} className="mt-8" testId="auth-back-to-origin">
+            {authBackLabel(destination)}
+          </AuthBackButton>
         </div>
       </div>
 
