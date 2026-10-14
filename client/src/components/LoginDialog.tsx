@@ -17,7 +17,7 @@ import { LogIn, Eye, EyeOff, Mail, Shield, Zap, Building, User, Users, ArrowLeft
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { usePortalLogin } from "@/hooks/usePortalLogin";
-import { AuthBrandLogo } from "@/components/AuthBrandLogo";
+import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 
 type UserType = "client" | "talent" | null;
 type LoginStep = "user-type" | "login";
@@ -206,7 +206,11 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
       <DialogContent className={currentStep === "user-type" ? "sm:max-w-4xl" : "sm:max-w-md"}>
         <DialogHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">
-            <AuthBrandLogo size="compact" tone="light" />
+            <img 
+              src={onspotLogo} 
+              alt="OnSpot" 
+              className="h-12 w-auto"
+            />
           </div>
           
           {currentStep === "user-type" && (

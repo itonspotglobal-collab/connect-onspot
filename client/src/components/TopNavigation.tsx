@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalLogin } from "@/hooks/usePortalLogin";
-import { useState, useEffect, useRef, type MouseEvent } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { authAPI } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
@@ -72,7 +72,6 @@ import { useUnreadNotificationsCount } from "@/hooks/useUnreadNotificationsCount
 import { NotificationBell } from "@/components/NotificationBell";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
-import { useSignupModal } from "@/components/SignupModalProvider";
 import { SignupEmailVerification } from "@/components/SignupEmailVerification";
 import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
 
@@ -103,13 +102,6 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
-  const { openSignup } = useSignupModal();
-
-  function openPublicSignup(event: MouseEvent<HTMLButtonElement>) {
-    openSignup({}, event.currentTarget);
-    setIsMobileMenuOpen(false);
-  }
-
 
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup" | "forgot">(1);
   const [selectedPortal, setSelectedPortal] = useState<
@@ -1501,7 +1493,7 @@ export function TopNavigation() {
                   Log In
                 </button>
                 <button
-                  onClick={openPublicSignup}
+                  onClick={() => navigate("/signup")}
                   className="text-[13px] font-medium text-white/55 hover:text-white/85 transition-colors duration-200 whitespace-nowrap hover:underline"
                   data-testid="nav-signup-button"
                 >
@@ -1919,7 +1911,7 @@ export function TopNavigation() {
                 Log In
               </button>
               <button
-                onClick={openPublicSignup}
+                onClick={() => { navigate("/signup"); setIsMobileMenuOpen(false); }}
                 className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-medium text-sm text-white/55 hover:text-white/85 transition-all duration-200"
                 data-testid="mobile-signup-button"
               >

@@ -1,5 +1,4 @@
 import { Link } from "wouter";
-import { SignupLink } from "@/components/SignupModalProvider";
 
 export default function Manifesto() {
   return (
@@ -170,9 +169,9 @@ export default function Manifesto() {
         </p>
 
         <div>
-          <SignupLink className="manifesto-join-link">
+          <Link href="/signup" className="manifesto-join-link">
             Join OnSpot
-          </SignupLink>
+          </Link>
         </div>
       </main>
     </div>

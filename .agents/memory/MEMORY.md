@@ -71,4 +71,3 @@
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — forms return to the chooser; choosers return to the original page, independently of successful-auth redirects.
-- [Auth presentation boundaries](auth-presentation-boundaries.md) — retain the white signup portal, navy forms, and exact transparent white logo without a background plate.

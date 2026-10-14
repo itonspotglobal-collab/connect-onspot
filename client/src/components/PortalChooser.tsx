@@ -1,21 +1,16 @@
-import type { ReactNode } from "react";
 import { Link, useSearch } from "wouter";
 import { ArrowRight, Building2, UserRound } from "lucide-react";
-import { DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
-import { AuthBrandLogo } from "@/components/AuthBrandLogo";
 import { authBackDestination, authBackLabel } from "@/lib/authBackNavigation";
 
 type ChooserKind = "login" | "signup";
 
 interface PortalChooserProps {
   kind: ChooserKind;
-  embedded?: boolean;
-  onChoosePortal?: (portal: "client" | "talent") => void;
 }
 
-export function PortalChooser({ kind, embedded = false, onChoosePortal }: PortalChooserProps) {
+export function PortalChooser({ kind }: PortalChooserProps) {
   const isLogin = kind === "login";
   const currentSearch = useSearch();
   const destination = authBackDestination(currentSearch);
@@ -32,73 +27,6 @@ export function PortalChooser({ kind, embedded = false, onChoosePortal }: Portal
   const portalHref = (portal: "client" | "talent") =>
     `${isLogin ? "/login" : "/signup"}/${portal}${search}`;
 
-  if (embedded) {
-    const chooseCard = (portal: "client" | "talent", contents: ReactNode) => (
-      <button
-        type="button"
-        onClick={() => onChoosePortal?.(portal)}
-        className={`group flex h-full w-full cursor-pointer flex-col items-center rounded-2xl border border-[#D7DCEF] bg-white p-6 text-center transition-all hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5EF7] focus-visible:ring-offset-4 ${portal === "client" ? "hover:border-[#6D5EF7]" : "hover:border-[#D97706]"}`}
-        data-testid={`card-${portal}-signup`}
-      >
-        {contents}
-      </button>
-    );
-
-    return (
-      <div className="portal-chooser-embedded w-full text-center">
-        <div className="mb-1 flex justify-center">
-          <AuthBrandLogo size="standard" tone="light" />
-        </div>
-        <p className="mt-1.5 text-xs font-medium uppercase tracking-widest text-[#94A3B8]">
-          Work Without Limits
-        </p>
-        <div
-          className="mt-6 rounded-3xl p-6 sm:mt-8 sm:p-10"
-          style={{
-            background: "#ffffff",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.65)",
-            boxShadow: "0 20px 60px rgba(33,40,79,0.08), 0 1px 0 rgba(255,255,255,0.8) inset",
-          }}
-        >
-          <DialogTitle className="text-2xl font-bold text-[#172554] sm:text-3xl">
-            Get started with OnSpot
-          </DialogTitle>
-          <DialogDescription className="mt-2 text-sm text-[#64748B] sm:text-base">
-            Choose how you&apos;d like to join OnSpot.
-          </DialogDescription>
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {chooseCard("client", <>
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#6D5EF7]/10 text-[#6D5EF7]">
-                <Building2 className="h-7 w-7" />
-              </span>
-              <span className="mt-4 text-lg font-semibold text-[#172554]">I’m Hiring</span>
-              <span className="mt-2 text-sm leading-relaxed text-[#64748B]">
-                Find and manage vetted global talent for your business.
-              </span>
-              <span className="mt-5 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[#6D5EF7]">
-                Get Started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </span>
-            </>)}
-            {chooseCard("talent", <>
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D97706]/10 text-[#D97706]">
-                <UserRound className="h-7 w-7" />
-              </span>
-              <span className="mt-4 text-lg font-semibold text-[#172554]">I’m Looking for Work</span>
-              <span className="mt-2 text-sm leading-relaxed text-[#64748B]">
-                Discover global opportunities and grow your career.
-              </span>
-              <span className="mt-5 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-[#D97706]">
-                Get Started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </span>
-            </>)}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-16"
@@ -108,8 +36,8 @@ export function PortalChooser({ kind, embedded = false, onChoosePortal }: Portal
     >
       <div className="w-full max-w-2xl text-center">
         <Link href="/">
-          <span className="inline-flex cursor-pointer select-none">
-          <AuthBrandLogo size="standard" tone="light" />
+          <span className="text-3xl font-bold tracking-tight cursor-pointer select-none text-[#6D5EF7]">
+            OnSpot
           </span>
         </Link>
         <p className="text-[#94A3B8] text-xs mt-1.5 tracking-widest uppercase font-medium">

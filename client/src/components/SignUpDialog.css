@@ -5,62 +5,8 @@
   min-width: 0;
 }
 
-.signup-dialog-content > button:last-of-type {
-  z-index: 20;
-  display: inline-flex;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.75rem;
-  color: rgba(255, 255, 255, 0.88);
-  opacity: 1;
-  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
-}
-
-.signup-dialog-content > button:last-of-type:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.signup-dialog-content > button:last-of-type:focus-visible {
-  outline: 2px solid #b9c4ff;
-  outline-offset: 2px;
-}
-
-.signup-dialog-content > button:last-of-type:active {
-  transform: scale(0.96);
-}
-
-.signup-dialog-content[data-signup-step="user-type"] > button:last-of-type {
-  color: #fff;
-  background: rgba(23, 37, 84, 0.9);
-}
-
-.signup-dialog-content[data-signup-step="user-type"] > button:last-of-type:hover {
-  background: #172554;
-}
-
 .signup-header {
   overflow-wrap: anywhere;
-}
-
-.signup-portal-step {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.signup-portal-scroll {
-  width: 100%;
-  min-width: 0;
-  max-height: calc(100dvh - 2rem);
-  scrollbar-color: rgba(109, 94, 247, 0.3) transparent;
-  scrollbar-width: thin;
-}
-
-.auth-brand-logo-light {
-  filter: drop-shadow(0 1px 1px rgba(23, 37, 84, 0.45)) drop-shadow(0 0 2px rgba(23, 37, 84, 0.24));
 }
 
 .signup-scroll {
@@ -159,7 +105,7 @@
 
 @media (max-width: 420px) {
   .signup-header {
-    padding-right: 3.25rem;
+    padding-right: 2.75rem;
   }
 
   .signup-name-fields {
@@ -182,9 +128,8 @@
     margin-bottom: 0.35rem;
   }
 
-  .signup-header .auth-brand-logo {
-    width: 128px;
-    height: auto;
+  .signup-header img {
+    height: 1.6rem;
   }
 
   .signup-scroll {
@@ -199,6 +144,6 @@
 
 /* The fixed assistant launcher overlaps the sticky signup action on phones.
    Restore it automatically as soon as the signup form closes. */
-body:has(.signup-dialog-content) button[aria-label="Open Vanessa AI assistant"] {
+body:has(#signup-form) button[aria-label="Open Vanessa AI assistant"] {
   display: none !important;
 }

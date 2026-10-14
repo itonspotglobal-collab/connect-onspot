@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { useSignupModal } from "@/components/SignupModalProvider";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
@@ -5079,12 +5078,12 @@ const FINAL_BG = `radial-gradient(ellipse at 50% 20%, rgba(75,81,184,0.4), trans
 function FinalCtaSection() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const { openSignup } = useSignupModal();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    openSignup({ email: email.trim() });
+    // Navigate to sign-up with email pre-filled
+    window.location.href = `/signup?email=${encodeURIComponent(email.trim())}`;
   };
 
   return (

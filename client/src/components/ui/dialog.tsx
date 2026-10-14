@@ -32,20 +32,16 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   overlayClassName?: string;
   hideClose?: boolean;
-  /** Opt-in viewport centering without changing existing dialogs. */
-  centered?: boolean;
 };
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, overlayClassName, hideClose = false, centered = false, ...props }, ref) => (
+>(({ className, children, overlayClassName, hideClose = false, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay className={cn(centered && "z-[1100]", overlayClassName)} />
-    <div className={cn("fixed inset-0 overflow-y-auto", centered ? "z-[1100]" : "z-[100]")}>
-      <div className={centered
-        ? "flex min-h-full items-center justify-center p-4"
-        : "flex min-h-full items-start justify-center pt-20 pb-4 px-4 sm:pt-24 sm:pb-12 sm:px-12"}>
+    <DialogOverlay className={overlayClassName} />
+    <div className="fixed inset-0 z-[100] overflow-y-auto">
+      <div className="flex min-h-full items-start justify-center pt-20 pb-4 px-4 sm:pt-24 sm:pb-12 sm:px-12">
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
