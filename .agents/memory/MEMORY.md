@@ -54,7 +54,7 @@
 - [One-time event popups](one-time-event-popups.md) — cross-device transactional popups must atomically claim the canonical notification without consuming its bell read state.
 - [Controlled dialog focus](controlled-dialog-focus.md) — custom card-opened Radix dialogs need explicit focus restoration if the card should regain focus after close.
 - [Contracts navigation](contracts-navigation-policy.md) — Back stays inside OnSpot; genuine internal history first, role-based fallback for direct or refreshed entries.
-- [Approved founder-letter design](approved-manifesto-design.md) — retain the overlapping headline and dark reading layout; approved copy replacements supersede historical reference text.
+- [Join OnSpot design authority](approved-manifesto-design.md) — current copy stays authoritative; illustrated HTML is inspiration, superseding the old dark reading-layout rule.
 - [USD currency policy](usd-currency-policy.md) — new pricing is USD worldwide; historical denominations remain unchanged, and text prices count even when numeric budgets are zero.
 - [Account-count audit](account-counter-audit.md) — candidate registration flags can be set without an auth account; verify sign-in evidence before public counting.
 - [Investor request routing](investor-request-routing.md) — owner approved one saved intake and founder notifications for all three CTAs; failed email must never be reported as sent.

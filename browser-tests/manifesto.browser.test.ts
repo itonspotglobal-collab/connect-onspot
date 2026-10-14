@@ -6,8 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium, type Browser, type Page } from "playwright";
 
-// This suite replaces the old content-specific Manifesto screenshots. The
-// original reference and font fixtures remain untouched for design provenance.
+// Preserve current approved copy while allowing the explicitly requested
+// illustration-led Join OnSpot redesign. Old references remain provenance.
 const PORT = Number(process.env.BROWSER_TEST_PORT ?? 5177);
 const BASE = `http://127.0.0.1:${PORT}`;
 let browser: Browser;
@@ -76,32 +76,52 @@ async function open(width: number, path = "/join-onspot"): Promise<Page> {
   return page;
 }
 
-for (const width of [390, 768, 1280]) {
-  test(`Join OnSpot preserves exact copy and reading layout at ${width}px`, { timeout: 90_000 }, async () => {
+for (const width of [320, 390, 768, 1024, 1440]) {
+  test(`Join OnSpot preserves exact copy and responsive storytelling at ${width}px`, { timeout: 90_000 }, async () => {
     const page = await open(width);
     try {
       assert.equal((await page.locator("h1").innerText()).replace(/\s+/g, " "), "Join OnSpot");
-      assert.deepEqual(await page.locator(".manifesto-wrap p").allTextContents()
+      assert.deepEqual(await page.locator(".manifesto-lead,.manifesto-copy").allTextContents()
         .then(items => items.map(item => item.trim().replace(/\s+/g, " "))), paragraphs);
       const layout = await page.evaluate(() => {
         const root = document.querySelector(".manifesto-page")!;
         const heading = document.querySelector(".manifesto-headline")!;
-        const rows = [...document.querySelectorAll(".manifesto-headline-row")];
         return {
-          background: getComputedStyle(root).backgroundColor,
+          background: getComputedStyle(root).background,
           font: getComputedStyle(heading).fontFamily,
           overflow: document.documentElement.scrollWidth > innerWidth,
-          overlapping: rows[1].getBoundingClientRect().top < rows[0].getBoundingClientRect().bottom,
+          paragraphs: [...document.querySelectorAll(".manifesto-lead,.manifesto-copy")].map(el => {
+            const r = el.getBoundingClientRect(), s = getComputedStyle(el);
+            return { x: r.x, right: r.right, fontSize: parseFloat(s.fontSize), lineHeight: parseFloat(s.lineHeight), visible: s.visibility !== "hidden" && s.opacity !== "0" };
+          }),
         };
       });
-      assert.equal(layout.background, "rgb(10, 15, 46)");
-      assert.match(layout.font, /Manifesto Inter/);
+      assert.match(layout.background, /gradient/);
+      assert.match(layout.font, /Inter/);
       assert.equal(layout.overflow, false);
-      assert.equal(layout.overlapping, true);
+      assert.ok(layout.paragraphs.every(p => p.x >= 0 && p.right <= width && p.fontSize >= 16 && p.lineHeight / p.fontSize >= 1.4 && p.visible), JSON.stringify(layout));
+      assert.ok(await page.locator(".manifesto-hero-copy").evaluate(el => parseFloat(getComputedStyle(el).animationDuration) < .01), "Reduced-motion preference disables entrance motion");
       assert.equal(await page.locator("nav").count(), 0);
       assert.equal(await page.getByText("The OnSpot Manifesto", { exact: true }).count(), 0);
       assert.equal(await page.locator(".manifesto-about-link").getAttribute("href"), "/why-onspot/about");
-      assert.equal(await page.locator(".manifesto-join-link").getAttribute("href"), "/signup");
+      const joins = page.locator(".manifesto-join-link");
+      assert.equal(await joins.count(), 2, "Hero and final invitation each offer signup");
+      assert.deepEqual(await joins.evaluateAll(els => els.map(el => el.getAttribute("href"))), ["/signup", "/signup"]);
+      assert.equal(await page.getByRole("link", { name: "Hire Talent", exact: true }).getAttribute("href"), "/signup/client");
+      assert.equal(await page.getByRole("link", { name: "Find Work", exact: true }).getAttribute("href"), "/signup/talent");
+      const images = page.locator(".manifesto-page img");
+      assert.ok(await images.count() >= 3, "Real supplied illustrations support the story");
+      for (const image of await images.all()) {
+        await image.scrollIntoViewIfNeeded();
+        await image.evaluate((el: HTMLImageElement) => el.decode());
+        assert.ok((await image.getAttribute("alt"))?.trim());
+        assert.ok(await image.evaluate((el: HTMLImageElement) => el.naturalWidth > 0 && getComputedStyle(el).objectFit === "contain"));
+      }
+      assert.ok((await page.locator(".manifesto-page").innerText()).includes("Nur Laminero"));
+      await page.evaluate(() => scrollTo(0, 0));
+      if ([320, 390, 1440].includes(width)) {
+        await page.screenshot({ path: `/tmp/join-onspot-redesign-${width}.png`, fullPage: true });
+      }
       await page.waitForFunction(() => document.title === "Join OnSpot | OnSpot");
       assert.match(await page.locator('meta[name="description"]').getAttribute("content") ?? "", /Join OnSpot/);
       assert.equal(await page.locator('meta[property="og:title"]').getAttribute("content"), "Join OnSpot | OnSpot");
@@ -116,22 +136,40 @@ test("Old Manifesto SPA links redirect to Join OnSpot", { timeout: 90_000 }, asy
   finally { await page.close(); }
 });
 
-test("CTA opens Client/Talent signup selection over the still-mounted Join OnSpot page", { timeout: 90_000 }, async () => {
-  const page = await open(390);
-  try {
-    await page.locator(".manifesto-join-link").scrollIntoViewIfNeeded();
-    const originalScroll = await page.evaluate(() => scrollY);
-    await page.locator(".manifesto-join-link").click();
-    await page.getByRole("heading", { name: "Get started with OnSpot" }).waitFor();
-    assert.equal(new URL(page.url()).pathname, "/join-onspot");
-    assert.equal(await page.getByTestId("card-client-signup").count(), 1);
-    assert.equal(await page.getByTestId("card-talent-signup").count(), 1);
-    await page.getByRole("button", { name: "Close", exact: true }).click();
-    await page.locator("[data-signup-modal-overlay]").waitFor({ state: "detached" });
-    await page.waitForFunction(y => scrollY === y, originalScroll);
-    assert.equal(await page.locator(".manifesto-headline").count(), 1);
-  } finally { await page.close(); }
-});
+for (const width of [390, 1280]) {
+  test(`All Join OnSpot signup CTAs reuse the existing blurred modal at ${width}px`, { timeout: 90_000 }, async () => {
+    const page = await open(width);
+    try {
+      const controls = [
+        { locator: page.locator(".manifesto-join-link").first(), role: "selection" },
+        { locator: page.getByRole("link", { name: "Hire Talent", exact: true }), role: "client" },
+        { locator: page.getByRole("link", { name: "Find Work", exact: true }), role: "talent" },
+        { locator: page.locator(".manifesto-join-link").last(), role: "selection" },
+      ];
+      for (const { locator, role } of controls) {
+        await locator.scrollIntoViewIfNeeded();
+        assert.ok(await locator.evaluate(el => el.getBoundingClientRect().height >= 44));
+        const originalScroll = await page.evaluate(() => scrollY);
+        await locator.click();
+        const overlay = page.locator("[data-signup-modal-overlay]");
+        await overlay.waitFor();
+        if (role === "selection") {
+          await page.getByRole("heading", { name: "Get started with OnSpot" }).waitFor();
+          assert.equal(await page.getByTestId("card-client-signup").count(), 1);
+          assert.equal(await page.getByTestId("card-talent-signup").count(), 1);
+        } else {
+          await page.getByRole("heading", { name: role === "client" ? "Hire Talent" : "Find Work", exact: true }).waitFor();
+        }
+        assert.equal(new URL(page.url()).pathname, "/join-onspot");
+        assert.match(await page.locator('[class*="backdrop-blur-"]').evaluate(el => getComputedStyle(el).backdropFilter), /blur/);
+        assert.equal(await page.locator(".manifesto-headline").count(), 1);
+        await page.getByRole("button", { name: "Close", exact: true }).click();
+        await overlay.waitFor({ state: "detached" });
+        await page.waitForFunction(y => Math.abs(scrollY - y) <= 1, originalScroll);
+      }
+    } finally { await page.close(); }
+  });
+}
 
 test("Back link and shared desktop/mobile footer use real renamed navigation", { timeout: 90_000 }, async () => {
   for (const width of [390, 1280]) {
