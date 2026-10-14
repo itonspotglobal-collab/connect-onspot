@@ -31,16 +31,18 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   overlayClassName?: string;
+  containerClassName?: string;
+  closeClassName?: string;
   hideClose?: boolean;
 };
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, overlayClassName, hideClose = false, ...props }, ref) => (
+>(({ className, children, overlayClassName, containerClassName, closeClassName, hideClose = false, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay className={overlayClassName} />
-    <div className="fixed inset-0 z-[100] overflow-y-auto">
+    <div className={cn("fixed inset-0 z-[100] overflow-y-auto", containerClassName)}>
       <div className="flex min-h-full items-start justify-center pt-20 pb-4 px-4 sm:pt-24 sm:pb-12 sm:px-12">
         <DialogPrimitive.Content
           ref={ref}
@@ -52,7 +54,7 @@ const DialogContent = React.forwardRef<
         >
           {children}
           {!hideClose && (
-            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <DialogPrimitive.Close className={cn("absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground", closeClassName)}>
               <X className="h-4 w-4" />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>

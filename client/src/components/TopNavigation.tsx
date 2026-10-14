@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useSignupModal } from "@/components/SignupModalProvider";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalLogin } from "@/hooks/usePortalLogin";
@@ -86,6 +87,7 @@ const navigationItems = [
 
 export function TopNavigation() {
   const [location, navigate] = useLocation();
+  const openSignup = useSignupModal();
   const {
     isAuthenticated,
     isLoading,
@@ -1493,7 +1495,7 @@ export function TopNavigation() {
                   Log In
                 </button>
                 <button
-                  onClick={() => navigate("/signup")}
+                  onClick={event => openSignup({ trigger: event.currentTarget })}
                   className="text-[13px] font-medium text-white/55 hover:text-white/85 transition-colors duration-200 whitespace-nowrap hover:underline"
                   data-testid="nav-signup-button"
                 >
@@ -1911,7 +1913,7 @@ export function TopNavigation() {
                 Log In
               </button>
               <button
-                onClick={() => { navigate("/signup"); setIsMobileMenuOpen(false); }}
+                onClick={event => { openSignup({ trigger: event.currentTarget }); setIsMobileMenuOpen(false); }}
                 className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-medium text-sm text-white/55 hover:text-white/85 transition-all duration-200"
                 data-testid="mobile-signup-button"
               >

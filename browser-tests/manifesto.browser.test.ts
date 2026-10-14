@@ -116,16 +116,20 @@ test("Old Manifesto SPA links redirect to Join OnSpot", { timeout: 90_000 }, asy
   finally { await page.close(); }
 });
 
-test("CTA opens the existing Client/Talent signup selection", { timeout: 90_000 }, async () => {
+test("CTA opens Client/Talent signup selection over the still-mounted Join OnSpot page", { timeout: 90_000 }, async () => {
   const page = await open(390);
   try {
+    await page.locator(".manifesto-join-link").scrollIntoViewIfNeeded();
+    const originalScroll = await page.evaluate(() => scrollY);
     await page.locator(".manifesto-join-link").click();
     await page.getByRole("heading", { name: "Get started with OnSpot" }).waitFor();
-    assert.equal(new URL(page.url()).pathname, "/signup");
-    for (const portal of ["client", "talent"]) {
-      const href = await page.locator(`a[href^="/signup/${portal}"]`).getAttribute("href");
-      assert.equal(new URL(href!, BASE).searchParams.get("backTo"), "/join-onspot");
-    }
+    assert.equal(new URL(page.url()).pathname, "/join-onspot");
+    assert.equal(await page.getByTestId("card-client-signup").count(), 1);
+    assert.equal(await page.getByTestId("card-talent-signup").count(), 1);
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.locator("[data-signup-modal-overlay]").waitFor({ state: "detached" });
+    await page.waitForFunction(y => scrollY === y, originalScroll);
+    assert.equal(await page.locator(".manifesto-headline").count(), 1);
   } finally { await page.close(); }
 });
 

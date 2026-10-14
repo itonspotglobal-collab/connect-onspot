@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, MouseEventHandler } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
@@ -9,6 +9,7 @@ export interface AuthBackButtonProps {
   disabled?: boolean;
   className?: string;
   testId?: string;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
 }
 
 export function AuthBackButton({
@@ -18,6 +19,7 @@ export function AuthBackButton({
   disabled = false,
   className = "",
   testId,
+  onClick,
 }: AuthBackButtonProps) {
   const tone = variant === "dark"
     ? "border-white/20 bg-white/5 text-white/80 hover:border-white/35 hover:bg-white/10 hover:text-white focus-visible:ring-white/70"
@@ -38,7 +40,7 @@ export function AuthBackButton({
       href={disabled ? "#" : href}
       aria-disabled={disabled || undefined}
       tabIndex={disabled ? -1 : undefined}
-      onClick={disabled ? (event) => event.preventDefault() : undefined}
+      onClick={disabled ? (event) => event.preventDefault() : onClick}
       data-testid={testId}
       className={classes}
     >

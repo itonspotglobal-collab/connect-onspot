@@ -80,9 +80,9 @@ async function open(path: string, mobile = false, options: {
 }
 
 async function enter(page: Page, kind: "login" | "signup", mobile = false) {
-  if (mobile) await page.getByTestId("mobile-menu-toggle").click();
-  await page.getByTestId(mobile ? `mobile-${kind}-button` : `nav-${kind}-button`).click();
-  await page.getByTestId("auth-back-to-origin").waitFor();
+  if (mobile) await page.getByTestId("mobile-menu-toggle").last().click();
+  await page.getByTestId(mobile ? `mobile-${kind}-button` : `nav-${kind}-button`).last().click();
+  await page.getByTestId(kind === "signup" ? "auth-back-to-portal" : "auth-back-to-origin").waitFor();
 }
 
 async function choose(page: Page, kind: "login" | "signup", portal: "client" | "talent") {
@@ -111,6 +111,46 @@ for (const mobile of [false, true]) {
           const origin = "/find-work/jobs?category=sales#roles";
           const page = await open(origin, mobile);
           try {
+            if (kind === "signup") {
+              await page.getByTestId("nav-signup-button").waitFor({ state: "attached" });
+              const before = await page.evaluate(() => {
+                (window as any).__signupOriginHeading = document.querySelector("h1");
+                window.scrollTo(0, 150);
+                return window.scrollY;
+              });
+              await enter(page, kind, mobile);
+              assert.equal(new URL(page.url()).pathname + new URL(page.url()).search + new URL(page.url()).hash, origin);
+              await page.getByRole("heading", { name: "Find Work", exact: true }).waitFor();
+              const overlay = await page.evaluate(() => {
+                const backdrop = document.querySelector<HTMLElement>('.fixed.inset-0[data-state="open"]')!;
+                const dialog = document.querySelector<HTMLElement>("[data-signup-modal-overlay]")!;
+                return {
+                  blur: getComputedStyle(backdrop).backdropFilter,
+                  dim: getComputedStyle(backdrop).backgroundColor,
+                  formBlur: getComputedStyle(dialog).backdropFilter,
+                  locked: document.body.hasAttribute("data-scroll-locked"),
+                };
+              });
+              assert.equal(overlay.blur, "blur(4px)");
+              assert.equal(overlay.dim, "rgba(0, 0, 0, 0.45)");
+              assert.equal(overlay.formBlur, "none");
+              assert.equal(overlay.locked, true);
+              await page.mouse.move(5, 400);
+              await page.mouse.wheel(0, 500);
+              assert.equal(await page.evaluate(() => scrollY), before);
+              await page.getByTestId("auth-back-to-portal").click();
+              await page.getByTestId(`card-${portal}-signup`).click();
+              await page.getByRole("heading", { name: portal === "client" ? "Hire Talent" : "Find Work", exact: true }).waitFor();
+              if (mobile && portal === "talent") await page.screenshot({ path: "/tmp/onspot-signup-modal-mobile.png" });
+              assert.equal(new URL(page.url()).pathname, "/find-work/jobs");
+              await page.getByRole("button", { name: "Close", exact: true }).click();
+              await page.locator("[data-signup-modal-overlay]").waitFor({ state: "detached" });
+              await page.waitForFunction(y => scrollY === y && !document.body.hasAttribute("data-scroll-locked"), before);
+              assert.equal(await page.evaluate(() => (window as any).__signupOriginHeading === document.querySelector("h1")), true);
+              await page.waitForFunction(id => document.activeElement?.getAttribute("data-testid") === id,
+                mobile ? "mobile-menu-toggle" : "nav-signup-button");
+              return;
+            }
             await enter(page, kind, mobile);
             assert.equal(new URL(page.url()).searchParams.get("backTo"), origin);
             assert.equal(await page.getByTestId("auth-back-to-origin").innerText(), "Back to Find Work");
@@ -215,6 +255,7 @@ for (const width of [320, 768, 1280]) {
       const page = await open(`/signup/${portal}?backTo=%2Ffind-work%2Fjobs`, width === 320, { width, height });
       try {
         await page.getByTestId("auth-back-to-portal").waitFor();
+        assert.equal(await page.locator("[data-signup-modal-overlay]").count(), 0, "Direct signup URLs keep the standalone fallback");
         await page.getByRole("heading", { name: portal === "client" ? "Hire Talent" : "Find Work", exact: true }).waitFor();
         assert.equal(await page.getByText(portal === "client"
           ? "Create your account and start building your remote team."
@@ -306,5 +347,46 @@ test("Client signup retains required company validation, inline feedback, and su
     assert.equal(payload.role, "client");
     assert.equal(payload.company, "Test Company");
     assert.equal(await page.evaluate(() => localStorage.getItem("onspot_jwt_token")), "isolated-client-session");
+  } finally { await page.close(); }
+});
+
+test("Hire Talent opens Client signup over the same page, traps focus, and restores scroll on Escape", { timeout: 90_000 }, async () => {
+  const page = await open("/hire-talent");
+  try {
+    await page.getByTestId("nav-signup-button").last().waitFor();
+    const before = await page.evaluate(() => {
+      (window as any).__hirePageInput = document.querySelector('[placeholder="Tell us what you need"]');
+      (window as any).__documentMarker = "same-document";
+      window.scrollTo(0, 150);
+      return scrollY;
+    });
+    await enter(page, "signup");
+    await page.getByRole("heading", { name: "Hire Talent", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).pathname, "/hire-talent");
+    assert.equal(await page.evaluate(() => (window as any).__hirePageInput?.isConnected), true);
+    for (let i = 0; i < 22; i++) {
+      await page.keyboard.press("Tab");
+      assert.equal(await page.evaluate(() => Boolean(document.activeElement?.closest("[role=dialog]"))), true);
+    }
+    await page.screenshot({ path: "/tmp/onspot-signup-modal-desktop.png" });
+    await page.keyboard.press("Escape");
+    await page.locator("[data-signup-modal-overlay]").waitFor({ state: "detached" });
+    await page.waitForFunction(y => scrollY === y, before);
+    assert.equal(await page.evaluate(() => (window as any).__documentMarker), "same-document");
+    assert.equal(await page.evaluate(() => (window as any).__hirePageInput === document.querySelector('[placeholder="Tell us what you need"]')), true);
+  } finally { await page.close(); }
+});
+
+test("Choosing another signup role keeps Sign In linked to the chosen portal and real origin", { timeout: 90_000 }, async () => {
+  const page = await open("/find-work/jobs");
+  try {
+    await enter(page, "signup");
+    await page.getByTestId("auth-back-to-portal").click();
+    await page.getByTestId("card-client-signup").click();
+    await page.getByTestId("button-signin-instead").click();
+    await page.getByTestId("button-submit-portal-login").waitFor();
+    assert.equal(new URL(page.url()).pathname, "/login/client");
+    assert.equal(new URL(page.url()).searchParams.get("backTo"), "/find-work/jobs");
+    assert.equal(await page.locator("[data-signup-modal-overlay]").count(), 0);
   } finally { await page.close(); }
 });

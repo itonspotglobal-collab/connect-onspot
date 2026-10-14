@@ -36,7 +36,7 @@ interface SignUpDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
-  onSignInInstead?: () => void;
+  onSignInInstead?: (portal?: "client" | "talent") => void;
   returnTo?: string;
   /** Pre-select user type and skip straight to the signup form. */
   defaultUserType?: UserType;
@@ -46,6 +46,9 @@ interface SignUpDialogProps {
   onChooseAnotherAccountType?: () => void;
   /** Render the existing signup form as a full route instead of a dark modal. */
   standalone?: boolean;
+  /** Keep the polished routed form over its still-mounted originating page. */
+  modalOverlay?: boolean;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function SignUpDialog({
@@ -58,6 +61,8 @@ export function SignUpDialog({
   defaultEmail,
   onChooseAnotherAccountType,
   standalone = false,
+  modalOverlay = false,
+  onCloseAutoFocus,
 }: SignUpDialogProps = {}) {
   const authSearch = useSearch();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -368,6 +373,7 @@ export function SignUpDialog({
 
       {/* p-0 + bg-transparent lets our inner div own all the styling */}
       <DialogContent
+        data-signup-modal-overlay={modalOverlay || undefined}
         className={[
           "p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
           !standalone && "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
@@ -375,10 +381,15 @@ export function SignUpDialog({
             ? "w-[min(680px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
             : "w-[min(520px,calc(100vw-1.5rem))] max-w-none sm:max-w-none",
         ].filter(Boolean).join(" ")}
-        overlayClassName={standalone
+        overlayClassName={modalOverlay ? "bg-black/45 backdrop-blur-[4px] z-[10000]" : standalone
           ? "bg-[linear-gradient(135deg,#FCFDFF_0%,#F6F8FF_20%,#EEF4FF_45%,#E7F0FF_70%,#F8F9FF_100%)]"
           : undefined}
-        hideClose={standalone}
+        containerClassName={modalOverlay ? "z-[10000]" : undefined}
+        closeClassName={modalOverlay
+          ? "flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 text-white opacity-100 hover:bg-white/10 focus:ring-white/70 data-[state=open]:bg-white/10 data-[state=open]:text-white"
+          : undefined}
+        hideClose={standalone && !modalOverlay}
+        onCloseAutoFocus={onCloseAutoFocus}
       >
         {/* Dark card — flex column with capped height + internal scroll */}
         <div
@@ -398,6 +409,10 @@ export function SignUpDialog({
                   variant="dark"
                   disabled={isLoading || accountCreated}
                   testId="auth-back-to-portal"
+                  onClick={modalOverlay ? event => {
+                    event.preventDefault();
+                    handleBackToUserType();
+                  } : undefined}
                 />
               </div>
             )}
@@ -741,7 +756,7 @@ export function SignUpDialog({
                   onClick={() => {
                     setOpen(false);
                     resetDialog();
-                    onSignInInstead?.();
+                    onSignInInstead?.(userType ?? undefined);
                   }}
                   data-testid="button-signin-instead"
                   className="text-xs text-white/80 hover:text-white underline transition-colors"

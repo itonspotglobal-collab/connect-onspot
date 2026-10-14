@@ -8,3 +8,9 @@ When a Radix Dialog is controlled by a custom card's state instead of a DialogTr
 **Why:** Radix can only restore trigger focus when it owns a trigger element; controlled dialogs opened from a separate role=button may leave focus on the document after dismissal.
 
 **How to apply:** Browser tests should assert dialog focus, clean dismissal, no accidental card re-open, and card availability after close. Add explicit focus restoration in the component before testing that behavior.
+
+If opening a dialog also collapses a menu, restore focus to the visible menu opener rather than its signup/menu item.
+
+**Why:** A collapsed mobile menu can leave its items mounted but invisible. Checking only whether the original trigger is still connected can restore focus to a hidden item.
+
+**How to apply:** Treat the menu opener as the logical return target when its item disappears or becomes hidden after selection. Preserve the page's scroll position during focus restoration.
