@@ -66,9 +66,14 @@ async function responsiveInvestorPage(width: number, height = 844) {
   return page;
 }
 
-for (const width of [320, 375, 390, 414, 430, 768, 1024]) {
-  test(`Investor layout, hierarchy and inquiry dialogs fit ${width}px`, async () => {
-    const page = await responsiveInvestorPage(width);
+const investorViewports = [
+  ...[320, 360, 375, 390, 414, 430].flatMap(width =>
+    [667, 740, 844].map(height => ({ width, height }))),
+  ...[768, 1024, 1440].map(width => ({ width, height: 1000 })),
+];
+for (const { width, height } of investorViewports) {
+  test(`Investor layout, hierarchy and inquiry dialogs fit ${width}×${height}`, async () => {
+    const page = await responsiveInvestorPage(width, height);
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     const layout = await page.evaluate(() => {
@@ -80,6 +85,9 @@ for (const width of [320, 375, 390, 414, 430, 768, 1024]) {
         scrollWidth: document.documentElement.scrollWidth,
         order: [".investor-headline", ".investors-counts", ".investor-tagline", ".investor-raise", ".investor-actions", ".investors-phone-column"].map(rect),
         headlineAlignment: getComputedStyle(document.querySelector(".investor-headline")!).textAlign,
+        headlineSize: parseFloat(getComputedStyle(document.querySelector(".investor-headline")!).fontSize),
+        taglineSize: parseFloat(getComputedStyle(document.querySelector(".investor-tagline")!).fontSize),
+        pillSize: parseFloat(getComputedStyle(document.querySelector(".investor-raise")!).fontSize),
         groupAlignments: [".investor-headline-primary", ".investor-headline-secondary"].map(s => getComputedStyle(document.querySelector(s)!).textAlign),
         gauges: [...document.querySelectorAll(".investor-gauge")].map(el => {
           const r = el.getBoundingClientRect();
@@ -87,12 +95,16 @@ for (const width of [320, 375, 390, 414, 430, 768, 1024]) {
           const number = el.querySelector(".investor-gauge-count")!.getBoundingClientRect();
           const label = el.querySelector(".investor-gauge-label")!.getBoundingClientRect();
           return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, diameter: visual.width,
+            numberSize: parseFloat(getComputedStyle(el.querySelector(".investor-gauge-count")!).fontSize),
+            labelSize: parseFloat(getComputedStyle(el.querySelector(".investor-gauge-label")!).fontSize),
+            goalSize: parseFloat(getComputedStyle(el.querySelector(".investor-gauge-goal")!).fontSize),
             numberCentered: Math.abs(number.x + number.width / 2 - visual.x - visual.width / 2) < 1,
             labelGap: label.y - visual.bottom };
         }),
         buttons: [...document.querySelectorAll(".investor-action")].map(el => {
           const r = el.getBoundingClientRect();
-          return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom };
+          return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom,
+            fontSize: parseFloat(getComputedStyle(el).fontSize) };
         }),
         phoneLoaded: (document.querySelector(".investors-phone") as HTMLImageElement).naturalWidth > 0,
       };
@@ -102,11 +114,21 @@ for (const width of [320, 375, 390, 414, 430, 768, 1024]) {
     assert.ok(layout.gauges.every(g => g.numberCentered && g.labelGap >= 0));
     assert.ok(layout.gauges[0].right <= layout.gauges[1].x + 1 || layout.gauges[0].bottom <= layout.gauges[1].y);
     if (width < 768) {
+      assert.ok(layout.headlineSize >= 26 && layout.headlineSize <= 34);
+      assert.ok(layout.taglineSize >= 16 && layout.taglineSize <= 18);
+      assert.ok(layout.pillSize >= 10 && layout.pillSize <= 11);
+      assert.ok(layout.gauges.every(g => g.diameter >= 105 && g.diameter <= 125));
+      assert.ok(layout.gauges.every(g => g.numberSize >= 28 && g.numberSize <= 34));
+      assert.ok(layout.gauges.every(g => g.labelSize >= 11 && g.labelSize <= 12));
+      assert.ok(layout.gauges.every(g => g.goalSize >= 10 && g.goalSize <= 11));
+      assert.ok(layout.gauges.every(g => g.labelGap >= 5 && g.labelGap <= 6));
       assert.equal(layout.headlineAlignment, "center");
       assert.deepEqual(layout.groupAlignments, ["center", "center"]);
       assert.ok(layout.order.every((r, i) => i === 0 || r.y >= layout.order[i - 1].bottom - 1), JSON.stringify(layout.order));
-      assert.ok(layout.buttons.every(b => b.height >= 44 && Math.abs(b.width - layout.buttons[0].width) < 1));
-      assert.ok(layout.buttons.every((b, i) => i === 0 || b.y > layout.buttons[i - 1].bottom));
+      assert.ok(layout.buttons.every(b => b.height >= 44 && b.height <= 46 && Math.abs(b.width - layout.buttons[0].width) < 1));
+      assert.ok(layout.buttons.every(b => b.fontSize >= 13 && b.fontSize <= 14));
+      assert.ok(layout.buttons.every((b, i) => i === 0 ||
+        (b.y - layout.buttons[i - 1].bottom >= 7 && b.y - layout.buttons[i - 1].bottom <= 8)));
       for (const index of [0, 2, 3, 4]) {
         const r = layout.order[index];
         assert.ok(Math.abs(r.x + r.width / 2 - width / 2) < 1, `Section ${index} is centered`);
@@ -116,15 +138,15 @@ for (const width of [320, 375, 390, 414, 430, 768, 1024]) {
       assert.notEqual(layout.headlineAlignment, "center");
       if (width === 1024) assert.ok(layout.order[5].x > layout.order[0].x);
     }
-    if ([320, 390, 768, 1024].includes(width)) {
-      await page.screenshot({ path: `/tmp/investors-mobile-${width}.png`, fullPage: true });
+    if (height === 844 || width >= 768) {
+      await page.screenshot({ path: `/tmp/investors-mobile-${width}-${height}.png`, fullPage: true });
     }
     for (const [index, type] of ["meeting", "deck", "founder"].entries()) {
       await page.locator(".investor-action").nth(index).click();
       const dialog = page.getByRole("dialog");
       assert.equal(await page.locator("#investor-request-type").inputValue(), type);
       const box = await dialog.boundingBox();
-      assert.ok(box && box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height <= 845, JSON.stringify(box));
+      assert.ok(box && box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height <= height + 1, JSON.stringify(box));
       assert.ok(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth));
       await page.locator("#investor-message").fill("Mobile inquiry");
       await page.getByRole("button", { name: "Send request", exact: true }).scrollIntoViewIfNeeded();
@@ -305,8 +327,8 @@ test("owner targets show exact small progress, independent start dots, account l
     const box = el.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom };
   }));
   assert.ok(boxes[0].y === boxes[1].y || boxes[1].y >= boxes[0].bottom, "Mobile gauges must be side-by-side or safely stacked");
-  const mobileDiameter = await gauges.first().locator(".investor-gauge-track").evaluate((el) => el.getBoundingClientRect().width);
-  assert.ok(mobileDiameter >= 120 && mobileDiameter <= 150, `Mobile gauge is ${mobileDiameter}px`);
+  const mobileDiameter = await gauges.first().locator(".investor-gauge-visual").evaluate((el) => el.getBoundingClientRect().width);
+  assert.ok(mobileDiameter >= 105 && mobileDiameter <= 125, `Mobile gauge is ${mobileDiameter}px`);
   const order = await page.evaluate(() =>
     [".investor-headline", ".investors-counts", ".investor-tagline", ".investor-raise", ".investor-actions", ".investors-phone-column"]
       .map((selector) => document.querySelector(selector)!.getBoundingClientRect().top));

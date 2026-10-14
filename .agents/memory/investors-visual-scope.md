@@ -5,6 +5,12 @@ description: Owner-requested design boundaries for the Investors page.
 
 The desktop Investors layout uses two columns: headline and gauges on the left, the supplied tilted phone image on the right. The owner's subsequent mobile refinement explicitly requires a centered headline below 768px, followed by gauges, tagline, seed-round pill, stacked inquiry buttons, then phone. Preserve the desktop headline alignment and presentation. Remove the old eyebrow and earnings subhead. Do not modify Home.
 
+Smartphone sizing refinements are limited to widths below 768px; tablet and desktop remain unchanged. Allow natural vertical scrolling rather than compressing the whole presentation into one screen.
+
+**Why:** The owner explicitly scoped the compact-sizing request as a refinement, not a redesign, and prioritized readable proportions over fitting everything above the fold.
+
+**How to apply:** Keep future compact-spacing adjustments inside the smartphone breakpoint unless separately authorized; preserve the artwork, content order, dynamic statistics, and inquiry behavior.
+
 **Why:** The owner explicitly replaced the earlier instructions to match the investor pitch-deck presentation.
 
 **How to apply:** Keep desktop and mobile alignment rules distinct; the mobile centering request is not permission to center the desktop headline. Use Inter throughout except the tagline word “Without.” The owner subsequently authorized the closest verified Google Fonts brush/marker candidate provisionally, with a single accent-font token; swap to Hyperwave One when a licensed web-font file is supplied.

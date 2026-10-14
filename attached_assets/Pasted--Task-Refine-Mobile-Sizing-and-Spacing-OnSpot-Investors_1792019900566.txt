@@ -1,0 +1,167 @@
+## Task: Refine Mobile Sizing and Spacing — OnSpot Investors Page
+
+**Page:** https://onspotglobal.com/investors
+
+**Relevant files:**
+- `client/src/pages/InvestorsCorner.tsx`
+- `client/src/pages/InvestorsCorner.css`
+- `client/src/components/InvestorGauge`
+
+### Objective
+
+The mobile layout has improved, but the content is still too large for a typical smartphone screen.
+
+Based on the attached screenshot, the headline, account gauges, buttons, and vertical spacing take up excessive space.
+
+**Make the entire mobile layout more compact, balanced, and appropriately scaled for smartphones.**
+
+This is a refinement of the current design, NOT a redesign.
+
+### 1. Reduce the Hero Headline Size
+
+Keep the headline centered, but significantly reduce its font size.
+
+Requirements:
+- Use approximately `clamp(26px, 7vw, 34px)` for mobile.
+- Reduce line height to approximately `1.08–1.15`.
+- Maintain the existing white and gold text hierarchy.
+- Reduce the spacing between the white and gold text groups to approximately 8–10px.
+- Keep the text horizontally centered.
+- Ensure balanced line wrapping without overflow.
+
+The headline must remain prominent without dominating most of the screen.
+
+### 2. Reduce the Account Gauge Sizes
+
+The two circular counters currently occupy too much vertical space.
+
+Requirements:
+- Reduce circle diameters to approximately 105–125px on typical smartphones.
+- Scale the account numbers proportionally to approximately 28–34px.
+- Reduce the space between the circles and their labels.
+- Use approximately 11–12px for account labels.
+- Use approximately 10–11px for goal text.
+- Maintain the two-column layout on normal smartphone widths.
+- Keep both gauges centered and evenly spaced.
+- Preserve the dynamic values and progress calculations.
+
+Do not change any API calls or account statistics logic.
+
+### 3. Reduce Tagline and Status Indicator Sizes
+
+**Work Without Limits**
+- Reduce the tagline font size to approximately 16–18px.
+- Preserve the handwritten gold "Without" styling.
+- Keep the tagline centered.
+- Reduce the top margin to approximately 10–12px.
+
+**Currently raising our seed round**
+- Reduce the pill's font size to approximately 10–11px.
+- Use compact horizontal and vertical padding.
+- Keep the pill centered.
+- Reduce unnecessary margins.
+
+### 4. Make CTA Buttons More Compact
+
+The current buttons are too tall and consume too much vertical space.
+
+Requirements:
+- Reduce button height to approximately 44–46px.
+- Use approximately 13–14px font size.
+- Reduce vertical gaps between buttons to 7–8px.
+- Keep all three buttons equal in width and height.
+- Maintain the existing white pill-shaped design.
+- Keep the buttons centered with consistent side margins.
+- Preserve a minimum accessible touch target of 44px.
+
+**Do not modify CTA behavior.**
+
+All three buttons must continue to open the existing investor request dialog with the correct request type:
+
+- Request a Meeting
+- Request the Pitch Deck
+- Speak to the Founder
+
+Preserve the existing form validation, API submission, loading states, and success/error handling.
+
+### 5. Optimize Overall Vertical Spacing
+
+Use a consistent compact spacing system throughout the mobile page.
+
+Suggested spacing:
+
+| Section | Target spacing |
+|---|---|
+| Header to headline | 16–20px |
+| White to gold headline | 8–10px |
+| Headline to gauges | 16–20px |
+| Gauge circles to labels | 5–6px |
+| Gauges to tagline | 12–14px |
+| Tagline to seed-round pill | 8–10px |
+| Seed-round pill to CTAs | 12–14px |
+| Between CTA buttons | 7–8px |
+
+Avoid excessive margins, padding, and large gaps.
+
+Use consistent spacing rather than arbitrary values.
+
+### 6. Optimize Mobile Responsiveness
+
+Apply these adjustments primarily to screens below `768px`.
+
+Test the following viewport widths:
+- 320px
+- 360px
+- 375px
+- 390px
+- 414px
+- 430px
+
+Also test different viewport heights, including 667px, 740px, and 844px.
+
+Requirements:
+- Use responsive sizing rather than fixed desktop dimensions.
+- Avoid horizontal scrolling.
+- Ensure text never overlaps other elements.
+- Keep all content within the available width.
+- Do not force the entire page into one screen if it compromises readability.
+- Allow natural vertical scrolling for smaller devices.
+- Account for mobile browser safe areas and viewport differences.
+
+### 7. Preserve the Existing Design
+
+Do not change:
+- Desktop and tablet layouts.
+- OnSpot logo and navigation functionality.
+- Brand colors and gradient background.
+- Headline wording or content order.
+- Account statistics and their API integration.
+- Investor inquiry dialogs and backend behavior.
+- Existing phone mockup artwork.
+
+Only refine the mobile sizing, spacing, and responsive layout.
+
+### 8. Final Verification
+
+Before completing the changes:
+
+1. Capture before-and-after mobile screenshots.
+2. Verify the headline is smaller and centered.
+3. Confirm both gauges are proportionally reduced.
+4. Ensure the tagline and seed-round indicator are properly scaled.
+5. Confirm all three CTA buttons have compact, consistent dimensions.
+6. Test all CTA interactions and form submission states.
+7. Verify no horizontal overflow or clipped content.
+8. Ensure the desktop appearance remains unchanged.
+
+### Expected Result
+
+The Investors page should feel like a professionally designed mobile-first landing page.
+
+The content should be visually balanced, easy to scan, and comfortable to read on a phone.
+
+**The goal is not simply to shrink everything. It is to establish the correct proportions, spacing, and visual hierarchy for a mobile viewport.**
+
+The headline should remain the main focal point, followed by the counters, fundraising information, and investor actions.
+
+Make only the necessary changes to the existing implementation and report the modified files and testing results.
