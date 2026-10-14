@@ -23,7 +23,7 @@ import { signupRetryDelayMs } from "@/lib/signupRetry";
 import { saveTalentAuth } from "@/components/TalentLoginModal";
 import { SignupEmailVerification } from "@/components/SignupEmailVerification";
 import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
-import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
+import onspotLogo from "@/assets/onspot-white-wordmark.png";
 import "./SignUpDialog.css";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
@@ -378,7 +378,7 @@ export function SignUpDialog({
           "p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
           !standalone && "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
           currentStep === "user-type"
-            ? "w-[min(680px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
+            ? "w-[min(780px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
             : "w-[min(520px,calc(100vw-1.5rem))] max-w-none sm:max-w-none",
         ].filter(Boolean).join(" ")}
         overlayClassName={modalOverlay ? "bg-black/45 backdrop-blur-[4px] z-[10000]" : standalone
@@ -401,7 +401,7 @@ export function SignUpDialog({
           }}
         >
           {/* ── Sticky header (never scrolls away) ── */}
-          <div className="signup-header shrink-0 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 pr-12 text-center">
+          <div className="signup-header shrink-0 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 text-center">
             {standalone && currentStep === "signup" && (
               <div className="mb-4 flex justify-start">
                 <AuthBackButton
@@ -416,8 +416,8 @@ export function SignUpDialog({
                 />
               </div>
             )}
-            <div className="flex justify-center mb-2.5">
-              <img src={onspotLogo} alt="OnSpot" className="h-8 w-auto" />
+            <div className="signup-logo-wrap flex justify-center mb-4">
+              <img src={onspotLogo} alt="OnSpot" className="signup-logo h-auto w-[min(140px,55vw)]" />
             </div>
 
             {currentStep === "user-type" && (
@@ -460,16 +460,16 @@ export function SignUpDialog({
 
             {/* ── Role selection step ── */}
             {currentStep === "user-type" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="signup-role-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Client card */}
                 <button
                   type="button"
                   onClick={() => handleSelectUserType("client")}
-                  className="signup-role-card relative flex flex-col items-center gap-2.5 rounded-xl p-5 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#8294FF]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BAAFF] group"
+                  className="signup-role-card relative flex flex-col items-center gap-3.5 rounded-xl p-6 sm:p-7 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#8294FF]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BAAFF] group"
                   data-testid="card-client-signup"
                 >
-                  <div className="w-11 h-11 rounded-full bg-[#3A3AF8]/15 flex items-center justify-center group-hover:bg-[#3A3AF8]/30 transition-colors">
-                    <Building className="w-5 h-5 text-[#5B7CFF]" />
+                  <div className="w-12 h-12 rounded-full bg-[#3A3AF8]/15 flex items-center justify-center group-hover:bg-[#3A3AF8]/30 transition-colors">
+                    <Building className="w-6 h-6 text-[#5B7CFF]" />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-white mb-1">I&apos;m Hiring</h3>
@@ -486,11 +486,11 @@ export function SignUpDialog({
                 <button
                   type="button"
                   onClick={() => handleSelectUserType("talent")}
-                  className="signup-role-card relative flex flex-col items-center gap-2.5 rounded-xl p-5 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 group"
+                  className="signup-role-card relative flex flex-col items-center gap-3.5 rounded-xl p-6 sm:p-7 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 group"
                   data-testid="card-talent-signup"
                 >
-                  <div className="w-11 h-11 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
-                    <User className="w-5 h-5 text-yellow-400" />
+                  <div className="w-12 h-12 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
+                    <User className="w-6 h-6 text-yellow-400" />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-white mb-1">I&apos;m Looking for Work</h3>

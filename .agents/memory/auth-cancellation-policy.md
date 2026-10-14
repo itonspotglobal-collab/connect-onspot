@@ -13,6 +13,6 @@ Client/Talent authentication has two distinct exit actions: forms return to thei
 
 Open signup over the actual still-mounted public page, with a slightly darkened, subtly blurred backdrop. Find Work opens Talent signup; Hire Talent opens Client signup. Preserve the polished form design and authentication behavior. X/Escape close the popup without navigation, reload, or lost scroll/page state. Back to Portal changes only the selection inside the popup. Direct signup URLs retain their standalone fallback.
 
-**Why:** The owner explicitly rejected replacing the browsing page with the light signup background. Returning to the same URL afterward is insufficient if it recreates the page and loses its state.
+**Why:** The owner explicitly rejected replacing the browsing page with the light signup background and subsequently confirmed that the real-page popup, blur, navigation, and signup work correctly. Returning to the same URL afterward is insufficient if it recreates the page and loses its state.
 
 **How to apply:** Keep the real page mounted rather than reconstructing a background from a URL or screenshot. Lock background scrolling while the popup is open, restore focus on close, and keep standalone auth-navigation rules for direct URLs and Login/Sign Up switches.

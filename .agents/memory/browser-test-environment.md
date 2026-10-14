@@ -27,11 +27,11 @@ Browser callbacks serialized by Playwright do not inherit tsx/esbuild's module-s
 
 **How to apply:** When using nested helpers in browser callbacks, supply the minimal function-name shim through a test-only init script, or avoid transformations that require that runtime. Do not modify application code to fix a test serialization failure.
 
-Injected or removed test styles should be followed by a rendering turn before asserting their computed effects.
+Injected/removed test styles and dialog-step size changes must settle before asserting their computed layout.
 
-**Why:** In host Chromium, stylesheet invalidation can briefly expose the previous computed style even after the injection/removal promise resolves; deliberate-drift tests otherwise fail intermittently.
+**Why:** In host Chromium, stylesheet invalidation can briefly expose the previous computed style even after the injection/removal promise resolves. A newly visible signup chooser can also retain the preceding form's measured width while its size transition finishes; visibility alone does not prove settled geometry.
 
-**How to apply:** Wait for animation frames after test-only style mutations rather than weakening layout assertions or adding arbitrary long timeouts.
+**How to apply:** Wait for animation frames after test-only style mutations and for expected bounding-box dimensions after dialog-step changes. Do not weaken layout assertions or add arbitrary long timeouts.
 
 Register request-event waits before triggering the action that emits the request.
 

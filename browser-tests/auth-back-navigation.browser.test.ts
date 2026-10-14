@@ -262,6 +262,7 @@ for (const width of [320, 768, 1280]) {
           : "Create your profile and connect with global opportunities.", { exact: true }).count(), 1);
         assert.equal((await page.getByTestId("button-submit-signup").innerText()).trim(),
           portal === "client" ? "Create Client Account" : "Create Talent Profile");
+        await page.locator(".signup-header img").evaluate(image => (image as HTMLImageElement).decode());
         const layout = await page.evaluate(() => {
           const first = document.querySelector<HTMLInputElement>("#firstName")!;
           const last = document.querySelector<HTMLInputElement>("#lastName")!;
@@ -274,12 +275,26 @@ for (const width of [320, 768, 1280]) {
             labelSizes: [...document.querySelectorAll("#signup-form label")].map(el => parseFloat(getComputedStyle(el).fontSize)),
             helperSize: parseFloat(getComputedStyle(helper).fontSize),
             helperLineHeight: parseFloat(getComputedStyle(helper).lineHeight),
+            logo: (() => {
+              const logo = document.querySelector<HTMLImageElement>(".signup-header img")!;
+              const box = logo.getBoundingClientRect();
+              const card = document.querySelector(".signup-card")!.getBoundingClientRect();
+              return {
+                width: box.width, height: box.height, aspect: logo.naturalWidth / logo.naturalHeight,
+                offset: Math.abs(box.x + box.width / 2 - card.x - card.width / 2),
+                background: getComputedStyle(logo).backgroundColor,
+              };
+            })(),
           };
         });
         assert.equal(layout.overflow, false);
         assert.ok(layout.heights.every(value => value >= 44));
         assert.ok(layout.labelSizes.every(value => value >= 13));
         assert.ok(layout.helperSize >= 12 && layout.helperLineHeight >= 18);
+        assert.ok(layout.logo.width >= (width >= 768 ? 120 : 100) && layout.logo.width <= 150);
+        assert.ok(Math.abs(layout.logo.width / layout.logo.height - layout.logo.aspect) < 0.02);
+        assert.ok(layout.logo.offset <= 1, "The visible logo is centered within the card");
+        assert.equal(layout.logo.background, "rgba(0, 0, 0, 0)");
         assert.equal((await page.locator("#signup-password-hint").innerText()).trim(), PASSWORD_POLICY_HINT);
         if (width === 320) assert.ok(layout.last.top >= layout.first.bottom, "Names must stack on narrow phones");
         else assert.equal(layout.first.top, layout.last.top, "Names share a row on larger screens");
@@ -390,3 +405,74 @@ test("Choosing another signup role keeps Sign In linked to the chosen portal and
     assert.equal(await page.locator("[data-signup-modal-overlay]").count(), 0);
   } finally { await page.close(); }
 });
+
+for (const [width, height] of [[320, 568], [390, 844], [768, 720], [1280, 900], [1920, 1080]]) {
+  test(`Roomier signup selection and official logo fit ${width}×${height}`, { timeout: 90_000 }, async () => {
+    const page = await open("/find-work/jobs", width < 768, { width, height });
+    try {
+      await enter(page, "signup", width < 768);
+      await page.getByTestId("auth-back-to-portal").click();
+      await page.getByTestId("card-client-signup").waitFor();
+      await page.locator(".signup-header img").evaluate(image => (image as HTMLImageElement).decode());
+      if (width >= 1280) {
+        await page.waitForFunction(() => {
+          const card = document.querySelector(".signup-card")!;
+          return Math.abs(card.getBoundingClientRect().width - 780) < 0.5;
+        });
+      }
+      const geometry = await page.evaluate(() => {
+        const rect = (selector: string) => document.querySelector(selector)!.getBoundingClientRect().toJSON();
+        const logo = document.querySelector<HTMLImageElement>(".signup-header img")!;
+        const card = document.querySelector(".signup-card")!;
+        return {
+          card: rect(".signup-card"), logo: rect(".signup-header img"),
+          client: rect('[data-testid="card-client-signup"]'), talent: rect('[data-testid="card-talent-signup"]'),
+          ratio: logo.naturalWidth / logo.naturalHeight,
+          rootFont: parseFloat(getComputedStyle(document.documentElement).fontSize),
+          logoSource: [logo.naturalWidth, logo.naturalHeight],
+          overflow: document.documentElement.scrollWidth > innerWidth,
+          scrollable: getComputedStyle(document.querySelector(".signup-scroll")!).overflowY,
+          logoBackground: getComputedStyle(logo).backgroundColor,
+          cardBackground: getComputedStyle(card).backgroundImage,
+        };
+      });
+      assert.equal(new URL(page.url()).pathname, "/find-work/jobs");
+      assert.equal(geometry.overflow, false);
+      assert.ok(geometry.card.x >= 0 && geometry.card.right <= width && geometry.card.bottom <= height);
+      assert.ok(geometry.logo.width >= (width >= 768 ? 120 : 100) && geometry.logo.width <= 150);
+      assert.deepEqual(geometry.logoSource, [1013, 319], "The exact official mark is trimmed, not redesigned");
+      assert.ok(Math.abs(geometry.logo.width / geometry.logo.height - geometry.ratio) < 0.02);
+      assert.ok(Math.abs(geometry.logo.x + geometry.logo.width / 2 - geometry.card.x - geometry.card.width / 2) <= 1);
+      assert.equal(geometry.logoBackground, "rgba(0, 0, 0, 0)");
+      assert.match(geometry.cardBackground, /linear-gradient/);
+      assert.equal(geometry.scrollable, "auto");
+      assert.ok(Math.abs(geometry.client.width - geometry.talent.width) <= 1);
+      assert.ok(Math.abs(geometry.client.height - geometry.talent.height) <= 1);
+      if (width >= 768) {
+        assert.equal(geometry.client.y, geometry.talent.y);
+        assert.ok(geometry.client.height / geometry.rootFont >= 16 && geometry.client.height / geometry.rootFont <= 17,
+          `Cards keep their enlarged proportions under the site's responsive type scale: ${JSON.stringify(geometry.client)}`);
+        if (width >= 1280) assert.ok(geometry.card.width >= 760 && geometry.card.width <= 800,
+          `Desktop selection width: ${JSON.stringify(geometry.card)}`);
+      } else {
+        assert.ok(geometry.talent.y >= geometry.client.bottom, "The cards stack on narrow phones");
+      }
+      const close = page.getByRole("button", { name: "Close", exact: true });
+      const closeBox = await close.boundingBox();
+      assert.ok(closeBox && closeBox.y >= 0 && closeBox.y + closeBox.height <= height);
+      if (width === 1280 || width === 320) await page.screenshot({ path: `/tmp/onspot-roomier-selection-${width}.png` });
+      await page.getByTestId("card-talent-signup").click();
+      await page.getByTestId("auth-back-to-portal").waitFor();
+      if (width >= 768) {
+        await page.waitForFunction(() => Math.abs(document.querySelector(".signup-card")!.getBoundingClientRect().width - 520) < 0.5);
+      }
+      for (const button of await page.locator(".signup-footer button").all()) {
+        const box = await button.boundingBox();
+        assert.ok(box && box.y >= 0 && box.y + box.height <= height, "A larger logo must not clip sticky form actions");
+      }
+      if (width === 1280 || width === 320) await page.screenshot({ path: `/tmp/onspot-enlarged-logo-form-${width}.png` });
+      await close.click();
+      await page.locator("[data-signup-modal-overlay]").waitFor({ state: "detached" });
+    } finally { await page.close(); }
+  });
+}
