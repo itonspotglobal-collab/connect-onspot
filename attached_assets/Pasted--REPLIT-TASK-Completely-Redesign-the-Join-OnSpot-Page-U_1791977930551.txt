@@ -1,0 +1,426 @@
+# REPLIT TASK: Completely Redesign the Join OnSpot Page Using the Attached HTML
+
+## Main Objective
+
+Completely replace the existing `/join-onspot` page with the layout, styling, content, and overall user experience from the attached file:
+
+**`OnSpot — Talent Sign-up Landing Page.html`**
+
+This HTML is the new approved design reference for the Join OnSpot page.
+
+Do not simply enhance the existing page. I want a complete page redesign based on the attached HTML.
+
+However, while implementing the design, improve the **visual hierarchy** so the page looks more polished, professional, engaging, and conversion-focused.
+
+The final result should feel like a premium landing page specifically designed to encourage remote professionals to join OnSpot.
+
+---
+
+## 1. Use the Attached HTML as the Primary Reference
+
+Study the entire attached HTML file, including its:
+
+- Layout and section structure
+- Headings and written content
+- Typography and font treatments
+- Brand colors and gradients
+- Illustrations and graphics
+- Signup form
+- Cards and decorative elements
+- CTA buttons
+- FAQ accordion
+- Responsive layouts
+- Interactive elements
+
+Recreate the design inside the existing Replit project using its current framework and component structure.
+
+**Important:**
+- Replace the old Join OnSpot page content with the new HTML content.
+- Do not retain the previous founder-letter or Manifesto-style layout.
+- Do not mix the old and new designs.
+- Preserve the new HTML's messaging and intended meaning.
+- Do not redesign unrelated pages.
+- Keep the existing `/join-onspot` route.
+
+The new page should closely match the provided HTML while incorporating visual hierarchy improvements.
+
+## 2. Apply Strong Visual Hierarchy Throughout the Page
+
+This is one of the most important requirements.
+
+Make sure visitors immediately understand:
+
+1. What OnSpot offers.
+2. Why they should join.
+3. What benefits they receive.
+4. How the platform works.
+5. How to create their talent profile.
+
+### Typography Hierarchy
+
+Use a consistent typographic scale:
+
+**H1 — Primary Hero Headline**
+- Largest text on the page.
+- Bold, visually striking, and immediately readable.
+- Preserve the headline:
+
+"Do the work you love. Keep every dollar."
+
+- Make "Do the work you love." the primary bold statement.
+- Use the yellow handwritten/script treatment for "Keep every dollar."
+- Ensure both phrases work together as one cohesive headline.
+
+**H2 — Main Section Headings**
+- Large and bold, but smaller than the H1.
+- Consistent sizing across sections.
+- Use script typography only for selected emphasized phrases.
+- Avoid having multiple headings compete with the hero.
+
+**H3 — Supporting Headings**
+- Use for benefits, steps, cards, and smaller content groups.
+- Clear, medium-sized, and bold.
+
+**Body Text**
+- Comfortable reading size.
+- Appropriate line height.
+- Slightly muted color to distinguish it from headings.
+- Avoid overly wide paragraphs.
+
+**Small Text**
+- Use for form hints, supporting labels, disclaimers, and secondary information.
+
+The visual hierarchy should follow:
+
+Hero headline → Signup CTA → Section headings → Supporting content → Secondary information.
+
+Do not make all text equally large or bold.
+
+## 3. Maintain the OnSpot Brand Identity
+
+Follow the colors used in the attached HTML.
+
+Primary palette:
+
+- Royal Blue: `#1C2BA2`
+- Highlight Blue: `#2B3DCC`
+- Deep Navy: `#101A78`
+- Accent Yellow: `#FFC72C`
+- Light Yellow: `#FFD65E`
+- White: `#FFFFFF`
+
+Use blue as the dominant page background, white for primary text, and yellow for important highlights and calls to action.
+
+### Fonts
+
+The HTML uses:
+- Mont — primary font
+- Playlist Script — secondary accent font
+
+Use these fonts if they are available in the existing project and properly licensed.
+
+If unavailable, use the project's existing approved brand fonts rather than loading unlicensed or broken font assets.
+
+Use Playlist Script sparingly for emphasized headline phrases.
+
+Do not use script typography for entire paragraphs.
+
+## 4. Redesign the Hero Section
+
+Follow the hero design from the attached HTML.
+
+### Left Column
+
+Display:
+
+**Do the work you love.**
+*Keep every dollar.*
+
+Below the headline, preserve the supporting description explaining that OnSpot connects remote professionals with global clients and allows talent to set their own rates.
+
+Place the signup form directly beneath the supporting text.
+
+### Right Column
+
+Recreate the hero illustration from the attached HTML.
+
+Include the decorative floating elements and visual chips, such as the payment and matching indicators.
+
+Requirements:
+- Maintain a balanced two-column layout.
+- Keep the signup form visually prominent.
+- Ensure the illustration supports the message rather than distracting from it.
+- Avoid excessive empty space.
+- Keep the headline readable and visually dominant.
+
+On mobile, stack the content logically, prioritizing the headline and signup form.
+
+## 5. Implement the Talent Signup Form
+
+Use the form design from the attached HTML.
+
+Include:
+- First name
+- Last name
+- Email
+- Main skill selection
+- "Create my free profile" button
+- Supporting reassurance messages
+- Terms and Privacy Policy links
+
+### Important Functionality Requirement
+
+The attached HTML may contain a standalone or simulated signup interaction.
+
+Do not copy that simulated behavior as the production registration process.
+
+Instead:
+
+1. Inspect the existing OnSpot talent registration and authentication system.
+2. Reuse its existing registration logic and APIs.
+3. Connect the new signup form to the actual talent registration process.
+4. Preserve existing validation, error handling, and email verification behavior.
+5. Ensure the entered information is passed correctly into the registration flow.
+6. Do not create duplicate user accounts or a separate registration system.
+7. Show the success state only after the real registration operation succeeds.
+
+If the existing signup process requires additional information, retain that requirement and integrate the new form as an initial step where appropriate.
+
+The signup must be fully functional, not merely visual.
+
+## 6. Recreate All Main Sections From the HTML
+
+Preserve the new HTML's section order and content.
+
+### Section 1 — Benefits Overview
+
+Recreate the four-column benefits area from the HTML.
+
+Use:
+- Consistent icons
+- Clear benefit titles
+- Short supporting descriptions
+- Subtle separators
+- Balanced spacing
+
+Ensure each benefit has equal visual importance.
+
+### Section 2 — Stop Chasing Clients. Start Doing the Work.
+
+Recreate the section with its existing content and supporting work-week comparison graphic.
+
+Use a balanced text-and-visual layout.
+
+The heading should be the focal point, followed by the supporting explanation and graphic.
+
+### Section 3 — Your Rate. Your Rules.
+
+Recreate the rate-setting section, including the visual rate card.
+
+Preserve the existing messages about rate ownership and compensation.
+
+The rate card should look polished and integrated with the page.
+
+Avoid presenting example values as actual guaranteed earnings.
+
+### Section 4 — Get Started in Three Steps.
+
+Recreate the three-step process.
+
+Use a clear progression with numbered circles and connecting lines.
+
+Each step should include:
+- Step number
+- Step title
+- Short explanation
+
+The layout should make the signup process feel straightforward.
+
+### Section 5 — Work That Fits Your Skills.
+
+Recreate the section showing the different types of work available through OnSpot.
+
+Preserve the existing skill categories and content from the HTML.
+
+Use attractive pill-style labels and the supporting visual elements.
+
+### Section 6 — Frequently Asked Questions
+
+Recreate:
+
+"Questions? We've got answers."
+
+Implement the existing FAQ questions and answers from the HTML.
+
+Use an accessible accordion with:
+- Clear question headings
+- Plus/minus indicators
+- Smooth expansion
+- Proper spacing
+- Working keyboard interactions
+
+Preserve the actual FAQ content.
+
+### Section 7 — Final Call to Action
+
+Recreate the closing section:
+
+"Work without limits."
+
+Use the attached HTML's closing content and CTA.
+
+Make this section visually powerful without competing with the hero.
+
+Use a deep-blue gradient container, yellow highlights, and a prominent signup button.
+
+The button should scroll to or focus the functional talent signup form.
+
+## 7. Improve Section-to-Section Visual Flow
+
+Avoid making the page look like separate unrelated components.
+
+Create a cohesive visual journey.
+
+Use:
+- Consistent container widths
+- Alternating text-and-visual alignment
+- Predictable section spacing
+- Subtle gradient transitions
+- Consistent heading treatments
+- Decorative yellow accents
+- Well-balanced white space
+
+Each section should have a clear focal point.
+
+Do not add excessive borders, cards, or shadows.
+
+The overall layout should feel clean, modern, and intentional.
+
+## 8. Navigation and Footer
+
+Recreate the navigation structure from the HTML while integrating it with the existing OnSpot website.
+
+Ensure:
+- OnSpot logo navigates to the correct homepage.
+- "How it works" scrolls to the appropriate section.
+- "FAQ" scrolls to the FAQ section.
+- "Sign up free" scrolls to and focuses the signup form.
+- Existing site navigation and routing remain functional.
+
+Recreate the footer styling, but connect its links to actual existing routes.
+
+Do not leave placeholder `href="#"` links for functional navigation.
+
+## 9. Mobile Responsiveness
+
+The entire page must be fully responsive.
+
+### Desktop
+- Two-column hero.
+- Four-column benefits.
+- Alternating image-and-text sections.
+- Three-column steps.
+
+### Tablet
+- Adjust column widths.
+- Reduce oversized typography.
+- Maintain comfortable spacing.
+
+### Mobile
+- Stack columns vertically.
+- Keep the signup form prominent.
+- Resize headings appropriately.
+- Prevent images and floating chips from overflowing.
+- Stack benefits and steps naturally.
+- Make buttons full-width where appropriate.
+- Preserve the mobile sticky signup CTA from the HTML.
+
+Ensure the sticky CTA does not cover important content or interfere with forms and navigation.
+
+## 10. Animations and Interactions
+
+Preserve the HTML's existing interactions where appropriate.
+
+Add subtle enhancements such as:
+- Button hover states
+- Card transitions
+- Gentle section entrance animations
+- Smooth anchor scrolling
+- FAQ expansion transitions
+- Accessible focus states
+
+Avoid exaggerated animations.
+
+Respect `prefers-reduced-motion`.
+
+Prioritize performance and readability.
+
+## 11. Accessibility and Performance
+
+Ensure:
+- Semantic HTML heading structure.
+- Only one H1.
+- Proper form labels.
+- Keyboard-accessible controls.
+- Sufficient color contrast.
+- Accessible validation messages.
+- No horizontal scrolling.
+- Optimized imagery.
+- No unnecessary dependencies.
+- No major layout shifts.
+- Responsive image sizing.
+
+If the attached HTML includes embedded Base64 images, extract and optimize them into appropriate project assets where practical instead of unnecessarily embedding large image strings in application components.
+
+## 12. Preserve Existing Project Functionality
+
+Do not break or unnecessarily change:
+- Authentication
+- Talent registration
+- Email verification
+- Existing backend endpoints
+- Database structure
+- Protected routes
+- Existing account workflows
+- Other website pages
+
+Only modify shared components when required for integration, and ensure changes do not affect unrelated pages.
+
+Do not introduce a new backend registration implementation if the existing system already supports the required flow.
+
+## 13. Final Quality Check
+
+After implementing the redesign:
+
+1. Compare the finished page against the attached HTML.
+2. Verify that all sections are present and in the correct order.
+3. Confirm the new content has replaced the old Join OnSpot content.
+4. Check heading sizes, spacing, alignment, and typography.
+5. Confirm the hero and signup form have the strongest visual priority.
+6. Test desktop, tablet, and mobile layouts.
+7. Test all buttons, links, and accordions.
+8. Test the real talent registration flow.
+9. Verify that all images and fonts load correctly.
+10. Check that there are no console errors or broken routes.
+
+## Expected Final Result
+
+The `/join-onspot` page should closely follow the attached **OnSpot — Talent Sign-up Landing Page.html** design.
+
+It should be a modern, engaging, high-converting talent recruitment landing page with strong visual hierarchy.
+
+The final experience should guide visitors naturally through:
+
+**Attention → Benefits → Trust → How It Works → Signup**
+
+The page should clearly communicate OnSpot's value to remote professionals and encourage them to create their free talent profiles.
+
+### Critical Final Instruction
+
+**Do not merely take inspiration from the attached HTML. Use it as the actual reference for the complete redesign of `/join-onspot`.**
+
+Preserve its content, overall styling, section structure, and brand identity.
+
+Improve visual hierarchy, responsiveness, and polish without changing the intended design direction.
+
+Implement everything directly into the existing Replit application and integrate the new signup form with the existing OnSpot talent registration system.
