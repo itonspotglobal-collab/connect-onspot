@@ -1,16 +1,10 @@
 ---
-name: Join OnSpot content and design authority
-description: The current Join OnSpot copy is authoritative; the old illustrated HTML now provides design inspiration only.
+name: Join OnSpot talent landing design authority
+description: The approved Talent Sign-up Landing Page HTML supersedes all earlier founder-letter content and design restrictions.
 ---
 
-The owner explicitly superseded the standalone dark, overlapping-headline reading layout with an illustrated Join OnSpot landing page. The current eight approved paragraphs remain the content source of truth; the older illustrated Manifesto HTML supplies design inspiration only, never replacement copy or a restored Manifesto title.
+The approved **OnSpot — Talent Sign-up Landing Page** HTML is the actual reference for the complete `/join-onspot` redesign, including its content, section order, royal-blue/gold styling, illustrations, four-field starting form, and talent-only positioning. Do not restore the old founder letter, eight-paragraph copy, or mixed business/audience cards.
 
-**Why:** On 2026-10-14 the owner requested a redesign using royal blue/navy, gold accents, illustrated storytelling, founder attribution, audience cards, and a final invitation while explicitly forbidding a reversion to old Manifesto content.
+**Why:** On 2026-10-14 the owner explicitly replaced both the earlier copy-preservation rule and the inspiration-only interpretation. The new instruction says to replace the entire old page, not merely enhance it.
 
-**How to apply:** Preserve the approved founder introduction, problem, solution, experience, audience, mission, and invitation. New headings or brief supporting messages may organize the story without changing meaning or adding unverified claims. Use the existing signup selection and role-specific signup flows; do not redesign authentication as part of this page.
-
-Screenshots of the former plain page document the starting point, not a requirement to restore its proportions during the authorized redesign.
-
-**Why:** The new brief explicitly asks to replace the wall-of-text presentation while keeping its messaging.
-
-**How to apply:** Inspect the actual supplied references, distinguish content from visual authority, and verify real responsive browser renders and signup behavior rather than treating historical pixel snapshots as current acceptance criteria.
+**How to apply:** Use the latest supplied talent HTML, improving hierarchy/responsiveness without changing its direction. Its simulated signup is not authoritative behavior: reuse existing password/terms and server-confirmed email-ownership flows. Retain flat-period USD compensation wording and label example earnings/workweek graphics as illustrative. Use existing approved fonts when licensed reference fonts are unavailable.

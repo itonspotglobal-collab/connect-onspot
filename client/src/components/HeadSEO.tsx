@@ -44,10 +44,10 @@ export function HeadSEO({
   const [location] = useLocation();
   const region = getRegionForPath(location);
   const title = providedTitle ?? (location === "/join-onspot"
-    ? "Join OnSpot | OnSpot"
+    ? "Join OnSpot — Set your rate. Keep every dollar."
     : "Work Without Limits | OnSpot");
   const description = providedDescription ?? (location === "/join-onspot"
-    ? "Join OnSpot — the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it."
+    ? "Create your free OnSpot talent profile. Set your own rate, keep every dollar, and get matched with global clients."
     : "Work Without Limits. OnSpot connects companies with vetted, accountable talent — no marketplace chaos, no outsourcing overhead.");
 
   useEffect(() => {

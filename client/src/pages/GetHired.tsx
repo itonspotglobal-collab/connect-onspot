@@ -47,6 +47,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useSearch } from "wouter";
+import { talentLandingSkill } from "@/lib/talentLandingSkills";
 
 // Using consolidated profile form schema from hook
 // Removed duplicate schema definition
@@ -62,6 +64,7 @@ interface JobApplication {
 }
 
 export default function GetHired() {
+  const signupSkill = talentLandingSkill(new URLSearchParams(useSearch()).get("mainSkill"));
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
@@ -387,6 +390,16 @@ export default function GetHired() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {signupSkill && (
+          <div className="mb-6 rounded-lg border border-primary/30 bg-primary/5 p-4" role="note" data-testid="signup-skill-handoff">
+            <p className="font-medium">Your starting work category: {signupSkill}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Choose your specific skills in the profile form below, then save your profile. This starting category is not a verified skill.</p>
+            <Button type="button" variant="outline" className="mt-3" onClick={() => {
+              setCurrentStep(1);
+              requestAnimationFrame(() => document.getElementById("onboarding-skills")?.scrollIntoView({ block: "center", behavior: "auto" }));
+            }}>Review my skills</Button>
+          </div>
+        )}
         <Tabs value={currentStep.toString()} onValueChange={(value) => setCurrentStep(parseInt(value))}>
           <TabsList className="grid w-full grid-cols-5 mb-8">
             <TabsTrigger value="1" className="flex items-center gap-2">
@@ -602,7 +615,7 @@ export default function GetHired() {
 
                     {/* Skills Selection */}
                     <div>
-                      <Label className="text-base font-medium">Skills ({selectedSkills?.length || 0} selected)</Label>
+                      <Label id="onboarding-skills" className="text-base font-medium">Skills ({selectedSkills?.length || 0} selected)</Label>
                       <p className="text-sm text-muted-foreground mb-4">
                         Select skills that best represent your expertise
                       </p>

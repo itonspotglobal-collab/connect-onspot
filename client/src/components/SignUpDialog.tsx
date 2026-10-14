@@ -42,6 +42,8 @@ interface SignUpDialogProps {
   defaultUserType?: UserType;
   /** Pre-fill the email field. */
   defaultEmail?: string;
+  /** Optional first-step handoff. Passwords and verification stay in this form. */
+  initialProfile?: { firstName: string; lastName: string };
   /** Used by route-based signup pages to return to the account-type chooser. */
   onChooseAnotherAccountType?: () => void;
   /** Render the existing signup form as a full route instead of a dark modal. */
@@ -59,6 +61,7 @@ export function SignUpDialog({
   returnTo,
   defaultUserType,
   defaultEmail,
+  initialProfile,
   onChooseAnotherAccountType,
   standalone = false,
   modalOverlay = false,
@@ -77,8 +80,8 @@ export function SignUpDialog({
   const [currentStep, setCurrentStep] = useState<SignupStep>(defaultUserType ? "signup" : "user-type");
   const [userType, setUserType] = useState<UserType>(defaultUserType ?? null);
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    firstName: initialProfile?.firstName ?? "",
+    lastName: initialProfile?.lastName ?? "",
     email: defaultEmail ?? "",
     password: "",
     confirmPassword: "",
@@ -139,8 +142,8 @@ export function SignUpDialog({
     setCurrentStep(defaultUserType ? "signup" : "user-type");
     setUserType(defaultUserType ?? null);
     setFormData({
-      firstName: "",
-      lastName: "",
+      firstName: initialProfile?.firstName ?? "",
+      lastName: initialProfile?.lastName ?? "",
       email: defaultEmail ?? "",
       password: "",
       confirmPassword: "",

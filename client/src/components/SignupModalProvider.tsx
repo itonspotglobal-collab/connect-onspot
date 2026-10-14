@@ -5,8 +5,9 @@ import { isAuthFlowPath } from "@/lib/authBackNavigation";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 
 type SignupPortal = "client" | "talent";
-type SignupRequest = { portal?: SignupPortal; search?: string; trigger?: HTMLElement };
-type ModalSession = { id: number; portal?: SignupPortal; search: string; origin: string };
+type InitialTalentProfile = { firstName: string; lastName: string; email: string };
+type SignupRequest = { portal?: SignupPortal; search?: string; trigger?: HTMLElement; initialTalentProfile?: InitialTalentProfile };
+type ModalSession = { id: number; portal?: SignupPortal; search: string; origin: string; initialTalentProfile?: InitialTalentProfile };
 
 const SignupModalContext = createContext<((request?: SignupRequest) => void) | null>(null);
 
@@ -51,6 +52,7 @@ export function SignupModalProvider({ children }: { children: ReactNode }) {
       portal: request.portal ?? contextualPortal(path),
       search: params.toString(),
       origin: `${path}${search ? `?${search}` : ""}${window.location.hash}`,
+      initialTalentProfile: request.portal === "talent" ? request.initialTalentProfile : undefined,
     });
   }, [path, search, navigate]);
 
@@ -106,7 +108,8 @@ export function SignupModalProvider({ children }: { children: ReactNode }) {
           standalone
           modalOverlay
           defaultUserType={session.portal}
-          defaultEmail={params.get("email") ?? undefined}
+          defaultEmail={session.initialTalentProfile?.email ?? params.get("email") ?? undefined}
+          initialProfile={session.initialTalentProfile}
           returnTo={params.get("returnTo") ?? undefined}
           onOpenChange={open => { if (!open) setSession(null); }}
           onCloseAutoFocus={restorePageFocus}
