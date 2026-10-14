@@ -51,6 +51,155 @@ before(async () => {
 });
 after(async () => { await browser?.close(); await vite?.close(); rmSync(cacheDir, { recursive: true, force: true }); });
 
+async function responsiveInvestorPage(width: number, height = 844) {
+  const page = await browser.newPage({ viewport: { width, height }, reducedMotion: "reduce" });
+  await page.addInitScript(() => { (window as any).__name = (fn: unknown) => fn; });
+  await page.route("**/api/public/investor-stats", (route) => route.fulfill({
+    json: { contractorAccounts: 1234, clientAccounts: 234, asOf: "2026-10-14T00:00:00Z" },
+  }));
+  await page.route("**/api/public/investor-goals", (route) => route.fulfill({
+    json: { contractorGoal2027: 10000, clientGoal2027: 5000 },
+  }));
+  await page.goto(base);
+  await page.waitForFunction(() => document.querySelector(".investor-gauge-count")?.textContent === "1,234");
+  await page.evaluate(() => document.fonts.ready);
+  return page;
+}
+
+for (const width of [320, 375, 390, 414, 430, 768, 1024]) {
+  test(`Investor layout, hierarchy and inquiry dialogs fit ${width}px`, async () => {
+    const page = await responsiveInvestorPage(width);
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    const layout = await page.evaluate(() => {
+      const rect = (selector: string) => {
+        const r = document.querySelector(selector)!.getBoundingClientRect();
+        return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+      };
+      return {
+        scrollWidth: document.documentElement.scrollWidth,
+        order: [".investor-headline", ".investors-counts", ".investor-tagline", ".investor-raise", ".investor-actions", ".investors-phone-column"].map(rect),
+        headlineAlignment: getComputedStyle(document.querySelector(".investor-headline")!).textAlign,
+        groupAlignments: [".investor-headline-primary", ".investor-headline-secondary"].map(s => getComputedStyle(document.querySelector(s)!).textAlign),
+        gauges: [...document.querySelectorAll(".investor-gauge")].map(el => {
+          const r = el.getBoundingClientRect();
+          const visual = el.querySelector(".investor-gauge-visual")!.getBoundingClientRect();
+          const number = el.querySelector(".investor-gauge-count")!.getBoundingClientRect();
+          const label = el.querySelector(".investor-gauge-label")!.getBoundingClientRect();
+          return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, diameter: visual.width,
+            numberCentered: Math.abs(number.x + number.width / 2 - visual.x - visual.width / 2) < 1,
+            labelGap: label.y - visual.bottom };
+        }),
+        buttons: [...document.querySelectorAll(".investor-action")].map(el => {
+          const r = el.getBoundingClientRect();
+          return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom };
+        }),
+        phoneLoaded: (document.querySelector(".investors-phone") as HTMLImageElement).naturalWidth > 0,
+      };
+    });
+    assert.ok(layout.scrollWidth <= width, JSON.stringify(layout));
+    assert.ok(layout.phoneLoaded);
+    assert.ok(layout.gauges.every(g => g.numberCentered && g.labelGap >= 0));
+    assert.ok(layout.gauges[0].right <= layout.gauges[1].x + 1 || layout.gauges[0].bottom <= layout.gauges[1].y);
+    if (width < 768) {
+      assert.equal(layout.headlineAlignment, "center");
+      assert.deepEqual(layout.groupAlignments, ["center", "center"]);
+      assert.ok(layout.order.every((r, i) => i === 0 || r.y >= layout.order[i - 1].bottom - 1), JSON.stringify(layout.order));
+      assert.ok(layout.buttons.every(b => b.height >= 44 && Math.abs(b.width - layout.buttons[0].width) < 1));
+      assert.ok(layout.buttons.every((b, i) => i === 0 || b.y > layout.buttons[i - 1].bottom));
+      for (const index of [0, 2, 3, 4]) {
+        const r = layout.order[index];
+        assert.ok(Math.abs(r.x + r.width / 2 - width / 2) < 1, `Section ${index} is centered`);
+      }
+      if (width >= 375) assert.equal(layout.gauges[0].y, layout.gauges[1].y);
+    } else {
+      assert.notEqual(layout.headlineAlignment, "center");
+      if (width === 1024) assert.ok(layout.order[5].x > layout.order[0].x);
+    }
+    if ([320, 390, 768, 1024].includes(width)) {
+      await page.screenshot({ path: `/tmp/investors-mobile-${width}.png`, fullPage: true });
+    }
+    for (const [index, type] of ["meeting", "deck", "founder"].entries()) {
+      await page.locator(".investor-action").nth(index).click();
+      const dialog = page.getByRole("dialog");
+      assert.equal(await page.locator("#investor-request-type").inputValue(), type);
+      const box = await dialog.boundingBox();
+      assert.ok(box && box.x >= 0 && box.x + box.width <= width && box.y >= 0 && box.y + box.height <= 845, JSON.stringify(box));
+      assert.ok(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth));
+      await page.locator("#investor-message").fill("Mobile inquiry");
+      await page.getByRole("button", { name: "Send request", exact: true }).scrollIntoViewIfNeeded();
+      assert.ok(await page.getByRole("button", { name: "Send request", exact: true }).isVisible());
+      await page.getByRole("button", { name: "Close", exact: true }).click();
+      await dialog.waitFor({ state: "hidden" });
+    }
+    assert.deepEqual(errors, []);
+    await page.close();
+  });
+}
+
+for (const outcome of ["sent", "failed", "error", "rate-limited"] as const) {
+  test(`Mobile inquiry validates, sends original payload and handles ${outcome}`, async () => {
+    const page = await responsiveInvestorPage(320, 568);
+    const requests: unknown[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    await page.route("**/api/public/investor-requests", async route => {
+      requests.push(route.request().postDataJSON());
+      await gate;
+      await route.fulfill(outcome === "error" || outcome === "rate-limited"
+        ? { status: outcome === "error" ? 500 : 429, json: { error: "Unavailable" } }
+        : { status: 201, json: { notificationStatus: outcome } });
+    });
+    await page.locator(".investor-action").nth(1).click();
+    const send = page.getByRole("button", { name: "Send request", exact: true });
+    await send.click();
+    assert.equal(requests.length, 0, "Required fields prevent submission");
+    assert.equal(await page.locator("#investor-name").evaluate(el => (el as HTMLInputElement).validity.valueMissing), true);
+    await page.getByLabel("Name", { exact: true }).fill("Mobile Test");
+    await page.getByLabel("Firm or Affiliation", { exact: true }).fill("Fixture Fund");
+    await page.getByLabel("Email", { exact: true }).fill("invalid");
+    assert.equal(await page.locator("#investor-email").evaluate(el => (el as HTMLInputElement).validity.typeMismatch), true);
+    await page.getByLabel("Email", { exact: true }).fill("investor@example.test");
+    await page.getByLabel("Message (optional)", { exact: true }).fill("Please follow up.");
+    // A shortened visual viewport models the space remaining above a keyboard.
+    await page.setViewportSize({ width: 320, height: 380 });
+    await send.scrollIntoViewIfNeeded();
+    const visible = await send.boundingBox();
+    assert.ok(visible && visible.y >= 0 && visible.y + visible.height <= 380);
+    const request = page.waitForRequest("**/api/public/investor-requests");
+    await send.click();
+    await request;
+    assert.ok(await page.getByRole("button", { name: "Sending request…" }).isDisabled());
+    assert.deepEqual(requests, [{ name: "Mobile Test", firm: "Fixture Fund", email: "investor@example.test", requestType: "deck", message: "Please follow up." }]);
+    release();
+    if (outcome === "sent" || outcome === "failed") {
+      const result = page.getByRole("status");
+      await result.waitFor();
+      assert.match(await result.innerText(), outcome === "sent" ? /notification was sent/ : /couldn’t send the notification/);
+      await page.getByRole("button", { name: "Done", exact: true }).click();
+    } else {
+      const error = page.getByRole("alert");
+      await error.waitFor();
+      assert.match(await error.innerText(), outcome === "error" ? /couldn’t submit/ : /Too many requests/);
+      assert.equal(await page.locator("#investor-email").inputValue(), "investor@example.test");
+      await page.getByRole("button", { name: "Close", exact: true }).click();
+    }
+    await page.getByRole("dialog").waitFor({ state: "hidden" });
+    await page.close();
+  });
+}
+
+test("Mobile account data failure remains explicit and never invents counts or progress", async () => {
+  const page = await responsiveInvestorPage(320);
+  await page.route("**/api/public/investor-stats", route => route.fulfill({ status: 503, json: { error: "Unavailable" } }));
+  await page.reload();
+  await page.getByText("Account totals are temporarily unavailable.").waitFor();
+  assert.deepEqual(await page.locator(".investor-gauge-count").allTextContents(), ["—", "—"]);
+  assert.equal(await page.locator(".investor-gauge-ring,.investor-gauge-goal").count(), 0);
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.close();
+});
+
 async function pageWithData(reducedMotion: "reduce" | "no-preference" = "reduce") {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion });
   const state = { contractors: 1234, clients: 234, contractorGoal: 2500 as number | null, clientGoal: 500 as number | null, goalsFail: false, statsRequests: 0 };
@@ -157,7 +306,7 @@ test("owner targets show exact small progress, independent start dots, account l
   }));
   assert.ok(boxes[0].y === boxes[1].y || boxes[1].y >= boxes[0].bottom, "Mobile gauges must be side-by-side or safely stacked");
   const mobileDiameter = await gauges.first().locator(".investor-gauge-track").evaluate((el) => el.getBoundingClientRect().width);
-  assert.ok(mobileDiameter >= 135 && mobileDiameter <= 150, `Mobile gauge is ${mobileDiameter}px`);
+  assert.ok(mobileDiameter >= 120 && mobileDiameter <= 150, `Mobile gauge is ${mobileDiameter}px`);
   const order = await page.evaluate(() =>
     [".investor-headline", ".investors-counts", ".investor-tagline", ".investor-raise", ".investor-actions", ".investors-phone-column"]
       .map((selector) => document.querySelector(selector)!.getBoundingClientRect().top));
@@ -168,8 +317,8 @@ test("owner targets show exact small progress, independent start dots, account l
   const narrowBoxes = await gauges.evaluateAll((elements) => elements.map((el) => {
     const box = el.getBoundingClientRect(); return { x: box.x, y: box.y, bottom: box.bottom };
   }));
-  assert.equal(narrowBoxes[0].x, narrowBoxes[1].x);
-  assert.ok(narrowBoxes[1].y >= narrowBoxes[0].bottom);
+  assert.equal(narrowBoxes[0].y, narrowBoxes[1].y);
+  assert.ok(narrowBoxes[1].x > narrowBoxes[0].x);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.close();
 });

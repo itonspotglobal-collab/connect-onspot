@@ -446,95 +446,205 @@ body:has(.investors-page) button[aria-label="Open Vanessa AI assistant"] {
     min-height: calc(100svh - var(--nav-h, 80px));
     grid-template-columns: minmax(0, 1fr);
     align-content: start;
-    gap: 12px;
-    padding: 26px 20px 24px;
+    gap: 10px;
+    padding: 24px 20px 22px;
   }
 
   .investors-intro {
-    max-width: 560px;
+    max-width: 600px;
+    text-align: center;
   }
 
   .investor-headline {
-    font-size: clamp(36px, 8.3vw, 48px);
+    max-width: 100%;
+    margin-inline: auto;
+    font-size: clamp(29px, 8.8vw, 42px);
+    line-height: 1.04 !important;
+    text-align: center;
+    text-wrap: balance;
+    overflow-wrap: normal;
+  }
+
+  .investor-headline-primary,
+  .investor-headline-secondary {
+    text-align: center;
   }
 
   .investor-headline-secondary {
-    margin-top: 0.16em;
+    margin-top: 0.22em;
   }
 
   .investors-counts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    align-items: start;
+    gap: 10px;
     width: 100%;
-    margin-top: 18px;
+    margin: 20px auto 0;
   }
 
   .investor-gauge-visual {
-    width: clamp(154px, 38vw, 165px);
+    width: min(100%, clamp(112px, 36vw, 148px));
+    max-width: 100%;
   }
 
   .investor-gauge-count {
-    --investor-count-min: 2.4rem;
-    --investor-count-min-medium: 2rem;
-    --investor-count-min-long: 1.6rem;
+    --investor-count-min: 2rem;
+    --investor-count-min-medium: 1.35rem;
+    --investor-count-min-long: 1.15rem;
   }
 
   .investor-gauge-label {
-    margin-top: 5px;
-    font-size: 13px;
-    line-height: 1.2;
+    max-width: 100%;
+    margin-top: 7px;
+    font-size: 12px;
+    line-height: 1.25;
   }
 
   .investor-gauge-goal {
+    margin-top: 4px;
     font-size: 11px;
+    line-height: 1.3;
   }
 
   .investor-tagline {
-    margin-top: 16px;
-    font-size: 20px;
+    margin: 17px 0 0;
+    font-size: clamp(17px, 5.3vw, 21px);
+    line-height: 1.35;
+    text-align: center;
+    white-space: normal;
   }
 
   .investor-raise {
-    margin-top: 11px;
+    margin: 10px auto 0;
+    padding: 8px 14px;
+    font-size: 12px;
+    text-align: left;
   }
 
   .investor-actions {
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-    margin-top: 14px;
+    gap: 9px;
+    width: min(100%, 390px);
+    margin: 16px auto 0;
   }
 
   .investor-action {
     width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    height: auto;
+    padding: 11px 18px;
+    font-size: 15px;
   }
 
   .investors-phone-column {
     width: 100vw;
-    min-height: 75vw;
+    min-height: 0;
     margin-left: calc(50% - 50vw);
     overflow: hidden;
   }
 
   .investors-phone {
-    width: 200vw;
-    transform: translateX(-27%);
+    /* The original canvas is mostly transparent; center the actual phone,
+       which occupies its right-hand side, without changing the artwork. */
+    width: min(200vw, 840px);
+    max-width: none;
+    height: auto;
+    margin-inline: auto;
+    transform: translateX(-25.15%);
+  }
+
+  .investor-dialog-viewport > div {
+    min-height: 100%;
+    padding: max(12px, env(safe-area-inset-top)) 12px
+      max(12px, env(safe-area-inset-bottom));
+  }
+
+  .investor-dialog {
+    width: min(calc(100vw - 24px), 480px) !important;
+    max-width: 480px !important;
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    margin-block: auto;
+    padding: 22px 18px !important;
+    overscroll-behavior: contain;
+    scroll-padding-block: 16px;
+  }
+
+  .investor-dialog-header {
+    padding-right: 34px;
+    text-align: left;
+  }
+
+  .investor-dialog > button {
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    opacity: 0.85;
+  }
+
+  .investor-dialog h2 {
+    font-size: 25px;
+    line-height: 1.15;
+  }
+
+  .investor-form {
+    gap: 11px;
+  }
+
+  .investor-field input,
+  .investor-field select,
+  .investor-field textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .investor-field textarea {
+    min-height: 72px;
+  }
+
+  .investor-form-error {
+    font-size: 13px;
+  }
+
+  .investor-form-submit {
+    min-height: 48px;
   }
 }
 
 @media (max-width: 355px) {
   .investors-counts {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
   }
 
   .investor-gauge-visual {
-    width: 154px;
+    width: min(100%, 112px);
   }
 
   .investor-gauge-count {
-    --investor-count-min: 2.7rem;
-    --investor-count-min-medium: 2.1rem;
-    --investor-count-min-long: 1.6rem;
+    --investor-count-min: 1.75rem;
+    --investor-count-min-medium: 1.2rem;
+    --investor-count-min-long: 1.05rem;
+  }
+
+  .investors-shell {
+    padding-inline: 16px;
+  }
+
+  .investor-headline {
+    font-size: clamp(27px, 8.4vw, 30px);
+  }
+
+  .investor-gauge-label {
+    font-size: 12px;
+  }
+
+  .investor-gauge-goal {
+    font-size: 11px;
   }
 }
 

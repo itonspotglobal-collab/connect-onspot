@@ -3,11 +3,11 @@ name: Investors visual scope
 description: Owner-requested design boundaries for the Investors page.
 ---
 
-The latest consolidated owner spec supersedes the earlier centered Investors layout. Use two columns: headline and gauges on the left, the supplied tilted phone image on the right. Mobile orders the headline, gauges, tagline, seed-round pill, inquiry buttons, then phone. Remove the old eyebrow and earnings subhead. Do not modify Home.
+The desktop Investors layout uses two columns: headline and gauges on the left, the supplied tilted phone image on the right. The owner's subsequent mobile refinement explicitly requires a centered headline below 768px, followed by gauges, tagline, seed-round pill, stacked inquiry buttons, then phone. Preserve the desktop headline alignment and presentation. Remove the old eyebrow and earnings subhead. Do not modify Home.
 
 **Why:** The owner explicitly replaced the earlier instructions to match the investor pitch-deck presentation.
 
-**How to apply:** Follow the consolidated composition rather than restoring the former centered headline. Use Inter throughout except the tagline word “Without.” The owner subsequently authorized the closest verified Google Fonts brush/marker candidate provisionally, with a single accent-font token; swap to Hyperwave One when a licensed web-font file is supplied.
+**How to apply:** Keep desktop and mobile alignment rules distinct; the mobile centering request is not permission to center the desktop headline. Use Inter throughout except the tagline word “Without.” The owner subsequently authorized the closest verified Google Fonts brush/marker candidate provisionally, with a single accent-font token; swap to Hyperwave One when a licensed web-font file is supplied.
 
 The owner explicitly approved stopping to report the unavailable Hyperwave One font rather than silently substituting, then resolved the stop through an addendum authorizing a provisional Google Fonts match without waiting for a selection.
 

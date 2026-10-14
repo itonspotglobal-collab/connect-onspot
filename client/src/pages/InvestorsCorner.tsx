@@ -315,7 +315,10 @@ export default function InvestorsCorner() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="investor-dialog">
+        <DialogContent
+          className="investor-dialog"
+          containerClassName="investor-dialog-viewport"
+        >
           <DialogHeader className="investor-dialog-header">
             <span className="investor-dialog-kicker">ONSPOT · INVESTOR INTRODUCTION</span>
             <DialogTitle>
