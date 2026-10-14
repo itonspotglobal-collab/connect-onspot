@@ -5,6 +5,33 @@
   min-width: 0;
 }
 
+.signup-dialog-content > button:last-of-type {
+  z-index: 20;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  color: rgba(255, 255, 255, 0.88);
+  opacity: 1;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.signup-dialog-content > button:last-of-type:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.signup-dialog-content > button:last-of-type:focus-visible {
+  outline: 2px solid #b9c4ff;
+  outline-offset: 2px;
+}
+
+.signup-dialog-content > button:last-of-type:active {
+  transform: scale(0.96);
+}
+
 .signup-header {
   overflow-wrap: anywhere;
 }
@@ -105,7 +132,7 @@
 
 @media (max-width: 420px) {
   .signup-header {
-    padding-right: 2.75rem;
+    padding-right: 3.25rem;
   }
 
   .signup-name-fields {
@@ -128,8 +155,9 @@
     margin-bottom: 0.35rem;
   }
 
-  .signup-header img {
-    height: 1.6rem;
+  .signup-header .auth-brand-logo img {
+    width: 128px;
+    height: auto;
   }
 
   .signup-scroll {

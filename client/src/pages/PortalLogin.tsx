@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, ArrowRight, Building, User, ArrowLeft } from "lucide-react";
 import { PortalChooser } from "@/components/PortalChooser";
+import { AuthBrandLogo } from "@/components/AuthBrandLogo";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
 import { authPortalHref } from "@/lib/authBackNavigation";
@@ -107,11 +108,8 @@ function CardShell({ children }: { children: React.ReactNode }) {
       {/* Logo area */}
       <div className="relative z-10 flex flex-col items-center mb-10">
         <Link href="/">
-          <span
-            className="text-3xl font-bold tracking-tight cursor-pointer select-none"
-            style={{ color: BRAND }}
-          >
-            OnSpot
+          <span className="inline-flex cursor-pointer select-none">
+            <AuthBrandLogo size="standard" />
           </span>
         </Link>
         <p className="text-[#94A3B8] text-xs mt-1.5 tracking-widest uppercase font-medium">

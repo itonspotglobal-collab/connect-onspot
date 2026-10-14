@@ -2,6 +2,7 @@ import { Link, useSearch } from "wouter";
 import { ArrowRight, Building2, UserRound } from "lucide-react";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
+import { AuthBrandLogo } from "@/components/AuthBrandLogo";
 import { authBackDestination, authBackLabel } from "@/lib/authBackNavigation";
 
 type ChooserKind = "login" | "signup";
@@ -36,8 +37,8 @@ export function PortalChooser({ kind }: PortalChooserProps) {
     >
       <div className="w-full max-w-2xl text-center">
         <Link href="/">
-          <span className="text-3xl font-bold tracking-tight cursor-pointer select-none text-[#6D5EF7]">
-            OnSpot
+          <span className="inline-flex cursor-pointer select-none">
+            <AuthBrandLogo size="standard" />
           </span>
         </Link>
         <p className="text-[#94A3B8] text-xs mt-1.5 tracking-widest uppercase font-medium">

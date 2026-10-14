@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalLogin } from "@/hooks/usePortalLogin";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { authAPI } from "@/lib/api";
 import { apiRequest } from "@/lib/queryClient";
@@ -102,6 +102,42 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
+  const [findWorkSignupOpen, setFindWorkSignupOpen] = useState(false);
+  const signupOpener = useRef<HTMLButtonElement | null>(null);
+  const signupScroll = useRef({ x: 0, y: 0 });
+  const signupOrigin = useRef("");
+
+  function openPublicSignup(event: MouseEvent<HTMLButtonElement>) {
+    if (location === "/find-work" || location.startsWith("/find-work/")) {
+      signupOpener.current = event.currentTarget.dataset.testid === "mobile-signup-button"
+        ? document.querySelector<HTMLButtonElement>('[data-testid="mobile-menu-toggle"]')
+        : event.currentTarget;
+      signupScroll.current = { x: window.scrollX, y: window.scrollY };
+      signupOrigin.current = window.location.pathname + window.location.search + window.location.hash;
+      setFindWorkSignupOpen(true);
+    } else {
+      navigate("/signup");
+    }
+    setIsMobileMenuOpen(false);
+  }
+
+  function restoreSignupContext(event: Event) {
+    event.preventDefault();
+    requestAnimationFrame(() => {
+      if (window.location.pathname + window.location.search + window.location.hash !== signupOrigin.current) return;
+      window.scrollTo({ left: signupScroll.current.x, top: signupScroll.current.y, behavior: "instant" });
+      const focusTarget = [
+        signupOpener.current,
+        document.querySelector<HTMLButtonElement>('[data-testid="nav-signup-button"]'),
+        document.querySelector<HTMLButtonElement>('[data-testid="mobile-menu-toggle"]'),
+      ].find(element => element?.isConnected && element.getClientRects().length);
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }
+
+  useEffect(() => {
+    setFindWorkSignupOpen(false);
+  }, [location]);
 
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup" | "forgot">(1);
   const [selectedPortal, setSelectedPortal] = useState<
@@ -1493,7 +1529,7 @@ export function TopNavigation() {
                   Log In
                 </button>
                 <button
-                  onClick={() => navigate("/signup")}
+                  onClick={openPublicSignup}
                   className="text-[13px] font-medium text-white/55 hover:text-white/85 transition-colors duration-200 whitespace-nowrap hover:underline"
                   data-testid="nav-signup-button"
                 >
@@ -1911,7 +1947,7 @@ export function TopNavigation() {
                 Log In
               </button>
               <button
-                onClick={() => { navigate("/signup"); setIsMobileMenuOpen(false); }}
+                onClick={openPublicSignup}
                 className="flex-1 flex items-center justify-center px-4 py-3.5 rounded-lg font-medium text-sm text-white/55 hover:text-white/85 transition-all duration-200"
                 data-testid="mobile-signup-button"
               >
@@ -3211,6 +3247,18 @@ export function TopNavigation() {
         )}
       </Dialog>
 
+      {findWorkSignupOpen && (
+        <SignUpDialog
+          open
+          hideTrigger
+          onOpenChange={setFindWorkSignupOpen}
+          onCloseAutoFocus={restoreSignupContext}
+          onSignInInstead={(role) => {
+            const params = new URLSearchParams({ backTo: signupOrigin.current });
+            navigate(`/login${role ? `/${role}` : ""}?${params.toString()}`);
+          }}
+        />
+      )}
     </>
   );
 }

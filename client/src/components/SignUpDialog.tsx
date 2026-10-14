@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +24,7 @@ import { signupRetryDelayMs } from "@/lib/signupRetry";
 import { saveTalentAuth } from "@/components/TalentLoginModal";
 import { SignupEmailVerification } from "@/components/SignupEmailVerification";
 import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
-import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
+import { AuthBrandLogo } from "@/components/AuthBrandLogo";
 import "./SignUpDialog.css";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
@@ -36,7 +37,7 @@ interface SignUpDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
-  onSignInInstead?: () => void;
+  onSignInInstead?: (role?: "client" | "talent") => void;
   returnTo?: string;
   /** Pre-select user type and skip straight to the signup form. */
   defaultUserType?: UserType;
@@ -46,6 +47,7 @@ interface SignUpDialogProps {
   onChooseAnotherAccountType?: () => void;
   /** Render the existing signup form as a full route instead of a dark modal. */
   standalone?: boolean;
+  onCloseAutoFocus?: React.ComponentProps<typeof DialogContent>["onCloseAutoFocus"];
 }
 
 export function SignUpDialog({
@@ -58,6 +60,7 @@ export function SignUpDialog({
   defaultEmail,
   onChooseAnotherAccountType,
   standalone = false,
+  onCloseAutoFocus,
 }: SignUpDialogProps = {}) {
   const authSearch = useSearch();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -348,9 +351,11 @@ export function SignUpDialog({
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        if (!isOpen && submissionInFlight.current) return;
+        if (!isOpen && (submissionInFlight.current || isLoading)) return;
         setOpen(isOpen);
-        if (!isOpen) resetDialog();
+        // Keep a pending email-verification challenge intact if the dialog is
+        // dismissed; the signup status can be resumed when it is opened again.
+        if (!isOpen && !pendingVerification) resetDialog();
       }}
     >
       {!hideTrigger && (
@@ -369,20 +374,21 @@ export function SignUpDialog({
       {/* p-0 + bg-transparent lets our inner div own all the styling */}
       <DialogContent
         className={[
-          "p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
-          !standalone && "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
+          "signup-dialog-content p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
           currentStep === "user-type"
-            ? "w-[min(680px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
-            : "w-[min(520px,calc(100vw-1.5rem))] max-w-none sm:max-w-none",
+            ? "w-[min(680px,calc(100dvw-2rem))] max-w-none sm:max-w-none"
+            : "w-[min(520px,calc(100dvw-2rem))] max-w-none sm:max-w-none",
         ].filter(Boolean).join(" ")}
         overlayClassName={standalone
           ? "bg-[linear-gradient(135deg,#FCFDFF_0%,#F6F8FF_20%,#EEF4FF_45%,#E7F0FF_70%,#F8F9FF_100%)]"
-          : undefined}
+          : "bg-[#080b20]/65 backdrop-blur-[3px]"}
         hideClose={standalone}
+        centered={!standalone}
+        onCloseAutoFocus={onCloseAutoFocus}
       >
         {/* Dark card — flex column with capped height + internal scroll */}
         <div
-          className="signup-card flex flex-col max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-9rem)] rounded-2xl overflow-hidden"
+          className={`signup-card flex flex-col ${standalone ? "max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-9rem)]" : "max-h-[calc(100dvh-2rem)]"} rounded-2xl overflow-hidden`}
           style={{
             background: "linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 40%, #1e1e55 70%, #1a1a4e 100%)",
             border: "1px solid rgba(91,124,255,0.2)",
@@ -401,8 +407,22 @@ export function SignUpDialog({
                 />
               </div>
             )}
+            {!standalone && currentStep === "signup" && (
+              <div className="mb-2 flex justify-start">
+                <button
+                  type="button"
+                  onClick={handleBackToUserType}
+                  disabled={isLoading || accountCreated}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B9C4FF] disabled:cursor-not-allowed disabled:opacity-40"
+                  data-testid="auth-back-to-portal"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Portal
+                </button>
+              </div>
+            )}
             <div className="flex justify-center mb-2.5">
-              <img src={onspotLogo} alt="OnSpot" className="h-8 w-auto" />
+              <AuthBrandLogo size="compact" />
             </div>
 
             {currentStep === "user-type" && (
@@ -417,17 +437,7 @@ export function SignUpDialog({
             )}
 
             {currentStep === "signup" && (
-              <div className="relative">
-                {!standalone && <button
-                  type="button"
-                  onClick={handleBackToUserType}
-                  disabled={isLoading || accountCreated}
-                  aria-label="Back to account type selection"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center gap-1 text-white/50 hover:text-white/90 text-sm transition-colors"
-                  data-testid="button-back"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>}
+              <div>
                 <DialogTitle className="text-2xl font-semibold leading-tight text-white" style={{ letterSpacing: "-0.02em" }}>
                   {userType === "client" ? "Hire Talent" : "Find Work"}
                 </DialogTitle>
@@ -731,9 +741,10 @@ export function SignUpDialog({
                   type="button"
                   onClick={handleBackToUserType}
                   disabled={isLoading || accountCreated}
-                  className="text-xs text-white/75 hover:text-white transition-colors"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B9C4FF] disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {standalone ? "Back to Portal" : "← Back to options"}
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Portal
                 </button>
                 <button
                   type="button"
@@ -741,7 +752,7 @@ export function SignUpDialog({
                   onClick={() => {
                     setOpen(false);
                     resetDialog();
-                    onSignInInstead?.();
+                    onSignInInstead?.(userType ?? undefined);
                   }}
                   data-testid="button-signin-instead"
                   className="text-xs text-white/80 hover:text-white underline transition-colors"

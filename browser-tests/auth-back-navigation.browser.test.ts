@@ -59,6 +59,10 @@ async function open(path: string, mobile = false, options: {
   await page.route("**/*", route => {
     const url = new URL(route.request().url());
     if (url.pathname.startsWith("/api/")) {
+      if (["/api/notifications/hired-popup/claim", "/api/talent/notifications/hired-popup/claim"].includes(url.pathname)) {
+        assert.equal(route.request().method(), "POST");
+        return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+      }
       if (url.pathname === "/api/signup" && options.signup && route.request().method() === "POST") {
         return options.signup(route);
       }
@@ -82,7 +86,11 @@ async function open(path: string, mobile = false, options: {
 async function enter(page: Page, kind: "login" | "signup", mobile = false) {
   if (mobile) await page.getByTestId("mobile-menu-toggle").click();
   await page.getByTestId(mobile ? `mobile-${kind}-button` : `nav-${kind}-button`).click();
-  await page.getByTestId("auth-back-to-origin").waitFor();
+  if (kind === "signup" && new URL(page.url()).pathname.startsWith("/find-work")) {
+    await page.getByRole("dialog").waitFor();
+  } else {
+    await page.getByTestId("auth-back-to-origin").waitFor();
+  }
 }
 
 async function choose(page: Page, kind: "login" | "signup", portal: "client" | "talent") {
@@ -112,6 +120,25 @@ for (const mobile of [false, true]) {
           const page = await open(origin, mobile);
           try {
             await enter(page, kind, mobile);
+            if (kind === "signup") {
+              assert.equal(page.url(), `${BASE}${origin}`);
+              const dialog = page.getByRole("dialog");
+              await dialog.getByTestId(`card-${portal}-signup`).click();
+              const back = dialog.getByTestId("auth-back-to-portal");
+              await back.waitFor();
+              await back.focus();
+              await back.press("Enter");
+              await dialog.getByTestId(`card-${portal}-signup`).waitFor();
+              assert.equal(page.url(), `${BASE}${origin}`);
+              await dialog.getByRole("button", { name: "Close", exact: true }).click();
+              await dialog.waitFor({ state: "detached" });
+              assert.equal(page.url(), `${BASE}${origin}`);
+              const opener = page.getByTestId(mobile ? "mobile-menu-toggle" : "nav-signup-button");
+              await page.waitForFunction(id => document.activeElement?.getAttribute("data-testid") === id,
+                mobile ? "mobile-menu-toggle" : "nav-signup-button");
+              assert.equal(await opener.evaluate(el => document.activeElement === el), true);
+              return;
+            }
             assert.equal(new URL(page.url()).searchParams.get("backTo"), origin);
             assert.equal(await page.getByTestId("auth-back-to-origin").innerText(), "Back to Find Work");
             await choose(page, kind, portal);
@@ -306,5 +333,171 @@ test("Client signup retains required company validation, inline feedback, and su
     assert.equal(payload.role, "client");
     assert.equal(payload.company, "Test Company");
     assert.equal(await page.evaluate(() => localStorage.getItem("onspot_jwt_token")), "isolated-client-session");
+  } finally { await page.close(); }
+});
+
+for (const viewport of [
+  { width: 1280, height: 900 },
+  { width: 768, height: 900 },
+  { width: 390, height: 844 },
+  { width: 320, height: 560 },
+]) {
+  test(`Find Work signup is centered, scrollable, focus-trapped and dismissible at ${viewport.width}x${viewport.height}`,
+    { timeout: 90_000 }, async () => {
+      const mobile = viewport.width < 768;
+      const origin = "/find-work/jobs?category=sales#roles";
+      const page = await open(origin, mobile, viewport);
+      try {
+        await enter(page, "signup", mobile);
+        const dialog = page.getByRole("dialog");
+        await dialog.getByTestId("card-talent-signup").click();
+        const box = await dialog.boundingBox();
+        assert.ok(box && box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height);
+        assert.ok(box && Math.abs(box.y + box.height / 2 - viewport.height / 2) < 2, "Dialog must be vertically centered");
+        const close = dialog.getByRole("button", { name: "Close", exact: true });
+        const closeBox = await close.boundingBox();
+        assert.ok(closeBox && closeBox.width >= 44 && closeBox.height >= 44);
+        assert.equal(await dialog.evaluate(el => {
+          let layer: Element | null = el;
+          while (layer && getComputedStyle(layer).position !== "fixed") layer = layer.parentElement;
+          const modalZ = layer ? Number(getComputedStyle(layer).zIndex) : 0;
+          const navButton = document.querySelector('[data-testid="logo-home"]');
+          let navZ = 0;
+          for (let node = navButton; node && node !== document.body; node = node.parentElement) {
+            navZ = Math.max(navZ, Number(getComputedStyle(node).zIndex) || 0);
+          }
+          return modalZ > navZ;
+        }), true, "The visible close button and overlay must paint above the sticky navigation");
+        const image = dialog.getByRole("img", { name: "OnSpot", exact: true });
+        await image.evaluate(async el => { await (el as HTMLImageElement).decode(); });
+        const logo = await image.evaluate(el => {
+          const img = el as HTMLImageElement;
+          const rect = img.getBoundingClientRect();
+          return { ratio: rect.width / rect.height, nativeRatio: img.naturalWidth / img.naturalHeight, source: img.currentSrc };
+        });
+        assert.ok(Math.abs(logo.ratio - logo.nativeRatio) < 0.01, "Logo must not stretch even on short phones");
+        assert.match(logo.source, /OnSpot_Logo_2026_1784298008227/);
+        if ([390, 1280].includes(viewport.width)) {
+          await page.screenshot({ path: `/tmp/onspot-modal-verification/signup-${viewport.width}.png` });
+        }
+        for (let tab = 0; tab < 14; tab++) {
+          await page.keyboard.press("Tab");
+          assert.equal(await dialog.evaluate(el => el.contains(document.activeElement)), true, "Keyboard focus stays inside modal");
+        }
+        await dialog.getByTestId("input-confirm-password").scrollIntoViewIfNeeded();
+        const scroll = await dialog.locator(".signup-scroll").evaluate(el => ({ y: el.scrollTop, overflow: el.scrollHeight > el.clientHeight }));
+        assert.equal(scroll.overflow, true);
+        assert.ok(scroll.y > 0);
+        await dialog.getByTestId("button-submit-signup").click();
+        const error = await dialog.getByTestId("signup-error").boundingBox();
+        assert.ok(error && error.y >= 0 && error.y + error.height <= viewport.height, "Validation stays visible inside the modal");
+        await page.keyboard.press("Escape");
+        await dialog.waitFor({ state: "detached" });
+        assert.equal(page.url(), `${BASE}${origin}`);
+        assert.equal(await page.evaluate(() => document.body.style.overflow), "");
+      } finally { await page.close(); }
+    });
+}
+
+test("Closing a scrolled Find Work signup restores the page, query, scroll and opener without reloading", { timeout: 90_000 }, async () => {
+  const origin = "/find-work/jobs?category=sales#roles";
+  const page = await open(origin);
+  try {
+    await page.evaluate(() => { (window as any).__signupDocumentMarker = "same-page"; });
+    await page.evaluate(() => window.scrollTo(0, Math.min(600, document.documentElement.scrollHeight - innerHeight)));
+    await page.waitForTimeout(180);
+    await page.evaluate(() => window.scrollBy(0, -24));
+    await page.waitForTimeout(250);
+    const y = await page.evaluate(() => scrollY);
+    assert.ok(y > 0, "Fixture must genuinely scroll");
+    await enter(page, "signup");
+    assert.equal(await page.evaluate(() => scrollY), y);
+    await page.mouse.move(4, 400);
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(200);
+    assert.equal(await page.evaluate(() => scrollY), y, "Background wheel scrolling must be locked");
+    await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+    await page.waitForFunction(() => document.activeElement?.getAttribute("data-testid") === "nav-signup-button");
+    assert.equal(page.url(), `${BASE}${origin}`);
+    assert.equal(await page.evaluate(() => scrollY), y);
+    assert.equal(await page.evaluate(() => (window as any).__signupDocumentMarker), "same-page");
+  } finally { await page.close(); }
+});
+
+test("Modal Talent signup reuses registration, blocks dismissal while submitting, and keeps its existing destination", { timeout: 90_000 }, async () => {
+  let writes = 0;
+  let release: (() => void) | undefined;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  const page = await open("/find-work/jobs", false, {
+    signup: async route => {
+      writes++;
+      const payload = route.request().postDataJSON();
+      assert.equal(payload.role, "talent");
+      assert.equal(payload.email, "talent@example.test");
+      await held;
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({
+        success: true, accountCreated: true, token: "modal-session",
+        user: { id: "modal-talent-user", first_name: "Modal", last_name: "Talent", email: "talent@example.test", role: "talent" },
+        talentToken: "modal-candidate-session", candidateId: "modal-candidate",
+      }) });
+    },
+  });
+  try {
+    await enter(page, "signup");
+    const dialog = page.getByRole("dialog");
+    await dialog.getByTestId("card-talent-signup").click();
+    await dialog.getByTestId("input-first-name").fill("Modal");
+    await dialog.getByTestId("input-last-name").fill("Talent");
+    await dialog.getByTestId("input-signup-email").fill("talent@example.test");
+    await dialog.getByTestId("input-signup-password").fill("ValidPass123!");
+    await dialog.getByTestId("input-confirm-password").fill("ValidPass123!");
+    await dialog.getByTestId("checkbox-terms").click();
+    await dialog.getByTestId("button-submit-signup").click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="button-submit-signup"]')?.hasAttribute("disabled"));
+    await page.keyboard.press("Escape");
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    assert.equal(await dialog.isVisible(), true);
+    assert.equal(new URL(page.url()).pathname, "/find-work/jobs");
+    release!();
+    await page.waitForURL(url => url.pathname === "/get-hired");
+    assert.equal(writes, 1);
+    assert.equal(await page.evaluate(() => localStorage.getItem("onspot_jwt_token")), "modal-session");
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("talent_profile_token") || "null")?.candidateId), "modal-candidate");
+  } finally { release?.(); await page.close(); }
+});
+
+test("Modal Sign In retains its selected portal and Find Work cancellation destination", { timeout: 90_000 }, async () => {
+  const origin = "/find-work/jobs?category=sales#roles";
+  const page = await open(origin);
+  try {
+    await enter(page, "signup");
+    await page.getByRole("dialog").getByTestId("card-talent-signup").click();
+    await page.getByTestId("button-signin-instead").click();
+    await page.getByTestId("auth-back-to-portal").waitFor();
+    assert.equal(new URL(page.url()).pathname, "/login/talent");
+    assert.equal(new URL(page.url()).searchParams.get("backTo"), origin);
+    await page.getByTestId("auth-back-to-portal").click();
+    await page.getByTestId("auth-back-to-origin").click();
+    await page.waitForURL(`${BASE}${origin}`);
+  } finally { await page.close(); }
+});
+
+test("Every standalone Client/Talent auth entry uses the official image without stretching", { timeout: 90_000 }, async () => {
+  const page = await open("/signup");
+  try {
+    for (const path of ["/signup", "/login", "/signup/client", "/signup/talent", "/login/client", "/login/talent"]) {
+      await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
+      const image = page.locator(".auth-brand-logo img");
+      await image.waitFor();
+      const logo = await image.evaluate(async el => {
+        const img = el as HTMLImageElement;
+        await img.decode();
+        const rect = img.getBoundingClientRect();
+        return { ratio: rect.width / rect.height, nativeRatio: img.naturalWidth / img.naturalHeight, source: img.currentSrc };
+      });
+      assert.ok(Math.abs(logo.ratio - logo.nativeRatio) < 0.01, path);
+      assert.match(logo.source, /OnSpot_Logo_2026_1784298008227/, path);
+    }
   } finally { await page.close(); }
 });
