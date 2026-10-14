@@ -121,11 +121,14 @@ test("CTA opens the existing Client/Talent signup selection", { timeout: 90_000 
   try {
     await page.locator(".manifesto-join-link").click();
     await page.getByRole("heading", { name: "Get started with OnSpot" }).waitFor();
-    assert.equal(new URL(page.url()).pathname, "/signup");
+    assert.equal(new URL(page.url()).pathname, "/join-onspot");
     for (const portal of ["client", "talent"]) {
-      const href = await page.locator(`a[href^="/signup/${portal}"]`).getAttribute("href");
-      assert.equal(new URL(href!, BASE).searchParams.get("backTo"), "/join-onspot");
+      await page.getByRole("dialog").getByTestId(`card-${portal}-signup`).click();
+      await page.getByTestId("auth-back-to-portal").click();
     }
+    await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).click();
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+    assert.equal(new URL(page.url()).pathname, "/join-onspot");
   } finally { await page.close(); }
 });
 

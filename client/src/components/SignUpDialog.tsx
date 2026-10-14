@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, Eye, EyeOff, Mail, Building, User, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { UserPlus, Eye, EyeOff, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { FaGoogle, FaLinkedin } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
@@ -29,6 +29,7 @@ import "./SignUpDialog.css";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
 import { authPortalHref } from "@/lib/authBackNavigation";
+import { PortalChooser } from "@/components/PortalChooser";
 
 type UserType = "client" | "talent" | null;
 type SignupStep = "user-type" | "signup";
@@ -376,9 +377,10 @@ export function SignUpDialog({
         className={[
           "signup-dialog-content p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
           currentStep === "user-type"
-            ? "w-[min(680px,calc(100dvw-2rem))] max-w-none sm:max-w-none"
+            ? "w-[min(680px,calc(100dvw-2rem))] max-w-none sm:max-w-none max-h-[calc(100dvh-2rem)]"
             : "w-[min(520px,calc(100dvw-2rem))] max-w-none sm:max-w-none",
         ].filter(Boolean).join(" ")}
+        data-signup-step={currentStep}
         overlayClassName={standalone
           ? "bg-[linear-gradient(135deg,#FCFDFF_0%,#F6F8FF_20%,#EEF4FF_45%,#E7F0FF_70%,#F8F9FF_100%)]"
           : "bg-[#080b20]/65 backdrop-blur-[3px]"}
@@ -386,17 +388,17 @@ export function SignUpDialog({
         centered={!standalone}
         onCloseAutoFocus={onCloseAutoFocus}
       >
-        {/* Dark card — flex column with capped height + internal scroll */}
+        {/* Portal selection is the established white chooser; forms retain the navy treatment. */}
         <div
-          className={`signup-card flex flex-col ${standalone ? "max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-9rem)]" : "max-h-[calc(100dvh-2rem)]"} rounded-2xl overflow-hidden`}
-          style={{
+          className={`signup-card flex flex-col ${standalone ? "max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-9rem)]" : "max-h-[calc(100dvh-2rem)]"} ${currentStep === "user-type" ? "signup-portal-step" : "rounded-2xl overflow-hidden"}`}
+          style={currentStep === "user-type" ? undefined : {
             background: "linear-gradient(135deg, #0f0f3c 0%, #1a1a4e 40%, #1e1e55 70%, #1a1a4e 100%)",
             border: "1px solid rgba(91,124,255,0.2)",
             boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(91,124,255,0.1)",
           }}
         >
           {/* ── Sticky header (never scrolls away) ── */}
-          <div className="signup-header shrink-0 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 pr-12 text-center">
+          {currentStep === "signup" && <div className="signup-header shrink-0 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 pr-12 text-center">
             {standalone && currentStep === "signup" && (
               <div className="mb-4 flex justify-start">
                 <AuthBackButton
@@ -425,17 +427,6 @@ export function SignUpDialog({
               <AuthBrandLogo size="compact" />
             </div>
 
-            {currentStep === "user-type" && (
-              <>
-                <DialogTitle className="text-2xl font-semibold leading-tight text-white" style={{ letterSpacing: "-0.02em" }}>
-                  Get started with OnSpot
-                </DialogTitle>
-                <DialogDescription className="text-white/75 text-sm leading-relaxed mt-2">
-                  Choose how you&apos;d like to join OnSpot.
-                </DialogDescription>
-              </>
-            )}
-
             {currentStep === "signup" && (
               <div>
                 <DialogTitle className="text-2xl font-semibold leading-tight text-white" style={{ letterSpacing: "-0.02em" }}>
@@ -448,60 +439,21 @@ export function SignUpDialog({
                 </DialogDescription>
               </div>
             )}
-          </div>
+          </div>}
 
           {/* ── Scrollable body ── */}
-          <div className="signup-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 pb-4">
-
-            {/* ── Role selection step ── */}
-            {currentStep === "user-type" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Client card */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectUserType("client")}
-                  className="signup-role-card relative flex flex-col items-center gap-2.5 rounded-xl p-5 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-[#3A3AF8]/20 hover:border-[#8294FF]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9BAAFF] group"
-                  data-testid="card-client-signup"
-                >
-                  <div className="w-11 h-11 rounded-full bg-[#3A3AF8]/15 flex items-center justify-center group-hover:bg-[#3A3AF8]/30 transition-colors">
-                    <Building className="w-5 h-5 text-[#5B7CFF]" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m Hiring</h3>
-                    <p className="text-white/75 text-sm leading-relaxed">
-                      Find and manage vetted global talent for your business.
-                    </p>
-                  </div>
-                  <span className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#B9C4FF]">
-                    Get Started <ArrowRight className="h-4 w-4" />
-                  </span>
-                </button>
-
-                {/* Talent card */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectUserType("talent")}
-                  className="signup-role-card relative flex flex-col items-center gap-2.5 rounded-xl p-5 text-center transition-all duration-200 border border-white/20 bg-white/5 hover:bg-yellow-400/10 hover:border-yellow-300/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200 group"
-                  data-testid="card-talent-signup"
-                >
-                  <div className="w-11 h-11 rounded-full bg-yellow-400/10 flex items-center justify-center group-hover:bg-yellow-400/20 transition-colors">
-                    <User className="w-5 h-5 text-yellow-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-white mb-1">I&apos;m Looking for Work</h3>
-                    <p className="text-white/75 text-sm leading-relaxed">
-                      Discover global opportunities and grow your career.
-                    </p>
-                  </div>
-                  <span className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-yellow-200">
-                    Get Started <ArrowRight className="h-4 w-4" />
-                  </span>
-                </button>
-              </div>
-            )}
+          {currentStep === "user-type" ? (
+            <div className="signup-portal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <PortalChooser
+                kind="signup"
+                embedded
+                onChoosePortal={(portal) => handleSelectUserType(portal)}
+              />
+            </div>
+          ) : <div className="signup-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 pb-4">
 
             {/* ── Signup form step ── */}
-            {currentStep === "signup" && (
+            {(
               <>
                 {pendingVerification ? (
                   <SignupEmailVerification
@@ -689,7 +641,7 @@ export function SignUpDialog({
                 </>}
               </>
             )}
-          </div>
+          </div>}
 
           {/* ── Sticky footer — CTA always visible, never scrolls away ── */}
           {currentStep === "signup" && !pendingVerification && (

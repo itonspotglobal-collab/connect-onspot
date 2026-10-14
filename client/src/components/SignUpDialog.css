@@ -32,8 +32,35 @@
   transform: scale(0.96);
 }
 
+.signup-dialog-content[data-signup-step="user-type"] > button:last-of-type {
+  color: #fff;
+  background: rgba(23, 37, 84, 0.9);
+}
+
+.signup-dialog-content[data-signup-step="user-type"] > button:last-of-type:hover {
+  background: #172554;
+}
+
 .signup-header {
   overflow-wrap: anywhere;
+}
+
+.signup-portal-step {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.signup-portal-scroll {
+  width: 100%;
+  min-width: 0;
+  max-height: calc(100dvh - 2rem);
+  scrollbar-color: rgba(109, 94, 247, 0.3) transparent;
+  scrollbar-width: thin;
+}
+
+.auth-brand-logo-light {
+  filter: drop-shadow(0 1px 1px rgba(23, 37, 84, 0.45)) drop-shadow(0 0 2px rgba(23, 37, 84, 0.24));
 }
 
 .signup-scroll {
@@ -155,7 +182,7 @@
     margin-bottom: 0.35rem;
   }
 
-  .signup-header .auth-brand-logo img {
+  .signup-header .auth-brand-logo {
     width: 128px;
     height: auto;
   }
@@ -172,6 +199,6 @@
 
 /* The fixed assistant launcher overlaps the sticky signup action on phones.
    Restore it automatically as soon as the signup form closes. */
-body:has(#signup-form) button[aria-label="Open Vanessa AI assistant"] {
+body:has(.signup-dialog-content) button[aria-label="Open Vanessa AI assistant"] {
   display: none !important;
 }

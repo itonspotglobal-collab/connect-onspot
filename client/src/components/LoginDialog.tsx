@@ -206,7 +206,7 @@ export function LoginDialog({ open: controlledOpen, onOpenChange: controlledOnOp
       <DialogContent className={currentStep === "user-type" ? "sm:max-w-4xl" : "sm:max-w-md"}>
         <DialogHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">
-            <AuthBrandLogo size="compact" />
+            <AuthBrandLogo size="compact" tone="light" />
           </div>
           
           {currentStep === "user-type" && (

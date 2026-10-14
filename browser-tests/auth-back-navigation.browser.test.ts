@@ -86,7 +86,7 @@ async function open(path: string, mobile = false, options: {
 async function enter(page: Page, kind: "login" | "signup", mobile = false) {
   if (mobile) await page.getByTestId("mobile-menu-toggle").click();
   await page.getByTestId(mobile ? `mobile-${kind}-button` : `nav-${kind}-button`).click();
-  if (kind === "signup" && new URL(page.url()).pathname.startsWith("/find-work")) {
+  if (kind === "signup") {
     await page.getByRole("dialog").waitFor();
   } else {
     await page.getByTestId("auth-back-to-origin").waitFor();
@@ -488,16 +488,106 @@ test("Every standalone Client/Talent auth entry uses the official image without 
   try {
     for (const path of ["/signup", "/login", "/signup/client", "/signup/talent", "/login/client", "/login/talent"]) {
       await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
-      const image = page.locator(".auth-brand-logo img");
+      const image = page.locator("img.auth-brand-logo");
       await image.waitFor();
       const logo = await image.evaluate(async el => {
         const img = el as HTMLImageElement;
         await img.decode();
         const rect = img.getBoundingClientRect();
-        return { ratio: rect.width / rect.height, nativeRatio: img.naturalWidth / img.naturalHeight, source: img.currentSrc };
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(img, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let transparent = 0;
+        let white = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index + 3] === 0) transparent++;
+          if (pixels[index + 3] === 255 && pixels[index] >= 250 && pixels[index + 1] >= 250 && pixels[index + 2] >= 250) white++;
+        }
+        return {
+          ratio: rect.width / rect.height, nativeRatio: img.naturalWidth / img.naturalHeight,
+          source: img.currentSrc, cornerAlpha: pixels[3], transparent, white,
+          background: getComputedStyle(img).backgroundColor,
+          parentBackground: getComputedStyle(img.parentElement!).backgroundColor,
+        };
       });
       assert.ok(Math.abs(logo.ratio - logo.nativeRatio) < 0.01, path);
       assert.match(logo.source, /OnSpot_Logo_2026_1784298008227/, path);
+      assert.equal(logo.cornerAlpha, 0, "PNG background must have real alpha transparency");
+      assert.ok(logo.transparent > 10000 && logo.white > 1000, "Original white artwork and transparent pixels must both remain");
+      assert.equal(logo.background, "rgba(0, 0, 0, 0)", path);
+      assert.equal(logo.parentBackground, "rgba(0, 0, 0, 0)", "No rectangular logo wrapper");
     }
+  } finally { await page.close(); }
+});
+
+for (const origin of ["/", "/talent-pool"]) {
+  for (const mobile of [false, true]) {
+    test(`Shared white signup portal keeps ${origin} mounted (${mobile ? "mobile" : "desktop"})`,
+      { timeout: 90_000 }, async () => {
+        const page = await open(origin, mobile);
+        try {
+          const background = await page.locator("h1").first().elementHandle();
+          assert.ok(background, "The actual public page must be mounted");
+          await page.evaluate(() => window.scrollTo(0, Math.min(500, document.documentElement.scrollHeight - innerHeight)));
+          await page.waitForTimeout(160);
+          await page.evaluate(() => window.scrollBy(0, -24));
+          await page.waitForTimeout(250);
+          const scroll = await page.evaluate(() => scrollY);
+          await enter(page, "signup", mobile);
+          const dialog = page.getByRole("dialog");
+          await dialog.getByRole("heading", { name: "Get started with OnSpot", exact: true }).waitFor();
+          assert.equal(new URL(page.url()).pathname, origin);
+          assert.equal(await background.evaluate(el => el.isConnected), true, "Signup must not replace the original page");
+          assert.equal(await dialog.getByTestId("auth-back-to-origin").count(), 0);
+          assert.equal(await dialog.getByRole("link", { name: /Back to Home/ }).count(), 0);
+          const chooser = dialog.locator(".portal-chooser-embedded");
+          assert.equal(await chooser.isVisible(), true);
+          assert.equal(await chooser.locator(".rounded-3xl").evaluate(el => getComputedStyle(el).backgroundColor.includes("255, 255, 255")), true);
+          assert.equal(await dialog.getByRole("heading", { name: "Get started with OnSpot", exact: true })
+            .evaluate(el => getComputedStyle(el).color), "rgb(23, 37, 84)");
+          if (origin === "/" && !mobile) {
+            await page.screenshot({ path: "/tmp/onspot-portal-correction/home-portal.png" });
+          }
+          if (origin === "/" && mobile) {
+            await page.screenshot({ path: "/tmp/onspot-portal-correction/mobile-portal.png" });
+          }
+          for (const portal of ["client", "talent"]) {
+            await dialog.getByTestId(`card-${portal}-signup`).click();
+            await dialog.getByTestId("input-signup-email").waitFor();
+            assert.equal(new URL(page.url()).pathname, origin);
+            await dialog.getByTestId("auth-back-to-portal").click();
+            await dialog.getByTestId(`card-${portal}-signup`).waitFor();
+          }
+          await page.keyboard.press("Escape");
+          await dialog.waitFor({ state: "detached" });
+          await page.waitForFunction(id => document.activeElement?.getAttribute("data-testid") === id,
+            mobile ? "mobile-menu-toggle" : "nav-signup-button");
+          assert.equal(new URL(page.url()).pathname, origin);
+          assert.equal(await page.evaluate(() => scrollY), scroll);
+          assert.equal(await background.evaluate(el => el.isConnected), true);
+        } finally { await page.close(); }
+      });
+  }
+}
+
+test("Homepage email CTA opens the shared portal and preserves email in either role without navigation", { timeout: 90_000 }, async () => {
+  const page = await open("/");
+  try {
+    const email = page.getByPlaceholder("name@company.com", { exact: true });
+    await email.fill("prefilled@example.test");
+    await email.locator("xpath=ancestor::form").locator('button[type="submit"]').click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByTestId("card-talent-signup").click();
+    assert.equal(await dialog.getByTestId("input-signup-email").inputValue(), "prefilled@example.test");
+    await dialog.getByTestId("auth-back-to-portal").click();
+    await dialog.getByTestId("card-client-signup").click();
+    assert.equal(await dialog.getByTestId("input-signup-email").inputValue(), "prefilled@example.test");
+    assert.equal(new URL(page.url()).pathname, "/");
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await dialog.waitFor({ state: "detached" });
+    assert.equal(await email.inputValue(), "prefilled@example.test", "The original homepage form must remain mounted");
   } finally { await page.close(); }
 });

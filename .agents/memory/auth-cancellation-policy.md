@@ -9,8 +9,8 @@ Standalone Client/Talent authentication has two distinct exit actions: forms ret
 
 **How to apply:** Keep cancellation destinations separate from successful-login and application-continuation destinations. Never replace the original origin with an intermediate authentication page. Validate internal destinations, reject external and authentication-loop targets, and avoid stale origins from earlier flows. Apply Client/Talent changes without changing Admin authentication.
 
-Find Work's navigation Sign Up is an in-page modal exception: portal selection stays inside the modal, Back to Portal changes its internal step, and dismissal restores the original page position and visible opener. Other entry points and direct auth links keep their standalone behavior.
+Public-page signup buttons and inquiry/signup CTAs use an in-page modal: portal selection stays inside it, Back to Portal changes its internal step, and dismissal restores the original page position and visible opener. Direct signup URLs retain a standalone fallback.
 
-**Why:** The owner explicitly wants people browsing opportunities to register without leaving Find Work or losing their scroll position, while preserving other authentication entry points.
+**Why:** The owner clarified that this applies to all public browsing pages, not just Find Work: the actual homepage, opportunity list, or other originating page must stay mounted behind signup.
 
-**How to apply:** Keep this exception scoped to Find Work. Do not change successful-registration destinations or turn every signup entry point into a modal. On mobile, restore focus to the visible menu toggle rather than its now-collapsed Sign Up item.
+**How to apply:** Use the shared modal for public navigation and signup CTAs without navigating or recreating the background page. Preserve direct auth routes, successful-registration destinations, and auth-to-auth continuation parameters. On mobile, restore focus to the visible menu toggle rather than its now-collapsed Sign Up item.

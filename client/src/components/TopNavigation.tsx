@@ -72,6 +72,7 @@ import { useUnreadNotificationsCount } from "@/hooks/useUnreadNotificationsCount
 import { NotificationBell } from "@/components/NotificationBell";
 import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
+import { useSignupModal } from "@/components/SignupModalProvider";
 import { SignupEmailVerification } from "@/components/SignupEmailVerification";
 import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
 
@@ -102,42 +103,13 @@ export function TopNavigation() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
-  const [findWorkSignupOpen, setFindWorkSignupOpen] = useState(false);
-  const signupOpener = useRef<HTMLButtonElement | null>(null);
-  const signupScroll = useRef({ x: 0, y: 0 });
-  const signupOrigin = useRef("");
+  const { openSignup } = useSignupModal();
 
   function openPublicSignup(event: MouseEvent<HTMLButtonElement>) {
-    if (location === "/find-work" || location.startsWith("/find-work/")) {
-      signupOpener.current = event.currentTarget.dataset.testid === "mobile-signup-button"
-        ? document.querySelector<HTMLButtonElement>('[data-testid="mobile-menu-toggle"]')
-        : event.currentTarget;
-      signupScroll.current = { x: window.scrollX, y: window.scrollY };
-      signupOrigin.current = window.location.pathname + window.location.search + window.location.hash;
-      setFindWorkSignupOpen(true);
-    } else {
-      navigate("/signup");
-    }
+    openSignup({}, event.currentTarget);
     setIsMobileMenuOpen(false);
   }
 
-  function restoreSignupContext(event: Event) {
-    event.preventDefault();
-    requestAnimationFrame(() => {
-      if (window.location.pathname + window.location.search + window.location.hash !== signupOrigin.current) return;
-      window.scrollTo({ left: signupScroll.current.x, top: signupScroll.current.y, behavior: "instant" });
-      const focusTarget = [
-        signupOpener.current,
-        document.querySelector<HTMLButtonElement>('[data-testid="nav-signup-button"]'),
-        document.querySelector<HTMLButtonElement>('[data-testid="mobile-menu-toggle"]'),
-      ].find(element => element?.isConnected && element.getClientRects().length);
-      focusTarget?.focus({ preventScroll: true });
-    });
-  }
-
-  useEffect(() => {
-    setFindWorkSignupOpen(false);
-  }, [location]);
 
   const [modalStep, setModalStep] = useState<1 | 2 | 3 | 4 | "signin" | "signup" | "forgot">(1);
   const [selectedPortal, setSelectedPortal] = useState<
@@ -3247,18 +3219,6 @@ export function TopNavigation() {
         )}
       </Dialog>
 
-      {findWorkSignupOpen && (
-        <SignUpDialog
-          open
-          hideTrigger
-          onOpenChange={setFindWorkSignupOpen}
-          onCloseAutoFocus={restoreSignupContext}
-          onSignInInstead={(role) => {
-            const params = new URLSearchParams({ backTo: signupOrigin.current });
-            navigate(`/login${role ? `/${role}` : ""}?${params.toString()}`);
-          }}
-        />
-      )}
     </>
   );
 }

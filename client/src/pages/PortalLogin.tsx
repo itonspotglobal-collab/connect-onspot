@@ -109,7 +109,7 @@ function CardShell({ children }: { children: React.ReactNode }) {
       <div className="relative z-10 flex flex-col items-center mb-10">
         <Link href="/">
           <span className="inline-flex cursor-pointer select-none">
-            <AuthBrandLogo size="standard" />
+            <AuthBrandLogo size="standard" tone="light" />
           </span>
         </Link>
         <p className="text-[#94A3B8] text-xs mt-1.5 tracking-widest uppercase font-medium">
