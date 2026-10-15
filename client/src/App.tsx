@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation, useSearch } from "wouter";
 import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { AuthNavigationTracker } from "@/components/AuthNavigationTracker";
@@ -111,9 +111,8 @@ import AdminInterviewers from "@/pages/AdminInterviewers";
 import TermsAndConditions from "@/pages/TermsAndConditions";
 import RefundPolicy from "@/pages/RefundPolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
-import PortalLogin from "@/pages/PortalLogin";
 import PortalSignupPage from "@/pages/PortalSignupPage";
-import { PortalChooser } from "@/components/PortalChooser";
+import { LoginOverlayRouter } from "@/components/LoginOverlayRouter";
 import { installContractNavigationTracker } from "@/lib/contractNavigation";
 import { buildLoginReturnUrl } from "@/lib/returnTo";
 
@@ -130,6 +129,15 @@ import ContractsPage from "@/components/ContractWorkflow";
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
+function LegacySignupRedirect() {
+  const [, navigate] = useLocation();
+  const search = useSearch();
+  useEffect(() => {
+    navigate(`/portal${search ? `?${search}` : ""}`, { replace: true });
+  }, [navigate, search]);
   return null;
 }
 
@@ -692,16 +700,11 @@ function AppContent() {
       {/* Profile Settings Route - Alias for /settings */}
       <Route path="/profile-settings" component={SettingsRoute} />
       
-      {/* Standalone Login Page — must be before catch-all */}
-      <Route path="/login" component={PortalLogin} />
-      <Route path="/login/client" component={PortalLogin} />
-      <Route path="/login/talent" component={PortalLogin} />
-      <Route path="/sign-in" component={PortalLogin} />
-      {/* Portal login — used by the job-apply flow when an existing email is detected */}
-      <Route path="/portal-login" component={PortalLogin} />
+      {/* LoginOverlayRouter keeps the public background mounted for login URLs,
+          including the /sign-in and /portal-login application-flow aliases. */}
       {/* Route-based signup pages */}
       <Route path="/portal" component={PortalSignupPage} />
-      <Route path="/signup" component={() => <PortalChooser kind="signup" />} />
+      <Route path="/signup" component={LegacySignupRedirect} />
       <Route path="/signup/client" component={PortalSignupPage} />
       <Route path="/signup/talent" component={PortalSignupPage} />
 
@@ -783,7 +786,9 @@ function App() {
                   <NewUserOnboardingWrapper>
                     <ContractNavigationHistoryTracker />
                     <AuthNavigationTracker />
-                    <AppContent />
+                    <LoginOverlayRouter>
+                      <AppContent />
+                    </LoginOverlayRouter>
                   </NewUserOnboardingWrapper>
                 </SignupModalProvider>
               </DomainRouter>

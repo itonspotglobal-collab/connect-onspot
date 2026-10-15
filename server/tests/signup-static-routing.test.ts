@@ -48,7 +48,7 @@ after(async () => {
   if (server) await new Promise<void>(done => server.close(() => done()));
   if (root) await rm(root, { recursive: true, force: true });
 });
-for (const path of ["/portal", "/signup/talent", "/signup/client"]) {
+for (const path of ["/portal", "/signup", "/signup/talent", "/signup/client", "/login", "/login/client", "/login/talent"]) {
   for (const failure of [false, true]) {
     test(`Production SPA shell serves ${path} for fresh visits and refreshes${failure ? " even if metadata is unavailable" : ""}`, async () => {
       for (let refresh = 0; refresh < 2; refresh++) {

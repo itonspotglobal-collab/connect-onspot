@@ -5083,7 +5083,7 @@ function FinalCtaSection() {
     e.preventDefault();
     if (!email.trim()) return;
     // Navigate to sign-up with email pre-filled
-    window.location.href = `/signup?email=${encodeURIComponent(email.trim())}`;
+    window.location.href = `/portal?email=${encodeURIComponent(email.trim())}`;
   };
 
   return (

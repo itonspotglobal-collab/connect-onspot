@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import type { PortalType } from "@/hooks/usePortalLogin";
@@ -21,6 +22,11 @@ export default function PortalSignupPage() {
     null;
 
   const landing = portal === "talent" ? "/find-work/jobs" : portal === "client" ? "/hire-talent" : "/";
+  useLayoutEffect(() => {
+    // Direct auth routes must not inherit the preceding route's scroll offset.
+    // In-place signup uses SignupModalProvider instead, and keeps its scroll.
+    window.scrollTo({ left: 0, top: 0, behavior: "instant" });
+  }, [portal]);
   const close = () => {
     const publicParams = new URLSearchParams(params);
     for (const key of ["email", "returnTo", "backTo", "applicationToken", "verification", "code"]) publicParams.delete(key);
@@ -30,7 +36,9 @@ export default function PortalSignupPage() {
 
   return (
     <>
-    <div className="min-h-screen overflow-x-clip bg-background" data-signup-background={portal ?? "portal"}>
+    <div className={portal
+      ? "min-h-screen overflow-x-clip bg-background"
+      : "fixed inset-0 overflow-hidden bg-background"} data-signup-background={portal ?? "portal"}>
       <TopNavigation />
       <main>{portal === "talent" ? <FindWorkAllJobs /> : portal === "client" ? <HireTalentPage /> : <Home />}</main>
       <Footer />

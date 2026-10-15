@@ -3,7 +3,7 @@ name: Authentication cancellation navigation
 description: Client/Talent cancellation and real-page signup overlays, independent of successful-auth redirects.
 ---
 
-Client/Talent authentication has distinct cancellation actions: forms return to their portal chooser, and legacy choosers return to the original public page. Preserve that origin through Login/Sign Up switches and refreshes. Direct login or legacy chooser visits without an origin fall back to Home; campaign signup routes follow the explicit landing-page rules below.
+Client/Talent authentication has distinct cancellation actions: forms return to their portal chooser; Login's chooser returns to the original public page or Home for direct visits; direct signup's chooser returns Home. Preserve a valid Login origin through Login/Sign Up switches and refreshes. Campaign signup routes follow the explicit landing-page rules below.
 
 **Why:** The owner reported that users browsing Find Work were sent to Home when cancelling authentication, losing the context they intended to return to.
 
@@ -23,7 +23,15 @@ Open signup over the actual still-mounted public page, with a slightly darkened,
 
 **Why:** The owner explicitly requested shareable, bookmarkable campaign links for first-time visitors, with real landing pages rather than an empty or gradient-only backdrop. This changes direct-route behavior, not the confirmed in-place browsing experience.
 
-**How to apply:** Reuse the existing forms, logo, overlay and registration APIs. Treat `/portal` as an authentication-flow destination when validating cancellation origins, so it cannot create a return loop. Leave legacy `/signup` and Admin authentication behavior alone unless separately requested.
+**How to apply:** Reuse the existing forms, logo, overlay and registration APIs. Treat `/portal` as an authentication-flow destination when validating cancellation origins, so it cannot create a return loop. The obsolete `/signup` route now redirects to `/portal`, retaining query parameters. Leave Admin authentication behavior alone unless separately requested.
+
+## Login modal presentation
+
+Direct `/login` and typed Login routes render the actual Home hero at the top behind the navy modal; Login opened while browsing keeps the original page instance mounted with its scroll and focus. The Login chooser and forms match the existing signup dialog's white logo, navy card, blurred backdrop and responsive layout, without altering login APIs or successful destinations.
+
+**Why:** The owner explicitly retired the old standalone Login and signup chooser styling while requiring direct campaign URLs and original-page preservation. A login success can change the authenticated role while the background remains mounted; letting a role-aware background redirect at the same time can race the form's own destination.
+
+**How to apply:** Keep only the presentation background on a frozen public route while Login is open; do not let its internal redirects compete with active Login navigation. The Login form itself continues to use the real URL and its existing successful-authentication logic. Cancel closes to the original page where there is one, otherwise to a valid explicit origin or Home. Browser Back/Forward follows the URL.
 
 Successful registration and provider handoff are not cancellation. A popup's programmatic dismissal for either must not also navigate to its cancellation landing page.
 

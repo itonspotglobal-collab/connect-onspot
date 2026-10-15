@@ -6,8 +6,9 @@ import { usePortalLogin, PortalType } from "@/hooks/usePortalLogin";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, ArrowRight, Building, User, ArrowLeft } from "lucide-react";
+import { Loader2, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
 import { PortalChooser } from "@/components/PortalChooser";
+import { AuthModalFrame } from "@/components/AuthModalFrame";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
 import { authPortalHref } from "@/lib/authBackNavigation";
@@ -15,21 +16,19 @@ import { authPortalHref } from "@/lib/authBackNavigation";
 type PageStep = "login" | "setup-password" | "forgot-password";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const BRAND = "#6D5EF7";
-const BRAND_DARK = "#5546E0";
+const BRAND = "#B9C4FF";
 
 const inputCls = [
-  "bg-white/85 border border-[#D7DCEF] text-[#0F172A]",
-  "placeholder:text-[#94A3B8] rounded-[14px] h-[52px] px-4",
-  "focus:border-[#6D5EF7] focus:ring-2 focus:ring-[#6D5EF7]/20",
+  "bg-white/10 border border-white/25 text-white",
+  "placeholder:text-white/45 rounded-xl h-11 px-4",
+  "focus-visible:border-[#8294FF] focus-visible:ring-2 focus-visible:ring-[#8294FF]/35",
   "transition-all duration-200",
 ].join(" ");
 
-const labelCls = "text-[#334155] text-sm font-medium";
+const labelCls = "text-white/90 text-sm font-semibold";
 
 const backBtnCls = [
-  "flex items-center gap-1.5 text-sm font-medium mb-8 transition-colors duration-200",
-  `text-[${BRAND}] hover:text-[${BRAND_DARK}]`,
+  "flex items-center gap-1.5 text-sm font-medium mb-6 transition-colors duration-200 text-white/75 hover:text-white",
 ].join(" ");
 
 // ── Reusable action button ─────────────────────────────────────────────────
@@ -56,12 +55,7 @@ function PrimaryButton({
       onClick={onClick}
       data-testid={testId}
       disabled={disabled || loading}
-      className="w-full flex items-center justify-center gap-2 text-base font-semibold text-white rounded-2xl transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-      style={{
-        background: `linear-gradient(135deg, ${BRAND} 0%, #4F7CFF 100%)`,
-        height: "56px",
-        boxShadow: "0 4px 20px rgba(109,94,247,0.30)",
-      }}
+      className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:-translate-y-0.5 border border-[#8294FF]/50 bg-[#3A3AF8]/80 hover:bg-[#4848ff] h-11 shadow-[0_8px_22px_rgba(4,7,45,.28)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
     >
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
       {loading ? loadingText : children}
@@ -76,71 +70,10 @@ function EyeToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) 
       type="button"
       onClick={onToggle}
       aria-label={show ? "Hide password" : "Show password"}
-      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#334155] transition-colors"
+      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/55 hover:text-white transition-colors"
     >
       {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
     </button>
-  );
-}
-
-// ── Card shell — page background + glass card ─────────────────────────────
-function CardShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden"
-      style={{
-        background: "linear-gradient(135deg, #FCFDFF 0%, #F6F8FF 20%, #EEF4FF 45%, #E7F0FF 70%, #F8F9FF 100%)",
-      }}
-    >
-      {/* Radial blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full"
-          style={{ background: "rgba(99,102,241,0.08)", filter: "blur(160px)" }} />
-        <div className="absolute -top-20 -right-40 w-[450px] h-[450px] rounded-full"
-          style={{ background: "rgba(168,85,247,0.08)", filter: "blur(180px)" }} />
-        <div className="absolute -bottom-40 -left-20 w-[400px] h-[400px] rounded-full"
-          style={{ background: "rgba(59,130,246,0.06)", filter: "blur(140px)" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
-          style={{ background: "rgba(255,255,255,0.45)", filter: "blur(120px)" }} />
-      </div>
-
-      {/* Logo area */}
-      <div className="relative z-10 flex flex-col items-center mb-10">
-        <Link href="/">
-          <span
-            className="text-3xl font-bold tracking-tight cursor-pointer select-none"
-            style={{ color: BRAND }}
-          >
-            OnSpot
-          </span>
-        </Link>
-        <p className="text-[#94A3B8] text-xs mt-1.5 tracking-widest uppercase font-medium">
-          Work Without Limits
-        </p>
-      </div>
-
-      {/* Glass card */}
-      <div
-        className="relative z-10 w-full animate-fade-up"
-        style={{
-          maxWidth: "448px",
-          background: "rgba(255,255,255,0.72)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.65)",
-          boxShadow: "0 20px 60px rgba(33,40,79,0.08), 0 1px 0 rgba(255,255,255,0.8) inset",
-          borderRadius: "24px",
-          padding: "40px",
-        }}
-      >
-        {children}
-      </div>
-
-      {/* Footer */}
-      <p className="relative z-10 mt-6 text-[#94A3B8] text-xs text-center">
-        &copy; {new Date().getFullYear()} OnSpot. All rights reserved.
-      </p>
-    </div>
   );
 }
 
@@ -332,7 +265,7 @@ export default function PortalLogin() {
   }
 
   if (!activePortal && step === "login") {
-    return <PortalChooser kind="login" />;
+    return <PortalChooser />;
   }
 
   async function handleSetupPassword() {
@@ -399,20 +332,20 @@ export default function PortalLogin() {
   // ── Password Setup Step ───────────────────────────────────────────────────
   if (step === "setup-password") {
     return (
-      <CardShell>
+      <AuthModalFrame title="Create a Password">
         <button type="button" onClick={() => { setStep("login"); setSetupPassword(""); setSetupConfirm(""); }}
           className={backBtnCls} style={{ color: BRAND }}>
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
         </button>
-        <h2 className="text-2xl font-bold text-[#172554] mb-1" style={{ letterSpacing: "-0.02em" }}>
+        <h2 className="text-2xl font-semibold text-white mb-1" style={{ letterSpacing: "-0.02em" }}>
           Create a Password
         </h2>
-        <p className="text-[#64748B] mb-5 text-sm">
+        <p className="text-white/70 mb-5 text-sm">
           Your profile exists but has no password yet. Set one to access the Talent Portal.
         </p>
-        <div className="mb-4 px-4 py-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFF]">
-          <p className="text-[#94A3B8] text-xs mb-0.5">Signing in as</p>
-          <p className="text-[#172554] text-sm font-medium truncate">{email}</p>
+        <div className="mb-4 px-4 py-3 rounded-xl border border-white/15 bg-white/5">
+          <p className="text-white/55 text-xs mb-0.5">Signing in as</p>
+          <p className="text-white text-sm font-medium truncate">{email}</p>
         </div>
         <div className="space-y-4 mb-6">
           <div className="space-y-2">
@@ -433,7 +366,7 @@ export default function PortalLogin() {
               className={inputCls}
               onKeyDown={(e) => e.key === "Enter" && handleSetupPassword()} />
             {setupConfirm && setupPassword !== setupConfirm && (
-              <p className="text-red-500 text-xs">Passwords do not match.</p>
+              <p className="text-red-300 text-xs">Passwords do not match.</p>
             )}
           </div>
         </div>
@@ -441,23 +374,23 @@ export default function PortalLogin() {
           disabled={!setupPassword || !setupConfirm || setupPassword !== setupConfirm || setupPassword.length < 8}>
           <span>Create Password &amp; Sign In</span> <ArrowRight className="w-4 h-4" />
         </PrimaryButton>
-      </CardShell>
+      </AuthModalFrame>
     );
   }
 
   // ── Forgot Password Step ──────────────────────────────────────────────────
   if (step === "forgot-password") {
     return (
-      <CardShell>
+      <AuthModalFrame title="Reset Password">
         <button type="button"
           onClick={() => { setStep("login"); setForgotEmail(""); setForgotNewPw(""); setForgotConfirm(""); }}
           className={backBtnCls} style={{ color: BRAND }}>
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
         </button>
-        <h2 className="text-2xl font-bold text-[#172554] mb-1" style={{ letterSpacing: "-0.02em" }}>
+        <h2 className="text-2xl font-semibold text-white mb-1" style={{ letterSpacing: "-0.02em" }}>
           Reset Password
         </h2>
-        <p className="text-[#64748B] mb-6 text-sm">
+        <p className="text-white/70 mb-6 text-sm">
           Enter your registered email and choose a new password.
         </p>
         <div className="space-y-4 mb-6">
@@ -485,7 +418,7 @@ export default function PortalLogin() {
               className={inputCls}
               onKeyDown={(e) => e.key === "Enter" && handleForgotPassword()} />
             {forgotConfirm && forgotNewPw !== forgotConfirm && (
-              <p className="text-red-500 text-xs">Passwords do not match.</p>
+              <p className="text-red-300 text-xs">Passwords do not match.</p>
             )}
           </div>
         </div>
@@ -493,24 +426,25 @@ export default function PortalLogin() {
           disabled={!forgotEmail || !forgotNewPw || !forgotConfirm || forgotNewPw !== forgotConfirm}>
           <span>Reset Password</span> <ArrowRight className="w-4 h-4" />
         </PrimaryButton>
-      </CardShell>
+      </AuthModalFrame>
     );
   }
 
   // ── Main Login Step ───────────────────────────────────────────────────────
   return (
     <>
-      <CardShell>
+      <AuthModalFrame title={activePortal === "client" ? "Client Login" : "Talent Login"}>
         <AuthBackButton
           href={authPortalHref("login", currentSearch)}
+          variant="dark"
           disabled={isLoading || retrySeconds > 0}
           className="mb-6"
           testId="auth-back-to-portal"
         />
-        <h2 className="text-[1.625rem] font-bold text-[#172554] mb-1" style={{ letterSpacing: "-0.02em" }}>
+        <h2 className="text-[1.625rem] font-semibold text-white mb-1" style={{ letterSpacing: "-0.02em" }}>
           {activePortal === "client" ? "Client Login" : "Talent Login"}
         </h2>
-        <p className="text-[#64748B] mb-4 text-sm">
+        <p className="text-white/70 mb-4 text-sm">
           {activePortal === "client"
             ? "Sign in to manage your team and talent."
             : "Sign in to manage your profile and opportunities."}
@@ -558,7 +492,7 @@ export default function PortalLogin() {
           </div>
           {portalError && (
             <div role="alert" aria-live="assertive" data-testid="portal-login-error"
-              className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              className="mb-5 rounded-xl border border-red-300/30 bg-red-950/45 px-4 py-3 text-sm text-red-100">
               <p>{portalError}</p>
               {portalError.includes("Client") && activePortal === "talent" && (
                 <Link href={`/login/client${currentSearch}`}>
@@ -576,7 +510,7 @@ export default function PortalLogin() {
 
         {/* Footer links */}
         <div className="text-center space-y-2">
-          <p className="text-[#64748B] text-xs">
+          <p className="text-white/65 text-xs">
             Don&apos;t have an account?{" "}
              <Link href={`/signup/${activePortal}${currentSearch}`}>
                <span className="text-xs font-medium hover:underline transition-colors duration-200 cursor-pointer" style={{ color: BRAND }}>
@@ -585,7 +519,7 @@ export default function PortalLogin() {
              </Link>
           </p>
         </div>
-      </CardShell>
+      </AuthModalFrame>
 
     </>
   );

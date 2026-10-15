@@ -658,9 +658,14 @@ test("client login success stores session and uses the admin redirect for admin 
     const destination = testPage.page.waitForURL((url) => url.pathname === "/admin/find-work");
     await testPage.page.getByTestId("button-submit-portal-login").click();
     await destination;
-    assert.equal(await testPage.page.evaluate(() => localStorage.getItem("onspot_jwt_token")), "admin-session-token");
-    assert.deepEqual(await testPage.page.evaluate(() =>
-      JSON.parse(localStorage.getItem("onspot_user") || "null")), user);
+    // The admin destination can load a new document immediately after the SPA
+    // route changes; wait through that transition before inspecting storage.
+    await testPage.page.waitForFunction((expected) => {
+      const stored = localStorage.getItem("onspot_user");
+      return localStorage.getItem("onspot_jwt_token") === "admin-session-token" &&
+        stored !== null && JSON.stringify(JSON.parse(stored)) === JSON.stringify(expected);
+    }, user);
+    assert.equal(new URL(testPage.page.url()).pathname, "/admin/find-work");
     assert.equal(testPage.loginPostCount(), 1);
   } finally {
     await testPage.context.close();

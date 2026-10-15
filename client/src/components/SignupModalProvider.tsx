@@ -34,7 +34,7 @@ export function SignupModalProvider({ children }: { children: ReactNode }) {
   const openSignup = useCallback((request: SignupRequest = {}) => {
     if (isAuthFlowPath(path) || path.startsWith("/admin")) {
       const query = request.search ? `?${request.search.replace(/^\?/, "")}` : "";
-      navigate(`/signup${request.portal ? `/${request.portal}` : ""}${query}`);
+      navigate(`${request.portal ? `/signup/${request.portal}` : "/portal"}${query}`);
       return;
     }
     restore.current = {
@@ -66,7 +66,7 @@ export function SignupModalProvider({ children }: { children: ReactNode }) {
       const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
       if (!anchor || anchor.hasAttribute("download") || (anchor.target && anchor.target !== "_self")) return;
       const url = new URL(anchor.href, window.location.href);
-      const match = url.pathname.match(/^\/signup(?:\/(client|talent))?\/?$/);
+      const match = url.pathname.match(/^\/(?:portal|signup(?:\/(client|talent))?)\/?$/);
       if (url.origin !== window.location.origin || !match) return;
       event.preventDefault();
       event.stopPropagation();

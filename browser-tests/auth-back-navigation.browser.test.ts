@@ -86,7 +86,7 @@ async function open(path: string, mobile = false, options: {
 async function enter(page: Page, kind: "login" | "signup", mobile = false) {
   if (mobile) await page.getByTestId("mobile-menu-toggle").last().click();
   await page.getByTestId(mobile ? `mobile-${kind}-button` : `nav-${kind}-button`).last().click();
-  await page.getByTestId(kind === "signup" ? "auth-back-to-portal" : "auth-back-to-origin").waitFor();
+  await (kind === "signup" ? page.getByTestId("auth-back-to-portal") : page.getByRole("button", { name: "Close", exact: true })).waitFor();
 }
 
 async function choose(page: Page, kind: "login" | "signup", portal: "client" | "talent") {
@@ -125,6 +125,14 @@ for (const width of [390, 820, 1440]) {
         } else {
           assert.ok(await page.locator("[data-signup-background] main").evaluate(el => el.textContent!.trim().length > 100));
         }
+        if (portal === "portal") {
+          await page.waitForFunction(() => {
+            const hero = document.querySelector<HTMLElement>('[data-signup-background="portal"] [aria-label="Hero carousel"]');
+            const content = hero?.querySelector<HTMLElement>(".hero-slide-content");
+            return hero && content && hero.getBoundingClientRect().top >= 0 &&
+              hero.getBoundingClientRect().top < 110 && getComputedStyle(content).opacity === "1" && window.scrollY === 0;
+          });
+        }
         if (portal !== "portal") assert.equal(await dialog.getByTestId("card-talent-signup").count(), 0);
         const backdrop = await page.evaluate(() => {
           const el = document.querySelector<HTMLElement>('.fixed.inset-0[data-state="open"]')!;
@@ -152,6 +160,105 @@ for (const width of [390, 820, 1440]) {
     });
   }
 }
+
+for (const width of [320, 820, 1440]) {
+  for (const portal of ["chooser", "client", "talent"]) {
+    test(`Navy login ${portal} direct route and refresh remain usable at ${width}px`, { timeout: 90_000 }, async () => {
+      const path = portal === "chooser" ? "/login" : `/login/${portal}`;
+      const page = await open(`${path}?utm_source=invitation`, width === 320, { width, height: 900 });
+      try {
+        const dialog = page.getByRole("dialog");
+        await dialog.waitFor();
+        await dialog.locator('img[alt="OnSpot"]').waitFor();
+        assert.equal(await page.locator("[data-login-background]").getAttribute("data-login-background"), "/");
+        await page.waitForFunction(() => {
+          const hero = document.querySelector<HTMLElement>('[data-login-background] [aria-label="Hero carousel"]');
+          return hero && hero.getBoundingClientRect().top >= 0 && hero.getBoundingClientRect().top < 110 && scrollY === 0;
+        });
+        const appearance = await dialog.evaluate(el => {
+          const section = el.querySelector("section")!;
+          const overlay = document.querySelector<HTMLElement>('.fixed.inset-0[data-state="open"]')!;
+          return { background: getComputedStyle(section).backgroundImage,
+            blur: getComputedStyle(overlay).backdropFilter, modalBlur: getComputedStyle(el).backdropFilter,
+            overflow: document.documentElement.scrollWidth > innerWidth };
+        });
+        assert.match(appearance.background, /15, 15, 60/);
+        assert.equal(appearance.blur, "blur(4px)");
+        assert.equal(appearance.modalBlur, "none");
+        assert.equal(appearance.overflow, false);
+        if (portal === "chooser") {
+          await dialog.getByRole("heading", { name: "Welcome back", exact: true }).waitFor();
+          assert.equal(await dialog.getByRole("link").count(), 2);
+          await dialog.getByText("Choose how you want to access OnSpot.", { exact: true }).waitFor();
+        } else {
+          await page.getByTestId("input-portal-login-email").fill("preview@example.test");
+          await page.getByTestId("input-portal-login-password").fill("Password9!");
+          await dialog.getByRole("button", { name: "Show password", exact: true }).click();
+          assert.equal(await page.getByTestId("input-portal-login-password").getAttribute("type"), "text");
+          await dialog.getByRole("button", { name: "Hide password", exact: true }).click();
+          const field = await page.getByTestId("input-portal-login-password").boundingBox();
+          assert.ok(field && field.x >= 0 && field.x + field.width <= width);
+        }
+        const close = dialog.getByRole("button", { name: "Close", exact: true });
+        const box = await close.boundingBox();
+        assert.ok(box && box.y >= 0 && box.x >= 0 && box.x + box.width <= width && box.height >= 44);
+        if (width === 320 && portal === "client") await page.screenshot({ path: "/tmp/onspot-login-mobile.png" });
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await dialog.waitFor();
+        assert.equal(new URL(page.url()).pathname, path);
+        assert.equal(new URL(page.url()).searchParams.get("utm_source"), "invitation");
+        await dialog.press("Escape");
+        await page.waitForURL(`${BASE}/`);
+        await dialog.waitFor({ state: "detached" });
+      } finally { await page.close(); }
+    });
+  }
+}
+
+test("Legacy signup redirects once to portal, preserves campaign fields, and never intercepts typed forms", { timeout: 90_000 }, async () => {
+  const page = await open("/signup?utm_source=email&email=preview%40example.test");
+  try {
+    await page.waitForURL(url => url.pathname === "/portal");
+    await page.getByRole("heading", { name: "Get started with OnSpot", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get("email"), "preview@example.test");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Get started with OnSpot", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).pathname, "/portal");
+    await page.getByTestId("card-talent-signup").click();
+    await page.getByTestId("auth-back-to-portal").waitFor();
+    assert.equal(new URL(page.url()).pathname, "/signup/talent");
+    await page.getByTestId("auth-back-to-portal").click();
+    await page.getByTestId("card-client-signup").click();
+    await page.getByTestId("auth-back-to-portal").waitFor();
+    assert.equal(new URL(page.url()).pathname, "/signup/client");
+  } finally { await page.close(); }
+});
+
+test("Login keeps the actual browsing page mounted through role selection and browser history", { timeout: 90_000 }, async () => {
+  const page = await open("/find-work/jobs?category=sales#roles");
+  try {
+    await page.locator("h1").first().waitFor();
+    const y = await page.evaluate(() => {
+      (window as any).__loginHeading = document.querySelector("h1");
+      window.scrollTo(0, 180);
+      return scrollY;
+    });
+    await enter(page, "login");
+    assert.equal(await page.evaluate(() => (window as any).__loginHeading === document.querySelector("[data-login-background] h1")), true);
+    assert.equal(await page.evaluate(() => scrollY), y);
+    await choose(page, "login", "talent");
+    await page.goBack();
+    await page.getByRole("heading", { name: "Welcome back", exact: true }).waitFor();
+    await page.goForward();
+    await page.getByTestId("button-submit-portal-login").waitFor();
+    await page.getByTestId("auth-back-to-portal").click();
+    await page.getByRole("heading", { name: "Welcome back", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.waitForURL(`${BASE}/find-work/jobs?category=sales#roles`);
+    await page.waitForFunction(oldY => scrollY === oldY, y);
+    assert.equal(await page.evaluate(() => (window as any).__loginHeading === document.querySelector("h1")), true);
+  } finally { await page.close(); }
+});
 
 test("Direct signup role selection and Back to Portal track browser back/forward and preserve campaign parameters", { timeout: 90_000 }, async () => {
   const page = await open("/portal?utm_source=invitation&returnTo=%2Fmy-applications&portal=client");
@@ -281,7 +388,7 @@ for (const mobile of [false, true]) {
             }
             await enter(page, kind, mobile);
             assert.equal(new URL(page.url()).searchParams.get("backTo"), origin);
-            assert.equal(await page.getByTestId("auth-back-to-origin").innerText(), "Back to Find Work");
+             await page.getByRole("heading", { name: "Welcome back", exact: true }).waitFor();
             await choose(page, kind, portal);
             // Refresh must preserve the originating URL, including query and hash.
             await page.reload({ waitUntil: "domcontentloaded" });
@@ -294,10 +401,10 @@ for (const mobile of [false, true]) {
             await back.focus();
             assert.equal(await back.evaluate(el => document.activeElement === el), true);
             await back.press("Enter");
-            await page.getByTestId("auth-back-to-origin").waitFor();
+             await page.getByRole("heading", { name: "Welcome back", exact: true }).waitFor();
             assert.equal(new URL(page.url()).pathname, `/${kind}`);
             assert.equal(new URL(page.url()).searchParams.get("backTo"), origin);
-            await page.getByTestId("auth-back-to-origin").click();
+             await page.getByRole("button", { name: "Close", exact: true }).click();
             await page.waitForURL(`${BASE}${origin}`);
           } finally { await page.close(); }
         });
@@ -319,7 +426,7 @@ test("Switching Login ↔ Sign Up preserves origin and existing successful-auth 
     assert.equal(new URL(page.url()).searchParams.get("backTo"), "/why-onspot/about");
     assert.equal(new URL(page.url()).searchParams.get("returnTo"), "/my-applications");
     await page.getByTestId("auth-back-to-portal").click();
-    await page.getByTestId("auth-back-to-origin").click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
     await page.waitForURL(`${BASE}/why-onspot/about`);
   } finally { await page.close(); }
 });
@@ -328,15 +435,14 @@ test("Other public origins are captured; fresh direct auth visits do not inherit
   const page = await open("/talent-pool");
   try {
     await enter(page, "login");
-    assert.equal(await page.getByTestId("auth-back-to-origin").innerText(), "Back to Talent Search");
-    await page.getByTestId("auth-back-to-origin").click();
+    assert.equal(await page.locator("[data-login-background]").getAttribute("data-login-background"), "/talent-pool");
+    await page.getByRole("button", { name: "Close", exact: true }).click();
     await page.waitForURL(`${BASE}/talent-pool`);
     for (const path of ["/login", "/signup"]) {
       await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" });
-      const back = page.getByTestId("auth-back-to-origin");
+      const back = page.getByRole("button", { name: "Close", exact: true });
       await back.waitFor();
-      assert.equal(await back.innerText(), "Back to Home");
-      assert.equal(await back.getAttribute("href"), "/");
+      if (path === "/signup") await page.waitForURL(`${BASE}/portal`);
       await back.click();
       await page.waitForURL(`${BASE}/`);
     }
@@ -347,11 +453,11 @@ test("Unsafe explicit origins fall back to Home and legacy portal query returns 
   const page = await open("/login?portal=talent&backTo=https%3A%2F%2Fevil.invalid&returnTo=%2Fmy-applications");
   try {
     await page.getByTestId("auth-back-to-portal").click();
-    const back = page.getByTestId("auth-back-to-origin");
+    const back = page.getByRole("button", { name: "Close", exact: true });
     await back.waitFor();
-    assert.equal(await back.getAttribute("href"), "/");
-    assert.equal(await back.innerText(), "Back to Home");
     assert.equal(new URL(page.url()).searchParams.get("returnTo"), "/my-applications");
+    await back.click();
+    await page.waitForURL(`${BASE}/`);
   } finally { await page.close(); }
 });
 
@@ -359,8 +465,8 @@ test("Signup chooser uses clear role-specific messages without changing Login co
   const page = await open("/signup?backTo=%2Ffind-work%2Fjobs", true);
   try {
     await page.getByRole("heading", { name: "Get started with OnSpot", exact: true }).waitFor();
-    const client = page.locator('a[href^="/signup/client"]');
-    const talent = page.locator('a[href^="/signup/talent"]');
+    const client = page.getByTestId("card-client-signup");
+    const talent = page.getByTestId("card-talent-signup");
     assert.match(await client.innerText(), /Hiring/);
     assert.match(await client.innerText(), /Find and manage vetted global talent for your business/);
     assert.match(await talent.innerText(), /Looking for Work/);

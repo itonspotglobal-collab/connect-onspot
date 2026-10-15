@@ -25,7 +25,7 @@ export function authPortalHref(kind: "login" | "signup", search: string): string
   // Legacy portal=talent/client would otherwise reopen a form, not the chooser.
   params.delete("portal");
   const query = params.toString();
-  return `/${kind}${query ? `?${query}` : ""}`;
+  return `/${kind === "signup" ? "portal" : "login"}${query ? `?${query}` : ""}`;
 }
 
 export function authBackLabel(destination: string): string {

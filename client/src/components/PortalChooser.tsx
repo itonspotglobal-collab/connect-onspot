@@ -1,21 +1,13 @@
 import { Link, useSearch } from "wouter";
 import { ArrowRight, Building2, UserRound } from "lucide-react";
 import { getSafeReturnTo } from "@shared/internalRedirect";
-import { AuthBackButton } from "@/components/AuthBackButton";
-import { authBackDestination, authBackLabel } from "@/lib/authBackNavigation";
+import { AuthModalFrame } from "@/components/AuthModalFrame";
 
-type ChooserKind = "login" | "signup";
-
-interface PortalChooserProps {
-  kind: ChooserKind;
-}
-
-export function PortalChooser({ kind }: PortalChooserProps) {
-  const isLogin = kind === "login";
+export function PortalChooser() {
   const currentSearch = useSearch();
-  const destination = authBackDestination(currentSearch);
-  const search = typeof window === "undefined" ? "" : (() => {
+  const search = (() => {
     const params = new URLSearchParams(currentSearch);
+    params.delete("portal");
     const target = getSafeReturnTo(params.get("returnTo"));
     if (params.has("returnTo")) {
       params.delete("returnTo");
@@ -24,88 +16,53 @@ export function PortalChooser({ kind }: PortalChooserProps) {
     const query = params.toString();
     return query ? `?${query}` : "";
   })();
-  const portalHref = (portal: "client" | "talent") =>
-    `${isLogin ? "/login" : "/signup"}/${portal}${search}`;
+  const portalHref = (portal: "client" | "talent") => `/login/${portal}${search}`;
+
+  const roleCard = (
+    portal: "client" | "talent",
+    title: string,
+    description: string,
+  ) => {
+    const client = portal === "client";
+    const accent = client ? "#5B7CFF" : "#F5D76E";
+    const focus = client ? "focus-visible:ring-[#9BAAFF]" : "focus-visible:ring-yellow-200";
+    return (
+      <Link
+        href={portalHref(portal)}
+        className={`group flex min-h-[218px] flex-col items-center justify-center gap-3.5 rounded-xl border border-white/20 bg-white/5 p-5 text-center transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/10 hover:border-white/35 focus-visible:outline-none focus-visible:ring-2 ${focus}`}
+      >
+        <span
+          className="flex h-12 w-12 items-center justify-center rounded-full"
+          style={{ color: accent, backgroundColor: client ? "rgba(58,58,248,.18)" : "rgba(245,215,110,.12)" }}
+        >
+          {client ? <Building2 className="h-6 w-6" /> : <UserRound className="h-6 w-6" />}
+        </span>
+        <span>
+          <span className="block text-base font-semibold text-white">{title}</span>
+          <span className="mt-1 block text-sm leading-relaxed text-white/75">{description}</span>
+        </span>
+        <span className="inline-flex min-h-9 items-center gap-2 text-sm font-semibold text-white/90">
+          Continue
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </span>
+      </Link>
+    );
+  };
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center px-4 py-16"
-      style={{
-        background: "linear-gradient(135deg, #FCFDFF 0%, #F6F8FF 20%, #EEF4FF 45%, #E7F0FF 70%, #F8F9FF 100%)",
-      }}
-    >
-      <div className="w-full max-w-2xl text-center">
-        <Link href="/">
-          <span className="text-3xl font-bold tracking-tight cursor-pointer select-none text-[#6D5EF7]">
-            OnSpot
-          </span>
-        </Link>
-        <p className="text-[#94A3B8] text-xs mt-1.5 tracking-widest uppercase font-medium">
-          Work Without Limits
+    <AuthModalFrame title="Login portal selection" wide>
+      <header className="mb-6 text-center">
+        <h1 className="text-2xl font-semibold leading-tight text-white sm:text-3xl" style={{ letterSpacing: "-0.02em" }}>
+          Welcome back
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-white/75 sm:text-base">
+          Choose how you want to access OnSpot.
         </p>
-
-        <div
-          className="mt-10 rounded-3xl p-6 sm:p-10"
-          style={{
-            background: "rgba(255,255,255,0.72)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.65)",
-            boxShadow: "0 20px 60px rgba(33,40,79,0.08), 0 1px 0 rgba(255,255,255,0.8) inset",
-          }}
-        >
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#172554]">
-            {isLogin ? "Welcome back" : "Get started with OnSpot"}
-          </h1>
-          <p className="mt-2 text-[#64748B] text-sm sm:text-base">
-            {isLogin ? "Choose how you want to access OnSpot." : "Choose how you’d like to join OnSpot."}
-          </p>
-
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link href={portalHref("client")} replace className={isLogin ? undefined : "rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5EF7] focus-visible:ring-offset-4"}>
-              <span className="group flex h-full cursor-pointer flex-col items-center rounded-2xl border border-[#D7DCEF] bg-white p-6 text-center transition-all hover:-translate-y-1 hover:border-[#6D5EF7] hover:shadow-lg">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#6D5EF7]/10 text-[#6D5EF7]">
-                  <Building2 className="h-7 w-7" />
-                </span>
-                <span className="mt-4 text-lg font-semibold text-[#172554]">
-                  {isLogin ? "Client" : "I’m Hiring"}
-                </span>
-                <span className="mt-2 text-sm leading-relaxed text-[#64748B]">
-                  {isLogin ? "Hire and manage outsourcing talent." : "Find and manage vetted global talent for your business."}
-                </span>
-                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#6D5EF7]">
-                  {isLogin ? "Continue" : "Get Started"} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </span>
-              </span>
-            </Link>
-
-            <Link href={portalHref("talent")} replace className={isLogin ? undefined : "rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5EF7] focus-visible:ring-offset-4"}>
-              <span className="group flex h-full cursor-pointer flex-col items-center rounded-2xl border border-[#D7DCEF] bg-white p-6 text-center transition-all hover:-translate-y-1 hover:border-[#D97706] hover:shadow-lg">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D97706]/10 text-[#D97706]">
-                  <UserRound className="h-7 w-7" />
-                </span>
-                <span className="mt-4 text-lg font-semibold text-[#172554]">
-                  {isLogin ? "Talent" : "I’m Looking for Work"}
-                </span>
-                <span className="mt-2 text-sm leading-relaxed text-[#64748B]">
-                  {isLogin ? "Find jobs and manage your career profile." : "Discover global opportunities and grow your career."}
-                </span>
-                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#D97706]">
-                  {isLogin ? "Continue" : "Get Started"} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </span>
-              </span>
-            </Link>
-          </div>
-
-          <AuthBackButton href={destination} className="mt-8" testId="auth-back-to-origin">
-            {authBackLabel(destination)}
-          </AuthBackButton>
-        </div>
+      </header>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {roleCard("client", "Client", "Hire and manage outsourcing talent.")}
+        {roleCard("talent", "Talent", "Find jobs and manage your career profile.")}
       </div>
-
-      <p className="mt-6 text-center text-xs text-[#94A3B8]">
-        &copy; {new Date().getFullYear()} OnSpot. All rights reserved.
-      </p>
-    </div>
+    </AuthModalFrame>
   );
 }

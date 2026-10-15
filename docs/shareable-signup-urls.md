@@ -17,8 +17,9 @@ Private authentication fields such as email, continuation destinations and
 application tokens are not copied to public cancellation destinations.
 
 Signup opened while browsing still overlays the original mounted page and
-retains its existing scroll/focus restoration behavior. Legacy `/signup` remains
-available. No signup form was duplicated or redesigned.
+retains its existing scroll/focus restoration behavior. The obsolete `/signup`
+page now redirects to `/portal`, retaining its query string; typed signup
+routes are unaffected. No signup form was duplicated or redesigned.
 
 ## Implementation
 
@@ -70,3 +71,25 @@ from an external email in a fresh browser and complete approved-account UAT.
 Live LinkedIn sign-in requires the existing provider configuration and an
 approved account; preserving its endpoint is not proof of a completed OAuth
 round trip.
+
+## Login presentation and background
+
+`/login`, `/login/client`, `/login/talent` use the same navy modal, official
+white logo, dim and blur as signup, retaining distinct Login wording. The
+password-setup and forgot-password views use the same form shell. A fresh
+direct visit renders Home behind the modal at its hero. When opening Login
+from a public page, the page remains mounted at its prior scroll position
+and restores that position after X/Escape; role choice and Back to Portal
+update the URL with browser history. Background redirects are suppressed
+while Login is open, so a role-aware landing cannot compete with a successful
+Login redirect. The login requests, validation, session handling and success
+destinations have not changed.
+
+Verification: fresh-route mobile/tablet/desktop Login checks, X/Escape,
+refresh, original-page persistence, role history, input visibility and
+responsive overflow; existing Login incident regressions for both account
+types, errors, rate limits, password and admin session handoff. The broader
+browser run passed 71 cases and identified two outdated/racy checks; focused
+reruns passed the previously failing signup-chooser and Admin session cases.
+The production static-route suite now also checks the Login URLs and legacy
+signup redirect's SPA shell (routing itself is client-side).
