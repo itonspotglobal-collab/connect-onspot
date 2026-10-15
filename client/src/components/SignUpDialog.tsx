@@ -34,7 +34,7 @@ type SignupStep = "user-type" | "signup";
 
 interface SignUpDialogProps {
   open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  onOpenChange?: (open: boolean, handoff?: "signup" | "provider") => void;
   hideTrigger?: boolean;
   onSignInInstead?: (portal?: "client" | "talent") => void;
   returnTo?: string;
@@ -46,6 +46,9 @@ interface SignUpDialogProps {
   initialProfile?: { firstName: string; lastName: string };
   /** Used by route-based signup pages to return to the account-type chooser. */
   onChooseAnotherAccountType?: () => void;
+  /** Direct shareable routes keep role selection synchronized with browser history. */
+  onChooseUserType?: (portal: "client" | "talent") => void;
+  portalHref?: string;
   /** Render the existing signup form as a full route instead of a dark modal. */
   standalone?: boolean;
   /** Keep the polished routed form over its still-mounted originating page. */
@@ -63,6 +66,8 @@ export function SignUpDialog({
   defaultEmail,
   initialProfile,
   onChooseAnotherAccountType,
+  onChooseUserType,
+  portalHref,
   standalone = false,
   modalOverlay = false,
   onCloseAutoFocus,
@@ -73,9 +78,9 @@ export function SignUpDialog({
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp! : internalOpen;
 
-  function setOpen(value: boolean) {
+  function setOpen(value: boolean, handoff?: "signup" | "provider") {
     if (!isControlled) setInternalOpen(value);
-    onOpenChangeProp?.(value);
+    onOpenChangeProp?.(value, handoff);
   }
   const [currentStep, setCurrentStep] = useState<SignupStep>(defaultUserType ? "signup" : "user-type");
   const [userType, setUserType] = useState<UserType>(defaultUserType ?? null);
@@ -180,7 +185,7 @@ export function SignUpDialog({
         });
       }
       toast({ title: signupResponse.accountCreated === true ? "Account created" : "Account verified", description: `Welcome to your OnSpot ${accountType} portal.` });
-      setOpen(false);
+      setOpen(false, "signup");
       resetDialog();
       window.location.replace(safeReturnTo);
     } else {
@@ -325,7 +330,7 @@ export function SignUpDialog({
   const handleLinkedInSignup = async () => {
     setIsLoading(true);
     try {
-      setOpen(false);
+      setOpen(false, "provider");
       window.location.href = "/api/auth/linkedin";
     } catch (error: any) {
       toast({ title: "LinkedIn Sign-Up Failed", description: "Unable to initiate LinkedIn sign-up. Please try again.", variant: "destructive" });
@@ -334,6 +339,10 @@ export function SignUpDialog({
   };
 
   const handleSelectUserType = (type: UserType) => {
+    if (type && onChooseUserType) {
+      onChooseUserType(type);
+      return;
+    }
     setUserType(type);
     setCurrentStep("signup");
   };
@@ -408,7 +417,7 @@ export function SignUpDialog({
             {standalone && currentStep === "signup" && (
               <div className="mb-4 flex justify-start">
                 <AuthBackButton
-                  href={authPortalHref("signup", authSearch)}
+                  href={portalHref ?? authPortalHref("signup", authSearch)}
                   variant="dark"
                   disabled={isLoading || accountCreated}
                   testId="auth-back-to-portal"

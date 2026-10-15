@@ -1,39 +1,58 @@
-import { useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import type { PortalType } from "@/hooks/usePortalLogin";
-import { authPortalHref } from "@/lib/authBackNavigation";
+import { TopNavigation } from "@/components/TopNavigation";
+import { Footer } from "@/components/Footer";
+import Home from "@/pages/Home";
+import FindWorkAllJobs from "@/pages/FindWorkAllJobs";
+import HireTalentPage from "@/pages/HireTalentPage";
 
 export default function PortalSignupPage() {
   const [location, navigate] = useLocation();
-  const pathname = location.split("?")[0];
+  const pathname = location.split("?")[0].replace(/\/$/, "");
   const query = useSearch();
-  const search = query ? `?${query}` : "";
-  const params = new URLSearchParams(search);
+  const params = new URLSearchParams(query);
+  // Legacy role hints must not turn /portal back into a preselected form.
+  params.delete("portal");
+  const search = params.size ? `?${params.toString()}` : "";
   const portal: PortalType | null =
     pathname === "/signup/client" ? "client" :
     pathname === "/signup/talent" ? "talent" :
     null;
 
-  useEffect(() => {
-    if (!portal) navigate(`/signup${search}`);
-  }, [portal, navigate, search]);
-
-  if (!portal) return null;
+  const landing = portal === "talent" ? "/find-work/jobs" : portal === "client" ? "/hire-talent" : "/";
+  const close = () => {
+    const publicParams = new URLSearchParams(params);
+    for (const key of ["email", "returnTo", "backTo", "applicationToken", "verification", "code"]) publicParams.delete(key);
+    const suffix = publicParams.size ? `?${publicParams.toString()}` : "";
+    navigate(`${landing}${suffix}`);
+  };
 
   return (
+    <>
+    <div className="min-h-screen overflow-x-clip bg-background" data-signup-background={portal ?? "portal"}>
+      <TopNavigation />
+      <main>{portal === "talent" ? <FindWorkAllJobs /> : portal === "client" ? <HireTalentPage /> : <Home />}</main>
+      <Footer />
+    </div>
     <SignUpDialog
+      key={portal ?? "portal"}
       open
       hideTrigger
       standalone
-      defaultUserType={portal}
+      modalOverlay
+      portalHref={`/portal${search}`}
+      defaultUserType={portal ?? undefined}
       defaultEmail={params.get("email") ?? undefined}
       returnTo={params.get("returnTo") ?? undefined}
-      onOpenChange={(open) => {
-        if (!open) navigate(authPortalHref("signup", search));
+      onOpenChange={(open, handoff) => {
+        // Successful registration and OAuth already own their destination.
+        if (!open && !handoff) close();
       }}
-      onChooseAnotherAccountType={() => navigate(authPortalHref("signup", search))}
-      onSignInInstead={() => navigate(`/login/${portal}${search}`)}
+      onChooseAnotherAccountType={() => navigate(`/portal${search}`)}
+      onChooseUserType={selected => navigate(`/signup/${selected}${search}`)}
+      onSignInInstead={selected => navigate(`${selected ? `/login/${selected}` : "/login"}${search}`)}
     />
+    </>
   );
 }

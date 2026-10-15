@@ -2,7 +2,7 @@ import { getSafeReturnTo } from "@shared/internalRedirect";
 
 /** Cancellation navigation is deliberately separate from post-login returnTo. */
 export function isAuthFlowPath(path: string): boolean {
-  return /^\/(?:login|signup|sign-in|portal-login)(?:\/|$)/.test(path) ||
+  return /^\/(?:login|signup|sign-in|portal-login|portal)(?:\/|$)/.test(path) ||
     path === "/talent/signup" || path === "/admin/login";
 }
 

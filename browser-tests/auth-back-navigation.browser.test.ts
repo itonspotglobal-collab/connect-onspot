@@ -62,6 +62,10 @@ async function open(path: string, mobile = false, options: {
       if (url.pathname === "/api/signup" && options.signup && route.request().method() === "POST") {
         return options.signup(route);
       }
+      if (["/api/notifications/hired-popup/claim", "/api/talent/notifications/hired-popup/claim"].includes(url.pathname)) {
+        assert.equal(route.request().method(), "POST");
+        return route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+      }
       // No real account, database, social provider or registration is contacted.
       assert.equal(route.request().method(), "GET", `Unexpected write: ${url.pathname}`);
       const auth = url.pathname.includes("/auth/") || url.pathname === "/api/auth/me";
@@ -92,7 +96,7 @@ async function choose(page: Page, kind: "login" | "signup", portal: "client" | "
 
 test("Cancellation destinations reject unsafe URLs and intermediate auth pages", () => {
   for (const value of ["https://evil.invalid", "//evil.invalid", "/%2f%2fevil.invalid", "/\\evil.invalid",
-    "/%255cevil.invalid", "/login/talent", "/signup?backTo=/jobs", "/%6cogin", "/admin/login"]) {
+    "/%255cevil.invalid", "/login/talent", "/signup?backTo=/jobs", "/portal", "/portal?utm_source=email", "/%6cogin", "/admin/login"]) {
     assert.equal(safeAuthOrigin(value), null, value);
     assert.equal(authBackDestination(`backTo=${encodeURIComponent(value)}`), "/");
   }
@@ -101,6 +105,130 @@ test("Cancellation destinations reject unsafe URLs and intermediate auth pages",
   assert.equal(href.searchParams.has("portal"), false);
   assert.equal(href.searchParams.get("returnTo"), "/my-applications");
   assert.equal(href.searchParams.get("backTo"), "/jobs");
+});
+
+for (const width of [390, 820, 1440]) {
+  for (const portal of ["portal", "talent", "client"] as const) {
+    test(`Shareable ${portal} signup loads, refreshes and closes correctly at ${width}px`, { timeout: 90_000 }, async () => {
+      const path = portal === "portal" ? "/portal" : `/signup/${portal}`;
+      const query = "?utm_source=email&utm_medium=campaign&utm_campaign=direct-signup";
+      const page = await open(`${path}${query}`, width === 390, { width, height: 900 });
+      try {
+        const dialog = page.getByRole("dialog");
+        const title = portal === "portal" ? "Get started with OnSpot" : portal === "talent" ? "Find Work" : "Hire Talent";
+        await dialog.getByRole("heading", { name: title, exact: true }).waitFor();
+        assert.equal(await page.locator(`[data-signup-background="${portal}"] main`).count(), 1);
+        assert.ok(await page.locator("[data-signup-background] main").evaluate(el => el.childElementCount > 0),
+          "The actual populated landing page, not an empty gradient, remains behind the dialog");
+        if (portal === "client") {
+          await page.locator("[data-signup-background] main input[placeholder='Tell us what you need']").waitFor({ state: "attached" });
+        } else {
+          assert.ok(await page.locator("[data-signup-background] main").evaluate(el => el.textContent!.trim().length > 100));
+        }
+        if (portal !== "portal") assert.equal(await dialog.getByTestId("card-talent-signup").count(), 0);
+        const backdrop = await page.evaluate(() => {
+          const el = document.querySelector<HTMLElement>('.fixed.inset-0[data-state="open"]')!;
+          return { blur: getComputedStyle(el).backdropFilter, dim: getComputedStyle(el).backgroundColor };
+        });
+        assert.deepEqual(backdrop, { blur: "blur(4px)", dim: "rgba(0, 0, 0, 0.45)" });
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await dialog.getByRole("heading", { name: title, exact: true }).waitFor();
+        assert.equal(new URL(page.url()).pathname, path);
+        assert.equal(new URL(page.url()).searchParams.get("utm_campaign"), "direct-signup");
+        const close = dialog.getByRole("button", { name: "Close", exact: true });
+        const box = await close.boundingBox();
+        assert.ok(box && box.x >= 0 && box.y >= 0 && box.x + box.width <= width && box.y + box.height <= 900);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        if (portal === "talent" && width === 390) {
+          await page.waitForFunction(() => getComputedStyle(document.querySelector('[role="dialog"]')!).opacity === "1");
+          await page.screenshot({ path: "/tmp/onspot-direct-talent-signup-mobile.png" });
+        }
+        await close.click();
+        const landing = portal === "talent" ? "/find-work/jobs" : portal === "client" ? "/hire-talent" : "/";
+        await page.waitForURL(url => url.pathname === landing);
+        assert.equal(new URL(page.url()).searchParams.get("utm_source"), "email");
+        await dialog.waitFor({ state: "detached" });
+      } finally { await page.close(); }
+    });
+  }
+}
+
+test("Direct signup role selection and Back to Portal track browser back/forward and preserve campaign parameters", { timeout: 90_000 }, async () => {
+  const page = await open("/portal?utm_source=invitation&returnTo=%2Fmy-applications&portal=client");
+  try {
+    await page.getByRole("heading", { name: "Get started with OnSpot", exact: true }).waitFor();
+    await page.getByTestId("card-talent-signup").click();
+    await page.waitForURL(url => url.pathname === "/signup/talent");
+    assert.equal(new URL(page.url()).searchParams.get("portal"), null);
+    assert.equal(await page.getByTestId("auth-back-to-portal").getAttribute("href"), "/portal?utm_source=invitation&returnTo=%2Fmy-applications");
+    await page.goBack();
+    await page.getByRole("heading", { name: "Get started with OnSpot", exact: true }).waitFor();
+    await page.goForward();
+    await page.getByRole("heading", { name: "Find Work", exact: true }).waitFor();
+    await page.getByTestId("auth-back-to-portal").click();
+    await page.waitForURL(url => url.pathname === "/portal");
+    await page.getByTestId("card-client-signup").click();
+    await page.waitForURL(url => url.pathname === "/signup/client");
+    await page.getByRole("heading", { name: "Hire Talent", exact: true }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get("utm_source"), "invitation");
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.waitForURL(url => url.pathname === "/hire-talent");
+    assert.equal(new URL(page.url()).searchParams.get("returnTo"), null);
+    await page.goBack();
+    await page.getByRole("heading", { name: "Hire Talent", exact: true }).waitFor();
+    await page.goForward();
+    await page.waitForURL(url => url.pathname === "/hire-talent");
+    assert.equal(await page.getByRole("dialog").count(), 0);
+  } finally { await page.close(); }
+});
+
+for (const portal of ["talent", "client"] as const) {
+  test(`Direct ${portal} signup retains the existing LinkedIn provider handoff`, { timeout: 90_000 }, async () => {
+    const page = await open(`/signup/${portal}?utm_source=email`);
+    try {
+      let initiated = false;
+      await page.route("**/api/auth/linkedin", async route => {
+        initiated = true;
+        await route.fulfill({ status: 200, contentType: "text/html", body: "<h1>Isolated provider handoff</h1>" });
+      });
+      await page.getByTestId("button-linkedin-signup").click();
+      await page.waitForURL(url => url.pathname === "/api/auth/linkedin");
+      assert.equal(initiated, true);
+    } finally { await page.close(); }
+  });
+}
+
+test("Direct Talent campaign signup submits the existing backend payload and retains the real session handoff", { timeout: 90_000 }, async () => {
+  let payload: Record<string, unknown> | null = null;
+  let writes = 0;
+  const page = await open("/signup/talent?utm_source=email&returnTo=%2Fget-hired", true, {
+    signup: async route => {
+      writes++;
+      payload = route.request().postDataJSON();
+      return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({
+        success: true, accountCreated: true, token: "isolated-direct-talent-jwt",
+        user: { id: "isolated-direct-talent", email: "direct-talent@example.test", first_name: "Direct", last_name: "Talent", role: "talent" },
+        talentToken: "isolated-direct-candidate-token", candidateId: "isolated-direct-candidate",
+      }) });
+    },
+  });
+  try {
+    await page.getByTestId("input-first-name").fill("Direct");
+    await page.getByTestId("input-last-name").fill("Talent");
+    await page.getByTestId("input-signup-email").fill("direct-talent@example.test");
+    await page.getByTestId("input-signup-password").fill("ValidPass123!");
+    await page.getByTestId("input-confirm-password").fill("ValidPass123!");
+    await page.getByTestId("checkbox-terms").click();
+    assert.equal(writes, 0);
+    await page.getByTestId("button-submit-signup").click();
+    await page.waitForURL(url => url.pathname === "/get-hired", { waitUntil: "domcontentloaded" });
+    assert.equal(writes, 1);
+    assert.equal(payload!.role, "talent");
+    assert.equal(payload!.returnTo, "/get-hired");
+    const session = await page.evaluate(() => JSON.parse(localStorage.getItem("talent_profile_token") || "null"));
+    assert.equal(session.candidateId, "isolated-direct-candidate");
+    assert.equal(session.fullName, "Direct Talent");
+  } finally { await page.close(); }
 });
 
 for (const mobile of [false, true]) {
@@ -255,7 +383,7 @@ for (const width of [320, 768, 1280]) {
       const page = await open(`/signup/${portal}?backTo=%2Ffind-work%2Fjobs`, width === 320, { width, height });
       try {
         await page.getByTestId("auth-back-to-portal").waitFor();
-        assert.equal(await page.locator("[data-signup-modal-overlay]").count(), 0, "Direct signup URLs keep the standalone fallback");
+        assert.equal(await page.locator("[data-signup-modal-overlay]").count(), 1, "Direct signup URLs overlay their real landing page");
         await page.getByRole("heading", { name: portal === "client" ? "Hire Talent" : "Find Work", exact: true }).waitFor();
         assert.equal(await page.getByText(portal === "client"
           ? "Create your account and start building your remote team."
@@ -335,7 +463,7 @@ test("Client signup retains required company validation, inline feedback, and su
       return route.fulfill({
         status: 201, contentType: "application/json",
         body: JSON.stringify({
-          success: true, token: "isolated-client-session",
+          success: true, accountCreated: true, token: "isolated-client-session",
           user: { id: "signup-polish-client", email: "client@example.test", first_name: "Test", last_name: "Client", role: "client" },
         }),
       });
@@ -357,7 +485,9 @@ test("Client signup retains required company validation, inline feedback, and su
     await page.getByText("Fixture: please review company details.", { exact: true }).waitFor();
     assert.equal(await page.locator("#company").inputValue(), "Test Company");
     await page.getByTestId("button-submit-signup").click();
-    await page.waitForURL(url => url.pathname === "/hire-talent");
+    await page.waitForURL(url => url.pathname === "/hire-talent", { timeout: 15_000, waitUntil: "domcontentloaded" }).catch(async error => {
+      throw new Error(`${error.message}; writes=${writes}; url=${page.url()}; form=${await page.locator('[role="dialog"]').allTextContents()}`);
+    });
     assert.equal(writes, 2);
     assert.equal(payload.role, "client");
     assert.equal(payload.company, "Test Company");

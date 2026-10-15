@@ -700,6 +700,7 @@ function AppContent() {
       {/* Portal login — used by the job-apply flow when an existing email is detected */}
       <Route path="/portal-login" component={PortalLogin} />
       {/* Route-based signup pages */}
+      <Route path="/portal" component={PortalSignupPage} />
       <Route path="/signup" component={() => <PortalChooser kind="signup" />} />
       <Route path="/signup/client" component={PortalSignupPage} />
       <Route path="/signup/talent" component={PortalSignupPage} />
