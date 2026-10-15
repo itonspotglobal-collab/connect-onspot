@@ -1,0 +1,320 @@
+# REPLIT TASK: Add New OnSpot Investors Page
+
+## Objective
+
+Create and integrate a new Investors page into the existing OnSpot website.
+
+**New page URL:**
+https://onspotglobal.com/investors
+
+I have attached an HTML file named:
+
+`OnSpot_Investors_Page.html`
+
+Use this HTML file as the primary reference for the new page's design, content, layout, styling, and interactions.
+
+The goal is to recreate the supplied Investors page within the existing OnSpot application, not to redesign it from scratch.
+
+## 1. Create the New Investors Route
+
+Add a new route:
+
+`/investors`
+
+Requirements:
+- The page must be accessible directly through `/investors`.
+- Refreshing the page must work without a 404 error.
+- The page must integrate with the existing React application and routing system.
+- Follow the existing project's component architecture and coding conventions.
+- Do not create a separate application or independent website.
+- Do not interfere with existing pages or routes.
+
+The route should work on both the Replit development URL and the production domain once deployed and configured.
+
+## 2. Recreate the Attached HTML Design
+
+Use `OnSpot_Investors_Page.html` as the visual source of truth.
+
+Preserve the existing design elements, including:
+
+- Dark blue gradient background
+- OnSpot brand colors
+- Gold accents
+- Mont typography where available
+- Large editorial-style headings
+- Responsive grid layouts
+- Clean spacing and visual hierarchy
+- Investor information cards
+- Interactive buttons
+- Footer styling
+- Email collection popup
+
+Maintain the professional, investor-focused appearance of the supplied HTML.
+
+Do not replace the design with generic cards or a standard landing page template.
+
+## 3. Use the Official OnSpot Logo
+
+Replace any text-based placeholder logo in the supplied HTML with the official OnSpot logo already used in the current website.
+
+Requirements:
+- Use the existing transparent-background white OnSpot logo asset.
+- Do not add a colored rectangular background behind the logo.
+- Preserve the logo's proportions.
+- Ensure the logo is clearly visible against the dark background.
+- Clicking the header logo should navigate to the homepage.
+
+Reuse the existing logo asset instead of creating another copy.
+
+## 4. Preserve the Investors Page Content
+
+Retain the content and messaging provided in the HTML.
+
+### Opening Section
+
+Feature the introduction from Nur Laminero, Co-Founder and CEO of OnSpot.
+
+Use the existing opening statement and supporting description from the attached HTML.
+
+### Company Highlights
+
+Display the three highlights provided in the HTML:
+
+**7 days**
+As fast as 7 days for businesses to find, hire, and manage global talent.
+
+**4 years**
+Running a BPO before building this platform.
+
+**Self-sustaining**
+Operations fully covered by revenue before external investment.
+
+### Letter From the CEO
+
+Preserve the section titled:
+
+"A letter from Nur Laminero"
+
+Maintain the existing copy and structure, including:
+- The problem OnSpot is solving
+- The comparison between the problem and OnSpot's solution
+- The founders' operational experience
+- The self-sustaining business statement
+- OnSpot's vision
+- Nur Laminero's signature section
+
+Do not rewrite the investment narrative or introduce new financial claims.
+
+## 5. Investment Resources Section
+
+Recreate the existing section:
+
+**Invest in OnSpot today.**
+
+Preserve the three resource cards.
+
+### Card 1 — Pitch Deck
+
+Title: Meet the Founders
+
+Action: Get the pitch deck
+
+Clicking this card should open the existing investor information popup.
+
+### Card 2 — Wefunder
+
+Title: WeFunder
+
+Action: View opportunity profile
+
+Link:
+https://wefunder.com/onspot
+
+Open this link in a new browser tab using appropriate security attributes.
+
+### Card 3 — Valuation Summary
+
+Title: Seedscope
+
+Action: Download the valuation summary
+
+Clicking this card should open the investor information popup.
+
+Preserve the existing card hierarchy, colors, hover states, and responsive behavior.
+
+## 6. Investor Information Popup
+
+The supplied HTML includes an email collection popup for the pitch deck and valuation summary.
+
+Recreate this functionality using React components and the existing project's UI patterns.
+
+The popup should contain:
+- Document title
+- First Name field
+- Email Address field
+- Submit button
+- Validation messages
+- Close button
+- Privacy statement
+- Success confirmation
+
+The popup should open when a visitor clicks either the Pitch Deck or Valuation Summary card.
+
+### Important: Lead Capture
+
+The HTML currently contains placeholder lead capture logic.
+
+Do not rely on console logging as the final implementation.
+
+Check whether the existing OnSpot project has a suitable backend endpoint, CRM integration, or lead capture system.
+
+If available, integrate with the existing system to securely record:
+- First name
+- Email address
+- Requested document
+- Source: investors-page
+- Submission timestamp
+
+If no suitable backend exists, do not invent an endpoint or claim that leads are being saved. Implement the frontend cleanly and identify the backend integration still required.
+
+Only show a successful submission message after the server confirms the submission.
+
+Include appropriate server-side validation, spam protection, and safeguards against exposing investor contact details.
+
+## 7. Investor Document Downloads
+
+The HTML references these files:
+
+**Pitch Deck:**
+`OnSpot_Seed_Pitch_Deck.pptx`
+
+**Valuation Summary:**
+`OnSpot_Seedscope_Valuation_Summary.pdf`
+
+Check whether these documents exist in the project.
+
+If they exist:
+- Connect the download buttons to the correct files.
+- Ensure downloads work on desktop and mobile.
+- Preserve the existing document names where appropriate.
+
+If the files are unavailable:
+- Do not generate fake documents.
+- Do not link to nonexistent files.
+- Keep the resource cards visually complete.
+- Clearly identify which files must be supplied before enabling downloads.
+
+Do not expose gated documents through unrestricted public asset URLs if the intended requirement is access after lead capture. Use an appropriate backend-controlled download mechanism where available.
+
+## 8. Responsive Design
+
+Ensure the Investors page works correctly on:
+
+- Desktop
+- Tablet
+- Mobile
+
+Preserve the responsive behavior of the attached HTML.
+
+Specifically:
+- Stack the opening section appropriately on smaller screens.
+- Stack company highlights vertically on mobile.
+- Keep the CEO letter readable.
+- Convert comparison cards into a single-column layout on narrow screens.
+- Stack the three investment cards on mobile.
+- Ensure the investor popup fits within the viewport.
+- Prevent horizontal overflow.
+
+## 9. SEO and Page Metadata
+
+Configure the Investors page with:
+
+**Page title:**
+Invest in OnSpot — A Letter From Our CEO
+
+**Meta description:**
+A letter from Nur Laminero, Co-Founder and CEO of OnSpot. Get the pitch deck, view the Wefunder opportunity profile, or download the valuation summary.
+
+Use the existing application's SEO approach.
+
+Ensure the page has:
+- One primary H1
+- Semantic section headings
+- Accessible links and buttons
+- Appropriate keyboard navigation
+- Clear focus states
+- Suitable metadata for sharing
+
+## 10. Footer and Disclaimer
+
+Preserve the footer disclaimer from the supplied HTML.
+
+Include the existing copyright statement and investment risk warning.
+
+Keep the disclaimer visible and readable.
+
+Do not introduce additional investment claims or guarantees.
+
+Flag the investment-related language for review before production publication.
+
+## 11. Navigation Integration
+
+The Investors page must be accessible through its direct URL.
+
+Do not automatically add it to the main navigation menu unless the existing website requirements call for it.
+
+Ensure:
+- The OnSpot logo links to the homepage.
+- The Investors page does not interfere with the existing header.
+- Existing website routes continue working.
+- Browser navigation behaves normally.
+
+## 12. Testing and Verification
+
+Test the following:
+
+1. `/investors` loads correctly.
+2. Refreshing `/investors` works.
+3. The official OnSpot logo displays correctly.
+4. The page matches the supplied HTML.
+5. All content is preserved.
+6. The pitch deck popup opens.
+7. The valuation summary popup opens.
+8. Form validation works.
+9. Lead submissions are not falsely reported as successful.
+10. Document downloads work when files are available.
+11. The Wefunder link opens correctly.
+12. Mobile responsiveness works.
+13. No horizontal scrolling or white gaps appear.
+14. Existing OnSpot pages remain unaffected.
+
+## Important Restrictions
+
+- Do not redesign unrelated pages.
+- Do not modify authentication or signup flows.
+- Do not change existing business logic.
+- Do not rewrite the supplied investor content.
+- Do not invent financial data.
+- Do not create placeholder investment documents.
+- Do not introduce unnecessary dependencies.
+- Do not duplicate the existing application structure.
+
+## Expected Final Result
+
+A fully integrated, responsive Investors page accessible at:
+
+`https://onspotglobal.com/investors`
+
+The page should closely match the attached HTML while using the existing OnSpot application structure and official branding.
+
+It should present the CEO's letter, company highlights, and investment resources in a professional and engaging layout.
+
+After implementation, summarize:
+- Files created or modified
+- Route added
+- Components reused
+- Investor popup functionality
+- Document download status
+- Any backend integration still required
+
+**Final Instruction:** Inspect the attached HTML and existing OnSpot codebase first. Preserve the HTML's content and visual design as closely as possible, making only the adjustments necessary for proper integration, accessibility, responsiveness, and functionality.
