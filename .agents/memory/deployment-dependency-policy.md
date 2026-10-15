@@ -14,3 +14,9 @@ A compatible parent update can leave an existing vulnerable transitive version l
 **Why:** Warm workspace builds can pass while fresh package downloads are rejected, and a successful parent install does not prove that the blocked transitive package changed.
 
 **How to apply:** Test locked dependency installation and compilation in a temporary copy without disturbing the running app. State when lifecycle scripts were disabled, and distinguish a reproduced install blocker from an old remote failure whose logs contain no fatal cause.
+
+Treat an abruptly ending compiler log as an unresolved build interruption, not proof of a compiler bug or memory exhaustion.
+
+**Why:** A recorded remote failure ended after ordinary Browserslist, PostCSS and dependency warnings, while the same production build completed locally. Suppressing warnings or increasing heap limits would not establish or correct the cause.
+
+**How to apply:** Preserve build semantics and add stage, exit-code, signal and progress diagnostics when fatal output is missing. A killed process alone does not establish OOM; container memory counters are scoped to the worker and may be cumulative. Do not execute application startup or migrations just to diagnose compilation.
