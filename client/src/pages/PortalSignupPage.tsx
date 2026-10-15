@@ -36,15 +36,12 @@ export default function PortalSignupPage() {
 
   return (
     <>
-    <div className={portal
-      ? "min-h-screen overflow-x-clip bg-background"
-      : "fixed inset-0 overflow-hidden bg-background"} data-signup-background={portal ?? "portal"}>
+    <div className="fixed inset-0 overflow-hidden bg-background" data-signup-background={portal ?? "portal"}>
       <TopNavigation />
       <main>{portal === "talent" ? <FindWorkAllJobs /> : portal === "client" ? <HireTalentPage /> : <Home />}</main>
       <Footer />
     </div>
     <SignUpDialog
-      key={portal ?? "portal"}
       open
       hideTrigger
       standalone

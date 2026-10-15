@@ -38,3 +38,11 @@ Successful registration and provider handoff are not cancellation. A popup's pro
 **Why:** Competing SPA cancellation and full-page success/provider navigation can overlap and interrupt the existing session handoff, despite a successful registration response.
 
 **How to apply:** Distinguish user dismissal from successful registration or OAuth handoff. Let the existing authentication logic own its successful destination; route-controlled signup should handle only actual cancellation.
+
+## Modal layout lifecycle
+
+Keep one dialog and scroll-lock owner mounted while switching authentication views; reset route-dependent form presentation without keying the entire dialog by role. Size auth cards from their padded viewport slot, not from `100vw`.
+
+**Why:** With classic scrollbars, replacing a dialog while its scroll-lock stylesheet is still active makes the next lock count existing compensation again. The right margin and padding then grow on each role change, shrinking the actual background. Hiding horizontal overflow does not fix that lifecycle error.
+
+**How to apply:** Chooser, Client, Talent and password views should update within the same shell. Direct-route backgrounds are viewport surfaces; in-place backgrounds must preserve their original component identity and content width. Keep scrollable content inside bounded cards and leave unrelated dialogs unchanged.

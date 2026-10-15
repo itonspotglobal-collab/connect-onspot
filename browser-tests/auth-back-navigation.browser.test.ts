@@ -8,7 +8,7 @@ import { chromium, type Browser, type Page, type Route } from "playwright";
 import { authBackDestination, authPortalHref, safeAuthOrigin } from "../client/src/lib/authBackNavigation";
 import { PASSWORD_POLICY_HINT } from "../shared/passwordPolicy";
 
-const PORT = 5188;
+const PORT = Number(process.env.AUTH_BROWSER_TEST_PORT ?? 5188);
 const BASE = `http://127.0.0.1:${PORT}`;
 let browser: Browser;
 let vite: ChildProcess;
@@ -32,6 +32,8 @@ before(async () => {
   assert.ok(ready, "Isolated frontend did not start");
   browser = await chromium.launch({
     executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
+    // Playwright hides scrollbars by default, which conceals gap-compensation bugs.
+    ignoreDefaultArgs: ["--hide-scrollbars"],
     headless: true, args: ["--no-sandbox"],
   });
 }, { timeout: 90_000 });
@@ -93,6 +95,124 @@ async function choose(page: Page, kind: "login" | "signup", portal: "client" | "
   await page.locator(`a[href^="/${kind}/${portal}"]`).click();
   await page.getByTestId("auth-back-to-portal").waitFor();
 }
+
+async function authGeometry(page: Page) {
+  await page.getByRole("dialog").waitFor();
+  // Wait for the existing entrance animation, not for a different layout.
+  await page.waitForTimeout(250);
+  return page.evaluate(() => {
+    const dialog = document.querySelector<HTMLElement>("[role=dialog]")!;
+    const background = document.querySelector<HTMLElement>("[data-login-background], [data-signup-background]")!;
+    const overlay = [...document.querySelectorAll<HTMLElement>("[data-state=open]")].find(e =>
+      getComputedStyle(e).backdropFilter.includes("blur"));
+    return {
+      width: document.documentElement.clientWidth, height: innerHeight,
+      scrollWidth: document.documentElement.scrollWidth,
+      bodyWidth: document.body.getBoundingClientRect().width,
+      margin: getComputedStyle(document.body).marginRight,
+      padding: getComputedStyle(document.body).paddingRight,
+      dialog: dialog.getBoundingClientRect().toJSON(),
+      innerWidth: dialog.clientWidth, innerScrollWidth: dialog.scrollWidth,
+      background: background.getBoundingClientRect().toJSON(),
+      overlay: overlay?.getBoundingClientRect().toJSON(),
+    };
+  });
+}
+
+function assertAuthGeometry(g: Awaited<ReturnType<typeof authGeometry>>) {
+  assert.ok(g.scrollWidth <= g.width, "Document must not overflow horizontally");
+  assert.ok(g.innerScrollWidth <= g.innerWidth, "Dialog must not scroll horizontally");
+  assert.ok(Math.abs(g.dialog.left + g.dialog.width / 2 - g.width / 2) <= 1, "Dialog must be horizontally centered");
+  assert.ok(Math.abs(g.dialog.top + g.dialog.height / 2 - g.height / 2) <= 1, "Dialog must be vertically centered");
+  assert.ok(g.dialog.left >= 11 && g.dialog.right <= g.width - 11, "Card must respect viewport gutters");
+  assert.ok(g.dialog.top >= 15 && g.dialog.bottom <= g.height - 15, "Card must fit vertically");
+  assert.equal(g.overlay?.left, 0);
+  assert.equal(g.overlay?.right, g.width);
+  assert.equal(g.overlay?.bottom, g.height);
+}
+
+for (const [width, height] of [[320, 568], [390, 844], [820, 900], [1440, 900]]) {
+  for (const kind of ["login", "signup"] as const) {
+    test(`Auth geometry stays stable through ${kind} role/history/refresh at ${width}px`, { timeout: 90_000 }, async () => {
+      const page = await open(kind === "login" ? "/login" : "/portal", width < 768, { width, height });
+      try {
+        const initial = await authGeometry(page);
+        assertAuthGeometry(initial);
+        assert.equal(initial.background.left, 0);
+        assert.equal(initial.background.right, initial.width, "Direct backdrop must fill available viewport");
+        await page.evaluate(() => { (window as any).__authDialog = document.querySelector("[role=dialog]"); });
+        const role = async (target: "client" | "talent") => {
+          if (kind === "login") await choose(page, kind, target);
+          else {
+            await page.getByTestId(`card-${target}-signup`).click();
+            await page.getByTestId("auth-back-to-portal").waitFor();
+          }
+          const g = await authGeometry(page);
+          assertAuthGeometry(g);
+          assert.equal(g.margin, initial.margin, "Scrollbar compensation must not accumulate");
+          assert.equal(g.padding, initial.padding, "Compensation must not become additional padding");
+          assert.equal(g.background.right, initial.background.right, "Background width must not change");
+          assert.equal(await page.evaluate(() => (window as any).__authDialog === document.querySelector("[role=dialog]")), true,
+            "Role selection must update content without replacing its scroll-lock owner");
+        };
+        await role("client");
+        await page.getByTestId("auth-back-to-portal").click();
+        await authGeometry(page);
+        await role("talent");
+        await page.goBack();
+        assertAuthGeometry(await authGeometry(page));
+        await page.goForward();
+        assertAuthGeometry(await authGeometry(page));
+        await page.reload({ waitUntil: "domcontentloaded" });
+        assertAuthGeometry(await authGeometry(page));
+        assert.equal(new URL(page.url()).pathname, `/${kind}/talent`);
+        await page.keyboard.press("Escape");
+        await page.getByRole("dialog").waitFor({ state: "detached" });
+        assert.equal(new URL(page.url()).pathname, kind === "login" ? "/" : "/find-work/jobs");
+        await page.goto(`${BASE}/${kind}/client`);
+        assertAuthGeometry(await authGeometry(page));
+        await page.reload({ waitUntil: "domcontentloaded" });
+        assertAuthGeometry(await authGeometry(page));
+      } finally { await page.close(); }
+    });
+  }
+}
+
+test("Classic scrollbar compensation does not grow when an in-place Login changes role", { timeout: 90_000 }, async () => {
+  const page = await open("/", false, { width: 1280, height: 900 });
+  try {
+    await page.addStyleTag({ content: "::-webkit-scrollbar{width:17px;height:17px}" });
+    const originalWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    assert.equal(originalWidth, 1263, "Fixture must expose a real 17px scrollbar; hidden headless scrollbars would miss this regression");
+    const originalHeroContent = await page.locator('section[aria-label="Hero carousel"] > div').first().boundingBox();
+    await enter(page, "login");
+    const initial = await authGeometry(page);
+    assertAuthGeometry(initial);
+    assert.equal(initial.bodyWidth, originalWidth, "Opening Login must preserve original content width");
+    const hero = page.locator('section[aria-label="Hero carousel"]');
+    assert.equal((await hero.boundingBox())?.width, initial.width, "Hero background must paint through the reserved scrollbar column");
+    const openedHeroContent = await hero.locator(":scope > div").first().boundingBox();
+    assert.equal(openedHeroContent?.x, originalHeroContent?.x, "Full-bleed background must not move slide content");
+    assert.equal(openedHeroContent?.width, originalHeroContent?.width, "Full-bleed background must not stretch slide content");
+    for (const target of ["client", "talent", "client"] as const) {
+      await choose(page, "login", target);
+      const g = await authGeometry(page);
+      assertAuthGeometry(g);
+      assert.equal(g.margin, initial.margin);
+      assert.equal(g.padding, initial.padding);
+      assert.equal(g.background.width, initial.background.width);
+      assert.equal(g.bodyWidth, originalWidth);
+      assert.equal((await hero.boundingBox())?.width, g.width);
+      await page.getByTestId("auth-back-to-portal").click();
+    }
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+    await page.waitForFunction(() =>
+      !document.body.hasAttribute("data-scroll-locked") && getComputedStyle(document.body).marginRight === "0px");
+    assert.equal(await page.evaluate(() => document.documentElement.clientWidth), originalWidth);
+    assert.equal(await page.evaluate(() => getComputedStyle(document.body).marginRight), "0px");
+  } finally { await page.close(); }
+});
 
 test("Cancellation destinations reject unsafe URLs and intermediate auth pages", () => {
   for (const value of ["https://evil.invalid", "//evil.invalid", "/%2f%2fevil.invalid", "/\\evil.invalid",

@@ -28,14 +28,14 @@ export function AuthModalFrame({ children, title, wide = false }: AuthModalFrame
   return (
     <Dialog open onOpenChange={(open) => { if (!open) dismiss(); }}>
       <DialogContent
+        viewportCentered
         aria-describedby={undefined}
         className={[
-          "p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
-          wide ? "w-[min(780px,calc(100vw-1.5rem))]" : "w-[min(520px,calc(100vw-1.5rem))]",
-          "max-w-none sm:max-w-none",
+          "min-w-0 w-full p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
+          wide ? "max-w-[780px] sm:max-w-[780px]" : "max-w-[520px] sm:max-w-[520px]",
         ].join(" ")}
         overlayClassName="bg-black/45 backdrop-blur-[4px] z-[10000]"
-        containerClassName="z-[10000] [&>div]:!items-center [&>div]:!pt-4 [&>div]:!pb-4 [&>div]:!px-3 sm:[&>div]:!px-6"
+        containerClassName="z-[10000]"
         closeClassName="flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/5 text-white opacity-100 hover:bg-white/10 focus:ring-white/70 data-[state=open]:bg-white/10 data-[state=open]:text-white z-10"
         onCloseAutoFocus={(event) => event.preventDefault()}
       >

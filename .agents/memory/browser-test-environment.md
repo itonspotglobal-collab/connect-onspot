@@ -80,3 +80,9 @@ Native-autofill verification must check the resulting session identity, not only
 **Why:** A signup request contained the correct autofilled names while the persisted Talent session name was blank because a later step still used stale React state.
 
 **How to apply:** Populate native inputs without React change events, then assert both submitted values and persisted identity fields. Keep name assertions strict; a correct request payload alone does not prove the full signup flow preserved the user's identity.
+
+Browser layout tests for scroll locks must include visible classic scrollbars.
+
+**Why:** Playwright launches headless Chromium with hidden scrollbars by default. That makes scrollbar compensation zero and can let growing-margin modal regressions pass every ordinary width assertion.
+
+**How to apply:** Remove the launcher's hide-scrollbars default for these fixtures and assert a genuinely nonzero scrollbar width before testing role transitions. Check body margins/padding and background width across navigation, not just document overflow or screenshots.

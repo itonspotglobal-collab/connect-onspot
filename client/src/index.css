@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The lock reserves the former scrollbar's width so public content does not
+   move. Paint Home's hero through that reserved strip while keeping its inner
+   layout at the original width; never grow or stretch the slide content. */
+[data-login-background="/"] section[aria-label="Hero carousel"] {
+  width: calc(100% + var(--removed-body-scroll-bar-size, 0px));
+  padding-right: var(--removed-body-scroll-bar-size, 0px);
+}
+
 /* Mindvalley-style rounded carousel images */
 .carousel-rounded-image {
   border-radius: 24px !important;

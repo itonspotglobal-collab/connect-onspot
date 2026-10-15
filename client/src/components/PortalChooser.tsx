@@ -1,7 +1,6 @@
 import { Link, useSearch } from "wouter";
 import { ArrowRight, Building2, UserRound } from "lucide-react";
 import { getSafeReturnTo } from "@shared/internalRedirect";
-import { AuthModalFrame } from "@/components/AuthModalFrame";
 
 export function PortalChooser() {
   const currentSearch = useSearch();
@@ -50,7 +49,7 @@ export function PortalChooser() {
   };
 
   return (
-    <AuthModalFrame title="Login portal selection" wide>
+    <>
       <header className="mb-6 text-center">
         <h1 className="text-2xl font-semibold leading-tight text-white sm:text-3xl" style={{ letterSpacing: "-0.02em" }}>
           Welcome back
@@ -63,6 +62,6 @@ export function PortalChooser() {
         {roleCard("client", "Client", "Hire and manage outsourcing talent.")}
         {roleCard("talent", "Talent", "Find jobs and manage your career profile.")}
       </div>
-    </AuthModalFrame>
+    </>
   );
 }

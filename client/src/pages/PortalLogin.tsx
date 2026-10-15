@@ -265,7 +265,8 @@ export default function PortalLogin() {
   }
 
   if (!activePortal && step === "login") {
-    return <PortalChooser />;
+    // Keep the same dialog/scroll-lock owner when only the role view changes.
+    return <AuthModalFrame title="Login portal selection" wide><PortalChooser /></AuthModalFrame>;
   }
 
   async function handleSetupPassword() {
@@ -432,7 +433,6 @@ export default function PortalLogin() {
 
   // ── Main Login Step ───────────────────────────────────────────────────────
   return (
-    <>
       <AuthModalFrame title={activePortal === "client" ? "Client Login" : "Talent Login"}>
         <AuthBackButton
           href={authPortalHref("login", currentSearch)}
@@ -520,7 +520,5 @@ export default function PortalLogin() {
           </p>
         </div>
       </AuthModalFrame>
-
-    </>
   );
 }

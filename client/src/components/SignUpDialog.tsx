@@ -116,7 +116,7 @@ export function SignUpDialog({
       }
     }).catch(() => undefined);
     return () => { active = false; };
-  }, [open]);
+  }, [open, defaultUserType]);
 
   useEffect(() => {
     if (!retryAt) {
@@ -160,6 +160,19 @@ export function SignUpDialog({
     setAccountCreated(false);
     setPendingVerification(null);
   };
+
+  // A routed role change used to remount the whole dialog (including its body
+  // scroll lock). Reset the same form state without recreating that lock.
+  const previousDefaultUserType = useRef(defaultUserType);
+  useEffect(() => {
+    if (previousDefaultUserType.current === defaultUserType) return;
+    previousDefaultUserType.current = defaultUserType;
+    resetDialog();
+    setIsLoading(false);
+    setRetryAt(0);
+    setRetrySeconds(0);
+    submissionInFlight.current = false;
+  }, [defaultUserType]);
 
   const completeVerifiedSignup = async (signupResponse: any) => {
     const accountType = pendingVerification?.role ?? userType;
@@ -385,13 +398,14 @@ export function SignUpDialog({
 
       {/* p-0 + bg-transparent lets our inner div own all the styling */}
       <DialogContent
+        viewportCentered={modalOverlay}
         data-signup-modal-overlay={modalOverlay || undefined}
         className={[
-          "p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
+          "min-w-0 w-full p-0 border-0 bg-transparent shadow-none overflow-visible motion-reduce:animate-none",
           !standalone && "[&>button:last-of-type]:text-white/50 [&>button:last-of-type:hover]:text-white/90 [&>button:last-of-type]:transition-colors [&>button:last-of-type]:z-10",
           currentStep === "user-type"
-            ? "w-[min(780px,calc(100vw-1.5rem))] max-w-none sm:max-w-none"
-            : "w-[min(520px,calc(100vw-1.5rem))] max-w-none sm:max-w-none",
+            ? "max-w-[780px] sm:max-w-[780px]"
+            : "max-w-[520px] sm:max-w-[520px]",
         ].filter(Boolean).join(" ")}
         overlayClassName={modalOverlay ? "bg-black/45 backdrop-blur-[4px] z-[10000]" : standalone
           ? "bg-[linear-gradient(135deg,#FCFDFF_0%,#F6F8FF_20%,#EEF4FF_45%,#E7F0FF_70%,#F8F9FF_100%)]"

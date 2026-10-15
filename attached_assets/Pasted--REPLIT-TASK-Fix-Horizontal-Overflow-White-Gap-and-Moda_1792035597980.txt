@@ -1,0 +1,197 @@
+# REPLIT TASK: Fix Horizontal Overflow, White Gap, and Modal Positioning in Login Pages
+
+## Issue Description
+
+After the recent redesign of the OnSpot Login portal, a layout issue occurs when users select either Client or Talent.
+
+Please refer to the attached screenshots.
+
+### Current Problems
+
+1. When opening the Login selection popup, a white/gray vertical gap appears on the right side of the background.
+2. When selecting Client or Talent, the white gap becomes larger.
+3. In some cases, the Login modal appears shifted horizontally or partially outside the visible screen.
+4. The background does not consistently cover the full viewport.
+5. The issue becomes more noticeable when navigating between the Login selection modal and the individual Login forms.
+
+### Expected Behavior
+
+The homepage background should always fill the entire viewport without any white gaps.
+
+The Login modal should remain perfectly centered regardless of whether the user is viewing:
+
+- Login selection popup
+- Client Login
+- Talent Login
+
+Switching between these views should never change the page width or cause horizontal scrolling.
+
+---
+
+## 1. Investigate the Root Cause
+
+Inspect the relevant components, particularly:
+
+- Login portal component
+- Client Login component
+- Talent Login component
+- Shared modal wrapper
+- Homepage background wrapper
+- Overlay and backdrop components
+- Global CSS and responsive layout rules
+
+Check for:
+
+- Containers using `100vw` that exceed the available viewport width.
+- Fixed-width elements causing horizontal overflow.
+- Incorrect `min-width` or `width` values.
+- Absolute positioning relative to an incorrectly sized parent.
+- Modal containers using transforms or margins that shift their position.
+- Scrollbar compensation issues.
+- Body scroll locking that changes the layout width.
+- Nested elements expanding the page when switching between Login forms.
+- Background wrappers that do not fill the viewport.
+- Unintended horizontal translations or carousel overflow.
+
+Identify the actual cause before applying the fix.
+
+Do not simply hide the white gap with a temporary workaround.
+
+---
+
+## 2. Fix the Homepage Background
+
+The homepage displayed behind the Login modal should:
+
+- Fill the entire visible viewport.
+- Remain properly positioned.
+- Preserve the existing homepage design.
+- Use the existing blur and dark overlay effect.
+- Never expose a white or gray gap on either side.
+- Not shift when changing Login views.
+
+Ensure the background wrapper and overlay cover the full viewport.
+
+Use viewport-safe positioning and sizing.
+
+If the homepage includes carousels, animated sections, or oversized elements, ensure they do not increase the document width.
+
+Do not stretch or distort the homepage to conceal the issue.
+
+---
+
+## 3. Fix Modal Centering
+
+Ensure the following popups remain horizontally and vertically centered:
+
+- Login selection modal
+- Client Login modal
+- Talent Login modal
+
+Requirements:
+
+- Use a consistent shared modal positioning strategy.
+- Ensure the modal is positioned relative to the viewport, not an overflowing parent.
+- Apply responsive maximum widths.
+- Prevent modal content from extending beyond the viewport.
+- Keep the modal centered when switching between Client and Talent.
+- Preserve internal vertical scrolling for longer forms.
+- Avoid horizontal scrolling inside the modal.
+
+Use a fixed, full-screen overlay or the project's existing modal portal implementation where appropriate.
+
+Check whether transformed parent containers or stacking contexts are affecting fixed positioning.
+
+---
+
+## 4. Prevent Horizontal Overflow
+
+Ensure:
+
+- The document width does not exceed the viewport width.
+- The homepage does not create unwanted horizontal scrolling.
+- The modal does not increase the width of the document.
+- Opening or closing the modal does not shift the page horizontally.
+- Switching between Client and Talent does not affect the background dimensions.
+
+Review global layout styles, including `html`, `body`, `#root`, and the relevant page wrappers.
+
+Do not rely solely on `overflow-x: hidden` to conceal the problem. Correct the element causing the overflow first.
+
+---
+
+## 5. Preserve the Current Design
+
+Do not redesign the Login interface.
+
+Keep the existing:
+
+- Official white OnSpot logo
+- Dark navy modal background
+- Client and Talent selection cards
+- Close (X) button
+- Back to Portal button
+- Email and password fields
+- Forgot Password link
+- Sign In button
+- Create Account link
+- Blurred homepage background
+
+The goal is to fix the layout issue only.
+
+Do not modify authentication logic, validation, or existing redirects.
+
+---
+
+## 6. Check Signup Modals for the Same Issue
+
+Since the Login and Signup flows share similar components, verify that this issue does not also affect:
+
+- `/portal`
+- `/signup/client`
+- `/signup/talent`
+
+If the issue comes from a shared component, fix it at the shared-component level.
+
+Avoid introducing separate inconsistent fixes for each modal.
+
+---
+
+## 7. Test the Navigation Flow
+
+Please verify these scenarios:
+
+1. Open `/login` directly.
+2. Confirm the Login selection modal is centered.
+3. Confirm the homepage background covers the entire screen.
+4. Click Client.
+5. Confirm the Client Login modal is centered with no white gap.
+6. Click Back to Portal.
+7. Click Talent.
+8. Confirm the Talent Login modal is centered with no white gap.
+9. Close the modal and confirm the homepage displays normally.
+10. Repeat the process using browser Back and Forward.
+11. Refresh `/login/client` and `/login/talent` directly.
+12. Test on desktop, tablet, and mobile screen sizes.
+
+Also check that the document's scroll width does not exceed the viewport's available width.
+
+---
+
+## Expected Final Result
+
+The Login experience should have:
+
+- A full-width homepage background.
+- Consistent blur and dark overlay.
+- No white or gray gaps on the right side.
+- No horizontal scrolling.
+- A perfectly centered Login modal.
+- Smooth transitions between Client and Talent Login.
+- No layout shifts when opening or closing modals.
+
+**Important:** Fix the root cause of the horizontal overflow rather than applying a cosmetic workaround.
+
+Do not modify unrelated pages, styling, or authentication functionality.
+
+After implementation, explain what caused the overflow and which components or CSS rules were corrected.

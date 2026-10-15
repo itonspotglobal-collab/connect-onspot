@@ -34,16 +34,20 @@ type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.
   containerClassName?: string;
   closeClassName?: string;
   hideClose?: boolean;
+  /** Auth cards own their vertical scrolling; size them from this viewport slot. */
+  viewportCentered?: boolean;
 };
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, overlayClassName, containerClassName, closeClassName, hideClose = false, ...props }, ref) => (
+>(({ className, children, overlayClassName, containerClassName, closeClassName, hideClose = false, viewportCentered = false, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay className={overlayClassName} />
-    <div className={cn("fixed inset-0 z-[100] overflow-y-auto", containerClassName)}>
-      <div className="flex min-h-full items-start justify-center pt-20 pb-4 px-4 sm:pt-24 sm:pb-12 sm:px-12">
+    <div className={cn("fixed inset-0 z-[100] overflow-y-auto", viewportCentered && "overflow-visible", containerClassName)}>
+      <div className={viewportCentered
+        ? "flex h-full w-full min-w-0 items-center justify-center px-3 py-4 sm:px-6"
+        : "flex min-h-full items-start justify-center pt-20 pb-4 px-4 sm:pt-24 sm:pb-12 sm:px-12"}>
         <DialogPrimitive.Content
           ref={ref}
           className={cn(
