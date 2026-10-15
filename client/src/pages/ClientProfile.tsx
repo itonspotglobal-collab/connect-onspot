@@ -79,6 +79,7 @@ import { JobRichText } from "@/components/JobRichText";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
 import { getDeepLinkResourceIds } from "@/lib/deepLinks";
+import { ClientHiringPaymentPanel, type HiringInvoice } from "@/components/hiring-payments/HiringPayments";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 interface JobSubmission {
@@ -481,7 +482,7 @@ function ViewSubmissionModal({
                 onClick={() => { onClose(); onExtendOffer(submission); }}
               >
                 <FileText className="h-4 w-4" />
-                Extend an Offer
+                Ready for Offer
               </Button>
             </div>
           )}
@@ -1601,7 +1602,7 @@ function JobSubmissionsSection({
                             onClick={() => onExtendOffer(sub)}
                           >
                             <FileText className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Offer</span>
+                            <span className="hidden sm:inline">Ready for Offer</span>
                           </Button>
                         )}
                         <Button
@@ -1682,7 +1683,7 @@ function revealedStatuses(threshold: string): Set<string> {
   return revealedStatusesForThreshold(threshold);
 }
 
-function ExtendOfferDialog({
+export function ExtendOfferDialog({
   submission,
   onClose,
   onOfferSent,
@@ -1698,6 +1699,12 @@ function ExtendOfferDialog({
   const [expiresAt, setExpiresAt] = useState("");
   const [notes, setNotes] = useState("");
   const [lastResult, setLastResult] = useState<{ rate_below_expectation?: boolean | null; rate_delta?: string | null } | null>(null);
+  const { data: hiringInvoices = [], isLoading: hiringInvoicesLoading, isError: hiringInvoicesError, refetch: refetchHiringInvoices } = useQuery<HiringInvoice[]>({
+    queryKey: ["/api/client/hiring-invoices", submission.id],
+    queryFn: async () => (await apiRequest("GET", `/api/client/hiring-invoices?submissionId=${encodeURIComponent(submission.id)}`)).json(),
+    refetchInterval: 30_000,
+  });
+  const invoiceVerified = hiringInvoices.some((invoice) => invoice.submission_id === submission.id && invoice.status === "paid" && Boolean(invoice.verified_at));
 
   // Load prior offers for this submission
   const { data: priorOffers = [], isLoading: offersLoading } = useQuery<OfferRecord[]>({
@@ -1739,7 +1746,14 @@ function ExtendOfferDialog({
       onOfferSent();
     },
     onError: (err: any) => {
-      toast({ title: "Could not send offer", description: err.message, variant: "destructive" });
+      const detail = String(err?.message || "");
+      const description = detail.includes("PRE_OFFER_PAYMENT_REQUIRED")
+        ? "Payment verification is no longer current for this hiring attempt. Refresh the invoice status and verify the matching invoice before sending."
+        : detail.includes("409")
+          ? "The offer could not be sent because the application or payment state changed. Refresh and review the current hiring invoice status."
+          : detail;
+      refetchHiringInvoices();
+      toast({ title: "Could not send offer", description: description || "Please try again.", variant: "destructive" });
     },
   });
 
@@ -1811,6 +1825,8 @@ function ExtendOfferDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-1">
+          <ClientHiringPaymentPanel submissionId={submission.id} />
+          {hiringInvoicesError && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Invoice payment status could not be confirmed. The offer action stays locked. <Button variant="outline" size="sm" onClick={() => refetchHiringInvoices()}>Retry</Button></div>}
           {/* Rate row */}
           <div className="flex gap-3">
             <div className="flex-1">
@@ -1966,10 +1982,10 @@ function ExtendOfferDialog({
           </Button>
           <Button
             onClick={() => offerMutation.mutate()}
-            disabled={offerMutation.isPending || !rate}
+            disabled={offerMutation.isPending || !rate || !invoiceVerified || hiringInvoicesLoading || hiringInvoicesError}
             className="bg-[#474ead] hover:bg-[#3a3d8f] text-white"
           >
-            {offerMutation.isPending ? "Sending…" : "Send Offer"}
+            {offerMutation.isPending ? "Sending…" : invoiceVerified ? "Send Offer" : "Payment verification required"}
           </Button>
         </DialogFooter>
       </DialogContent>

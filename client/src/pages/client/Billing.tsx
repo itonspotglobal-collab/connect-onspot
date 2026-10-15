@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authAPI } from "@/lib/api";
+import { ClientHiringInvoicesSection } from "@/components/hiring-payments/HiringPayments";
 
 type Invoice = {
   id: string;
@@ -244,6 +245,8 @@ export default function Billing() {
           Refresh
         </Button>
       </div>
+
+      <ClientHiringInvoicesSection />
 
       {isLoading ? (
         <div className="space-y-3" data-testid="invoices-loading">

@@ -1,0 +1,366 @@
+# TASK: Audit and Complete OnSpot Connect Hiring Workflow — Mandatory Pre-Offer Invoice Payment
+
+## PROJECT
+Repository: `itonspotglobal-collab/connect-onspot`
+
+Implement the missing **Pre-Offer Invoice and Payment Verification** process into the existing Client-to-Talent hiring pipeline.
+
+**IMPORTANT: This is an existing production-oriented application. Do not rebuild the hiring pipeline, introduce duplicate application records, replace existing contract services, or break currently functioning processes.**
+
+First perform a thorough audit of the current implementation. Reuse existing functionality wherever possible and implement only missing requirements.
+
+Do not modify the Talent OnSpot Vetting Quiz module. It is still under development.
+
+---
+
+## 1. REQUIRED BUSINESS WORKFLOW
+
+The intended process is:
+
+1. Client creates a job posting.
+2. Admin reviews and approves the job.
+3. The approved job becomes available for talent applications or Client invitations.
+4. Talent applies or accepts an invitation.
+5. Client reviews the talent application.
+6. Client shortlists the talent.
+7. Client conducts an interview.
+8. Client decides the talent is **Ready for Offer**.
+9. System generates a pre-offer hiring invoice for that Client and selected Talent/application.
+10. Client receives an invoice notification and payment instructions.
+11. Client pays the invoice.
+12. The payment is verified and the invoice becomes `paid`.
+13. Only after verified payment may the Client send the formal offer.
+14. Talent reviews, accepts, declines, or counteroffers according to the existing workflow.
+15. After an accepted offer, authorized parties prepare and send the hiring contract.
+16. Talent and all required Client/Organization/OnSpot representatives sign the contract.
+17. Only after all required signatures are complete does the system mark the Talent as `Hired`.
+18. The existing hired-talent, deposit, timesheet, invoice, payout, and team workflows continue unchanged.
+
+**Critical rule: A Client cannot create or send a formal hiring offer unless the corresponding pre-offer hiring invoice has been verified as paid.**
+
+The invoice must be paid **before offer creation**, not merely before contract signing.
+
+## 2. AUDIT EXISTING IMPLEMENTATION
+
+Inspect:
+
+- `shared/schema.ts`
+- `shared/submissionStatuses.ts`
+- `server/routes.ts`
+- `server/services/formalPipelineGuard.ts`
+- `server/services/hiringContractService.ts`
+- `server/services/contractDocumentService.ts`
+- `server/lib/billing.ts`
+- `client/src/pages/ClientProfile.tsx`
+- `client/src/pages/AdminJobApplications.tsx`
+- `client/src/pages/TalentApplications.tsx`
+- `client/src/pages/ClientInvoices.tsx`
+- `client/src/pages/client/Billing.tsx`
+- `client/src/components/ContractWorkflow.tsx`
+- Existing invoicing, payment, notification, and billing services
+- Relevant migrations and regression tests
+
+Also inspect the documented hiring and billing invariants under `.agents/memory/` and related reports under `docs/`.
+
+Verify actual runtime routes and all call paths. Do not assume a feature is complete just because a table, component, or endpoint exists.
+
+Produce an audit with:
+
+- Implemented features
+- Partially implemented features
+- Missing features
+- Actual route and service locations
+- Security and payment bypass risks
+- Necessary database changes
+
+Then implement the identified gaps.
+
+## 3. READY FOR OFFER ACTION
+
+Introduce a **Ready for Offer** action within the existing Client hiring pipeline, where eligible.
+
+When selected:
+
+1. Validate Client ownership of the original application.
+2. Verify the application is eligible under the existing formal hiring guards.
+3. Reuse the existing interview and stage eligibility rules; do not introduce a new mandatory interview where the system currently allows a legitimate direct offer.
+4. Record that the Client intends to proceed with an offer.
+5. Initialize the pre-offer invoice process.
+6. Do not send an offer yet.
+
+The action must be idempotent. Repeated clicks must not generate duplicate active invoices.
+
+If the selected Talent already has a valid paid pre-offer invoice for the same eligible hiring attempt, reuse that payment authorization rather than charging twice.
+
+## 4. PRE-OFFER INVOICE CREATION
+
+Implement a clearly distinguished `hiring_pre_offer` invoice type or a dedicated pre-offer invoice entity, whichever fits the existing schema safely.
+
+Associate each invoice with:
+
+- Original `job_submissions.id`
+- Job ID
+- Client ID
+- Talent ID
+- Invoice number
+- Fee description
+- Amount and currency
+- Invoice status
+- Issue date and due date
+- Payment method
+- Payment reference
+- Verified payment timestamp
+- Verifying Admin or payment provider identity
+- Created/updated timestamps
+
+Do not hardcode the invoice amount.
+
+The invoice amount, currency, fee basis, tax treatment, and due date must come from an explicitly configured and authorized billing policy. If the required pricing is not configured, prevent invoice issuance with a clear message rather than defaulting to zero or inventing a charge.
+
+Preserve the existing offer economic snapshots, commission calculations, and recurring billing architecture.
+
+**Do not confuse this pre-offer invoice with monthly Client invoices, Talent invoices, or security deposits.**
+
+Existing sent financial records must not be rewritten.
+
+## 5. PAYMENT AND VERIFICATION
+
+Reuse existing payment instructions and invoice presentation where appropriate.
+
+Support the currently available payment methods without assuming a fully integrated payment gateway exists.
+
+For manual payment:
+
+1. Client receives invoice and payment instructions.
+2. Client may submit payment reference or proof for review.
+3. Invoice becomes `verification_pending`.
+4. An authorized Admin verifies the actual payment.
+5. Admin records an audit trail and marks the invoice `paid`.
+6. Only then is the offer unlocked.
+
+For payment gateway integration, if a real existing verified integration is available:
+
+- Verify provider signatures and payment transaction state server-side.
+- Match amount, currency, recipient, and invoice identity.
+- Make webhook handling idempotent.
+- Never accept the Client's frontend declaration as proof of payment.
+
+A submitted screenshot, external transaction ID, or success URL is not sufficient to mark an invoice paid.
+
+Use explicit invoice statuses such as:
+
+`draft`, `issued`, `verification_pending`, `paid`, `overdue`, `void`, and `payment_failed` where applicable.
+
+Use additive schema changes and preserve historical billing data.
+
+## 6. MANDATORY OFFER PAYMENT GUARD
+
+This is the most important part.
+
+Update all relevant backend offer creation and sending paths to require a verified paid pre-offer invoice for the original submission.
+
+The guard must check:
+
+- Correct Client
+- Correct job
+- Correct Talent
+- Correct original application/submission
+- Correct invoice type
+- Correct hiring attempt
+- Paid status
+- Verified amount and currency
+- Invoice not voided, refunded, invalidated, or otherwise ineligible
+
+If payment is missing:
+
+Return a clear `409` conflict with an appropriate error code such as:
+
+`PRE_OFFER_PAYMENT_REQUIRED`
+
+Do not rely solely on frontend button disabling.
+
+The rule must apply to regular Client offers and any Admin-assisted route capable of creating a Client hiring offer. Admins must not bypass the payment requirement simply because they have elevated privileges.
+
+Retain existing authorization, offer expiry, duplicate-offer prevention, and Talent response rules.
+
+If an already-paid invoice is later refunded, do not silently remove or rewrite an already accepted offer or signed contract. Record the financial exception for authorized review.
+
+Handle concurrent requests with appropriate transactions and database constraints so multiple offers or invoices cannot be incorrectly created.
+
+## 7. CLIENT USER INTERFACE
+
+Update existing Client hiring interfaces.
+
+When a Talent is ready for an offer, show the applicable action and payment progress.
+
+Example:
+
+**Hiring Progress**
+
+- Interview Completed
+- Ready for Offer
+- Invoice Issued
+- Awaiting Payment
+- Payment Verified
+- Offer Sent
+- Offer Accepted
+- Contract Signing
+- Hired
+
+These milestones must reflect actual persisted records, not fabricated completion states.
+
+Before payment, show:
+
+**Invoice Payment Required**
+
+"Your hiring invoice must be paid and verified before you can send an offer to this talent."
+
+Provide actions:
+
+- View Invoice
+- View Payment Instructions
+- Submit Payment Reference, where applicable
+- Check Payment Status
+
+Once payment is verified:
+
+- Show `Payment Verified`.
+- Enable the existing Send Offer action.
+- Keep all normal offer validation requirements.
+
+Display pre-offer invoices separately or clearly distinguish them from ongoing engagement billing.
+
+Do not create duplicate billing dashboards unless necessary.
+
+## 8. ADMIN INTERFACE
+
+Extend existing Admin billing or application management pages.
+
+Admin must be able to:
+
+- View pre-offer hiring invoices
+- Filter by Client, Talent, job, and payment status
+- View payment evidence and invoice details
+- Verify or reject submitted payment claims
+- Record verification details and timestamps
+- Void an eligible unpaid invoice with a required reason
+- Review immutable payment/status history
+
+Only explicitly authorized Admin users may confirm manual payment.
+
+Do not let the Admin manually move a submission into `hired` or fabricate an accepted offer or signed contract.
+
+## 9. TALENT INTERFACE
+
+Before an offer has actually been sent, the Talent should not see a fake or premature offer.
+
+After the Client pays and sends a real offer:
+
+- Reuse existing Talent offer review.
+- Preserve Accept/Decline/Counteroffer behavior.
+- Preserve offer expiry and renewal.
+- Continue to the existing contract signing process after actual acceptance.
+
+Talent must not receive private Client billing records or internal payment verification details.
+
+## 10. CONTRACT AND HIRING PRESERVATION
+
+Do not rewrite the existing contract process.
+
+Keep:
+
+- Existing accepted-offer checks
+- Private PDF uploads
+- Document version/hash validation
+- Required Talent signature
+- Required Client/Organization signature where applicable
+- Mandatory OnSpot signature
+- Actual contract execution
+- Canonical `contract_sent` to `hired` transition
+- Existing billing activation and deposit creation
+
+The pre-offer invoice gate is an additional prerequisite before the formal offer, not a replacement for the existing signed-contract requirement.
+
+## 11. DATABASE AND STATUS DESIGN
+
+Use the original `job_submissions` hiring record.
+
+Do not create a second hiring pipeline based on legacy `job_applications`.
+
+Avoid adding invoice statuses into `SUBMISSION_STATUSES` unnecessarily. Keep hiring application lifecycle and financial invoice lifecycle distinct.
+
+If a `ready_for_offer` milestone is needed, prefer a dedicated persisted intent/event over changing the canonical application state without a justified compatibility analysis.
+
+Write additive, versioned migrations.
+
+Do not destructively alter historical invoices, offers, contracts, or submission records.
+
+Treat existing unpaid/unknown historical offers as migration exceptions requiring Admin review. Do not fabricate payment evidence or automatically mark them paid.
+
+Preserve existing legitimate historical contracts and hires.
+
+## 12. SECURITY AND REGRESSION TESTING
+
+Add automated tests for:
+
+1. Normal organic application flow.
+2. Normal Client invitation flow.
+3. Authorized Client generates a pre-offer invoice.
+4. Repeated invoice creation does not duplicate invoices.
+5. Unpaid invoice blocks offer creation.
+6. Payment proof without verification still blocks offer creation.
+7. Verified payment unlocks offer creation.
+8. Wrong Client cannot use another Client's invoice.
+9. Wrong Talent/job/submission cannot reuse an invoice.
+10. Voided or invalidated invoice cannot unlock an offer.
+11. Unauthorized user cannot verify payment.
+12. Admin-assisted offers cannot bypass the rule.
+13. Concurrent offer and invoice requests remain consistent.
+14. Declined and expired offers retain normal behavior.
+15. Accepted offers still enter the existing contract process.
+16. Partial signatures do not mark Talent hired.
+17. Fully executed contracts mark Talent hired exactly once.
+18. Existing security deposit and recurring billing remain unaffected.
+19. Vetted Talent quiz behavior is untouched.
+20. Existing production data remains intact.
+
+Use real database-backed tests where the project already has that testing infrastructure.
+
+Run applicable TypeScript checks, automated regression suites, and build validation.
+
+## 13. DEPLOYMENT SAFETY
+
+Do not publish automatically.
+
+Check existing schema/migration history and the production rollout constraints before changing financial tables.
+
+Use the project's established migration process.
+
+Do not run destructive migration commands or blindly use `db:push` against production.
+
+Do not expose secrets, financial reference data, or private documents to unauthorized roles.
+
+Do not claim production readiness based only on a successful build.
+
+## 14. FINAL DELIVERABLE
+
+Provide a final report with:
+
+1. Existing functionality confirmed
+2. Exact missing functionality identified
+3. Code changes implemented
+4. New/changed database entities
+5. API endpoints and authorization checks
+6. Client/Admin/Talent UI changes
+7. Payment verification and offer-locking behavior
+8. Test results, with passing and failing cases
+9. Remaining manual UAT requirements
+10. Migration and deployment risks
+
+Explicitly demonstrate this acceptance criterion:
+
+**An eligible Client trying to send an offer before verified pre-offer invoice payment must be blocked by the server. The same Client, after verified payment for that specific hiring attempt, must be able to send the offer through the existing legitimate hiring workflow.**
+
+Do not change unrelated modules or implement the unfinished OnSpot Talent Vetting Quiz.
+
+Prioritize safe integration, data integrity, security, and preservation of existing functionality.

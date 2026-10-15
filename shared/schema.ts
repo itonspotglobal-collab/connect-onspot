@@ -2429,3 +2429,100 @@ export const insertAdminInterviewerSchema = createInsertSchema(adminInterviewers
 });
 export type InsertAdminInterviewer = z.infer<typeof insertAdminInterviewerSchema>;
 export type AdminInterviewer = typeof adminInterviewers.$inferSelect;
+
+// Non-recurring pre-offer charges. These never replace engagement invoices or deposits.
+export const hiringFeePolicies = pgTable("hiring_fee_policies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  currency: text("currency").notNull(),
+  feeBasis: text("fee_basis").notNull(),
+  feeDescription: text("fee_description").notNull(),
+  taxTreatment: text("tax_treatment").notNull(),
+  taxDescription: text("tax_description").notNull(),
+  dueDays: integer("due_days").notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  paymentRecipient: text("payment_recipient").notNull(),
+  paymentInstructions: text("payment_instructions").notNull(),
+  authorizedBy: varchar("authorized_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  check("hiring_fee_policies_amount_check", sql`${t.amount}>0`),
+  check("hiring_fee_policies_currency_check", sql`${t.currency}='USD'`),
+  check("hiring_fee_policies_fee_basis_check", sql`${t.feeBasis}='fixed_per_hiring_attempt'`),
+  check("hiring_fee_policies_tax_treatment_check", sql`${t.taxTreatment} IN ('inclusive','exempt')`),
+  check("hiring_fee_policies_due_days_check", sql`${t.dueDays} BETWEEN 1 AND 90`),
+  check("hiring_fee_policies_payment_method_check", sql`${t.paymentMethod}='manual_transfer'`),
+]);
+export const hiringPaymentAttempts = pgTable("hiring_payment_attempts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  submissionId: varchar("submission_id").notNull().unique().references(() => jobSubmissions.id),
+  jobId: varchar("job_id").notNull().references(() => jobs.id),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  talentId: varchar("talent_id").notNull().references(() => users.id),
+  readyBy: varchar("ready_by").notNull().references(() => users.id),
+  readyAt: timestamp("ready_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const hiringPreOfferInvoiceNumberSeq = pgSequence("hiring_pre_offer_invoice_number_seq", { startWith: 1 });
+export const hiringPreOfferInvoices = pgTable("hiring_pre_offer_invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  invoiceType: text("invoice_type").notNull().default("hiring_pre_offer"),
+  attemptId: uuid("attempt_id").notNull().references(() => hiringPaymentAttempts.id),
+  submissionId: varchar("submission_id").notNull().references(() => jobSubmissions.id),
+  jobId: varchar("job_id").notNull().references(() => jobs.id),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  talentId: varchar("talent_id").notNull().references(() => users.id),
+  invoiceNumber: text("invoice_number").notNull().unique().default(sql`'HPO-' || lpad(nextval('hiring_pre_offer_invoice_number_seq')::text,8,'0')`),
+  policyId: uuid("policy_id").notNull().references(() => hiringFeePolicies.id),
+  feeDescription: text("fee_description").notNull(),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  currency: text("currency").notNull(),
+  feeBasis: text("fee_basis").notNull(),
+  taxTreatment: text("tax_treatment").notNull(),
+  taxDescription: text("tax_description").notNull(),
+  status: text("status").notNull().default("issued"),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+  dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  paymentRecipient: text("payment_recipient").notNull(),
+  paymentInstructions: text("payment_instructions").notNull(),
+  paymentReference: text("payment_reference"),
+  verifiedAmount: decimal("verified_amount", { precision: 14, scale: 2 }),
+  verifiedCurrency: text("verified_currency"),
+  verifiedReference: text("verified_reference"),
+  verifiedRecipient: text("verified_recipient"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  verifiedBy: varchar("verified_by").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  check("hiring_pre_offer_invoices_invoice_type_check", sql`${t.invoiceType}='hiring_pre_offer'`),
+  check("hiring_pre_offer_invoices_amount_check", sql`${t.amount}>0`),
+  check("hiring_pre_offer_invoices_currency_check", sql`${t.currency}='USD'`),
+  check("hiring_pre_offer_invoices_status_check", sql`${t.status} IN ('draft','issued','verification_pending','paid','overdue','void','payment_failed','refunded','invalidated')`),
+  check("hiring_pre_offer_paid_evidence_check", sql`${t.status}<>'paid' OR
+    (${t.verifiedAt} IS NOT NULL AND ${t.verifiedBy} IS NOT NULL AND ${t.verifiedAmount} IS NOT NULL
+    AND ${t.verifiedAmount}=${t.amount} AND ${t.verifiedCurrency} IS NOT NULL AND ${t.verifiedCurrency}=${t.currency}
+    AND ${t.verifiedReference} IS NOT NULL AND length(trim(${t.verifiedReference}))>0
+    AND ${t.verifiedRecipient} IS NOT NULL AND ${t.verifiedRecipient}=${t.paymentRecipient})`),
+  uniqueIndex("hiring_pre_offer_one_active_attempt").on(t.attemptId).where(sql`${t.status} NOT IN ('void','refunded','invalidated')`),
+  uniqueIndex("hiring_pre_offer_unique_settlement").on(t.paymentMethod,t.verifiedReference).where(sql`${t.verifiedReference} IS NOT NULL`),
+  index("hiring_pre_offer_client_status").on(t.clientId,t.status),
+]);
+export const hiringPaymentEvents = pgTable("hiring_payment_events", {
+  id: serial("id").primaryKey(),
+  invoiceId: uuid("invoice_id").notNull().references(() => hiringPreOfferInvoices.id),
+  actorId: varchar("actor_id").notNull().references(() => users.id),
+  event: text("event").notNull(),
+  previousStatus: text("previous_status"),
+  newStatus: text("new_status").notNull(),
+  details: jsonb("details").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export const hiringPaymentExceptions = pgTable("hiring_payment_exceptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  submissionId: varchar("submission_id").notNull().references(() => jobSubmissions.id),
+  offerId: uuid("offer_id").references(() => offers.id),
+  invoiceId: uuid("invoice_id").references(() => hiringPreOfferInvoices.id),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [uniqueIndex("hiring_payment_exception_offer").on(t.offerId).where(sql`${t.offerId} IS NOT NULL`)]);

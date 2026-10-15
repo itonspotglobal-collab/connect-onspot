@@ -24,6 +24,8 @@ export const CLIENT_NOTIFICATION_TYPES = [
   "client_application_status_changed",
   "talent_hired",
   "monthly_client_invoice",
+  "hiring_invoice",
+  "hiring_payment_review",
   "new_message",
 ] as const;
 
@@ -41,6 +43,9 @@ export function notificationRouteForRole(
   }
   if (type === "talent_invoice_ready") return "/talent/invoices";
   if (type === "monthly_client_invoice") return "/client/monthly-invoices";
+  if (type === "hiring_invoice" || type === "hiring_payment_review") {
+    return role === "admin" ? "/admin/ledger" : role === "client" ? "/client/billing" : null;
+  }
   if (role === "admin") {
     if (type === "job_application_received") return "/admin/job-applications";
     if (

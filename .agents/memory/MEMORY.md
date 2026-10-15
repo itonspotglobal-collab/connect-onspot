@@ -71,3 +71,4 @@
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — public signup overlays the mounted page; direct auth cancellation preserves origin independently of success redirects.
+- [Pre-offer payment policy](pre-offer-payment-policy.md) — verified payment precedes new offers; missing policy fails closed, reversals preserve history, and payment never replaces signatures.

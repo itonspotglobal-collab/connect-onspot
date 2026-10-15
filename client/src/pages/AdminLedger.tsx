@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { authAPI } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { AdminHiringPaymentsSection } from "@/components/hiring-payments/HiringPayments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -370,6 +371,8 @@ export default function AdminLedger() {
           )}
         </div>
       )}
+
+      <AdminHiringPaymentsSection />
 
       <Card>
         <CardHeader>

@@ -20,6 +20,8 @@
  */
 
 import { query } from "../db.js";
+import { FORMAL_PIPELINE_PREDICATE } from "../../shared/formalPipelineSql";
+export { FORMAL_PIPELINE_PREDICATE } from "../../shared/formalPipelineSql";
 
 // ── Core predicate ─────────────────────────────────────────────────────────────
 
@@ -33,25 +35,6 @@ export const INVITATION_RELATIONSHIP_PREDICATE = `workflow_type = 'client_invita
 // prefixable as js.${FORMAL_PIPELINE_PREDICATE} for existing consumers.
 // A submission itself is the built-in application record; job_applications is
 // a separate legacy tracker and is not created by POST /api/jobs/:id/apply.
-export const FORMAL_PIPELINE_PREDICATE = `workflow_type IN ('client_invitation', 'application')
-  AND js.status NOT IN ('rejected', 'withdrawn', 'declined')
-  AND EXISTS (
-    SELECT 1 FROM jobs hiring_job
-     WHERE hiring_job.id = js.job_id AND hiring_job.client_id = js.client_id
-       AND hiring_job.created_via <> 'search_scaffold'
-       AND EXISTS (SELECT 1 FROM users hiring_owner
-                    WHERE hiring_owner.id = hiring_job.client_id AND hiring_owner.role IN ('client', 'admin'))
-        AND EXISTS (SELECT 1 FROM users hiring_talent
-                     WHERE hiring_talent.id = js.talent_id AND hiring_talent.role = 'talent')
-       AND (
-         js.workflow_type = 'client_invitation'
-         OR (
-           js.initiated_by = 'talent' AND js.registration_status = 'linked'
-           AND hiring_job.approval_status = 'approved'
-           AND hiring_job.status <> 'draft'
-         )
-       )
-  )` as const;
 
 /**
  * SQL predicate fragment that excludes silent client shortlist submissions from

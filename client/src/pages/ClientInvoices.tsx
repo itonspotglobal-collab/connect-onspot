@@ -22,6 +22,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { ClientHiringInvoicesSection } from "@/components/hiring-payments/HiringPayments";
 
 interface Invoice {
   id: string;
@@ -119,6 +120,8 @@ export default function ClientInvoices() {
           Billing statements for your contracted talent engagements.
         </p>
       </div>
+
+      <ClientHiringInvoicesSection />
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

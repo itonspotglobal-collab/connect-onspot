@@ -33,6 +33,8 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
   return clean.trim() || null;
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
+import { registerHiringPaymentRoutes, hiringPaymentFailure } from "./routes/hiringPayments";
+import { HiringPaymentService, requireVerifiedHiringPayment } from "./services/hiringPaymentService";
 import { registerInvestorRoutes } from "./routes/investors.js";
 import { registerInvestorGoalRoutes, guardInvestorGoalUpdates, seedInvestorGoalSettings } from "./routes/investorGoals";
 import { INVESTOR_GOAL_PLACEHOLDERS, isInvestorGoalKey, isValidInvestorGoalSetting } from "../shared/investorGoals";
@@ -3473,6 +3475,7 @@ export async function registerRoutes(
   );
 
   registerInvestorRoutes(app);
+  registerHiringPaymentRoutes(app, { service: new HiringPaymentService(pool), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
   registerInvestorGoalRoutes(app, query);
 
   registerTimesheetRoutes(app, {
@@ -21098,6 +21101,7 @@ export async function registerRoutes(
         return res.json(await extendOfferExpiration(req.params.id,user.id,req.body?.expiresAt));
       } catch(error:any) {
         if(error instanceof ContractError) return res.status(error.status).json(error.body);
+        if(hiringPaymentFailure(res,error)) return;
         console.error("[offer-expiration] operation failed",error?.name);
         return res.status(500).json({error:"offer_expiration_failed"});
       }
@@ -21224,6 +21228,7 @@ export async function registerRoutes(
           await txClient.query("ROLLBACK");
           return res.status(409).json({ error: "cannot_extend_offer", message: "This application is no longer at an offer-eligible stage." });
         }
+        await requireVerifiedHiringPayment(txClient, submissionId);
         const insert = await txClient.query(
           `INSERT INTO offers
              (submission_id, engagement_type, billing_mode, rate, rate_currency, proposed_start_date,
@@ -21364,6 +21369,7 @@ export async function registerRoutes(
       return res.status(201).json(offer);
     } catch (err: any) {
       if (respondUsdOnly(res, err)) return;
+      if (hiringPaymentFailure(res, err)) return;
       console.error("POST /api/client/offers error:", err);
       return res.status(500).json({ error: err.message });
     }
@@ -21443,6 +21449,7 @@ export async function registerRoutes(
       let responseOffer: any;
       try {
         await txClient.query("BEGIN");
+        if (action === "counter") await requireVerifiedHiringPayment(txClient, offer.submission_id);
         const locked = await txClient.query(
           `SELECT id, status, expires_at FROM offers WHERE id = $1 FOR UPDATE`,
           [offer.id],
@@ -21539,6 +21546,7 @@ export async function registerRoutes(
       return res.json(responseOffer);
     } catch (err: any) {
       if (respondUsdOnly(res, err)) return;
+      if (hiringPaymentFailure(res, err)) return;
       console.error("PATCH /api/client/offers/:id/respond error:", err);
       return res.status(500).json({ error: "Failed to respond to counter offer" });
     }
@@ -21762,6 +21770,7 @@ export async function registerRoutes(
           await txClient.query("ROLLBACK");
           return res.status(409).json({error:"application_not_offer_pending"});
         }
+        if (action === "counter") await requireVerifiedHiringPayment(txClient, offer.submission_id);
         const updated = await txClient.query(
           `UPDATE offers
            SET status = $1, responded_at = NOW(), updated_at = NOW(),
@@ -21904,6 +21913,7 @@ export async function registerRoutes(
       return res.json(respondedOffer);
     } catch (err: any) {
       if (respondUsdOnly(res, err)) return;
+      if (hiringPaymentFailure(res, err)) return;
       console.error("PATCH /api/talent/offers/:id/respond error:", err);
       return res.status(500).json({ error: err.message });
     }
