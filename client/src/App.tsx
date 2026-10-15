@@ -233,6 +233,7 @@ function PublicRouter() {
     location === "/why-onspot/about" ||
     location === "/manifesto" ||
     location === "/join-onspot" ||
+    location === "/investors" ||
     location === "/insights" ||
     location.startsWith("/insights/");
 

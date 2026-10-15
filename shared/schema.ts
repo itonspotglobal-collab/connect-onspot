@@ -21,6 +21,8 @@ export const investorRequests = pgTable("investor_requests", {
   firm: text("firm").notNull(),
   email: varchar("email", { length: 254 }).notNull(),
   requestType: text("request_type").notNull(),
+  source: text("source"),
+  requestedDocument: text("requested_document"),
   message: text("message"),
   notificationStatus: text("notification_status").notNull().default("pending"),
   notificationError: text("notification_error"),

@@ -1,450 +1,245 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useRef, useState } from "react";
+import HeadSEO from "@/components/HeadSEO";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { InvestorGauge } from "@/components/InvestorGauge";
-import { InvestorTagline } from "@/components/InvestorTagline";
-import iphoneMockup from "@assets/iphone_mockup_transparent_1791189886936.png";
-import {
-  HERO_HEADLINE_STYLE,
-  HERO_PRIMARY_CTA_CLASS,
-  HERO_PRIMARY_CTA_STYLE,
-  HERO_SHARED_CSS_VARS,
-  HERO_WORK_BACKGROUND,
-} from "@/components/HeroPresentation";
+  InvestorDocumentDialog,
+  type InvestorDocument,
+} from "@/components/InvestorDocumentDialog";
+import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
 import "./InvestorsCorner.css";
 
-type RequestType = "meeting" | "deck" | "founder";
-type InvestorStats = {
-  contractorAccounts: number;
-  clientAccounts: number;
-  asOf: string;
-};
-type InvestorGoals = {
-  contractorGoal2027: number | null;
-  clientGoal2027: number | null;
-};
-type FormValues = {
-  name: string;
-  firm: string;
-  email: string;
-  requestType: RequestType;
-  message: string;
-};
-type SubmissionState =
-  | { kind: "idle" }
-  | { kind: "sending" }
-  | { kind: "error"; message: string }
-  | { kind: "sent" }
-  | { kind: "saved-email-failed" };
-
-const INITIAL_FORM: FormValues = {
-  name: "",
-  firm: "",
-  email: "",
-  requestType: "meeting",
-  message: "",
-};
-
-const REQUESTS: { type: RequestType; label: string }[] = [
-  { type: "meeting", label: "Request a Meeting" },
-  { type: "deck", label: "Request the Pitch Deck" },
-  { type: "founder", label: "Speak to the Founder" },
-];
-
-const REQUEST_LABELS: Record<RequestType, string> = {
-  meeting: "Request a Meeting",
-  deck: "Request the Pitch Deck",
-  founder: "Speak to the Founder",
-};
-
-function isStatsResponse(value: unknown): value is InvestorStats {
-  if (!value || typeof value !== "object") return false;
-  const stats = value as Partial<InvestorStats>;
-  return (
-    typeof stats.contractorAccounts === "number" &&
-    Number.isFinite(stats.contractorAccounts) &&
-    typeof stats.clientAccounts === "number" &&
-    Number.isFinite(stats.clientAccounts) &&
-    typeof stats.asOf === "string"
-  );
-}
-
-function isGoalsResponse(value: unknown): value is InvestorGoals {
-  if (!value || typeof value !== "object") return false;
-  const goals = value as Partial<InvestorGoals>;
-  return (
-    (goals.contractorGoal2027 === null ||
-      (typeof goals.contractorGoal2027 === "number" && Number.isFinite(goals.contractorGoal2027))) &&
-    (goals.clientGoal2027 === null ||
-      (typeof goals.clientGoal2027 === "number" && Number.isFinite(goals.clientGoal2027)))
-  );
-}
-
 export default function InvestorsCorner() {
-  const [stats, setStats] = useState<InvestorStats | null>(null);
-  const [goals, setGoals] = useState<InvestorGoals | null>(null);
-  const [statsUnavailable, setStatsUnavailable] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<FormValues>(INITIAL_FORM);
-  const [submission, setSubmission] = useState<SubmissionState>({
-    kind: "idle",
-  });
+  const [requestedDocument, setRequestedDocument] =
+    useState<InvestorDocument>("deck");
+  const requestTriggerRef = useRef<HTMLElement | null>(null);
 
-  const fetchStats = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const response = await fetch("/api/public/investor-stats", { signal });
-      if (!response.ok) throw new Error("Stats unavailable");
-      const result: unknown = await response.json();
-      if (!isStatsResponse(result)) throw new Error("Invalid stats response");
-      setStats(result);
-      setStatsUnavailable(false);
-    } catch {
-      if (signal?.aborted) return;
-      setStats(null);
-      setStatsUnavailable(true);
-    }
-  }, []);
-
-  const fetchGoals = useCallback(async (signal?: AbortSignal) => {
-    try {
-      const response = await fetch("/api/public/investor-goals", { signal });
-      if (!response.ok) throw new Error("Goals unavailable");
-      const result: unknown = await response.json();
-      if (!isGoalsResponse(result)) throw new Error("Invalid goals response");
-      setGoals(result);
-    } catch {
-      // Goal configuration is optional; a failure must not affect live account totals.
-      if (signal?.aborted) return;
-    }
-  }, []);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    let controller: AbortController | undefined;
-    const refreshWhenVisible = () => {
-      if (document.visibilityState !== "visible") {
-        if (interval) clearInterval(interval);
-        interval = undefined;
-        controller?.abort();
-        return;
-      }
-      controller?.abort();
-      controller = new AbortController();
-      void fetchStats(controller.signal);
-      void fetchGoals(controller.signal);
-      if (!interval) {
-        interval = setInterval(() => {
-          if (document.visibilityState === "visible") {
-            controller?.abort();
-            controller = new AbortController();
-            void fetchStats(controller.signal);
-            void fetchGoals(controller.signal);
-          }
-        }, 60_000);
-      }
-    };
-
-    refreshWhenVisible();
-    document.addEventListener("visibilitychange", refreshWhenVisible);
-    return () => {
-      if (interval) clearInterval(interval);
-      controller?.abort();
-      document.removeEventListener("visibilitychange", refreshWhenVisible);
-    };
-  }, [fetchGoals, fetchStats]);
-
-  useEffect(() => {
-    document.title = "For Investors | OnSpot";
-    return () => {
-      document.title = "Work Without Limits | OnSpot";
-    };
-  }, []);
-
-  const openRequest = (requestType: RequestType) => {
-    setForm((current) => ({ ...current, requestType }));
-    setSubmission({ kind: "idle" });
+  const openDocumentRequest = (
+    document: InvestorDocument,
+    trigger: HTMLElement,
+  ) => {
+    requestTriggerRef.current = trigger;
+    setRequestedDocument(document);
     setDialogOpen(true);
   };
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open && submission.kind === "sending") return;
-    setDialogOpen(open);
-    if (!open && submission.kind !== "sending") {
-      if (submission.kind === "sent" || submission.kind === "saved-email-failed") {
-        setForm(INITIAL_FORM);
-      }
-      setSubmission({ kind: "idle" });
-    }
-  };
-
-  const updateField = (
-    field: keyof FormValues,
-    value: string | RequestType,
-  ) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const submitRequest = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (submission.kind === "sending") return;
-    setSubmission({ kind: "sending" });
-
-    const payload = {
-      name: form.name.trim(),
-      firm: form.firm.trim(),
-      email: form.email.trim(),
-      requestType: form.requestType,
-      ...(form.message.trim() ? { message: form.message.trim() } : {}),
-    };
-
-    try {
-      const response = await fetch("/api/public/investor-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (response.status !== 201) {
-        throw new Error(
-          response.status === 429
-            ? "Too many requests. Please try again later."
-            : "We couldn’t submit your request. Your details are still here; please try again.",
-        );
-      }
-      const result: unknown = await response.json();
-      if (
-        !result ||
-        typeof result !== "object" ||
-        !("notificationStatus" in result) ||
-        (result.notificationStatus !== "sent" &&
-          result.notificationStatus !== "failed")
-      ) {
-        throw new Error(
-          "We couldn’t confirm the request status. Your details are still here; please try again.",
-        );
-      }
-      setSubmission(
-        result.notificationStatus === "sent"
-          ? { kind: "sent" }
-          : { kind: "saved-email-failed" },
-      );
-    } catch (error) {
-      setSubmission({
-        kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "We couldn’t submit your request. Your details are still here; please try again.",
-      });
-    }
-  };
-
-  const hasSubmissionResult =
-    submission.kind === "sent" || submission.kind === "saved-email-failed";
-
   return (
-    <div
-      className="investors-page"
-      style={{ ...HERO_SHARED_CSS_VARS, background: HERO_WORK_BACKGROUND }}
-    >
-      <div className="investors-shell">
-        <section className="investors-intro" aria-labelledby="investor-headline">
-          <h1
-            id="investor-headline"
-            className="investor-headline"
-            style={HERO_HEADLINE_STYLE}
-          >
-            <span className="investor-headline-primary">
-              The outsourcing industry is being replaced.
-            </span>
-            <span className="investor-headline-secondary">
-              We are not watching. We built the replacement.
-            </span>
+    <div className="onspot-investors-page">
+      <HeadSEO
+        title="Invest in OnSpot — A Letter From Our CEO"
+        description="A letter from Nur Laminero, Co-Founder and CEO of OnSpot. Get the pitch deck, view the Wefunder opportunity profile, or download the valuation summary."
+        ogType="website"
+      />
+
+      <header className="investor-wrap investor-top">
+        <a className="investor-logo" href="/" aria-label="OnSpot home">
+          <img src={onSpotWordmark} alt="OnSpot" />
+        </a>
+        <span>Investors</span>
+      </header>
+
+      <div>
+        <section
+          className="investor-wrap investor-open"
+          aria-labelledby="investor-open-title"
+        >
+          <h1 id="investor-open-title">
+            Hi, I’m Nur Laminero and I’m the Co‑Founder and CEO of OnSpot.
           </h1>
+          <p className="investor-lead">
+            We’re the unified outsourcing system where businesses find, hire,
+            pay, and manage vetted remote talent in one place — and talent earns
+            more doing it.
+          </p>
+        </section>
 
-          <div className="investors-counts" aria-label="OnSpot marketplace account totals">
-            <InvestorGauge
-              count={stats?.contractorAccounts ?? null}
-              goal={goals?.contractorGoal2027 ?? null}
-              label="Contractor accounts"
-            />
-            <InvestorGauge
-              count={stats?.clientAccounts ?? null}
-              goal={goals?.clientGoal2027 ?? null}
-              label="Client accounts"
-            />
-          </div>
-          {statsUnavailable && (
-            <p className="investor-stats-note" role="status">
-              Account totals are temporarily unavailable.
-            </p>
-          )}
-
-          <InvestorTagline />
-
-          <div className="investor-raise">
-            <span className="investor-raise-mark" aria-hidden="true" />
-            <span>Currently raising our seed round.</span>
-          </div>
-
-          <div className="investor-actions" aria-label="Investor inquiries">
-            {REQUESTS.map(({ type, label }) => (
-              <button
-                key={type}
-                type="button"
-                className={`investor-action ${HERO_PRIMARY_CTA_CLASS}`}
-                style={HERO_PRIMARY_CTA_STYLE}
-                onClick={() => openRequest(type)}
-              >
-                <span>{label}</span>
-              </button>
-            ))}
+        <section className="investor-wrap" aria-label="At a glance">
+          <div className="investor-facts">
+            <div className="investor-fact">
+              <b>7 days</b>
+              <span>
+                As fast as 7 days for businesses to find, hire, and manage global
+                talent
+              </span>
+            </div>
+            <div className="investor-fact">
+              <b>4 years</b>
+              <span>Running a BPO before building this platform</span>
+            </div>
+            <div className="investor-fact">
+              <b>Self‑sustaining</b>
+              <span>
+                Operations fully covered by revenue before external investment
+              </span>
+            </div>
           </div>
         </section>
-        <div className="investors-phone-column">
-          <img
-            className="investors-phone"
-            src={iphoneMockup}
-            alt="OnSpot mobile About page: Built by people who lived the problem"
-          />
-        </div>
+
+        <section
+          className="investor-wrap investor-letter"
+          aria-labelledby="investor-letter-title"
+        >
+          <div className="investor-aside">
+            <h2 id="investor-letter-title">A letter from Nur Laminero</h2>
+            <p>Co-Founder and CEO, OnSpot</p>
+          </div>
+          <div className="investor-letter-body">
+            <p className="investor-letter-first">
+              We built a system for small and medium businesses to solve the
+              broken choice between freelance chaos and enterprise BPO overhead.
+            </p>
+            <div className="investor-compare">
+              <div>
+                <h3>The problem</h3>
+                <p>
+                  Today, businesses that need operational support have to either
+                  manage unreliable freelancers on their own or pay enterprise
+                  prices for BPO services that were never designed for them.
+                  Meanwhile talented professionals around the world spend their
+                  time searching for clients instead of doing the work they are
+                  great at — and earn a fraction of what they are worth.
+                </p>
+              </div>
+              <div className="investor-now">
+                <h3>Our solution</h3>
+                <p>
+                  With OnSpot, businesses find, hire, and manage vetted global
+                  talent in as fast as 7 days — with the accountability of a
+                  managed service and none of the overhead — while talent sets
+                  their own rate, keeps every dollar, and builds a real
+                  international career.
+                </p>
+              </div>
+            </div>
+            <p>
+              My co-founders Jake and Mark and I spent four years running a BPO
+              before building this platform.{" "}
+              <strong>
+                We did not guess at the problem. We lived inside it
+              </strong>{" "}
+              — and we built OnSpot from operational truth rather than theory.{" "}
+              <strong>We are already self-sustaining.</strong> Operations are
+              fully covered by revenue before a single dollar of external
+              investment.
+            </p>
+            <p className="investor-vision">
+              We are raising to launch, to scale, and to liberate how the world
+              does meaningful work. A world where anyone can work anywhere — and
+              every company can hire anyone, without limits.
+            </p>
+            <div className="investor-sign">
+              <span className="investor-monogram" aria-hidden="true">
+                NL
+              </span>
+              <div>
+                <b>Nur Laminero</b>
+                <span>Co-Founder and CEO, OnSpot</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          className="investor-wrap investor-invest"
+          aria-labelledby="investor-invest-title"
+        >
+          <div className="investor-invest-head">
+            <h2 id="investor-invest-title">Invest in OnSpot today.</h2>
+          </div>
+          <div className="investor-cards">
+            <button
+              className="investor-card investor-card-primary"
+              type="button"
+              onClick={(event) =>
+                openDocumentRequest("deck", event.currentTarget)
+              }
+            >
+              <span className="investor-card-kicker">
+                Pitch deck
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="12" rx="2" />
+                  <path d="M12 16v4M8 20h8M7 9h6M7 12h4" />
+                </svg>
+              </span>
+              <span>
+                <span className="investor-card-title">Meet the Founders</span>
+                <span className="investor-card-link">
+                  Get the pitch deck
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 4v12M6.5 10.5 12 16l5.5-5.5M5 20h14" />
+                  </svg>
+                </span>
+              </span>
+            </button>
+
+            <a
+              className="investor-card ext"
+              href="https://wefunder.com/onspot"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="investor-card-kicker">
+                Opportunity profile
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2.5" />
+                  <circle cx="9" cy="11" r="2.5" />
+                  <path d="M5.5 17c.6-1.8 2-2.8 3.5-2.8s2.9 1 3.5 2.8M15 9.5h3M15 13h3" />
+                </svg>
+              </span>
+              <span>
+                <span className="investor-card-title">WeFunder</span>
+                <span className="investor-card-link">
+                  View opportunity profile
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 17 17 7M8 7h9v9" />
+                  </svg>
+                </span>
+              </span>
+            </a>
+
+            <button
+              className="investor-card"
+              type="button"
+              onClick={(event) =>
+                openDocumentRequest("valuation", event.currentTarget)
+              }
+            >
+              <span className="investor-card-kicker">
+                Valuation summary
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+                </svg>
+              </span>
+              <span>
+                <span className="investor-card-title">Seedscope</span>
+                <span className="investor-card-link">
+                  Download the valuation summary
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 4v12M6.5 10.5 12 16l5.5-5.5M5 20h14" />
+                  </svg>
+                </span>
+              </span>
+            </button>
+          </div>
+        </section>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-        <DialogContent
-          className="investor-dialog"
-          containerClassName="investor-dialog-viewport"
-        >
-          <DialogHeader className="investor-dialog-header">
-            <span className="investor-dialog-kicker">ONSPOT · INVESTOR INTRODUCTION</span>
-            <DialogTitle>
-              {hasSubmissionResult ? "Request received" : "Start a conversation"}
-            </DialogTitle>
-            <DialogDescription>
-              {hasSubmissionResult
-                ? "Your investor request has been recorded."
-                : "Share a few details and we’ll follow up."}
-            </DialogDescription>
-          </DialogHeader>
+      <footer className="investor-wrap investor-footer">
+        <a className="investor-logo" href="/" aria-label="OnSpot home">
+          <img src={onSpotWordmark} alt="OnSpot" />
+        </a>
+        <p>
+          © 2026 OnSpot Global. All rights reserved. This page is for information
+          only and is not an offer to sell securities. Investing in early-stage
+          companies is risky and you may lose your entire investment.
+        </p>
+      </footer>
 
-          {submission.kind === "sent" ? (
-            <div className="investor-result investor-result-success" role="status">
-              <span className="investor-result-mark" aria-hidden="true">✓</span>
-              <p>Your request has been saved, and the notification was sent.</p>
-              <button
-                type="button"
-                className="investor-form-submit"
-                onClick={() => handleOpenChange(false)}
-              >
-                Done
-              </button>
-            </div>
-          ) : submission.kind === "saved-email-failed" ? (
-            <div className="investor-result investor-result-warning" role="status">
-              <p>
-                Your request is saved, but we couldn’t send the notification.
-                Please try again later.
-              </p>
-              <button
-                type="button"
-                className="investor-form-submit"
-                onClick={() => handleOpenChange(false)}
-              >
-                Done
-              </button>
-            </div>
-          ) : (
-            <form className="investor-form" onSubmit={submitRequest}>
-              <div className="investor-field">
-                <label htmlFor="investor-name">Name</label>
-                <input
-                  id="investor-name"
-                  name="name"
-                  autoComplete="name"
-                  required
-                  minLength={2}
-                  maxLength={120}
-                  value={form.name}
-                  onChange={(event) => updateField("name", event.target.value)}
-                />
-              </div>
-              <div className="investor-field">
-                <label htmlFor="investor-firm">Firm or Affiliation</label>
-                <input
-                  id="investor-firm"
-                  name="firm"
-                  autoComplete="organization"
-                  required
-                  minLength={2}
-                  maxLength={160}
-                  value={form.firm}
-                  onChange={(event) => updateField("firm", event.target.value)}
-                />
-              </div>
-              <div className="investor-field">
-                <label htmlFor="investor-email">Email</label>
-                <input
-                  id="investor-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  maxLength={254}
-                  value={form.email}
-                  onChange={(event) => updateField("email", event.target.value)}
-                />
-              </div>
-              <div className="investor-field">
-                <label htmlFor="investor-request-type">Request type</label>
-                <select
-                  id="investor-request-type"
-                  name="requestType"
-                  value={form.requestType}
-                  onChange={(event) =>
-                    updateField("requestType", event.target.value as RequestType)
-                  }
-                >
-                  {REQUESTS.map(({ type }) => (
-                    <option value={type} key={type}>
-                      {REQUEST_LABELS[type]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="investor-field">
-                <label htmlFor="investor-message">Message (optional)</label>
-                <textarea
-                  id="investor-message"
-                  name="message"
-                  rows={3}
-                  maxLength={1500}
-                  value={form.message}
-                  onChange={(event) => updateField("message", event.target.value)}
-                />
-              </div>
-
-              {submission.kind === "error" && (
-                <p className="investor-form-error" role="alert">
-                  {submission.message}
-                </p>
-              )}
-              <button
-                type="submit"
-                className="investor-form-submit"
-                disabled={submission.kind === "sending"}
-              >
-                {submission.kind === "sending"
-                  ? "Sending request…"
-                  : "Send request"}
-              </button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+      <InvestorDocumentDialog
+        open={dialogOpen}
+        document={requestedDocument}
+        onOpenChange={setDialogOpen}
+        returnFocusRef={requestTriggerRef}
+      />
     </div>
   );
 }

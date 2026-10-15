@@ -45,6 +45,12 @@ Isolated Vite servers need separate optimizer caches, not just separate ports.
 
 **How to apply:** Give each fixture a unique temporary cache directory through its subprocess configuration, then remove only that directory during teardown. Never repair a frontend cache issue by restarting a backend that performs prohibited database work.
 
+Custom virtual-entry fixtures may still trigger broad dependency discovery and mid-test optimizer reloads, even with an isolated cache.
+
+**Why:** A small standalone page fixture unexpectedly discovered dependencies from the wider client during assertions, losing open dialog state without a product-code failure.
+
+**How to apply:** For narrowly scoped fixtures, disable automatic discovery and explicitly prebundle their required third-party entry points. Keep the real app's optimizer configuration unchanged, and verify the fixture hydrates before testing interactions.
+
 Vite library-mode browser fixtures must explicitly replace Node environment references.
 
 **Why:** A production-mode library build can still retain `process.env.NODE_ENV` in React dependencies; a normal browser has no Node `process` global, so the fixture fails before exercising the application.

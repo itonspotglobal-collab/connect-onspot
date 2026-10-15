@@ -8,13 +8,7 @@ process.env.DATABASE_URL ??= "postgres://test:test@127.0.0.1:5432/test";
 const { createCachedInvestorStatsLoader, registerInvestorRoutes } =
   await import("../routes/investors.js");
 
-type InvestorRequest = {
-  name: string;
-  firm: string;
-  email: string;
-  requestType: "meeting" | "deck" | "founder";
-  message?: string;
-};
+type InvestorRequest = import("../routes/investors.js").InvestorRequest;
 
 const sample: InvestorRequest = {
   name: "Avery Investor",

@@ -15,7 +15,21 @@ export const investorRequestSchema = z.object({
   message: z.string().trim().max(1500).optional(),
 }).strict();
 
-export type InvestorRequest = z.infer<typeof investorRequestSchema>;
+export type InvestorRequest = Omit<z.infer<typeof investorRequestSchema>, "requestType"> & {
+  requestType: z.infer<typeof investorRequestSchema>["requestType"] | "valuation";
+  source?: "investors-page";
+  requestedDocument?: "deck" | "valuation";
+};
+
+// A separate input contract preserves the existing firm-required inquiry flow.
+// Document leads use the same private ledger and server-assigned created_at.
+export const investorDocumentRequestSchema = z.object({
+  firstName: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().max(254),
+  requestedDocument: z.enum(["deck", "valuation"]),
+  source: z.literal("investors-page"),
+  website: z.string().max(0).optional(),
+}).strict();
 
 export interface InvestorStats {
   contractorAccounts: number;
@@ -94,6 +108,7 @@ const REQUEST_LABELS: Record<InvestorRequest["requestType"], string> = {
   meeting: "Request a Meeting",
   deck: "Request the Pitch Deck",
   founder: "Speak to the Founder",
+  valuation: "Request the Valuation Summary",
 };
 
 async function notifyFounder(request: InvestorRequest): Promise<SendEmailResult> {
@@ -124,6 +139,8 @@ const databaseDependencies: InvestorDependencies = {
       email: request.email,
       requestType: request.requestType,
       message: request.message || null,
+      source: request.source || null,
+      requestedDocument: request.requestedDocument || null,
     }).returning({ id: investorRequests.id });
     if (!created) throw new Error("Investor request was not saved");
     return created;
@@ -182,15 +199,14 @@ export function registerInvestorRoutes(app: Express, dependencies: InvestorDepen
     }
   });
 
-  app.post("/api/public/investor-requests", inquiryLimiter, async (req, res) => {
-    const parsed = investorRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Please provide a name, firm, valid email, and request type." });
-    }
-
+  const saveAndNotify = async (
+    request: InvestorRequest,
+    res: import("express").Response,
+    documentRequest = false,
+  ) => {
     let saved: { id: string };
     try {
-      saved = await dependencies.saveRequest(parsed.data);
+      saved = await dependencies.saveRequest(request);
     } catch (error) {
       console.error("Failed to save investor request", error);
       return res.status(503).json({ error: "Request could not be saved. Please try again." });
@@ -198,7 +214,7 @@ export function registerInvestorRoutes(app: Express, dependencies: InvestorDepen
 
     let result: SendEmailResult;
     try {
-      result = await dependencies.notifyFounder(parsed.data);
+      result = await dependencies.notifyFounder(request);
     } catch (error) {
       console.error("Failed to notify founder of investor request", error);
       result = { success: false, error: "Email delivery failed" };
@@ -215,6 +231,38 @@ export function registerInvestorRoutes(app: Express, dependencies: InvestorDepen
     return res.status(201).json({
       id: saved.id,
       notificationStatus: result.success ? "sent" : "failed",
+      ...(documentRequest ? { documentAvailable: false } : {}),
     });
+  };
+
+  app.post("/api/public/investor-requests", inquiryLimiter, async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const parsed = investorRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Please provide a name, firm, valid email, and request type." });
+    }
+    return saveAndNotify(parsed.data, res);
+  });
+
+  app.post("/api/public/investor-document-requests", inquiryLimiter, async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const parsed = investorDocumentRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Please provide your first name, a valid email, and a supported document request." });
+    }
+    const lead = parsed.data;
+    // These files have not been supplied. Capture an honest follow-up request,
+    // never return a public URL or imply that a download/email has been delivered.
+    return saveAndNotify({
+      name: lead.firstName,
+      email: lead.email,
+      firm: "",
+      requestType: lead.requestedDocument,
+      source: "investors-page",
+      requestedDocument: lead.requestedDocument,
+      message: `Requested document: ${lead.requestedDocument === "deck"
+          ? "OnSpot_Seed_Pitch_Deck.pptx"
+          : "OnSpot_Seedscope_Valuation_Summary.pdf"}. Source: investors-page.`,
+    }, res, true);
   });
 }

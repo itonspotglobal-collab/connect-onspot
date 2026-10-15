@@ -57,7 +57,7 @@
 - [Join OnSpot design authority](approved-manifesto-design.md) — approved talent signup HTML replaces all founder-letter content and prior inspiration-only restrictions.
 - [USD currency policy](usd-currency-policy.md) — new pricing is USD worldwide; historical denominations remain unchanged, and text prices count even when numeric budgets are zero.
 - [Account-count audit](account-counter-audit.md) — candidate registration flags can be set without an auth account; verify sign-in evidence before public counting.
-- [Investor request routing](investor-request-routing.md) — owner approved one saved intake and founder notifications for all three CTAs; failed email must never be reported as sent.
+- [Investor resource requests](investor-request-routing.md) — document cards capture private leads; Wefunder is direct; saving, notification and document delivery are separate outcomes.
 - [Mobile signup failures](mobile-signup-failures.md) — hidden validation errors can look like loops; preserve security rules, honor full retry windows, and check sticky actions against the viewport.
 - [Release and staging safety](auth-incident-release-safety.md) — inspect launch side effects; staging needs a separate project, database, storage, and disposable test database.
 - [Client Team recorded hours](client-team-recorded-hours.md) — dashboard activity is not billable time; preserve provenance, work-zone weeks, and Guaranteed non-attendance semantics.
@@ -67,7 +67,7 @@
 - [Isolated server test boundaries](isolated-test-boundaries.md) — inspect transitive imports; denying SQL alone does not isolate memory stores or auth initialization.
 - [Signup email ownership policy](signup-email-ownership-policy.md) — new Client/Talent activation needs server-confirmed email ownership; audit is not implementation authorization.
 - [Timesheet access boundaries](timesheet-access-boundaries.md) — Team roster membership is not payroll permission; navigation eligibility must remain read-only.
-- [Investors visual scope](investors-visual-scope.md) — continue the actual home hero; account gauges are the only statistics, with three equal-weight inquiry CTAs.
+- [Investors visual authority](investors-visual-scope.md) — supplied CEO-letter HTML supersedes the earlier gauge-and-phone design; preserve the narrative and flag claims for review.
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — public signup overlays the mounted page; direct auth cancellation preserves origin independently of success redirects.
