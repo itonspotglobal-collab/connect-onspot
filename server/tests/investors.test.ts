@@ -86,6 +86,47 @@ describe("public investor intake", () => {
     assert.equal(calls, 2);
   });
 
+  it("refreshes account additions and removals without caching failed loads", async () => {
+    let now = 0;
+    let unavailable = false;
+    let counts = { contractorAccounts: 4, clientAccounts: 2 };
+    const cache = createCachedInvestorStatsLoader(async () => {
+      if (unavailable) throw new Error("Fixture database unavailable");
+      return { ...counts, asOf: new Date(now).toISOString() };
+    }, 60_000, () => now);
+    assert.equal((await cache()).contractorAccounts, 4);
+    counts = { contractorAccounts: 5, clientAccounts: 1 };
+    now = 60_000;
+    assert.deepEqual(await cache(), { ...counts, asOf: new Date(now).toISOString() });
+    unavailable = true;
+    now = 120_000;
+    await assert.rejects(cache(), /unavailable/);
+    unavailable = false;
+    counts = { contractorAccounts: 3, clientAccounts: 0 };
+    assert.deepEqual(await cache(), { ...counts, asOf: new Date(now).toISOString() });
+  });
+
+  it("reports unavailable aggregates without returning records or a fallback zero", async () => {
+    const app = express();
+    registerInvestorRoutes(app, {
+      loadStats: async () => { throw new Error("Fixture statistics failure"); },
+      saveRequest: async () => ({ id: "unused" }),
+      notifyFounder: async () => ({ success: true }),
+      recordNotification: async () => {},
+    });
+    const isolatedServer = app.listen(0);
+    try {
+      await new Promise<void>(resolve => isolatedServer.once("listening", resolve));
+      const port = (isolatedServer.address() as { port: number }).port;
+      const response = await fetch(`http://127.0.0.1:${port}/api/public/investor-stats`);
+      assert.equal(response.status, 503);
+      assert.equal(response.headers.get("cache-control"), "no-store");
+      assert.deepEqual(await response.json(), { error: "Account totals are temporarily unavailable" });
+    } finally {
+      await new Promise<void>(resolve => isolatedServer.close(() => resolve()));
+    }
+  });
+
   it("saves and notifies Nur for each of the three request types", async () => {
     for (const requestType of ["meeting", "deck", "founder"] as const) {
       const response = await fetch(`${base}/api/public/investor-requests`, {

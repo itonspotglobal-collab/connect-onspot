@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import HeadSEO from "@/components/HeadSEO";
 import {
   InvestorDocumentDialog,
@@ -7,11 +8,64 @@ import {
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
 import "./InvestorsCorner.css";
 
+type InvestorStats = {
+  contractorAccounts: number;
+  clientAccounts: number;
+  asOf: string;
+};
+
+function parseInvestorStats(value: unknown): InvestorStats {
+  if (!value || typeof value !== "object") {
+    throw new Error("Investor statistics are unavailable.");
+  }
+
+  const stats = value as Record<string, unknown>;
+  const validCount = (count: unknown): count is number =>
+    typeof count === "number" && Number.isSafeInteger(count) && count >= 0;
+  const validDate =
+    typeof stats.asOf === "string" &&
+    stats.asOf.trim().length > 0 &&
+    Number.isFinite(Date.parse(stats.asOf));
+
+  if (
+    !validCount(stats.contractorAccounts) ||
+    !validCount(stats.clientAccounts) ||
+    typeof stats.asOf !== "string" ||
+    !validDate
+  ) {
+    throw new Error("Investor statistics are unavailable.");
+  }
+
+  return {
+    contractorAccounts: stats.contractorAccounts,
+    clientAccounts: stats.clientAccounts,
+    asOf: stats.asOf,
+  };
+}
+
+async function fetchInvestorStats(): Promise<InvestorStats> {
+  const response = await fetch("/api/public/investor-stats", {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Investor statistics are unavailable.");
+  }
+  return parseInvestorStats(await response.json());
+}
+
 export default function InvestorsCorner() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [requestedDocument, setRequestedDocument] =
     useState<InvestorDocument>("deck");
   const requestTriggerRef = useRef<HTMLElement | null>(null);
+  const investorStatsQuery = useQuery({
+    queryKey: ["/api/public/investor-stats"],
+    queryFn: fetchInvestorStats,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
 
   const openDocumentRequest = (
     document: InvestorDocument,
@@ -75,12 +129,74 @@ export default function InvestorsCorner() {
         </section>
 
         <section
+          className="investor-wrap investor-traction"
+          aria-labelledby="investor-traction-title"
+          aria-live="polite"
+        >
+          <div className="investor-traction-heading">
+            <div>
+              <h2 id="investor-traction-title">Our Traction</h2>
+              <p>
+                Growing a global community of businesses and professionals on
+                OnSpot.
+              </p>
+            </div>
+            {investorStatsQuery.data && !investorStatsQuery.isError && (
+              <span className="investor-traction-updated">
+                Updated{" "}
+                {new Date(investorStatsQuery.data.asOf).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+          {investorStatsQuery.isLoading ? (
+            <div className="investor-traction-grid" role="status">
+              <div className="investor-traction-card investor-traction-loading">
+                <span className="investor-traction-skeleton" aria-hidden="true" />
+                <span>Registered Talent</span>
+              </div>
+              <div className="investor-traction-card investor-traction-loading">
+                <span className="investor-traction-skeleton" aria-hidden="true" />
+                <span>Registered Clients</span>
+              </div>
+              <span className="sr-only">Loading platform statistics.</span>
+            </div>
+          ) : investorStatsQuery.isError || !investorStatsQuery.data ? (
+            <div className="investor-traction-unavailable" role="status">
+              <p>
+                Platform statistics are currently unavailable. Please try again
+                shortly.
+              </p>
+              <button
+                type="button"
+                onClick={() => void investorStatsQuery.refetch()}
+                disabled={investorStatsQuery.isFetching}
+              >
+                {investorStatsQuery.isFetching ? "Checking…" : "Try again"}
+              </button>
+            </div>
+          ) : (
+            <div className="investor-traction-grid">
+              <div className="investor-traction-card">
+                <b>
+                  {investorStatsQuery.data.contractorAccounts.toLocaleString()}
+                </b>
+                <span>Registered Talent</span>
+              </div>
+              <div className="investor-traction-card">
+                <b>{investorStatsQuery.data.clientAccounts.toLocaleString()}</b>
+                <span>Registered Clients</span>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section
           className="investor-wrap investor-letter"
           aria-labelledby="investor-letter-title"
         >
           <div className="investor-aside">
-            <h2 id="investor-letter-title">A letter from Nur Laminero</h2>
-            <p>Co-Founder and CEO, OnSpot</p>
+            <h2 id="investor-letter-title">A letter from the founders.</h2>
+            <p>The Founders of OnSpot</p>
           </div>
           <div className="investor-letter-body">
             <p className="investor-letter-first">
@@ -126,13 +242,34 @@ export default function InvestorsCorner() {
               does meaningful work. A world where anyone can work anywhere — and
               every company can hire anyone, without limits.
             </p>
-            <div className="investor-sign">
-              <span className="investor-monogram" aria-hidden="true">
-                NL
-              </span>
-              <div>
-                <b>Nur Laminero</b>
-                <span>Co-Founder and CEO, OnSpot</span>
+            <div className="investor-signatures">
+              <h3>The Founders of OnSpot</h3>
+              <div className="investor-signature-list">
+                <div className="investor-sign">
+                  <span className="investor-monogram" aria-hidden="true">
+                    NL
+                  </span>
+                  <div>
+                    <b>Nur Laminero</b>
+                    <span>Co-Founder and CEO, OnSpot</span>
+                  </div>
+                </div>
+                <div className="investor-sign">
+                  <span className="investor-monogram" aria-hidden="true">
+                    J
+                  </span>
+                  <div>
+                    <b>Jake</b>
+                  </div>
+                </div>
+                <div className="investor-sign">
+                  <span className="investor-monogram" aria-hidden="true">
+                    M
+                  </span>
+                  <div>
+                    <b>Macky</b>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -228,9 +365,8 @@ export default function InvestorsCorner() {
           <img src={onSpotWordmark} alt="OnSpot" />
         </a>
         <p>
-          © 2026 OnSpot Global. All rights reserved. This page is for information
-          only and is not an offer to sell securities. Investing in early-stage
-          companies is risky and you may lose your entire investment.
+          © 2026 OnSpot. All rights reserved. This page is for information only
+          and is not an offer to sell securities.
         </p>
       </footer>
 

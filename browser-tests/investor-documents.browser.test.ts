@@ -34,7 +34,7 @@ before(async () => {
           const settings={investor_goal_contractors_2027:'{CONTRACTOR_GOAL}',investor_goal_clients_2027:'{CLIENT_GOAL}'};
           createRoot(document.getElementById('root')).render(location.pathname==='/settings'
             ? <QueryClientProvider client={new QueryClient()}><InvestorGoalSettings settings={settings}/></QueryClientProvider>
-            : <InvestorsCorner/>);
+            : <QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><InvestorsCorner/></QueryClientProvider>);
         `;
       },
       configureServer(server) {
@@ -60,9 +60,13 @@ before(async () => {
 });
 after(async () => { await browser?.close(); await vite?.close(); rmSync(cacheDir, { recursive: true, force: true }); });
 
-async function openPage(width = 1280, height = 900) {
+async function openPage(width = 1280, height = 900, statsHandler?: Parameters<Page["route"]>[1], clock = false) {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: "reduce" });
+  if (clock) await page.clock.install();
+  await page.bringToFront();
   await page.addInitScript(() => { (window as any).__name = (fn: unknown) => fn; });
+  await page.route("**/api/public/investor-stats", statsHandler ?? (route =>
+    route.fulfill({ json: { contractorAccounts: 1234, clientAccounts: 56, asOf: "2026-10-16T08:00:00.000Z" } })));
   await page.goto(`${base}/investors`);
   await page.locator("h1").waitFor();
   return page;
@@ -84,9 +88,17 @@ test("direct URL, refresh, metadata, official logo and exact narrative match ref
   await reference.goto(`${base}/reference`);
   const expected = await reference.locator("main").innerText();
   for (const line of expected.split("\n").map(normalize).filter(Boolean)) {
+    if (line === "A letter from Nur Laminero") continue;
     assert.ok(actual.includes(line), `Missing reference text: ${line}`);
   }
-  assert.match(actual, /you may lose your entire investment/);
+  assert.equal(await page.locator("#investor-letter-title").innerText(), "A letter from the founders.");
+  assert.equal(await page.locator(".investor-footer p").innerText(),
+    "© 2026 OnSpot. All rights reserved. This page is for information only and is not an offer to sell securities.");
+  assert.doesNotMatch(actual, /you may lose your entire investment|© 2026 OnSpot Global/);
+  const founders = page.locator(".investor-signatures");
+  assert.match(await founders.innerText(), /Nur Laminero/);
+  assert.match(await founders.innerText(), /Jake/);
+  assert.match(await founders.innerText(), /Macky/);
   const wefunder = page.getByRole("link", { name: /WeFunder/ });
   assert.equal(await wefunder.getAttribute("href"), "https://wefunder.com/onspot");
   assert.equal(await wefunder.getAttribute("target"), "_blank");
@@ -94,6 +106,66 @@ test("direct URL, refresh, metadata, official logo and exact narrative match ref
   assert.match((await wefunder.getAttribute("rel"))!, /noreferrer/);
   assert.equal(await page.locator("a[download]").count(), 0);
   await reference.close();
+  await page.close();
+});
+
+test("traction loads aggregates, updates on refresh and uses locally served Mont", async () => {
+  let loads = 0;
+  const page = await openPage(1280, 900, route => {
+    loads++;
+    return route.fulfill({ json: {
+      contractorAccounts: loads === 1 ? 1234 : 1235,
+      clientAccounts: loads === 1 ? 56 : 55,
+      asOf: "2026-10-16T08:00:00.000Z",
+    } });
+  }, true);
+  await page.getByText("1,234", { exact: true }).waitFor();
+  assert.equal(await page.locator(".investor-traction-card b").allTextContents().then(v => v.join("|")), "1,234|56");
+  await page.clock.fastForward(60_001);
+  await page.getByText("1,235", { exact: true }).waitFor();
+  assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["1,235", "55"]);
+  await page.evaluate(async () => {
+    await document.fonts.load('300 16px "Mont"');
+    await document.fonts.load('900 16px "Mont"');
+    await document.fonts.ready;
+  });
+  assert.equal(await page.evaluate(() => document.fonts.check('300 16px "Mont"') && document.fonts.check('900 16px "Mont"')), true);
+  assert.equal((await page.request.get(`${base}/fonts/mont/Mont-HeavyDEMO.woff`)).status(), 200);
+  await page.getByRole("button", { name: /Meet the Founders/ }).click();
+  for (const selector of [".onspot-investors-page h1", ".investor-traction-card b",
+    ".investor-footer p", ".investor-request-dialog input", ".investor-request-dialog button"]) {
+    assert.match(await page.locator(selector).first().evaluate(el => getComputedStyle(el).fontFamily), /Mont/);
+  }
+  await page.close();
+});
+
+test("traction loading and unavailable states never fabricate zero and can retry", async () => {
+  let release: (() => void) | undefined;
+  let calls = 0;
+  const page = await openPage(390, 844, async route => {
+    calls++;
+    if (calls === 1) await new Promise<void>(resolve => { release = resolve; });
+    return calls === 1
+      ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
+      : route.fulfill({ json: { contractorAccounts: 0, clientAccounts: 7, asOf: "2026-10-16T08:00:00.000Z" } });
+  });
+  await page.locator(".investor-traction-loading").first().waitFor();
+  assert.equal(await page.locator(".investor-traction-card b").count(), 0);
+  release?.();
+  await page.locator(".investor-traction-unavailable").waitFor();
+  assert.equal(await page.locator(".investor-traction-card b").count(), 0);
+  await page.locator(".investor-traction-unavailable button").click();
+  await page.locator(".investor-traction-card b").first().waitFor();
+  assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["0", "7"]);
+  await page.close();
+});
+
+test("invalid aggregate responses are unavailable rather than plausible numbers", async () => {
+  const page = await openPage(1280, 900, route => route.fulfill({
+    json: { contractorAccounts: -1, clientAccounts: 99, asOf: "not-a-date" },
+  }));
+  await page.locator(".investor-traction-unavailable").waitFor();
+  assert.equal(await page.locator(".investor-traction-card b").count(), 0);
   await page.close();
 });
 
