@@ -35,6 +35,8 @@ description: Durable money, identity, lifecycle, and concurrency rules for billi
 
 The intended future payments architecture is provider-managed marketplace payments: both Client and Talent connect their own provider accounts, while OnSpot never directly holds or moves funds. Keep provider connections vendor-neutral and separate from existing manual invoice and payout references; absence of a connection record means not connected.
 
+The explicitly approved current manual Wise operating workflow is described in [Manual Wise settlement policy](manual-wise-settlement-policy.md). It does not implement or imply provider connectivity or regulatory/custody approval.
+
 **Why:** The provider, not OnSpot, will handle charges, transfers, and KYC/compliance. Legacy vendor-specific user fields and manual reference fields must not become the foundation for this model.
 
 **How to apply:** Future payment integration work should use the billing parties' user identities, preserve existing semi-manual ledger states until a deliberate migration, and never infer that a stored provider reference proves a charge or transfer succeeded.

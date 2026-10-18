@@ -3,9 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RefreshCw, ShieldCheck, ReceiptText, Landmark, Eye } from "lucide-react";
+import { RefreshCw, ShieldCheck, ReceiptText, Eye } from "lucide-react";
+import { ManualWisePaymentPanel } from "@/components/manual-wise/ManualWisePaymentPanel";
 import {
   formatPaymentAmount,
   formatPaymentDate,
@@ -22,19 +21,6 @@ function InvoiceDetail({ invoice, history, onClose, onRetry }: {
   onClose: () => void;
   onRetry?: () => void;
 }) {
-  const queryClient = useQueryClient();
-  const [reference, setReference] = useState("");
-  const [error, setError] = useState("");
-  const canSubmitReference = ["issued", "overdue", "payment_failed"].includes(invoice.status);
-  const submit = useMutation({
-    mutationFn: () => hiringPaymentRequest("POST", `/api/client/hiring-invoices/${invoice.id}/reference`, { reference: reference.trim() }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/client/hiring-invoices"] });
-      onClose();
-    },
-    onError: (cause: Error) => setError(cause.message || "Payment reference could not be submitted."),
-  });
-
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
@@ -60,25 +46,8 @@ function InvoiceDetail({ invoice, history, onClose, onRetry }: {
             </div>
           )}
           {invoice.status !== "paid" && (
-            <div className="space-y-3 rounded-lg border p-4">
-              <p className="flex items-center gap-2 font-semibold"><Landmark className="h-4 w-4" /> Manual transfer instructions</p>
-              <p className="text-sm"><span className="font-medium">Recipient:</span> {invoice.payment_recipient}</p>
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{invoice.payment_instructions}</p>
-              {invoice.payment_reference && <p className="text-sm"><span className="font-medium">Submitted reference:</span> {invoice.payment_reference}</p>}
-              {canSubmitReference && (
-                <form className="space-y-2 border-t pt-3" onSubmit={(event) => { event.preventDefault(); submit.mutate(); }}>
-                  <Label htmlFor={`payment-reference-${invoice.id}`}>Payment reference</Label>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input id={`payment-reference-${invoice.id}`} value={reference} onChange={(event) => setReference(event.target.value)} maxLength={500} required placeholder="Enter your bank transfer reference" />
-                    <Button disabled={submit.isPending || !reference.trim()}>{submit.isPending ? "Submitting…" : "Submit reference"}</Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">A submitted reference is a claim for review, not confirmation of payment.</p>
-                </form>
-              )}
-              {invoice.status === "verification_pending" && <p className="text-sm text-amber-900">Your reference is under review. OnSpot must verify the settled payment; client-submitted proof does not confirm payment.</p>}
-            </div>
+            <ManualWisePaymentPanel category="hiring_invoice" id={invoice.id} title="Hiring invoice payment and receipt" />
           )}
-          {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
           {history.length > 0 && (
             <div>
               <h3 className="mb-2 text-sm font-semibold">Invoice history</h3>

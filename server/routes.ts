@@ -34,6 +34,8 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { registerHiringPaymentRoutes, hiringPaymentFailure } from "./routes/hiringPayments";
+import { registerManualWiseRoutes } from "./routes/manualWise";
+import { ManualWiseService } from "./services/manualWiseService";
 import { HiringPaymentService, requireVerifiedHiringPayment } from "./services/hiringPaymentService";
 import { registerInvestorRoutes } from "./routes/investors.js";
 import { registerInvestorGoalRoutes, guardInvestorGoalUpdates, seedInvestorGoalSettings } from "./routes/investorGoals";
@@ -3475,6 +3477,7 @@ export async function registerRoutes(
   );
 
   registerInvestorRoutes(app);
+  registerManualWiseRoutes(app, { service: new ManualWiseService(pool), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
   registerHiringPaymentRoutes(app, { service: new HiringPaymentService(pool), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
   registerInvestorGoalRoutes(app, query);
 
@@ -22367,19 +22370,15 @@ export async function registerRoutes(
         if (existing.rows.length === 0) {
           const inserted = await client.query(
             `INSERT INTO security_deposits
-               (hiring_contract_id, amount, currency, status, held_at)
-             VALUES ($1, $2, $3, 'held', NOW()) RETURNING *`,
+               (hiring_contract_id, amount, currency, status)
+             VALUES ($1, $2, $3, 'pending') RETURNING *`,
              [linked.id, amount, billingCurrency],
           );
           return inserted.rows[0];
         }
         if (existing.rows[0].status === "pending") {
-          const updated = await client.query(
-            `UPDATE security_deposits SET status = 'held', held_at = NOW(), updated_at = NOW()
-              WHERE id = $1 RETURNING *`,
-            [existing.rows[0].id],
-          );
-          return updated.rows[0];
+          // Creating/reopening a funding request never establishes settled funding.
+          return existing.rows[0];
         }
         if (existing.rows[0].status !== "held") {
           const error = new Error(`Deposit cannot be collected from its current status: ${existing.rows[0].status}`);

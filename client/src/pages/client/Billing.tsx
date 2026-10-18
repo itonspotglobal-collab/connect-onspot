@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authAPI } from "@/lib/api";
 import { ClientHiringInvoicesSection } from "@/components/hiring-payments/HiringPayments";
+import { ClientWiseObligations, ManualWisePaymentPanel } from "@/components/manual-wise/ManualWisePaymentPanel";
 
 type Invoice = {
   id: string;
@@ -209,6 +210,9 @@ function InvoiceDetail({ invoiceId, onBack }: { invoiceId: string; onBack: () =>
         </Button>
       </div>
       <InvoiceDocument invoice={invoice} />
+      {invoice.status !== "paid" && invoice.status !== "void" && (
+        <ManualWisePaymentPanel category="invoice" id={invoice.id} title="Invoice payment and receipt" />
+      )}
       <p className="text-center text-xs text-muted-foreground print:hidden">
         Use your browser&apos;s print dialog to print or save this invoice as a PDF.
       </p>
@@ -247,6 +251,7 @@ export default function Billing() {
       </div>
 
       <ClientHiringInvoicesSection />
+      <ClientWiseObligations />
 
       {isLoading ? (
         <div className="space-y-3" data-testid="invoices-loading">

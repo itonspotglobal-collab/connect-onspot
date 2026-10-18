@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   formatPaymentAmount,
   formatPaymentDate,
@@ -32,7 +33,6 @@ export function AdminHiringPaymentsSection() {
   const [selected, setSelected] = useState<HiringInvoice | null>(null);
   const [reason, setReason] = useState("");
   const [action, setAction] = useState("");
-  const [review, setReview] = useState({ amount: "", reference: "", recipient: "", independentlyVerified: false });
   const [policy, setPolicy] = useState(blankPolicy);
   const [message, setMessage] = useState("");
   const params = new URLSearchParams();
@@ -72,13 +72,6 @@ export function AdminHiringPaymentsSection() {
     mutationFn: () => hiringPaymentRequest("POST", `/api/admin/hiring-invoices/${selected!.id}/review`, {
       action,
       reason: reason.trim(),
-      ...(action === "verify" ? {
-        verifiedAmount: review.amount.trim(),
-        verifiedCurrency: "USD",
-        verifiedReference: review.reference.trim(),
-        verifiedRecipient: review.recipient.trim(),
-        independentlyVerified: review.independentlyVerified,
-      } : {}),
     }),
     onSuccess: async () => {
       setSelected(null);
@@ -92,21 +85,19 @@ export function AdminHiringPaymentsSection() {
     setSelected(invoice);
     setReason("");
     setAction(invoice.status === "paid" ? "refund"
-      : invoice.status === "verification_pending" ? "verify"
+      : invoice.status === "verification_pending" ? "void"
         : ["issued", "overdue", "payment_failed", "draft"].includes(invoice.status) ? "void" : "");
-    // Verification details must be entered from independent settlement records, never copied from a client claim.
-    setReview({ amount: "", reference: "", recipient: "", independentlyVerified: false });
   };
   const updateFilter = (key: keyof typeof filters, value: string) =>
     setFilters((current) => ({ ...current, [key]: value }));
   const allowedActions = selected?.status === "paid" ? ["refund", "invalidate"]
-    : selected?.status === "verification_pending" ? ["verify", "reject", "void"]
+    : selected?.status === "verification_pending" ? ["void"]
       : selected && ["issued", "overdue", "payment_failed", "draft"].includes(selected.status) ? ["void"] : [];
 
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div><p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Separate financial workflow</p><h2 className="mt-1 text-xl font-semibold">Pre-offer hiring invoices</h2><p className="text-sm text-muted-foreground">Payment review is restricted to database-confirmed Super Admins.</p></div>
+        <div><p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Separate financial workflow</p><h2 className="mt-1 text-xl font-semibold">Pre-offer hiring invoices</h2><p className="text-sm text-muted-foreground">Receipt verification and payment settlement happen in the unified Payment Verifications queue.</p></div>
         <Button variant="outline" onClick={() => invoicesQuery.refetch()} disabled={invoicesQuery.isFetching}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
       </div>
       {message && <p role="status" className="rounded-md border bg-muted/40 p-3 text-sm">{message}</p>}
@@ -155,7 +146,7 @@ export function AdminHiringPaymentsSection() {
         {invoicesQuery.isLoading ? <div className="h-20 animate-pulse rounded bg-muted" />
           : invoicesQuery.isError ? <div role="alert" className="text-sm text-rose-700">{isForbidden(invoicesQuery.error) ? "Access denied: only database-confirmed Super Admins may access pre-offer payment administration." : "Hiring invoices could not be loaded."} <Button size="sm" variant="outline" onClick={() => invoicesQuery.refetch()}>Retry</Button></div>
             : (invoicesQuery.data || []).length === 0 ? <p className="py-5 text-center text-sm text-muted-foreground">No pre-offer invoices match these filters.</p>
-              : <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-sm"><thead className="border-y bg-muted/40 text-left text-xs"><tr>{["Invoice", "Client", "Talent / job", "Amount", "Status", ""].map((title) => <th key={title} className="px-3 py-3">{title}</th>)}</tr></thead><tbody>{invoicesQuery.data?.map((invoice) => <tr key={invoice.id} className="border-b"><td className="px-3 py-3 font-medium">{invoice.invoice_number}</td><td className="px-3 py-3">{invoice.client_name || invoice.client_email || invoice.client_id || "—"}</td><td className="px-3 py-3">{invoice.talent_name || invoice.talent_id || "Talent"}<p className="text-xs text-muted-foreground">{invoice.job_title || invoice.job_id}</p></td><td className="px-3 py-3">{formatPaymentAmount(invoice.amount, invoice.currency)}</td><td className="px-3 py-3"><HiringInvoiceStatus status={invoice.status} /></td><td className="px-3 py-3 text-right"><Button size="sm" variant="outline" onClick={() => openInvoice(invoice)}>Review</Button></td></tr>)}</tbody></table></div>}
+               : <div className="overflow-x-auto"><table className="w-full min-w-[850px] text-sm"><thead className="border-y bg-muted/40 text-left text-xs"><tr>{["Invoice", "Client", "Talent / job", "Amount", "Status", ""].map((title) => <th key={title} className="px-3 py-3">{title}</th>)}</tr></thead><tbody>{invoicesQuery.data?.map((invoice) => <tr key={invoice.id} className="border-b"><td className="px-3 py-3 font-medium">{invoice.invoice_number}</td><td className="px-3 py-3">{invoice.client_name || invoice.client_email || invoice.client_id || "—"}</td><td className="px-3 py-3">{invoice.talent_name || invoice.talent_id || "Talent"}<p className="text-xs text-muted-foreground">{invoice.job_title || invoice.job_id}</p></td><td className="px-3 py-3">{formatPaymentAmount(invoice.amount, invoice.currency)}</td><td className="px-3 py-3"><HiringInvoiceStatus status={invoice.status} /></td><td className="px-3 py-3 text-right"><div className="flex flex-wrap justify-end gap-2">{invoice.status === "verification_pending" && <Button asChild size="sm" variant="outline"><Link href="/admin/ledger#manual-wise-admin">Review receipt in Payment Verifications</Link></Button>}{invoice.status === "paid" && <span className="self-center text-xs font-medium text-emerald-800">{invoice.verified_at ? "Paid · independently verified" : "Paid record"}</span>}<Button size="sm" variant="outline" onClick={() => openInvoice(invoice)}>Details</Button></div></td></tr>)}</tbody></table></div>}
       </CardContent></Card>
 
       <Card><CardHeader><CardTitle className="text-base">Historical payment exceptions</CardTitle><p className="text-sm text-muted-foreground">Read-only records; no payment or hiring state is changed here.</p></CardHeader><CardContent>
@@ -181,23 +172,14 @@ export function AdminHiringPaymentsSection() {
                   {detailQuery.data.invoice.verified_at && <div className="mt-3 border-t pt-2"><p className="font-semibold text-emerald-800">Verified payment details</p><p>Verifier: {detailQuery.data.invoice.verified_by || "Authorized reviewer"} · {formatPaymentDate(detailQuery.data.invoice.verified_at)}</p><p>Verified amount/currency: {detailQuery.data.invoice.verified_amount || "—"} {detailQuery.data.invoice.verified_currency || ""}</p><p>Verified reference: {detailQuery.data.invoice.verified_reference || "—"}</p><p>Verified recipient: {detailQuery.data.invoice.verified_recipient || "—"}</p></div>}
                 </div>
                 {detailQuery.data.history?.length > 0 && <div><h3 className="font-semibold">Immutable status history</h3><ul className="mt-2 space-y-2 text-sm">{detailQuery.data.history.map((entry: HiringInvoiceHistory) => <li key={entry.id} className="rounded border p-2"><strong>{entry.event.replaceAll("_", " ")}</strong>{(entry.previous_status || entry.new_status) && <span> · {statusLabel[entry.previous_status || ""] || entry.previous_status || "—"} → {statusLabel[entry.new_status || ""] || entry.new_status || "—"}</span>}<span className="text-muted-foreground"> · {formatPaymentDate(entry.created_at)}{entry.actor_id ? ` · Actor ${entry.actor_id}` : ""}</span>{entry.details?.reason && <p className="text-muted-foreground">Reason: {entry.details.reason}</p>}</li>)}</ul></div>}
-                <div className="space-y-3 border-t pt-4">
+                 {detailQuery.data.invoice.status === "verification_pending" && <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"><p className="font-semibold">Receipt pending independent verification</p><p className="mt-1">This proof is not payment confirmation. Complete verification in the unified payment queue.</p><Button asChild size="sm" variant="outline" className="mt-3"><Link href="/admin/ledger#manual-wise-admin">Review receipt in Payment Verifications</Link></Button></div>}
+                 {detailQuery.data.invoice.status === "paid" && <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-900">{detailQuery.data.invoice.verified_at ? "Payment independently verified. The invoice is paid." : "This invoice is recorded as paid."}</p>}
+                 <div className="space-y-3 border-t pt-4">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <label className="space-y-1 text-sm">Review action<select className="h-10 w-full rounded-md border bg-background px-3" value={action} onChange={(event) => setAction(event.target.value)}><option value="">No permitted action</option>{allowedActions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
                     <label className="space-y-1 text-sm">Required reason<textarea className="min-h-10 w-full rounded-md border bg-background px-3 py-2" value={reason} onChange={(event) => setReason(event.target.value)} required /></label>
                   </div>
-                  {action === "verify" && <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p className="flex items-center gap-2 text-sm font-semibold text-amber-950"><AlertTriangle className="h-4 w-4" />Client proof alone is not payment verification.</p>
-                    <p className="text-xs text-amber-900">Compare settlement records with the invoice values above. Enter independently confirmed settlement details below.</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <label className="space-y-1 text-sm">Verified amount<Input value={review.amount} onChange={(event) => setReview({ ...review, amount: event.target.value })} required inputMode="decimal" /></label>
-                      <label className="space-y-1 text-sm">Verified currency<Input value="USD" readOnly /></label>
-                      <label className="space-y-1 text-sm">Independently checked reference<Input value={review.reference} onChange={(event) => setReview({ ...review, reference: event.target.value })} required /></label>
-                      <label className="space-y-1 text-sm">Verified recipient<Input value={review.recipient} onChange={(event) => setReview({ ...review, recipient: event.target.value })} required /></label>
-                    </div>
-                    <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={review.independentlyVerified} onChange={(event) => setReview({ ...review, independentlyVerified: event.target.checked })} /><span>I independently confirmed settled payment, amount, currency, recipient and reference outside client-submitted evidence.</span></label>
-                  </div>}
-                  <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" onClick={() => setSelected(null)}>Cancel</Button><Button disabled={submitReview.isPending || !action || !reason.trim() || (action === "verify" && (!review.amount.trim() || !review.reference.trim() || !review.recipient.trim() || !review.independentlyVerified))} onClick={() => submitReview.mutate()}>{submitReview.isPending ? "Recording…" : action ? `Record ${action}` : "Choose an action"}</Button></div>
+                   <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" onClick={() => setSelected(null)}>Cancel</Button><Button disabled={submitReview.isPending || !action || !reason.trim()} onClick={() => submitReview.mutate()}>{submitReview.isPending ? "Recording…" : action ? `Record ${action}` : "Choose an action"}</Button></div>
                 </div>
               </div>}
         </DialogContent>

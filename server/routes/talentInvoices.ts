@@ -388,7 +388,7 @@ async function schedulePayoutIfCovered(client: any, invoiceId: string) {
   }
   const replenishments = await client.query(
     `SELECT COALESCE(SUM(amount), 0) AS amount FROM security_deposit_replenishments
-      WHERE hiring_contract_id = $1 AND currency = $2`,
+      WHERE hiring_contract_id = $1 AND currency = $2 AND payment_status = 'paid'`,
     [invoice.hiring_contract_id, currency],
   );
   const heldCoverage = Number(deposit.amount) + Number(replenishments.rows[0]?.amount ?? 0);
@@ -1695,7 +1695,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
                 ti.amount, d.status AS deposit_status, d.currency AS deposit_currency,
                 d.amount AS deposit_amount,
                 COALESCE((SELECT SUM(r.amount) FROM security_deposit_replenishments r
-                  WHERE r.hiring_contract_id = ti.hiring_contract_id AND r.currency = ti.currency), 0) AS replenished_amount,
+                  WHERE r.hiring_contract_id = ti.hiring_contract_id AND r.currency = ti.currency AND r.payment_status = 'paid'), 0) AS replenished_amount,
                 COALESCE((SELECT SUM(p.amount) FROM payouts p
                   WHERE p.hiring_contract_id = ti.hiring_contract_id
                     AND p.currency = ti.currency
@@ -1799,7 +1799,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
       return res.status(error.status ?? 400).json({ error: error.message, code: error.code });
     }
     if (amount === null || amount <= 0) {
-      return res.status(422).json({ error: "A positive amount and currency are required to record a held deposit replenishment" });
+      return res.status(422).json({ error: "A positive finalized amount and currency are required to request deposit funding" });
     }
     const client = await getClient();
     try {
@@ -1813,14 +1813,21 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
         await client.query("ROLLBACK");
         return res.status(404).json({ error: "Security deposit not found" });
       }
-      if (deposit.rows[0].status !== "held" || !isUsdCurrency(deposit.rows[0].currency)) {
+      if (!["held","suspended"].includes(deposit.rows[0].status) || !isUsdCurrency(deposit.rows[0].currency)) {
         await client.query("ROLLBACK");
-        return res.status(409).json({ error: "Replenishment currency must match a currently held security deposit" });
+        return res.status(409).json({ error: "Replenishment requires a held deposit or a suspended deposit awaiting cure." });
+      }
+      if (deposit.rows[0].status==="suspended") {
+        const principal=await client.query("SELECT amount FROM security_deposits WHERE id=$1",[req.params.id]);
+        if (Number(principal.rows[0].amount)!==amount) {
+          await client.query("ROLLBACK");
+          return res.status(422).json({error:"A suspended-deposit cure must restore the existing deposit principal exactly; partial cures require separate financial review."});
+        }
       }
       const saved = await client.query(
         `INSERT INTO security_deposit_replenishments
-           (hiring_contract_id, amount, currency, recorded_by, reference)
-         VALUES ($1,$2,$3,$4,$5) RETURNING id, amount, currency, reference, created_at`,
+           (hiring_contract_id, amount, currency, recorded_by, reference, payment_status)
+         VALUES ($1,$2,$3,$4,$5,'unpaid') RETURNING id, amount, currency, reference, payment_status, created_at`,
         [deposit.rows[0].hiring_contract_id, amount.toFixed(2), currency, req.user.id,
           typeof req.body?.reference === "string" ? req.body.reference.trim().slice(0, 500) || null : null],
       );
@@ -1863,7 +1870,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
   app.get("/api/client/monthly-invoices", ...clientAuth, async (req: any, res) => {
     try {
       const result = await query(
-        `SELECT i.id, i.invoice_month, i.currency, i.subtotal, i.status, i.created_at,
+        `SELECT i.id, i.invoice_month, i.currency, i.subtotal, i.status, i.payment_status, i.paid_at, i.created_at,
                 COALESCE((SELECT SUM(a.amount) FROM client_credit_applications a
                   WHERE a.client_monthly_invoice_id = i.id), 0) AS applied_credits
            FROM client_monthly_invoices i WHERE i.client_id = $1
@@ -1880,7 +1887,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
   app.get("/api/client/monthly-invoices/:id", ...clientAuth, async (req: any, res) => {
     try {
       const result = await query(
-        `SELECT i.id, i.invoice_month, i.currency, i.subtotal, i.status, i.created_at,
+        `SELECT i.id, i.invoice_month, i.currency, i.subtotal, i.status, i.payment_status, i.paid_at, i.created_at,
                 COALESCE((SELECT SUM(a.amount) FROM client_credit_applications a
                   WHERE a.client_monthly_invoice_id = i.id), 0) AS applied_credits
            FROM client_monthly_invoices i WHERE i.id = $1 AND i.client_id = $2`,

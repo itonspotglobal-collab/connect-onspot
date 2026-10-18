@@ -1,294 +1,54 @@
-import { useParams, useLocation } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { authAPI } from "@/lib/api";
 import { TopNavigation } from "@/components/TopNavigation";
+import { ManualWisePaymentPanel, WiseObligation } from "@/components/manual-wise/ManualWisePaymentPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  CheckCircle2,
-  Loader2,
-  Home,
-  FileText,
-  Clock,
-  Calendar,
-  Hash,
-  DollarSign,
-  ReceiptText,
-  Paperclip,
-} from "lucide-react";
-
-function formatUSD(val: string | number | null | undefined) {
-  if (!val) return "—";
-  const n = typeof val === "string" ? parseFloat(val) : val;
-  if (isNaN(n)) return "—";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
-}
-
-function formatDate(val: string | Date | null | undefined) {
-  if (!val) return "—";
-  return new Date(val).toLocaleString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function SummaryRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <Icon className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-      <div className="min-w-0">
-        <p className="text-xs text-slate-400 mb-0.5">{label}</p>
-        <div className="font-medium text-slate-800 text-sm break-words">{value}</div>
-      </div>
-    </div>
-  );
-}
+import { CheckCircle2, Clock3, Home, RefreshCw } from "lucide-react";
+import { buildLoginReturnUrl } from "@/lib/returnTo";
 
 export default function InquirySuccess() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-
-  const { data, isLoading } = useQuery<{ inquiry: any }>({
-    queryKey: ["/api/inquiries", id],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/inquiries/${id}`);
-      if (!res.ok) throw new Error("Not found");
-      return res.json();
-    },
+  const inquiryQuery = useQuery<{ inquiry: any }>({ queryKey: ["/api/inquiries", id], queryFn: async () => (await apiRequest("GET", `/api/inquiries/${id}`)).json() });
+  const paymentQuery = useQuery<WiseObligation>({
+    queryKey: ["/api/manual-wise/obligations", "inquiry", id],
+    queryFn: () => authAPI.get(`/api/manual-wise/obligations/inquiry/${encodeURIComponent(id || "")}`),
   });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <TopNavigation />
-        <div className="flex items-center justify-center pt-40">
-          <Loader2 className="w-8 h-8 animate-spin text-[#3F4698]" />
+  const inquiry = inquiryQuery.data?.inquiry;
+  const status = paymentQuery.data?.paymentStatus;
+  const paid = status === "paid";
+  const rejected = status === "rejected";
+  const pending = status === "verification_pending";
+  const loading = inquiryQuery.isLoading || paymentQuery.isLoading;
+  if (loading) return <div className="min-h-[100dvh] bg-background"><TopNavigation /><div className="mx-auto max-w-2xl space-y-4 px-4 pt-32"><div className="mx-auto h-16 w-16 animate-pulse rounded-full bg-muted" /><div className="h-8 animate-pulse rounded bg-muted" /><div className="h-52 animate-pulse rounded-xl bg-muted" /></div></div>;
+  const authorized = Boolean(inquiry) && (paymentQuery.isSuccess || inquiry?.status === "endorsed");
+  if (!authorized) return <div className="min-h-[100dvh] bg-background"><TopNavigation /><main className="mx-auto max-w-xl px-4 pt-32"><Card><CardContent className="space-y-4 p-6 text-center"><h1 className="text-xl font-semibold">Payment status unavailable</h1><p className="text-sm text-muted-foreground">Sign in using the verified email account that owns this inquiry. Payment status is private and is never inferred from a client-side confirmation.</p><Button asChild><Link href={buildLoginReturnUrl(`/inquiry/${id}/success`)}>Sign in to view payment status</Link></Button><div className="flex justify-center gap-2"><Button variant="outline" onClick={() => { inquiryQuery.refetch(); paymentQuery.refetch(); }}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button><Button variant="ghost" onClick={() => navigate(`/inquiry/${id}/review`)}>Return to review</Button></div></CardContent></Card></main></div>;
+  return <div className="min-h-[100dvh] bg-background">
+    <TopNavigation />
+    <header className={`px-4 pb-10 pt-28 ${paid ? "bg-emerald-50/70" : rejected ? "bg-rose-50/70" : "bg-amber-50/70"}`}>
+      <div className="mx-auto max-w-2xl text-center">
+        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${paid ? "bg-emerald-100 text-emerald-800" : rejected ? "bg-rose-100 text-rose-800" : "bg-amber-100 text-amber-900"}`}>
+          {paid ? <CheckCircle2 className="h-8 w-8" /> : <Clock3 className="h-8 w-8" />}
         </div>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight">{paid ? "Payment verified" : rejected ? "Receipt needs attention" : pending ? "Receipt received" : "Payment not submitted"}</h1>
+        <p className="mx-auto mt-2 max-w-xl text-muted-foreground">{paid ? "An OnSpot administrator independently confirmed settlement. Your payment is recorded as paid." : rejected ? "Your submitted receipt was rejected. Review the reason below and submit corrected evidence; the payment is not marked paid." : pending ? "Your receipt is pending an independent settlement check. Uploading proof does not mean the funds have been received." : "Use the payment instructions to make the transfer, then submit the reference and receipt."}</p>
+        <Badge variant="outline" className={`mt-4 ${paid ? "border-emerald-300 bg-emerald-100 text-emerald-900" : rejected ? "border-rose-300 bg-rose-100 text-rose-900" : "border-amber-300 bg-amber-100 text-amber-950"}`}>{paid ? "Paid · verified" : rejected ? "Rejected · resubmission available" : pending ? "Pending verification" : "Awaiting payment"}</Badge>
       </div>
-    );
-  }
-
-  const inquiry = data?.inquiry;
-
-  // Gate: only show success if payment confirmation was submitted (any paymentStatus) or already paid/completed
-  const isPaymentSubmitted =
-    inquiry?.paymentStatus ||
-    inquiry?.paymentConfirmationSubmittedAt ||
-    inquiry?.status === "paid" ||
-    inquiry?.status === "completed";
-
-  if (!inquiry || !isPaymentSubmitted) {
-    const target =
-      inquiry?.status === "endorsed"
-        ? `/inquiry/${id}/payment`
-        : `/inquiry/${id}/review`;
-    navigate(target);
-    return null;
-  }
-
-  const paymentStatus = inquiry.paymentStatus ?? (inquiry.status === "paid" ? "verified" : "pending_verification");
-  const isVerified = paymentStatus === "verified" || inquiry.status === "paid";
-  const isRejected = paymentStatus === "rejected";
-
-  const statusLabel = isVerified
-    ? "Verified"
-    : isRejected
-    ? "Rejected — Please resubmit"
-    : "Pending Verification";
-
-  const statusColor = isVerified
-    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-    : isRejected
-    ? "bg-red-100 text-red-800 border-red-200"
-    : "bg-amber-100 text-amber-800 border-amber-200";
-
-  return (
-    <div className="min-h-screen bg-background">
-      <TopNavigation />
-
-      {/* Hero */}
-      <section
-        className={`pt-28 pb-14 px-4 ${
-          isVerified
-            ? "bg-gradient-to-br from-emerald-50 via-background to-[#5B45E8]/5"
-            : isRejected
-            ? "bg-gradient-to-br from-red-50 via-background to-background"
-            : "bg-gradient-to-br from-[#3F4698]/6 via-background to-amber-50/40"
-        }`}
-      >
-        <div className="max-w-2xl mx-auto text-center">
-          {/* Icon */}
-          <div className="relative inline-flex items-center justify-center mb-8">
-            <div
-              className={`absolute h-24 w-24 rounded-full blur-[18px] ${
-                isVerified ? "bg-emerald-200/40" : isRejected ? "bg-red-200/40" : "bg-[#3F4698]/15"
-              }`}
-            />
-            <div
-              className={`absolute h-20 w-20 rounded-full border ${
-                isVerified
-                  ? "border-emerald-200/60 bg-emerald-50/80"
-                  : isRejected
-                  ? "border-red-200/60 bg-red-50/80"
-                  : "border-[#3F4698]/20 bg-[#3F4698]/6"
-              }`}
-            />
-            <div
-              className={`relative flex h-16 w-16 items-center justify-center rounded-full shadow-lg ${
-                isVerified
-                  ? "bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-200"
-                  : isRejected
-                  ? "bg-gradient-to-br from-red-500 to-red-600 shadow-red-200"
-                  : "bg-gradient-to-br from-[#3F4698] to-[#5B45E8] shadow-[#3F4698]/30"
-              }`}
-            >
-              {isVerified ? (
-                <CheckCircle2 className="w-8 h-8 text-white" strokeWidth={2} />
-              ) : (
-                <Clock className="w-8 h-8 text-white" strokeWidth={2} />
-              )}
-            </div>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-4 leading-[1.15]">
-            {isVerified ? "Payment Verified" : "Payment Confirmation Submitted"}
-          </h1>
-          <p className="text-slate-500 text-base max-w-md mx-auto">
-            {isVerified
-              ? "Your payment has been verified. Our team will be in touch within 24 hours."
-              : isRejected
-              ? "Your payment confirmation was not accepted. Please resubmit with correct details."
-              : "Thank you. Your payment confirmation has been submitted. The OnSpot team will review your payment and contact you directly once verified."}
-          </p>
-        </div>
-      </section>
-
-      {/* Stepper */}
-      <div className="border-b border-slate-100 bg-white">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-2 text-sm overflow-x-auto">
-          {["Inquiry Details", "Review & Endorse", "Payment"].map((label) => (
-            <div key={label} className="contents">
-              <div className="flex items-center gap-1.5 text-slate-400 whitespace-nowrap">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                {label}
-              </div>
-              <div className="flex-1 h-px bg-emerald-200 min-w-[12px]" />
-            </div>
-          ))}
-          <div className="flex items-center gap-1.5 font-semibold text-emerald-600 whitespace-nowrap">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-            Confirmation
-          </div>
-        </div>
-      </div>
-
-      {/* Summary */}
-      <section className="py-10 px-4">
-        <div className="max-w-2xl mx-auto space-y-5">
-          <Card className="shadow-sm border-slate-100">
-            <CardContent className="p-7 space-y-5">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <h2 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Submission Summary</h2>
-                <Badge className={`text-xs font-medium border ${statusColor}`}>
-                  {statusLabel}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <SummaryRow icon={Hash} label="Inquiry Reference" value={<span className="font-mono">{inquiry.referenceNumber}</span>} />
-                <SummaryRow icon={FileText} label="Customer Name" value={inquiry.fullName} />
-                <SummaryRow icon={DollarSign} label="Amount Due (USD)" value={formatUSD(inquiry.estimatedBudget)} />
-                <SummaryRow
-                  icon={ReceiptText}
-                  label="Payment Reference"
-                  value={inquiry.paymentReferenceNumber ?? <span className="text-slate-400 italic">Not provided</span>}
-                />
-                {inquiry.paymentProofFilename && (
-                  <SummaryRow
-                    icon={Paperclip}
-                    label="Proof of Payment"
-                    value={
-                      inquiry.paymentProofUrl ? (
-                        <a
-                          href={inquiry.paymentProofUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#3F4698] underline underline-offset-2 break-all"
-                        >
-                          {inquiry.paymentProofFilename}
-                        </a>
-                      ) : (
-                        inquiry.paymentProofFilename
-                      )
-                    }
-                  />
-                )}
-                <SummaryRow
-                  icon={Calendar}
-                  label="Submitted At"
-                  value={formatDate(inquiry.paymentConfirmationSubmittedAt)}
-                />
-              </div>
-
-              {inquiry.paymentNotes && (
-                <div className="border-t border-slate-100 pt-4">
-                  <p className="text-xs text-slate-400 mb-1">Your Notes</p>
-                  <p className="text-sm text-slate-700 leading-relaxed">{inquiry.paymentNotes}</p>
-                </div>
-              )}
-
-              {isRejected && inquiry.adminPaymentNotes && (
-                <div className="rounded-lg border border-red-100 bg-red-50 p-4">
-                  <p className="text-xs font-medium text-red-600 mb-1">Rejection Reason</p>
-                  <p className="text-sm text-red-700 leading-relaxed">{inquiry.adminPaymentNotes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              onClick={() => navigate("/")}
-              variant="outline"
-              className="flex-1 border-slate-200"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-            {isRejected && (
-              <Button
-                onClick={() => navigate(`/inquiry/${id}/payment`)}
-                className="flex-1 bg-[#3F4698] hover:bg-[#474ead] text-white"
-              >
-                Resubmit Payment
-              </Button>
-            )}
-          </div>
-
-          <p className="text-center text-xs text-slate-400">
-            Questions? Email us at{" "}
-            <a
-              href="mailto:hello@onspotglobal.com"
-              className="text-[#3F4698] underline underline-offset-2"
-            >
-              hello@onspotglobal.com
-            </a>
-          </p>
-        </div>
-      </section>
-    </div>
-  );
+    </header>
+    <main className="mx-auto max-w-2xl space-y-5 px-4 py-8">
+      <Card><CardContent className="grid gap-4 p-5 sm:grid-cols-2">
+        <div><p className="text-xs text-muted-foreground">Inquiry reference</p><p className="mt-1 font-mono font-semibold">{inquiry.referenceNumber || id}</p></div>
+        <div><p className="text-xs text-muted-foreground">Customer</p><p className="mt-1 font-medium">{inquiry.fullName || "—"}</p></div>
+        <div><p className="text-xs text-muted-foreground">Service</p><p className="mt-1 font-medium">{inquiry.serviceNeeded || "—"}</p></div>
+        {paymentQuery.data?.history?.[0]?.rejection_reason && <div className="sm:col-span-2"><p className="text-xs text-rose-700">Rejection reason</p><p className="mt-1 text-sm text-rose-900">{paymentQuery.data.history[0].rejection_reason}</p></div>}
+      </CardContent></Card>
+      <ManualWisePaymentPanel category="inquiry" id={id || ""} title="Payment status and receipt history" />
+      <div className="flex flex-wrap gap-3"><Button variant="outline" onClick={() => navigate("/")}><Home className="mr-2 h-4 w-4" />Back to home</Button><Button variant="outline" onClick={() => paymentQuery.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Refresh status</Button></div>
+      <p className="text-center text-xs text-muted-foreground">Questions? Email <a className="underline underline-offset-2" href="mailto:hello@onspotglobal.com">hello@onspotglobal.com</a>.</p>
+    </main>
+  </div>;
 }

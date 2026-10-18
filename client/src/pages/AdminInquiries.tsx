@@ -1,5 +1,4 @@
-// TODO: Protect this route with admin authentication before going to production.
-// Currently accessible without auth for internal testing.
+// Financial reads and mutations are independently authorized by the server.
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -40,7 +39,6 @@ import {
   DollarSign,
   Clock,
   CheckCircle2,
-  XCircle,
   CreditCard,
   BarChart3,
   Eye,
@@ -56,10 +54,8 @@ import {
   Mail,
   Phone,
   StickyNote,
-  Banknote,
   Receipt,
   Hash,
-  Link2,
   AlertCircle,
   Paperclip,
   QrCode,
@@ -168,105 +164,28 @@ function SummaryCard({
   );
 }
 
-// ─── Record Payment Modal ─────────────────────────────────────────────────────
-
-function RecordPaymentForm({
-  inquiry,
-  onDone,
-}: {
-  inquiry: Inquiry;
-  onDone: () => void;
-}) {
-  const { toast } = useToast();
-  const [method, setMethod] = useState(inquiry.paymentMethod ?? "manual");
-  const [amount, setAmount] = useState(
-    inquiry.paymentAmount ?? inquiry.estimatedBudget ?? "",
-  );
-  const [ref, setRef] = useState(inquiry.transactionReference ?? "");
-  const [receiptUrl, setReceiptUrl] = useState(inquiry.receiptUrl ?? "");
-
-  const paymentMutation = useMutation({
-    mutationFn: () =>
-      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/payment`, {
-        paymentStatus: "paid",
-        paymentMethod: method,
-        paymentAmount: amount ? parseFloat(String(amount)) : undefined,
-        transactionReference: ref || undefined,
-        receiptUrl: receiptUrl || undefined,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
-      toast({ title: "Payment recorded — status set to Paid" });
-      onDone();
-    },
-    onError: () => toast({ title: "Failed to record payment", variant: "destructive" }),
-  });
-
-  return (
-    <div className="space-y-3 pt-2">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        Record Manual Payment
-      </p>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Payment Method</label>
-          <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="manual">Manual / Bank Transfer</SelectItem>
-              <SelectItem value="stripe">Stripe</SelectItem>
-              <SelectItem value="check">Check</SelectItem>
-              <SelectItem value="wire">Wire Transfer</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Amount (USD)</label>
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-            <Input
-              className="pl-6 h-8 text-xs"
-              placeholder="5,000"
-              value={String(amount ?? "")}
-              onChange={(e) => setAmount(e.target.value as any)}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs text-muted-foreground">Transaction / Reference Number</label>
-        <Input
-          className="h-8 text-xs"
-          placeholder="PI-xxx, CHK-001, wire ref…"
-          value={ref}
-          onChange={(e) => setRef(e.target.value)}
-        />
-      </div>
-      <div className="space-y-1">
-        <label className="text-xs text-muted-foreground">Receipt URL (optional)</label>
-        <Input
-          className="h-8 text-xs"
-          placeholder="https://…"
-          value={receiptUrl}
-          onChange={(e) => setReceiptUrl(e.target.value)}
-        />
-      </div>
-      <Button
-        size="sm"
-        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-        onClick={() => paymentMutation.mutate()}
-        disabled={paymentMutation.isPending}
-      >
-        {paymentMutation.isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-        Confirm Payment &amp; Mark as Paid
-      </Button>
-    </div>
-  );
-}
-
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
+
+function ProtectedInquiryReceipt({inquiry}:{inquiry:Inquiry}) {
+  const {toast}=useToast();
+  const [busy,setBusy]=useState(false);
+  const download=async()=>{
+    setBusy(true);
+    try {
+      const url=inquiry.paymentProofUrl?.startsWith("/api/manual-wise/files/")
+        ? inquiry.paymentProofUrl : `/api/admin/manual-wise/legacy-inquiries/${encodeURIComponent(inquiry.id)}/receipt`;
+      const response=await apiRequest("GET",url);
+      const objectUrl=URL.createObjectURL(await response.blob());
+      const link=document.createElement("a");link.href=objectUrl;
+      link.download=inquiry.paymentProofFilename || "payment-receipt";link.click();
+      setTimeout(()=>URL.revokeObjectURL(objectUrl),60_000);
+    }catch {toast({title:"Receipt unavailable",description:"This receipt requires authorized archival review or has not been stored in the current environment.",variant:"destructive"});}
+    finally{setBusy(false);}
+  };
+  return <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={download}>
+    <Paperclip className="mr-2 h-3.5 w-3.5"/>{busy?"Loading receipt…":inquiry.paymentProofFilename || "View protected receipt"}
+  </Button>;
+}
 
 function InquiryDetailModal({
   inquiry,
@@ -278,9 +197,6 @@ function InquiryDetailModal({
   const { toast } = useToast();
   const [notes, setNotes] = useState(inquiry.adminNotes ?? "");
   const [editingNotes, setEditingNotes] = useState(false);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [adminPaymentNotes, setAdminPaymentNotes] = useState(inquiry.adminPaymentNotes ?? "");
-  const [showRejectForm, setShowRejectForm] = useState(false);
 
   const statusMutation = useMutation({
     mutationFn: ({ status, paymentMethod }: { status: string; paymentMethod?: string }) =>
@@ -301,31 +217,6 @@ function InquiryDetailModal({
       toast({ title: "Notes saved" });
     },
     onError: () => toast({ title: "Failed to save notes", variant: "destructive" }),
-  });
-
-  const verifyPaymentMutation = useMutation({
-    mutationFn: () =>
-      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/payment/verify`, {
-        adminPaymentNotes: adminPaymentNotes.trim() || null,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
-      toast({ title: "Payment verified — inquiry marked as Paid" });
-    },
-    onError: () => toast({ title: "Failed to verify payment", variant: "destructive" }),
-  });
-
-  const rejectPaymentMutation = useMutation({
-    mutationFn: () =>
-      apiRequest("PATCH", `/api/inquiries/${inquiry.id}/payment/reject`, {
-        adminPaymentNotes: adminPaymentNotes.trim() || null,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
-      setShowRejectForm(false);
-      toast({ title: "Payment confirmation rejected" });
-    },
-    onError: () => toast({ title: "Failed to reject payment", variant: "destructive" }),
   });
 
   const fmtDate = (d: string | Date | null | undefined) =>
@@ -464,17 +355,7 @@ function InquiryDetailModal({
                 )}
               </div>
 
-              {inquiry.paymentProofUrl && (
-                <a
-                  href={inquiry.paymentProofUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#3F4698] underline underline-offset-2"
-                >
-                  <Paperclip className="w-3.5 h-3.5" />
-                  {inquiry.paymentProofFilename ?? "View Proof"}
-                </a>
-              )}
+              {inquiry.paymentProofUrl && <ProtectedInquiryReceipt inquiry={inquiry} />}
 
               {inquiry.paymentNotes && (
                 <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
@@ -520,15 +401,16 @@ function InquiryDetailModal({
                 <Clock className="w-3.5 h-3.5 mr-1.5" />
                 Mark Payment Pending
               </Button>
-              <Button
-                size="sm" variant="outline"
-                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                disabled={isPaid}
-                onClick={() => setShowPaymentForm(!showPaymentForm)}
-              >
-                <Banknote className="w-3.5 h-3.5 mr-1.5" />
-                {isPaid ? "Paid" : "Record Payment"}
-              </Button>
+              {isPaid ? (
+                <Chip label="Paid · independently verified" colorClass="bg-emerald-100 text-emerald-800 border-emerald-200" />
+              ) : (
+                <Button size="sm" variant="outline" asChild>
+                  <Link href="/admin/ledger#manual-wise-admin">
+                    <Receipt className="w-3.5 h-3.5 mr-1.5" />
+                    Review receipt in Payment Verifications
+                  </Link>
+                </Button>
+              )}
               <Button
                 size="sm" variant="outline"
                 className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
@@ -540,61 +422,6 @@ function InquiryDetailModal({
               </Button>
             </div>
 
-            {/* QR Payment verify / reject */}
-            {inquiry.paymentStatus === "pending_verification" && (
-              <>
-                <Button
-                  size="sm" variant="outline"
-                  className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                  disabled={verifyPaymentMutation.isPending || rejectPaymentMutation.isPending}
-                  onClick={() => verifyPaymentMutation.mutate()}
-                >
-                  {verifyPaymentMutation.isPending
-                    ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                    : <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />}
-                  Verify Payment
-                </Button>
-                <Button
-                  size="sm" variant="outline"
-                  className="border-red-200 text-red-700 hover:bg-red-50"
-                  disabled={verifyPaymentMutation.isPending || rejectPaymentMutation.isPending}
-                  onClick={() => setShowRejectForm((v) => !v)}
-                >
-                  <XCircle className="w-3.5 h-3.5 mr-1.5" />
-                  Reject Confirmation
-                </Button>
-              </>
-            )}
-
-            {showPaymentForm && !isPaid && (
-              <div className="mt-3 p-3 rounded-xl border border-emerald-100 bg-emerald-50/50">
-                <RecordPaymentForm
-                  inquiry={inquiry}
-                  onDone={() => setShowPaymentForm(false)}
-                />
-              </div>
-            )}
-
-            {showRejectForm && inquiry.paymentStatus === "pending_verification" && (
-              <div className="mt-3 p-3 rounded-xl border border-red-100 bg-red-50/50 space-y-2 w-full">
-                <p className="text-xs font-medium text-red-700">Rejection reason (optional)</p>
-                <Input
-                  className="h-8 text-xs"
-                  placeholder="Reason shown to client…"
-                  value={adminPaymentNotes}
-                  onChange={(e) => setAdminPaymentNotes(e.target.value)}
-                />
-                <Button
-                  size="sm"
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                  disabled={rejectPaymentMutation.isPending}
-                  onClick={() => rejectPaymentMutation.mutate()}
-                >
-                  {rejectPaymentMutation.isPending && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-                  Confirm Rejection
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Quick links */}
@@ -947,15 +774,22 @@ export default function AdminInquiries() {
                           {fmtDate(inq.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs px-2"
-                            onClick={() => setSelected(inq)}
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Details
-                          </Button>
+                          <div className="flex flex-wrap gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setSelected(inq)}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Details
+                            </Button>
+                            {inq.status !== "paid" && inq.status !== "completed" && (
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" asChild>
+                                <Link href="/admin/ledger#manual-wise-admin">Review receipt in Payment Verifications</Link>
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

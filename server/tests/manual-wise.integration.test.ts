@@ -1,0 +1,288 @@
+import { before, after, test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { Readable } from "node:stream";
+import type { Server } from "node:http";
+import express from "express";
+import pg from "pg";
+import { ManualWiseService, WiseError, type WiseCategory } from "../services/manualWiseService";
+import { requireVerifiedHiringPayment } from "../services/hiringPaymentService";
+import { registerManualWiseRoutes } from "../routes/manualWise";
+import { inspectWiseFile } from "../services/manualWiseFiles";
+import { PDFDocument, PDFName, PDFString } from "pdf-lib";
+
+// This suite owns a fresh local PostgreSQL cluster. It cannot connect to the app DB.
+const root=mkdtempSync(join(tmpdir(),"wise-isolated-"));
+let pool:pg.Pool;
+let service:ManualWiseService;
+let http:Server;
+let base:string;
+const blobs=new Map<string,Buffer>();
+const ids={inquiry:randomUUID(),hiring_invoice:randomUUID(),invoice:randomUUID(),
+  monthly_invoice:randomUUID(),deposit:randomUUID(),replenishment:randomUUID(),payout:randomUUID()};
+const contract= randomUUID(), submission=randomUUID(),talentInvoice=randomUUID(),attempt=randomUUID();
+const historicalInvoice=randomUUID(),historicalTopup=randomUUID();
+const config={currency:"USD",recipient:"Fixture recipient",instructions:"Fixture transfer instructions only",
+  referenceInstructions:"Invoice reference",active:true,depositFundingConfirmed:true};
+before(async()=>{
+  execFileSync("initdb",["-D",join(root,"data"),"-U","wise_fixture","-A","trust"],{stdio:"ignore"});
+  execFileSync("pg_ctl",["-D",join(root,"data"),"-o",`-k ${root} -p 55443 -h ''`,"-w","start"],{stdio:"ignore"});
+  pool=new pg.Pool({host:root,port:55443,user:"wise_fixture",database:"postgres"});
+  service=new ManualWiseService(pool);
+  await pool.query(`
+    CREATE TABLE users(id varchar PRIMARY KEY,role text,admin_sub_role text,email text,first_name text,last_name text,
+      email_verified_at timestamptz,email_verified_email text,created_at timestamptz DEFAULT now());
+    INSERT INTO users VALUES
+      ('client','client',null,'payer@fixture.invalid','Payer','One',now(),'payer@fixture.invalid',now()),
+      ('other','client',null,'other@fixture.invalid','Other','Two',now(),'other@fixture.invalid',now()),
+      ('admin','admin',null,'admin@fixture.invalid','Admin','One',now(),null,now()),
+      ('admin2','admin',null,'admin2@fixture.invalid','Admin','Two',now(),null,now()),
+      ('limited','admin','client_success','limited@fixture.invalid','Limited','Admin',now(),null,now()),
+      ('talent','talent',null,'talent@fixture.invalid','Talent','One',now(),null,now());
+    CREATE TABLE job_submissions(id varchar PRIMARY KEY,client_id varchar,talent_id varchar,job_id varchar);
+    CREATE TABLE hiring_contracts(id uuid PRIMARY KEY,submission_id varchar,status text DEFAULT 'signed');
+    CREATE TABLE inquiries(id varchar PRIMARY KEY,email text,status text,payment_amount numeric(12,2),
+      reference_number text,payment_status text,payment_reference_number text,payment_proof_url text,
+      payment_confirmation_submitted_at timestamptz,payment_method text,updated_at timestamptz,
+      paid_at timestamptz,payment_verified_at timestamptz,payment_rejected_at timestamptz,
+      transaction_reference text,admin_payment_notes text,created_at timestamptz DEFAULT now());
+    CREATE TABLE hiring_payment_attempts(id uuid PRIMARY KEY,submission_id varchar,client_id varchar,job_id varchar,talent_id varchar);
+    CREATE TABLE hiring_pre_offer_invoices(id uuid PRIMARY KEY,submission_id varchar,attempt_id uuid,client_id varchar,talent_id varchar,job_id varchar,
+      invoice_type text DEFAULT 'hiring_pre_offer',invoice_number text,amount numeric(12,2),currency text,payment_recipient text,
+      payment_reference text,status text,updated_at timestamptz,created_at timestamptz DEFAULT now(),
+      verified_amount numeric(12,2),verified_currency text,verified_reference text,verified_recipient text,verified_by varchar,verified_at timestamptz);
+    CREATE TABLE hiring_payment_events(id serial PRIMARY KEY,invoice_id uuid,actor_id varchar,event text,
+      previous_status text,new_status text,details jsonb);
+    CREATE TABLE invoices(id uuid PRIMARY KEY,client_id varchar,amount numeric(12,2),currency text,status text,
+      invoice_number text,period_id uuid,paid_at timestamptz,payment_method text,external_ref text,updated_at timestamptz,created_at timestamptz DEFAULT now());
+    CREATE TABLE client_monthly_invoices(id uuid PRIMARY KEY,client_id varchar,subtotal numeric(12,2),
+      currency text,status text,created_at timestamptz DEFAULT now());
+    CREATE TABLE client_credit_applications(client_monthly_invoice_id uuid,amount numeric(12,2));
+    CREATE TABLE security_deposits(id uuid PRIMARY KEY,hiring_contract_id uuid,amount numeric(12,2),currency text,status text,
+      held_at timestamptz,cure_deadline_at timestamptz,updated_at timestamptz,created_at timestamptz DEFAULT now());
+    CREATE TABLE security_deposit_replenishments(id uuid PRIMARY KEY,hiring_contract_id uuid,amount numeric(12,2),
+      currency text,reference text,created_at timestamptz DEFAULT now());
+    CREATE TABLE talent_invoices(id uuid PRIMARY KEY,status text,talent_id varchar,amount numeric(12,2),currency text);
+    CREATE TABLE payouts(id uuid PRIMARY KEY,hiring_contract_id uuid,talent_id varchar,talent_invoice_id uuid,
+      amount numeric(12,2),currency text,status text,external_ref text,payout_method text,disbursed_at timestamptz,
+      period_id uuid,updated_at timestamptz,created_at timestamptz DEFAULT now());
+  `);
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status,external_ref) VALUES($1,'client',100,'USD','paid','legacy-settled')",[historicalInvoice]);
+  await pool.query("INSERT INTO security_deposit_replenishments(id,hiring_contract_id,amount,currency,reference) VALUES($1,$2,5,'USD','legacy-topup')",[historicalTopup,contract]);
+  const migration=readFileSync("migrations/0040_manual_wise_payments.sql","utf8");
+  await pool.query(migration); await pool.query(migration);
+  await pool.query("INSERT INTO job_submissions VALUES($1,'client','talent','job')",[submission]);
+  await pool.query("INSERT INTO hiring_contracts(id,submission_id) VALUES($1,$2)",[contract,submission]);
+  await pool.query("INSERT INTO inquiries(id,email,status,payment_amount,reference_number) VALUES($1,'payer@fixture.invalid','endorsed',100,'INQ-FIXTURE')",[ids.inquiry]);
+  await pool.query("INSERT INTO hiring_payment_attempts VALUES($1,$2,'client','job','talent')",[attempt,submission]);
+  await pool.query(`INSERT INTO hiring_pre_offer_invoices(id,submission_id,attempt_id,client_id,talent_id,job_id,amount,currency,payment_recipient,status)
+    VALUES($1,$2,$3,'client','talent','job',100,'USD','Fixture recipient','issued')`,[ids.hiring_invoice,submission,attempt]);
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[ids.invoice]);
+  await pool.query("INSERT INTO client_monthly_invoices(id,client_id,subtotal,currency,status) VALUES($1,'client',120,'USD','sent')",[ids.monthly_invoice]);
+  await pool.query("INSERT INTO client_credit_applications VALUES($1,20)",[ids.monthly_invoice]);
+  await pool.query("INSERT INTO security_deposits(id,hiring_contract_id,amount,currency,status) VALUES($1,$2,1000,'USD','pending')",[ids.deposit,contract]);
+  await pool.query("INSERT INTO security_deposit_replenishments(id,hiring_contract_id,amount,currency,payment_status) VALUES($1,$2,100,'USD','unpaid')",[ids.replenishment,contract]);
+  await pool.query("INSERT INTO talent_invoices VALUES($1,'sent','talent',100,'USD')",[talentInvoice]);
+  await pool.query(`INSERT INTO payouts(id,hiring_contract_id,talent_id,talent_invoice_id,amount,currency,status)
+    VALUES($1,$2,'talent',$3,100,'USD','scheduled')`,[ids.payout,contract,talentInvoice]);
+  const app=express();app.use(express.json());
+  registerManualWiseRoutes(app,{service,
+    authenticate:(req:any,res,next)=>{
+      const id=req.headers.authorization?.replace("Bearer ","");
+      if(!["client","other","admin","limited","talent"].includes(id))return res.status(401).json({error:"Authentication required."});
+      req.user={id};next();
+    },
+    limiter:(_req,_res,next)=>next(),
+    blobs:{
+      async save(buffer){const key=`fixture-private/${randomUUID()}`;blobs.set(key,buffer);return key;},
+      read(key){return Readable.from(blobs.get(key)??[]);},
+      async delete(key){blobs.delete(key);},
+    },
+  });
+  http=app.listen(0);await new Promise<void>(resolve=>http.once("listening",resolve));
+  base=`http://127.0.0.1:${(http.address() as any).port}`;
+});
+after(async()=>{
+  if(http)await new Promise<void>(resolve=>http.close(()=>resolve()));
+  await pool?.end();
+  try {execFileSync("pg_ctl",["-D",join(root,"data"),"-m","immediate","stop"],{stdio:"ignore"});}catch{}
+  rmSync(root,{recursive:true,force:true});
+});
+async function receipt(actor="client") {
+  return (await pool.query(`INSERT INTO manual_wise_files(uploaded_by,purpose,object_key,filename,content_type,byte_size)
+    VALUES($1,'receipt',$2,'fixture.pdf','application/pdf',100) RETURNING id`,[actor,`fixture-private/${randomUUID()}`])).rows[0].id as string;
+}
+const review=(reference:string,extra={})=>({action:"verify",reason:"Checked independent transaction record",
+  independentlyVerified:true,verifiedAmount:"100",verifiedCurrency:"USD",verifiedReference:reference,
+  verifiedRecipient:config.recipient,settledAt:"2026-01-01",...extra});
+const deny=(status:number)=>(e:any)=>e instanceof WiseError && e.status===status;
+test("no invented Wise destination, QR or fallback payable amount",async()=>{
+  const o=await service.detail("client","invoice",ids.invoice);
+  assert.equal(o.instructions,null);assert.equal(o.payable,false);
+  await assert.rejects(service.submit("client","invoice",ids.invoice,"ref",await receipt()),deny(409));
+  await service.configure("admin",config);
+  const configured=await service.detail("client","invoice",ids.invoice);
+  assert.equal(configured.instructions?.qrFileId,null);assert.equal(configured.payable,true);
+});
+test("additive migration preserves historical paid records and counts only historical settled top-ups",async()=>{
+  const old=await service.detail("client","invoice",historicalInvoice);
+  assert.equal(old.paymentStatus,"paid");assert.deepEqual(old.history,[]);
+  assert.equal((await pool.query("SELECT external_ref FROM invoices WHERE id=$1",[historicalInvoice])).rows[0].external_ref,"legacy-settled");
+  assert.equal((await pool.query("SELECT payment_status FROM security_deposit_replenishments WHERE id=$1",[historicalTopup])).rows[0].payment_status,"paid");
+  await assert.rejects(service.submit("client","invoice",historicalInvoice,"extra",await receipt()),deny(409));
+});
+test("viewing an inquiry before quoting does not prevent finalizing the real quote",async()=>{
+  const id=randomUUID();
+  await pool.query("INSERT INTO inquiries(id,email,status,reference_number) VALUES($1,'payer@fixture.invalid','endorsed','INQ-QUOTE')",[id]);
+  assert.equal((await service.detail("client","inquiry",id)).payable,false);
+  await service.quote("admin",id,{amount:"75.25",currency:"USD"});
+  assert.equal((await service.detail("client","inquiry",id)).amount,"75.25");
+  await service.submit("client","inquiry",id,"quoted",await receipt());
+  await assert.rejects(service.quote("admin",id,{amount:"85",currency:"USD"}),deny(409));
+});
+test("inquiry receipt stays pending; rejection is retained and corrected evidence can be submitted",async()=>{
+  const s=await service.submit("client","inquiry",ids.inquiry,"inquiry-claim",await receipt());
+  assert.equal((await pool.query("SELECT status,payment_status FROM inquiries WHERE id=$1",[ids.inquiry])).rows[0].status,"endorsed");
+  assert.equal((await service.detail("client","inquiry",ids.inquiry)).paymentStatus,"verification_pending");
+  await service.review("admin",s.id,{action:"reject",reason:"Reference does not appear in recipient account"});
+  let o=await service.detail("client","inquiry",ids.inquiry);
+  assert.equal(o.paymentStatus,"rejected");assert.equal(o.payable,true);
+  assert.match(o.history[0].rejection_reason,/recipient account/);
+  const resub=await service.submit("client","inquiry",ids.inquiry,"corrected",await receipt());
+  await service.review("admin",resub.id,review("inquiry-settled"));
+  o=await service.detail("client","inquiry",ids.inquiry);
+  assert.equal(o.paymentStatus,"paid");assert.equal(o.history.length,2);assert.equal(o.history[1].status,"rejected");
+});
+test("hiring receipt never unlocks offer; only Super Admin independent verification satisfies canonical gate",async()=>{
+  const s=await service.submit("client","hiring_invoice",ids.hiring_invoice,"hiring-claim",await receipt());
+  await assert.rejects(requireVerifiedHiringPayment(pool as any,submission),/paid and verified/);
+  await assert.rejects(service.review("client",s.id,review("hiring-settled")),deny(403));
+  await assert.rejects(service.review("limited",s.id,review("hiring-settled")),deny(403));
+  await service.review("admin",s.id,review("hiring-settled"));
+  assert.equal(await requireVerifiedHiringPayment(pool as any,submission),ids.hiring_invoice);
+});
+test("legacy invoice and monthly net balance remain unpaid until settled; all mismatch checks fail closed",async()=>{
+  for(const c of ["invoice","monthly_invoice"] as const) {
+    const s=await service.submit("client",c,ids[c],`${c}-claim`,await receipt());
+    assert.notEqual((await service.detail("client",c,ids[c])).paymentStatus,"paid");
+    for(const extra of [{verifiedAmount:"99"},{verifiedCurrency:"PHP"},{verifiedRecipient:"Wrong recipient"}]) {
+      await assert.rejects(service.review("admin",s.id,review(`${c}-settled`,extra)),deny(409));
+    }
+    await assert.rejects(service.review("admin",s.id,{action:"verify",reason:"Only receipt"}),/Independent settlement/);
+    await service.review("admin",s.id,review(`${c}-settled`));
+    assert.equal((await service.detail("client",c,ids[c])).paymentStatus,"paid");
+  }
+});
+test("pending deposit proof does not establish held funding; policy confirmation is mandatory",async()=>{
+  await service.configure("admin",{...config,depositFundingConfirmed:false});
+  assert.equal((await service.detail("client","deposit",ids.deposit)).payable,false);
+  await service.configure("admin",config);
+  const s=await service.submit("client","deposit",ids.deposit,"deposit-claim",await receipt());
+  assert.equal((await pool.query("SELECT status FROM security_deposits WHERE id=$1",[ids.deposit])).rows[0].status,"pending");
+  await service.review("admin",s.id,review("deposit-settled",{verifiedAmount:"1000"}));
+  assert.equal((await pool.query("SELECT status FROM security_deposits WHERE id=$1",[ids.deposit])).rows[0].status,"held");
+});
+test("unverified replenishment does not add settled coverage",async()=>{
+  const s=await service.submit("client","replenishment",ids.replenishment,"topup-claim",await receipt());
+  assert.equal((await pool.query("SELECT payment_status FROM security_deposit_replenishments WHERE id=$1",[ids.replenishment])).rows[0].payment_status,"unpaid");
+  await service.review("admin",s.id,review("topup-settled"));
+  assert.equal((await pool.query("SELECT payment_status FROM security_deposit_replenishments WHERE id=$1",[ids.replenishment])).rows[0].payment_status,"paid");
+});
+test("authorization, ownership and private receipt access are enforced independently of IDs",async()=>{
+  await assert.rejects(service.detail("other","invoice",ids.invoice),deny(404));
+  await assert.rejects(service.detail("talent","invoice",ids.invoice),deny(403));
+  const owner=await service.detail("client","invoice",ids.invoice);
+  const fileId=owner.history[0].receipt_id;
+  assert.equal((await service.fileAccess("client",fileId)).id,fileId);
+  await assert.rejects(service.fileAccess("other",fileId),deny(404));
+  await assert.rejects(service.fileAccess("limited",fileId),deny(404));
+  assert.equal((await service.fileAccess("admin",fileId)).id,fileId);
+  await assert.rejects(service.submissions("client",{}),deny(403));
+  await assert.rejects(service.config("limited"),deny(403));
+});
+test("two admins, retries and duplicate settlement references cannot double-credit or rewrite history",async()=>{
+  const id=randomUUID();
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[id]);
+  const s=await service.submit("client","invoice",id,"race-claim",await receipt());
+  await assert.rejects(service.review("admin",s.id,review("INVOICE-SETTLED")),deny(409));
+  await assert.rejects(service.review("admin",s.id,review("legacy-settled")),deny(409));
+  const result=await Promise.all([service.review("admin",s.id,review("race-settled")),service.review("admin2",s.id,review("race-settled"))]);
+  assert.equal(result[0].id,result[1].id);
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM manual_wise_audit WHERE submission_id=$1 AND event='payment_verified'",[s.id])).rows[0].n,1);
+  await assert.rejects(service.submit("client","invoice",id,"duplicate",await receipt()),deny(409));
+});
+test("voided obligations reject new proofs and admin list returns history without blob keys",async()=>{
+  const id=randomUUID();
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','void')",[id]);
+  await assert.rejects(service.submit("client","invoice",id,"claim",await receipt()),deny(409));
+  const result=await service.submissions("admin",{currency:"USD",reference:"claim"});
+  assert.ok(result.items.length>0);
+  assert.equal(JSON.stringify(result).includes("object_key"),false);
+});
+test("outgoing payout has no collection QR; receipt alone leaves it scheduled, verified transfer disburses once",async()=>{
+  const o=await service.detail("admin","payout",ids.payout);
+  assert.equal(o.instructions,null);assert.equal(o.direction,"outgoing");assert.equal(o.payable,false);
+  await service.destination("admin",ids.payout,{recipient:"Approved Talent destination",reason:"Independent destination approval",independentlyApproved:true});
+  const s=await service.submit("admin","payout",ids.payout,"outgoing-claim",await receipt("admin"));
+  assert.equal((await pool.query("SELECT status FROM payouts WHERE id=$1",[ids.payout])).rows[0].status,"scheduled");
+  await service.review("admin2",s.id,review("outgoing-settled",{verifiedRecipient:"Approved Talent destination"}));
+  assert.equal((await pool.query("SELECT status FROM payouts WHERE id=$1",[ids.payout])).rows[0].status,"disbursed");
+  await service.review("admin2",s.id,review("outgoing-settled",{verifiedRecipient:"Approved Talent destination"}));
+  await assert.rejects(service.detail("talent","payout",ids.payout),deny(403));
+});
+test("real HTTP multipart validates content, stores privately, and owner/admin-only downloads preserve bytes",async()=>{
+  const id=randomUUID();
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[id]);
+  const endpoint=`${base}/api/manual-wise/obligations/invoice/${id}/proofs`;
+  const bad=new FormData();bad.append("reference","bad");bad.append("receipt",new Blob(["<html>not a receipt</html>"],{type:"image/png"}),"fake.png");
+  const rejected=await fetch(endpoint,{method:"POST",headers:{Authorization:"Bearer client"},body:bad});
+  assert.equal(rejected.status,422);assert.equal(blobs.size,0);
+  const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aLYsAAAAASUVORK5CYII=","base64");
+  const form=new FormData();form.append("reference","http-claim");form.append("amount","1");form.append("currency","PHP");form.append("payerId","other");form.append("receipt",new Blob([png],{type:"text/plain"}),"receipt.txt");
+  const submitted=await fetch(endpoint,{method:"POST",headers:{Authorization:"Bearer client"},body:form});
+  assert.equal(submitted.status,201,await submitted.clone().text());
+  const s=await submitted.json() as any;assert.equal(s.status,"verification_pending");
+  assert.equal(s.amount,"100.00");assert.equal(s.currency,"USD");assert.equal(s.submitted_by,"client");
+  const url=`${base}/api/manual-wise/files/${s.receipt_id}`;
+  assert.equal((await fetch(url)).status,401);
+  assert.equal((await fetch(url,{headers:{Authorization:"Bearer other"}})).status,404);
+  for(const actor of ["client","admin"]) {
+    const response=await fetch(url,{headers:{Authorization:`Bearer ${actor}`}});
+    assert.equal(response.status,200);
+    assert.equal(response.headers.get("content-type"),"image/png");
+    assert.equal(response.headers.get("cache-control"),"no-store");
+    assert.equal(response.headers.get("x-content-type-options"),"nosniff");
+    assert.ok(Buffer.from(await response.arrayBuffer()).equals(png));
+  }
+  assert.equal((await fetch(`${base}/api/admin/manual-wise/submissions`,{headers:{Authorization:"Bearer client"}})).status,403);
+  assert.equal((await fetch(`${base}/api/admin/manual-wise/submissions`,{headers:{Authorization:"Bearer limited"}})).status,403);
+  const unauthenticated=await fetch(`${base}/api/admin/manual-wise/submissions/${s.id}/review`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(review("http-settled"))});
+  assert.equal(unauthenticated.status,401);
+});
+test("retired settlement shortcuts and public legacy receipt URLs cannot bypass verification",async()=>{
+  for(const [method,path,body] of [
+    ["PATCH",`/api/inquiries/${ids.inquiry}/payment/verify`,{}],
+    ["POST",`/api/client/hiring-invoices/${ids.hiring_invoice}/reference`,{reference:"shortcut"}],
+    ["PATCH",`/api/admin/invoices/${ids.invoice}`,{action:"paid"}],
+    ["PATCH",`/api/admin/payouts/${ids.payout}`,{action:"disbursed"}],
+    ["PATCH",`/api/admin/security-deposits/${ids.deposit}`,{action:"held"}],
+  ] as const) {
+    const response=await fetch(base+path,{method,headers:{Authorization:"Bearer client","Content-Type":"application/json"},body:JSON.stringify(body)});
+    assert.equal(response.status,409);
+  }
+  assert.equal((await fetch(base+"/payment-proofs/old-receipt.pdf")).status,403);
+});
+test("receipt inspection rejects invalid, oversized and active evidence and accepts passive PDFs",async()=>{
+  await assert.rejects(inspectWiseFile(Buffer.from("<svg onload='alert(1)'/>")));
+  await assert.rejects(inspectWiseFile(Buffer.alloc(8*1024*1024+1)));
+  const doc=await PDFDocument.create();doc.addPage();
+  const passive=Buffer.from(await doc.save());
+  assert.equal(await inspectWiseFile(passive),"application/pdf");
+  await assert.rejects(inspectWiseFile(passive,true));
+  doc.catalog.set(PDFName.of("OpenAction"),doc.context.obj({S:PDFName.of("JavaScript"),JS:PDFString.of("app.alert('fixture')")}));
+  await assert.rejects(inspectWiseFile(Buffer.from(await doc.save())),/without active content/);
+});

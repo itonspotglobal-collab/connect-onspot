@@ -5,6 +5,7 @@ import { authAPI } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { AdminHiringPaymentsSection } from "@/components/hiring-payments/HiringPayments";
+import { AdminWisePayments } from "@/components/manual-wise/AdminWisePayments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -373,6 +374,7 @@ export default function AdminLedger() {
       )}
 
       <AdminHiringPaymentsSection />
+      <AdminWisePayments />
 
       <Card>
         <CardHeader>
@@ -512,7 +514,7 @@ export default function AdminLedger() {
                   </div>
                   {contract.deposit_status === "pending" || !contract.deposit_id ? (
                     <Button size="sm" variant="outline" onClick={() => collectContractDeposit(contract)} disabled={postMutation.isPending} data-testid={`button-collect-contract-deposit-${contract.hiring_contract_id}`}>
-                      Collect deposit
+                      Request deposit funding
                     </Button>
                   ) : null}
                 </div>
@@ -644,7 +646,7 @@ export default function AdminLedger() {
                             ) : null}
                             {row.deposit_status === "pending" ? (
                               <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>
-                                Collect deposit
+                                Request deposit funding
                               </Button>
                             ) : null}
                             {row.deposit_status === "drawn" ? (
@@ -664,7 +666,7 @@ export default function AdminLedger() {
                           </>
                         ) : (
                           <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>
-                            Collect deposit
+                            Request deposit funding
                           </Button>
                         )}
                       </td>
