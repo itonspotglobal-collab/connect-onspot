@@ -867,3 +867,31 @@ mtime_ms = 1792386092486
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/453e9f17-2149-4c1b-a90a-54c86200220f/7e48c794-4470-4fde-a99b-80bdb741dd7c"
 storage_version_token = "1792386265979229"
 content_type = "image/png"
+
+[[outputs]]
+id = "vJ79dPiCXlHiim3z9xRZc"
+uri = "file://generated-artifacts/wise-qr-lifecycle/review-390.png"
+type = "image"
+title = "Mobile activation review — test preview"
+description = "Isolated real-component preview with fixture receiving details. All four confirmations were manually completed by the browser test; the real form starts unchecked. No live configuration is activated."
+logical_id = "bcfb1152-d377-4178-8c13-f302e480fd0a"
+content_hash = "sha256:167d34645f6097c2aac4958439d0f6f647e2133e919b65a641ae96f12c9cd369"
+size = 96301
+mtime_ms = 1792395747188
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/bcfb1152-d377-4178-8c13-f302e480fd0a/2a7a1523-25fb-4122-997c-609a81c72d30"
+storage_version_token = "1792396094057982"
+content_type = "image/png"
+
+[[outputs]]
+id = "wK1ypzSaLVfeEXYqTOUUB"
+uri = "file://generated-artifacts/wise-qr-lifecycle/review-1280.png"
+type = "image"
+title = "Desktop activation review — test preview"
+description = "Isolated review of the saved QR, recipient, supported currencies, instructions and explicit confirmations. Fixture data only; real receiving approval remains pending."
+logical_id = "42fcc3b7-05e0-4fa4-b5a0-49f039b44803"
+content_hash = "sha256:0c97a8c0e548f91d1b678782ecde6a1914d9486cb7511e55269547e5c7aa3c6a"
+size = 99555
+mtime_ms = 1792395749260
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/42fcc3b7-05e0-4fa4-b5a0-49f039b44803/98492ab1-ab63-4f6e-b4e0-cf4eddaeef17"
+storage_version_token = "1792396096488536"
+content_type = "image/png"

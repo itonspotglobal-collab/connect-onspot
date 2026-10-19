@@ -23,6 +23,7 @@ let pool:pg.Pool;
 let service:ManualWiseService;
 let http:Server;
 let base:string;
+let fixtureQr:string;
 const blobs=new Map<string,Buffer>();
 const ids={inquiry:randomUUID(),hiring_invoice:randomUUID(),invoice:randomUUID(),
   monthly_invoice:randomUUID(),deposit:randomUUID(),replenishment:randomUUID(),payout:randomUUID()};
@@ -30,6 +31,25 @@ const contract= randomUUID(), submission=randomUUID(),talentInvoice=randomUUID()
 const historicalInvoice=randomUUID(),historicalTopup=randomUUID();
 const config={currency:"USD",recipient:"Fixture recipient",instructions:"Fixture transfer instructions only",
   referenceInstructions:"Invoice reference",active:true,depositFundingConfirmed:true};
+async function startHttp() {
+  const app=express();app.use(express.json());
+  registerManualWiseRoutes(app,{service,
+    officialQr:async()=>readFileSync("attached_assets/wise-qr-code_1792385025903.png"),
+    authenticate:(req:any,res,next)=>{
+      const id=req.headers.authorization?.replace("Bearer ","");
+      if(!["client","other","admin","limited","talent"].includes(id))return res.status(401).json({error:"Authentication required."});
+      req.user={id};next();
+    },
+    limiter:(_req,_res,next)=>next(),
+    blobs:{
+      async save(buffer){const key=`fixture-private/${randomUUID()}`;blobs.set(key,buffer);return key;},
+      read(key){return Readable.from(blobs.get(key)??[]);},
+      async delete(key){blobs.delete(key);},
+    },
+  });
+  http=app.listen(0);await new Promise<void>(resolve=>http.once("listening",resolve));
+  base=`http://127.0.0.1:${(http.address() as any).port}`;
+}
 before(async()=>{
   execFileSync("initdb",["-D",join(root,"data"),"-U","wise_fixture","-A","trust"],{stdio:"ignore"});
   execFileSync("pg_ctl",["-D",join(root,"data"),"-o",`-k ${root} -p 55443 -h ''`,"-w","start"],{stdio:"ignore"});
@@ -77,6 +97,8 @@ before(async()=>{
   await pool.query("INSERT INTO security_deposit_replenishments(id,hiring_contract_id,amount,currency,reference) VALUES($1,$2,5,'USD','legacy-topup')",[historicalTopup,contract]);
   const migration=readFileSync("migrations/0040_manual_wise_payments.sql","utf8");
   await pool.query(migration); await pool.query(migration);
+  const lifecycle=readFileSync("migrations/0041_manual_wise_configuration_lifecycle.sql","utf8");
+  await pool.query(lifecycle); await pool.query(lifecycle);
   await pool.query("INSERT INTO job_submissions VALUES($1,'client','talent','job')",[submission]);
   await pool.query("INSERT INTO hiring_contracts(id,submission_id) VALUES($1,$2)",[contract,submission]);
   await pool.query("INSERT INTO inquiries(id,email,status,payment_amount,reference_number) VALUES($1,'payer@fixture.invalid','endorsed',100,'INQ-FIXTURE')",[ids.inquiry]);
@@ -91,23 +113,10 @@ before(async()=>{
   await pool.query("INSERT INTO talent_invoices VALUES($1,'sent','talent',100,'USD')",[talentInvoice]);
   await pool.query(`INSERT INTO payouts(id,hiring_contract_id,talent_id,talent_invoice_id,amount,currency,status)
     VALUES($1,$2,'talent',$3,100,'USD','scheduled')`,[ids.payout,contract,talentInvoice]);
-  const app=express();app.use(express.json());
-  registerManualWiseRoutes(app,{service,
-    officialQr:async()=>readFileSync("attached_assets/wise-qr-code_1792385025903.png"),
-    authenticate:(req:any,res,next)=>{
-      const id=req.headers.authorization?.replace("Bearer ","");
-      if(!["client","other","admin","limited","talent"].includes(id))return res.status(401).json({error:"Authentication required."});
-      req.user={id};next();
-    },
-    limiter:(_req,_res,next)=>next(),
-    blobs:{
-      async save(buffer){const key=`fixture-private/${randomUUID()}`;blobs.set(key,buffer);return key;},
-      read(key){return Readable.from(blobs.get(key)??[]);},
-      async delete(key){blobs.delete(key);},
-    },
-  });
-  http=app.listen(0);await new Promise<void>(resolve=>http.once("listening",resolve));
-  base=`http://127.0.0.1:${(http.address() as any).port}`;
+  await startHttp();
+  const staged=await fetch(base+"/api/admin/manual-wise/config/qr/official",{method:"POST",headers:{Authorization:"Bearer admin"}});
+  assert.equal(staged.status,201);
+  fixtureQr=(await staged.json() as any).id;
 });
 after(async()=>{
   if(http)await new Promise<void>(resolve=>http.close(()=>resolve()));
@@ -123,13 +132,19 @@ const review=(reference:string,extra={})=>({action:"verify",reason:"Checked inde
   independentlyVerified:true,verifiedAmount:"100",verifiedCurrency:"USD",verifiedReference:reference,
   verifiedRecipient:config.recipient,settledAt:"2026-01-01",...extra});
 const deny=(status:number)=>(e:any)=>e instanceof WiseError && e.status===status;
+const confirmations={confirmImageReviewed:true,confirmReceivingAccount:true,confirmCurrencies:true,
+  confirmInstructions:true,reason:"Fixture independently reviewed receiving details"};
+async function publish(input:Record<string,unknown>) {
+  const draft=await service.configure("admin",{...input,active:false,qrFileId:input.qrFileId??fixtureQr});
+  return (await service.configurations.activate("admin",draft.id,confirmations)).items[0];
+}
 test("no invented Wise destination, QR or fallback payable amount",async()=>{
   const o=await service.detail("client","invoice",ids.invoice);
   assert.equal(o.instructions,null);assert.equal(o.payable,false);
   await assert.rejects(service.submit("client","invoice",ids.invoice,"ref",await receipt()),deny(409));
-  await service.configure("admin",config);
+  await publish(config);
   const configured=await service.detail("client","invoice",ids.invoice);
-  assert.equal(configured.instructions?.qrFileId,null);assert.equal(configured.payable,true);
+  assert.equal(configured.instructions?.qrFileId,fixtureQr);assert.equal(configured.payable,true);
 });
 test("additive migration preserves historical paid records and counts only historical settled top-ups",async()=>{
   const old=await service.detail("client","invoice",historicalInvoice);
@@ -181,9 +196,9 @@ test("legacy invoice and monthly net balance remain unpaid until settled; all mi
   }
 });
 test("pending deposit proof does not establish held funding; policy confirmation is mandatory",async()=>{
-  await service.configure("admin",{...config,depositFundingConfirmed:false});
+  await publish({...config,depositFundingConfirmed:false});
   assert.equal((await service.detail("client","deposit",ids.deposit)).payable,false);
-  await service.configure("admin",config);
+  await publish(config);
   const s=await service.submit("client","deposit",ids.deposit,"deposit-claim",await receipt());
   assert.equal((await pool.query("SELECT status FROM security_deposits WHERE id=$1",[ids.deposit])).rows[0].status,"pending");
   await service.review("admin",s.id,review("deposit-settled",{verifiedAmount:"1000"}));
@@ -238,12 +253,13 @@ test("outgoing payout has no collection QR; receipt alone leaves it scheduled, v
   await assert.rejects(service.detail("talent","payout",ids.payout),deny(403));
 });
 test("real HTTP multipart validates content, stores privately, and owner/admin-only downloads preserve bytes",async()=>{
+  const storedBefore=blobs.size;
   const id=randomUUID();
   await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[id]);
   const endpoint=`${base}/api/manual-wise/obligations/invoice/${id}/proofs`;
   const bad=new FormData();bad.append("reference","bad");bad.append("receipt",new Blob(["<html>not a receipt</html>"],{type:"image/png"}),"fake.png");
   const rejected=await fetch(endpoint,{method:"POST",headers:{Authorization:"Bearer client"},body:bad});
-  assert.equal(rejected.status,422);assert.equal(blobs.size,0);
+  assert.equal(rejected.status,422);assert.equal(blobs.size,storedBefore);
   const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aLYsAAAAASUVORK5CYII=","base64");
   const form=new FormData();form.append("reference","http-claim");form.append("amount","1");form.append("currency","PHP");form.append("payerId","other");form.append("receipt",new Blob([png],{type:"text/plain"}),"receipt.txt");
   const submitted=await fetch(endpoint,{method:"POST",headers:{Authorization:"Bearer client"},body:form});
@@ -307,12 +323,15 @@ test("supplied official QR is admin-only, stages exact original bytes, and does 
   const bytes=await fetch(`${base}/api/manual-wise/files/${id}`,{headers:{Authorization:"Bearer admin"}});
   assert.equal(createHash("sha256").update(Buffer.from(await bytes.arrayBuffer())).digest("hex"),officialWiseQr.sha256);
   assert.equal((await fetch(`${base}/api/manual-wise/files/${id}`,{headers:{Authorization:"Bearer client"}})).status,404);
-  // Existing bound invoices can adopt a later approved QR without rewriting recipient/instructions.
+  // Bound invoices retain the original QR even when receiving text is unchanged.
   const invoice=randomUUID();
   await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[invoice]);
-  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,null);
-  await service.configure("admin",{...config,qrFileId:id});
-  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,id);
+  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,fixtureQr);
+  await publish({...config,qrFileId:id});
+  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,fixtureQr);
+  const newInvoice=randomUUID();
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[newInvoice]);
+  assert.equal((await service.detail("client","invoice",newInvoice)).instructions?.qrFileId,id);
   const ownerDownload=await fetch(`${base}/api/manual-wise/files/${id}`,{headers:{Authorization:"Bearer client"}});
   assert.equal(ownerDownload.status,200);
   assert.ok(Buffer.from(await ownerDownload.arrayBuffer()).equals(original));
@@ -321,4 +340,152 @@ test("supplied official QR is admin-only, stages exact original bytes, and does 
   await pool.query("UPDATE invoices SET currency='USD',status='paid' WHERE id=$1",[invoice]);
   assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,null);
   assert.equal((await service.detail("admin","payout",ids.payout)).instructions,null);
+});
+
+test("drafts preserve active settings, require four confirmations, and cannot activate through legacy save",async()=>{
+  const active=(await pool.query("SELECT * FROM manual_wise_config WHERE active AND currency='USD'")).rows[0];
+  const draft=await service.configure("admin",{...config,active:false,qrFileId:fixtureQr,recipient:"Unapproved replacement"});
+  assert.equal(draft.config_status,"draft");
+  assert.equal((await pool.query("SELECT id FROM manual_wise_config WHERE active AND currency='USD'")).rows[0].id,active.id);
+  await assert.rejects(service.configure("admin",{...config,active:true,qrFileId:fixtureQr}));
+  for(const name of ["confirmImageReviewed","confirmReceivingAccount","confirmCurrencies","confirmInstructions"]) {
+    await assert.rejects(service.configurations.activate("admin",draft.id,{...confirmations,[name]:false}));
+  }
+  assert.equal((await pool.query("SELECT id FROM manual_wise_config WHERE active AND currency='USD'")).rows[0].id,active.id);
+});
+
+test("real QR replacement upload validates content, previews original bytes, and leaves active config untouched",async()=>{
+  const old=(await pool.query("SELECT id FROM manual_wise_config WHERE active AND currency='USD'")).rows[0].id;
+  const original=readFileSync("attached_assets/wise-qr-code_1792385025903.png");
+  const form=new FormData();form.append("receipt",new Blob([original],{type:"image/png"}),"replacement.png");
+  const response=await fetch(base+"/api/admin/manual-wise/config/qr",{method:"POST",headers:{Authorization:"Bearer admin"},body:form});
+  assert.equal(response.status,201);
+  const {id}=await response.json() as any;
+  const preview=await fetch(base+"/api/manual-wise/files/"+id,{headers:{Authorization:"Bearer admin"}});
+  assert.ok(Buffer.from(await preview.arrayBuffer()).equals(original));
+  const invalid=new FormData();invalid.append("receipt",new Blob(["<svg onload='alert(1)'/>"],{type:"image/png"}),"fake.png");
+  assert.equal((await fetch(base+"/api/admin/manual-wise/config/qr",{method:"POST",headers:{Authorization:"Bearer admin"},body:invalid})).status,422);
+  assert.equal((await pool.query("SELECT id FROM manual_wise_config WHERE active AND currency='USD'")).rows[0].id,old);
+});
+
+test("activation preserves bound proofs and unviewed issued invoices; new currencies use reviewed new QR",async()=>{
+  const old=(await pool.query("SELECT * FROM manual_wise_config WHERE active AND currency='USD'")).rows[0];
+  const pending=randomUUID(),unviewed=randomUUID();
+  for(const id of [pending,unviewed])await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[id]);
+  const evidence=await service.submit("client","invoice",pending,"CONFIG-OLD-DESTINATION",await receipt());
+  const draft=await service.configure("admin",{...config,active:false,supportedCurrencies:["USD","CAD"],
+    qrFileId:fixtureQr,recipient:"Reviewed replacement recipient",instructions:"Reviewed replacement instructions",
+    referenceInstructions:"New reference instructions"});
+  const result=await service.configurations.activate("admin",draft.id,confirmations);
+  assert.equal(result.items.length,2);
+  const current=result.items.find((r:any)=>r.currency==="USD");
+  assert.equal(current.previous_version_id,old.id);
+  assert.equal(current.source_config_id,draft.id);
+  assert.equal(current.activated_by,"admin");assert.ok(current.activated_at);
+  for(const id of [pending,unviewed]) {
+    const historical=await service.detail("client","invoice",id);
+    assert.equal(historical.instructions?.id,old.id);
+    assert.equal(historical.instructions?.qrFileId,old.qr_file_id);
+    assert.equal(historical.instructions?.recipient,old.recipient);
+    assert.equal(historical.instructions?.referenceInstructions,old.reference_instructions);
+  }
+  const proof=(await pool.query("SELECT * FROM manual_wise_submissions WHERE id=$1",[evidence.id])).rows[0];
+  assert.equal(proof.recipient,old.recipient);assert.equal(proof.status,"verification_pending");
+  await service.review("admin",evidence.id,review("CONFIG-OLD-DESTINATION",{verifiedRecipient:old.recipient}));
+  assert.equal((await pool.query("SELECT status FROM invoices WHERE id=$1",[pending])).rows[0].status,"paid");
+  for(const currency of ["USD","CAD","EUR"]) {
+    const id=randomUUID();
+    await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,$2,'sent')",[id,currency]);
+    const view=await service.detail("client","invoice",id);
+    assert.equal(view.instructions?.recipient??null,currency==="EUR"?null:draft.recipient);
+    assert.equal(view.instructions?.qrFileId??null,currency==="EUR"?null:fixtureQr);
+    assert.equal(view.payable,currency!=="EUR");
+  }
+  const listed=(await service.config("admin")).items.find((r:any)=>r.id===current.id);
+  assert.equal(listed.uploaded_by,"admin");assert.ok(listed.uploaded_at);
+});
+
+test("concurrent overlapping activations reject stale review and leave one active version per currency",async()=>{
+  const a=await service.configure("admin",{...config,active:false,qrFileId:fixtureQr,supportedCurrencies:["USD","PHP"]});
+  const b=await service.configure("admin",{...config,active:false,qrFileId:fixtureQr,supportedCurrencies:["USD","PHP"]});
+  const result=await Promise.allSettled([
+    service.configurations.activate("admin",a.id,confirmations),
+    service.configurations.activate("admin2",b.id,confirmations),
+  ]);
+  assert.equal(result.filter(r=>r.status==="fulfilled").length,1);
+  const loser=result.find(r=>r.status==="rejected") as PromiseRejectedResult;
+  assert.ok(deny(409)(loser.reason));
+  for(const c of ["USD","PHP"])assert.equal((await pool.query("SELECT count(*)::int AS n FROM manual_wise_config WHERE active AND currency=$1",[c])).rows[0].n,1);
+  const winner=result[0].status==="fulfilled"?a:b;
+  await assert.rejects(service.configurations.activate("admin",winner.id,confirmations),deny(409));
+});
+
+test("emergency revocation blocks collection, retains snapshots and receipts, and restore requires new review",async()=>{
+  const active=(await pool.query("SELECT * FROM manual_wise_config WHERE active AND currency='USD'")).rows[0];
+  const invoice=randomUUID();
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[invoice]);
+  const before=await service.detail("client","invoice",invoice);
+  assert.equal(before.payable,true);
+  await service.configurations.deactivate("admin",active.id,{reason:"Fixture destination temporarily invalid"});
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM manual_wise_config WHERE active AND currency IN ('USD','PHP')")).rows[0].n,0);
+  const blocked=await service.detail("client","invoice",invoice);
+  assert.equal(blocked.payable,false);assert.equal(blocked.instructions?.qrFileId,null);
+  assert.match(blocked.blockedReason!,/revoked/);
+  assert.equal(blocked.instructions?.id,active.id);
+  const restored=await service.configurations.restore("admin",active.id,{reason:"Fixture destination independently reconfirmed"});
+  assert.notEqual(restored.id,active.id);assert.equal(restored.source_config_id,active.id);
+  assert.equal(restored.config_status,"draft");assert.equal(restored.active,false);
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM manual_wise_config WHERE active AND currency='USD'")).rows[0].n,0);
+  const reactivated=(await service.configurations.activate("admin",restored.id,confirmations)).items.find((r:any)=>r.currency==="USD");
+  assert.notEqual(reactivated.id,active.id);assert.ok(reactivated.activated_at);
+  // A restored approval never silently rehabilitates a previously revoked invoice snapshot.
+  assert.equal((await service.detail("client","invoice",invoice)).payable,false);
+  const historical=(await pool.query("SELECT * FROM manual_wise_config WHERE id=$1",[active.id])).rows[0];
+  assert.equal(historical.recipient,active.recipient);assert.ok(historical.revoked_at);
+  assert.equal(historical.deactivation_reason,"Fixture destination temporarily invalid");
+  const restarted=new ManualWiseService(pool);
+  assert.ok((await restarted.config("admin")).items.some((r:any)=>r.id===reactivated.id && r.active));
+  assert.ok((await pool.query("SELECT id FROM manual_wise_audit WHERE event='wise_configuration_revoked'")).rowCount);
+  assert.ok((await pool.query("SELECT id FROM manual_wise_audit WHERE event='wise_configuration_restore_drafted'")).rowCount);
+});
+
+test("all lifecycle endpoints reject unauthenticated and non-Super-Admin callers",async()=>{
+  const id=randomUUID();
+  for(const endpoint of ["",`/${id}/activate`,`/${id}/deactivate`,`/${id}/restore`]) {
+    const body=endpoint.endsWith("activate") && !endpoint.endsWith("deactivate")?confirmations:
+      endpoint?{reason:"Fixture test"}:{...config,active:false,qrFileId:fixtureQr};
+    for(const actor of ["","client","limited","talent"]) {
+      const response=await fetch(base+"/api/admin/manual-wise/config"+endpoint,{method:"POST",
+        headers:{"Content-Type":"application/json",...(actor?{Authorization:`Bearer ${actor}`}:{})},body:JSON.stringify(body)});
+      assert.equal(response.status,actor?403:401,`${actor||"anonymous"} ${endpoint}`);
+    }
+  }
+});
+
+test("HTTP draft and activation survive application-server restart with a fresh database pool",async()=>{
+  const headers={Authorization:"Bearer admin","Content-Type":"application/json"};
+  const balances=(await pool.query("SELECT id,amount,currency,status FROM invoices ORDER BY id")).rows;
+  const saved=await fetch(base+"/api/admin/manual-wise/config",{method:"POST",headers,
+    body:JSON.stringify({...config,active:false,qrFileId:fixtureQr})});
+  assert.equal(saved.status,200);
+  const draft=await saved.json() as any;
+  const activeIds=(await pool.query("SELECT id FROM manual_wise_config WHERE active ORDER BY id")).rows;
+  await new Promise<void>(resolve=>http.close(()=>resolve()));
+  await pool.end();
+  pool=new pg.Pool({host:root,port:55443,user:"wise_fixture",database:"postgres"});
+  service=new ManualWiseService(pool);
+  await startHttp();
+  const list=await fetch(base+"/api/admin/manual-wise/config",{headers});
+  assert.equal(list.status,200);
+  const restored=(await list.json() as any).items.find((row:any)=>row.id===draft.id);
+  assert.equal(restored.config_status,"draft");assert.equal(restored.qr_file_id,fixtureQr);
+  assert.deepEqual((await pool.query("SELECT id FROM manual_wise_config WHERE active ORDER BY id")).rows,activeIds);
+  const image=await fetch(base+"/api/manual-wise/files/"+fixtureQr,{headers});
+  assert.equal(image.status,200);
+  assert.equal(createHash("sha256").update(Buffer.from(await image.arrayBuffer())).digest("hex"),officialWiseQr.sha256);
+  const activated=await fetch(base+`/api/admin/manual-wise/config/${draft.id}/activate`,
+    {method:"POST",headers,body:JSON.stringify(confirmations)});
+  assert.equal(activated.status,200);
+  assert.equal((await activated.json() as any).items[0].source_config_id,draft.id);
+  assert.deepEqual((await pool.query("SELECT id,amount,currency,status FROM invoices ORDER BY id")).rows,balances);
 });

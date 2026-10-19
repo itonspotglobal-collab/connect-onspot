@@ -24,6 +24,8 @@ Incoming fees and outgoing payouts are separate. Payouts never show an incoming 
 
 ## Configuration and QR setup
 
+**Current admin lifecycle:** [WISE_QR_CONFIGURATION.md](WISE_QR_CONFIGURATION.md) documents upload/preview, immutable drafts, four-confirmation activation, immediate deactivation, reviewed restoration, migration 0041, history fields and the expanded verification results.
+
 ### Supplied official QR (development, 2026-10-19)
 
 The supplied `wise-qr-code_1792385025903.png` is staged in persistent **private App Storage**, in the existing `manual-wise` namespace. It is not served from `public/`, the attachments directory, or a temporary local path. The original is 800 × 800 pixels and 36,300 bytes. SHA-256:
@@ -37,19 +39,19 @@ This proves readability, **not** beneficiary ownership, supported currencies, or
 
 **Activation is pending:** development currently has no recipient/currency/instruction configuration. No administrator was impersonated, no payment settings were invented, and no financial record was changed to activate the QR. A Super Admin must independently confirm the receiving destination, supported currency and transfer/reference instructions in **Admin Ledger → Manual Wise payments**.
 
-Choose **Use supplied OnSpot QR**, inspect the preview, enter/confirm the real receiving settings and explicitly save the desired version. Selecting the image alone stages a protected file; it does not create or activate receiving instructions. Existing manual upload remains the replacement mechanism. Configured and historical QR images have authenticated previews/downloads.
+Choose **Use supplied OnSpot QR**, inspect the preview, enter/confirm the real receiving settings and **Save draft**. Separately review the saved image/account/currencies/instructions and explicitly activate with a reason. Selecting the image alone stages a protected file; it does not create or activate receiving instructions. Existing manual upload remains the replacement mechanism. Configured and historical images have protected previews; customer QR downloads preserve original bytes.
 
 Additional protected endpoints, using the existing Super Admin permission check and private upload mechanism:
 - `GET /api/admin/manual-wise/config/qr/official` — preview the original pending source.
 - `POST /api/admin/manual-wise/config/qr/official` — register the original as a normal uploaded QR file; returns its existing-style file ID for the existing configuration form.
 
-No new configuration table, migration or payment system was introduced. No production deployment, production migration or production configuration was performed.
+The original source-image integration needed no migration. The subsequent lifecycle enhancement adds metadata to the existing table through development-only migration 0041; it adds no duplicate payment system. No production deployment, production migration or production configuration was performed.
 
 #### Eligibility and image replacement
 
 The shared customer component covers inquiries, pre-offer hiring invoices, eligible legacy client invoices, monthly statements, pending security deposits and eligible top-ups. It shows the complete square image, constrained to available width without cropping, and downloads the configured file directly. It never shows OnSpot's collection QR for outgoing Talent payouts, terminal/paid obligations, currency mismatches, or blocked/unapproved receiving instructions. Failures to load a configured image are reported separately from a missing QR.
 
-Existing obligations retain their recipient/instruction snapshots. A newer active QR can be used on an older binding **only when currency, recipient and transfer instructions match exactly**. A change to the receiving destination/instructions never silently redirects that older obligation. Server file authorization includes this same compatibility rule. Unsupported currencies receive no QR and no conversion.
+Existing obligations retain the **entire original QR/recipient/instruction/reference/currency snapshot**. A newer QR is not substituted into an older binding, even when text matches. Server file authorization uses the bound version; revoked QR versions remain available only to authorized admin review. Unsupported currencies receive no QR and no conversion.
 
 #### Development verification and screenshots
 
@@ -59,17 +61,17 @@ The existing isolated PostgreSQL/HTTP and browser suites now cover official-imag
 
 Actual development App Storage byte integrity is checked separately before and after restarting the application. Production private-directory/bucket configuration must make the chosen QR available through the same protected storage mechanism; source availability in a different production storage location is not assumed.
 
-Verified on 2026-10-19: **21 backend/billing tests passed, 19 browser tests passed, TypeScript passed, and all production build stages passed**. The stored original matched the attachment before and after the development restart. Anonymous access to the official admin source returned 401. Development still has zero receiving configurations, as required by the pending-approval state. Signed-in live customer/admin pages were not verified; browser coverage uses isolated components and API fixtures. The storage SDK emitted listener-count warnings during successful integrity checks; no image transfer failed. Existing unrelated preview/admin-auth diagnostic warnings remain as described below.
+The initial source-image integrity and unauthorized-access checks passed. Expanded lifecycle verification now passes **28 backend/billing tests, 22 browser tests, TypeScript and all build stages**; see the lifecycle guide above. Development still has zero receiving configurations, as required by pending approval. Signed-in live customer/admin pages were not verified. The storage SDK emitted listener-count warnings during successful integrity checks; no image transfer failed. Existing unrelated preview/admin-auth diagnostic warnings remain as described below.
 
 Files changed for this QR enhancement: `server/services/officialWiseQr.ts`, `server/routes/manualWise.ts`, `server/services/manualWiseService.ts`, `client/src/components/manual-wise/ManualWisePaymentPanel.tsx`, `client/src/components/manual-wise/AdminWisePayments.tsx`, `server/tests/manual-wise.integration.test.ts`, `browser-tests/manual-wise.browser.test.ts`, `docs/MANUAL_WISE_PAYMENTS.md`, `.gitignore`, `.replitignore`, and the existing manual-settlement project memory note. The supplied PNG itself is unchanged.
 
 1. Sign in as Super Admin and open **Admin Ledger → Manual Wise payments**.
 2. Enter an approved recipient, currency, transfer instructions and reference instructions. Do not copy account details from an unapproved document.
-3. Optionally upload the actual approved QR image, then save its returned file with the configuration. PNG, JPEG and WebP are supported; PDF is not a QR format.
-4. Mark the configuration active for the currency. Only one active version per currency is allowed.
+3. Upload/preview the intended image and **Save draft**. PNG, JPEG and WebP are supported; PDF is not a QR format.
+4. Separately review the saved image/account/currencies/instructions, enter a reason and explicitly activate. Only one active version per currency is allowed.
 5. Confirm the manual deposit-funding operating/custody policy separately **only after business approval**. Without this flag, deposit and top-up receipt submission/settlement remain disabled.
 
-Configuration versions are retained. Existing obligations retain their previously displayed recipient/instructions; editing settings never silently redirects an invoice already shown to a payer. A later active version applies to newly enrolled obligations. Deactivating the last active version pauses incoming collection for that currency. Deposit policy authorization uses the current active version, not an old instruction snapshot. Hiring instructions must exactly match the pre-offer invoice's immutable recipient; a mismatch needs financial review, not a silent rewrite.
+Configuration versions are retained. Issued obligations preserve their original QR/recipient/instructions/reference snapshots; later approval never silently redirects an issued destination. Deactivation pauses affected currencies and revokes bound destinations instead of rewriting them. Deposit policy authorization uses the current active version, not an old instruction snapshot. Hiring instructions must exactly match the pre-offer invoice's immutable recipient; a mismatch needs financial review, not a silent rewrite.
 
 The customer sees **“QR code not configured”** when no QR exists. Written approved instructions can still be used. Missing configuration or a missing finalized amount disables proof submission. No zero amount is invented.
 
@@ -99,7 +101,10 @@ Super Admin:
 - `GET /api/admin/manual-wise/submissions` — filters: category, status, currency, payer, reference, from, to
 - `POST /api/admin/manual-wise/submissions/:id/review` — reject with reason, or verify with independent confirmation, amount, currency, recipient, actual transaction reference, settlement date and reason
 - `GET /api/admin/manual-wise/config`
-- `POST /api/admin/manual-wise/config` — new version, not a rewrite of existing instructions
+- `POST /api/admin/manual-wise/config` — immutable draft only, `active:false`
+- `POST /api/admin/manual-wise/config/:id/activate` — four independent confirmations and activation reason
+- `POST /api/admin/manual-wise/config/:id/deactivate` — reasoned revocation of still-active sibling currency rows
+- `POST /api/admin/manual-wise/config/:id/restore` — new unactivated draft copied from a retired version
 - `POST /api/admin/manual-wise/config/qr` — multipart image `receipt`
 - `GET /api/admin/manual-wise/payouts`
 - `POST /api/admin/manual-wise/payouts/:id/destination` — approved recipient, reason, explicit independent approval

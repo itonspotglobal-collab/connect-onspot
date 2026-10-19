@@ -20,3 +20,9 @@ The supplied official OnSpot Wise QR must remain byte-for-byte unchanged, includ
 **Why:** The product owner explicitly requires preserving the pattern and keeping the image pending if destination/currency approval cannot be established.
 
 **How to apply:** Use existing private storage and admin configuration, never redraw or regenerate the QR. Keep activation gated by confirmed recipient, currency and instructions. Never use the collection QR for outgoing payouts.
+
+An issued receiving snapshot includes the original QR and reference instructions as well as recipient/currency/text. A replacement QR must not be substituted into old instructions, even when recipient text matches.
+
+**Why:** The product owner explicitly requires historical invoice/proof destination integrity, not merely matching recipient labels.
+
+**How to apply:** New approval applies prospectively. Restoration requires fresh review and must not silently clear the revocation on older issued destinations; those require separate financial review.

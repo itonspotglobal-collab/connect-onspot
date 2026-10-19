@@ -2557,7 +2557,21 @@ export const manualWiseConfig = pgTable("manual_wise_config", {
   depositFundingConfirmed: boolean("deposit_funding_confirmed").notNull().default(false),
   createdBy: varchar("created_by").notNull().references(() => users.id,{onDelete:"restrict"}),
   createdAt: timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
-},t=>[uniqueIndex("manual_wise_active_currency").on(t.currency).where(sql`${t.active}`)]);
+  configStatus: text("config_status").notNull().default("draft"),
+  supportedCurrencies: text("supported_currencies").array().notNull(),
+  baseVersions: jsonb("base_versions").notNull().default({}),
+  previousVersionId: uuid("previous_version_id").references((): AnyPgColumn => manualWiseConfig.id,{onDelete:"restrict"}),
+  sourceConfigId: uuid("source_config_id").references((): AnyPgColumn => manualWiseConfig.id,{onDelete:"restrict"}),
+  activatedBy: varchar("activated_by").references(() => users.id,{onDelete:"restrict"}),
+  activatedAt: timestamp("activated_at",{withTimezone:true}),
+  deactivatedBy: varchar("deactivated_by").references(() => users.id,{onDelete:"restrict"}),
+  deactivatedAt: timestamp("deactivated_at",{withTimezone:true}),
+  changeReason: text("change_reason"),
+  deactivationReason: text("deactivation_reason"),
+  revokedAt: timestamp("revoked_at",{withTimezone:true}),
+},t=>[uniqueIndex("manual_wise_active_currency").on(t.currency).where(sql`${t.active}`),
+  check("manual_wise_config_status_check",sql`${t.configStatus} IN ('draft','active','inactive','reviewed')`),
+  check("manual_wise_config_active_status_check",sql`${t.active}=(${t.configStatus}='active')`)]);
 export const manualWiseObligations = pgTable("manual_wise_obligations", {
   id: uuid("id").primaryKey().defaultRandom(),
   category: text("category").notNull(),

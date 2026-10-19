@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Pool, PoolClient } from "pg";
+import { ManualWiseConfiguration } from "./manualWiseConfiguration";
 
 const categories = ["inquiry","hiring_invoice","invoice","monthly_invoice","deposit","replenishment","payout"] as const;
 export type WiseCategory = typeof categories[number];
@@ -10,12 +11,6 @@ const columns = { inquiry:"inquiry_id",hiring_invoice:"hiring_invoice_id",invoic
 const text = (n: number) => z.string().trim().min(1).max(n);
 const money = z.string().regex(/^(0|[1-9]\d{0,9})(\.\d{1,2})?$/).refine(v => Number(v)>0);
 const currency = z.string().regex(/^[A-Z]{3}$/);
-export const wiseConfigInput = z.object({
-  currency, recipient:text(500), instructions:text(4000),
-  referenceInstructions:z.string().trim().max(1000).default(""),
-  active:z.boolean(), qrFileId:z.string().uuid().nullish(),
-  depositFundingConfirmed:z.boolean().default(false),
-}).strict();
 export const wiseReviewInput = z.object({
   action:z.enum(["verify","reject"]), reason:text(2000),
   independentlyVerified:z.literal(true).optional(), verifiedAmount:money.optional(),
@@ -41,6 +36,7 @@ const amountOf=(r:any,c:WiseCategory) => c==="monthly_invoice" ? r.amount_due : 
 
 export class ManualWiseService {
   constructor(public pool:Pool) {}
+  get configurations() { return new ManualWiseConfiguration(this.pool,(db,id)=>this.actor(db,id,true),fail); }
   async tx<T>(fn:(db:PoolClient)=>Promise<T>) {
     const db=await this.pool.connect();
     try { await db.query("BEGIN"); const value=await fn(db); await db.query("COMMIT"); return value; }
@@ -110,7 +106,17 @@ export class ManualWiseService {
     let config=binding.config_id ? (await db.query("SELECT * FROM manual_wise_config WHERE id=$1",[binding.config_id])).rows[0] : null;
     const curr=c==="inquiry" ? r.payment_currency : r.currency;
     if (!config && c!=="payout") {
-      config=(await db.query("SELECT * FROM manual_wise_config WHERE currency=$1 AND active FOR SHARE",[curr])).rows[0] ?? null;
+      // If an issued obligation has not yet enrolled, recover the known receiving
+      // version at issuance, not whichever destination was activated most recently.
+      // Never infer an activation period for legacy inactive rows without dates.
+      config=(await db.query(`SELECT c.* FROM manual_wise_config c
+        CROSS JOIN (SELECT created_at AS issued_at FROM ${tables[c]} WHERE id=$2) issued
+        WHERE c.currency=$1 AND c.config_status IN ('active','inactive')
+        AND coalesce(c.activated_at,c.created_at)<=issued.issued_at
+        AND (c.active OR c.deactivated_at>issued.issued_at)
+        ORDER BY coalesce(c.activated_at,c.created_at) DESC LIMIT 1 FOR SHARE OF c`,
+        [curr,id])).rows[0] ?? null;
+      if(!config)config=(await db.query("SELECT * FROM manual_wise_config WHERE currency=$1 AND active FOR SHARE",[curr])).rows[0] ?? null;
       if (config) {
         // Immutable first-enrollment snapshot. Existing invoices' own fields are never overwritten.
         await db.query("UPDATE manual_wise_obligations SET config_id=$2 WHERE id=$1",[binding.id,config.id]);
@@ -136,6 +142,7 @@ export class ManualWiseService {
     if (c!=="payout" && !config) blockedReason="Wise payment instructions are not configured for this currency.";
     const activeConfig=c==="payout" ? null : (await db.query("SELECT * FROM manual_wise_config WHERE currency=$1 AND active",[curr])).rows[0];
     if(config && c!=="payout" && !activeConfig)blockedReason="Wise collection is paused for this currency. Do not send funds.";
+    if(config && config.currency!==curr)blockedReason="The issued receiving instructions do not support this payment's currency. Financial review is required.";
     if (c==="hiring_invoice" && config && config.recipient!==r.payment_recipient) {
       blockedReason="Configured Wise recipient does not match this invoice's immutable payment recipient. Financial review is required.";
     }
@@ -146,10 +153,9 @@ export class ManualWiseService {
     if (c==="payout" && !binding.approved_destination) blockedReason="Independently approve the Talent payout destination before recording a transfer.";
     const latest=history[0];
     const paymentStatus=settled ? "paid" : latest?.status ?? "awaiting_payment";
-    const qrConfig=activeConfig && config && activeConfig.recipient===config.recipient &&
-      activeConfig.instructions===config.instructions ? activeConfig : config;
+    if(config?.revoked_at)blockedReason="These receiving instructions have been revoked. Contact OnSpot billing support before sending funds.";
     const approvedQr=c!=="payout" && config?.currency===curr && allowed && !settled && !blockedReason
-      ? qrConfig?.qr_file_id ?? null : null;
+      ? config?.qr_file_id ?? null : null;
     return {actor,r,binding,config,view:{
       category:c,id,reference:r.invoice_number ?? r.reference_number ?? id,
       amount,currency:curr,payerId,status:r.status,paymentStatus,
@@ -187,24 +193,10 @@ export class ManualWiseService {
     });
   }
   async configure(actorId:string,input:unknown) {
-    const v=wiseConfigInput.parse(input);
-    return this.tx(async db=>{
-      await this.actor(db,actorId,true);
-      await db.query("SELECT pg_advisory_xact_lock(hashtext('manual-wise-config'))");
-      if (v.qrFileId && !(await db.query("SELECT id FROM manual_wise_files WHERE id=$1 AND purpose='qr'",[v.qrFileId])).rows.length) {
-        return fail(422,"Configured QR image not found.");
-      }
-      await db.query("UPDATE manual_wise_config SET active=false WHERE currency=$1 AND active",[v.currency]);
-      const row=(await db.query(`INSERT INTO manual_wise_config(currency,recipient,instructions,reference_instructions,
-        qr_file_id,active,deposit_funding_confirmed,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [v.currency,v.recipient,v.instructions,v.referenceInstructions,v.qrFileId??null,v.active,v.depositFundingConfirmed,actorId])).rows[0];
-      await this.event(db,actorId,"wise_configuration_created",null,null,{configId:row.id,currency:v.currency,active:v.active});
-      return row;
-    });
+    return this.configurations.save(actorId,input);
   }
   async config(actor:string) {
-    await this.actor(this.pool,actor,true);
-    return {items:(await this.pool.query("SELECT * FROM manual_wise_config ORDER BY created_at DESC LIMIT 100")).rows};
+    return this.configurations.list(actor);
   }
   async quote(actorId:string,id:string,input:unknown) {
     const v=z.object({amount:money,currency}).strict().parse(input);
@@ -389,10 +381,9 @@ export class ManualWiseService {
     if (!file) return fail(404,"Receipt not found.");
     if (actor.role==="admin" && actor.admin_sub_role===null) return file;
     const allowed=file.purpose==="qr"
-      ? await this.pool.query(`SELECT o.id FROM manual_wise_obligations o JOIN manual_wise_config bound ON bound.id=o.config_id
-          JOIN manual_wise_config c ON c.id=bound.id OR (c.active AND c.currency=bound.currency
-            AND c.recipient=bound.recipient AND c.instructions=bound.instructions)
-          WHERE o.payer_id=$1 AND o.category<>'payout' AND c.qr_file_id=$2`,[actorId,id])
+      ? await this.pool.query(`SELECT o.id FROM manual_wise_obligations o
+          JOIN manual_wise_config c ON c.id=o.config_id
+          WHERE o.payer_id=$1 AND o.category<>'payout' AND c.qr_file_id=$2 AND c.revoked_at IS NULL`,[actorId,id])
       : await this.pool.query(`SELECT o.id FROM manual_wise_obligations o JOIN manual_wise_submissions s ON s.obligation_id=o.id WHERE o.payer_id=$1 AND o.category<>'payout' AND s.receipt_id=$2`,[actorId,id]);
     if (!allowed.rows.length) return fail(404,"Receipt not found.");
     return file;

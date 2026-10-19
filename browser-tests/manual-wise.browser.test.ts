@@ -172,8 +172,148 @@ test("admin can preview and stage supplied QR without inventing or automatically
     return fulfill(r,{items:[]});
   });
   await page.getByRole("button",{name:"Use supplied OnSpot QR",exact:true}).click();
-  await page.getByText("QR staged for the next saved version; it is not active yet.",{exact:true}).waitFor();
+  await page.getByText("Supplied OnSpot QR staged. Review its protected server preview before saving a draft.",{exact:true}).waitFor();
   assert.equal(saved,false);
-  assert.equal(await page.getByRole("button",{name:/Save.*version/i}).isDisabled(),true);
+  assert.equal(await page.getByRole("button",{name:"Save draft",exact:true}).isDisabled(),true);
   await page.close();
+});
+
+for(const width of [390,1280])test(`admin replacement draft, explicit activation, history, restoration and deactivation at ${width}px`,async()=>{
+  const page=await open(width,incoming(),true);
+  const original=readFileSync("attached_assets/wise-qr-code_1792385025903.png");
+  const old={id:"old-usd",currency:"USD",supported_currencies:["USD"],recipient:"Fixture original recipient",
+    instructions:"Fixture original instructions. No real transfers.",reference_instructions:"Fixture invoice reference",
+    qr_file_id:"old-qr",active:true,config_status:"active",created_by:"fixture-admin",created_at:"2026-10-18T00:00:00Z",
+    uploaded_by:"fixture-admin",uploaded_at:"2026-10-18T00:00:00Z",activated_by:"fixture-admin",activated_at:"2026-10-18T01:00:00Z"};
+  let rows:any[]=[old],uploads=0,saves=0,activations=0,restores=0;
+  const fileRequests:string[]=[];
+  await page.route("**/api/manual-wise/files/**",r=>{
+    fileRequests.push(new URL(r.request().url()).pathname.split("/").pop()!);
+    return r.fulfill({contentType:"image/png",body:original});
+  });
+  await page.route(/\/api\/admin\/manual-wise\/config(?:\/.*)?$/,async r=>{
+    const path=new URL(r.request().url()).pathname;
+    if(path.endsWith("/qr/official"))return r.fulfill({contentType:"image/png",body:original});
+    if(path.endsWith("/qr")){
+      uploads++;assert.ok(r.request().postDataBuffer()!.includes(original));
+      return fulfill(r,{id:"replacement-qr"},201);
+    }
+    if(r.request().method()==="GET")return fulfill(r,{items:rows});
+    const body=r.request().postDataJSON();
+    if(path.endsWith("/activate")){
+      assert.deepEqual([body.confirmImageReviewed,body.confirmReceivingAccount,body.confirmCurrencies,body.confirmInstructions],[true,true,true,true]);
+      assert.ok(body.reason.trim());activations++;
+      const source=rows.find(row=>row.id===path.split("/").at(-2));
+      assert.equal(source.config_status,"draft");
+      const activated=source.supported_currencies.map((currency:string)=>{
+        const previous=rows.find(row=>row.active && row.currency===currency);
+        if(previous){previous.active=false;previous.config_status="inactive";previous.deactivation_reason=body.reason;}
+        return {...source,id:`activation-${activations}-${currency}`,currency,active:true,config_status:"active",
+          source_config_id:source.id,previous_version_id:previous?.id??null,activated_by:"fixture-admin",activated_at:"2026-10-19T01:00:00Z"};
+      });
+      source.config_status="reviewed";rows.unshift(...activated);return fulfill(r,{items:activated});
+    }
+    if(path.endsWith("/restore")){
+      restores++;assert.ok(body.reason);
+      const source=rows.find(row=>row.id===path.split("/").at(-2));
+      const draft={...source,id:"restored-draft",active:false,config_status:"draft",source_config_id:source.id};
+      rows.unshift(draft);return fulfill(r,draft);
+    }
+    if(path.endsWith("/deactivate")){
+      const selected=rows.find(row=>row.id===path.split("/").at(-2));
+      rows.filter(row=>row.active && (row.id===selected.id || row.source_config_id===selected.source_config_id))
+        .forEach(row=>{row.active=false;row.config_status="inactive";row.revoked_at="2026-10-19T02:00:00Z";row.deactivation_reason=body.reason;});
+      return fulfill(r,selected);
+    }
+    saves++;assert.equal(body.active,false);assert.equal(body.qrFileId,"replacement-qr");
+    const draft={...body,id:"replacement-draft",supported_currencies:body.supportedCurrencies,
+      reference_instructions:body.referenceInstructions,qr_file_id:body.qrFileId,config_status:"draft",
+      uploaded_by:"fixture-admin",uploaded_at:"2026-10-19T00:00:00Z"};
+    rows.unshift(draft);return fulfill(r,draft);
+  });
+  await page.reload();
+  const active=page.locator('section[aria-labelledby="active-wise-heading"]');
+  await active.getByAltText("Active USD Wise QR").waitFor();
+  await page.getByLabel("Choose QR image",{exact:true}).setInputFiles({name:"replacement.png",mimeType:"image/png",buffer:original});
+  await page.getByAltText("Selected QR image preview").waitFor();
+  assert.equal(uploads,0);assert.equal(activations,0);
+  await page.getByRole("button",{name:"Upload QR image",exact:true}).click();
+  await page.getByAltText("Uploaded protected QR preview before draft save").waitFor();
+  assert.equal(uploads,1);assert.ok(fileRequests.includes("replacement-qr"));
+  assert.equal(await active.getByText("USD · Fixture original recipient",{exact:true}).count(),1);
+  await page.getByLabel("Primary currency",{exact:true}).fill("USD");
+  await page.getByLabel("Supported currencies").fill("USD, invalid");
+  await page.getByLabel("Receiving account recipient",{exact:true}).fill("Fixture reviewed replacement");
+  await page.getByLabel("Transfer instructions",{exact:true}).fill("Fixture replacement instructions. No real transfers.");
+  assert.equal(await page.getByRole("button",{name:"Save draft",exact:true}).isDisabled(),true);
+  await page.getByLabel("Supported currencies").fill("USD, CAD");
+  await page.getByLabel("Reference instructions",{exact:true}).fill("Fixture revised invoice reference");
+  await page.getByRole("button",{name:"Save draft",exact:true}).click();
+  await page.getByText("Draft saved. It is not active and will not collect customer payments until separately reviewed and activated.",{exact:true}).waitFor();
+  assert.equal(saves,1);assert.equal(activations,0);
+  assert.equal(await active.getByText("USD · Fixture original recipient",{exact:true}).count(),1);
+  await page.getByRole("button",{name:"Review this draft",exact:true}).click();
+  const activateButton=page.getByRole("button",{name:"Activate reviewed configuration",exact:true});
+  assert.equal(await activateButton.isDisabled(),true);
+  const reviewPanel=page.getByTestId("wise-configuration-review");
+  const checks=reviewPanel.getByRole("checkbox");
+  await checks.nth(0).check();await checks.nth(1).check();await checks.nth(2).check();
+  await page.getByLabel("Activation reason",{exact:true}).fill("Fixture receiving details independently reviewed");
+  assert.equal(await activateButton.isDisabled(),true);
+  await checks.nth(3).check();
+  assert.equal(await activateButton.isDisabled(),false);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false);
+  mkdirSync("generated-artifacts/wise-qr-lifecycle",{recursive:true});
+  await reviewPanel.screenshot({path:`generated-artifacts/wise-qr-lifecycle/review-${width}.png`});
+  await activateButton.click();
+  await page.getByText("Configuration activated. Customer collection now uses the activated configuration.",{exact:true}).waitFor();
+  await active.getByText("USD · Fixture reviewed replacement",{exact:true}).waitFor();
+  await active.getByAltText("Active CAD Wise QR").waitFor();
+  assert.equal(activations,1);
+  const history=page.locator('section[aria-labelledby="history-heading"]');
+  await history.getByText("USD · Fixture original recipient",{exact:true}).waitFor();
+  await history.getByLabel("Reason to restore as a draft").fill("Fixture original destination reconfirmed");
+  await history.getByRole("button",{name:"Restore as draft",exact:true}).click();
+  await page.getByText("Historical configuration copied as a new draft. It still requires a separate review and activation.",{exact:true}).waitFor();
+  assert.equal(restores,1);assert.equal(activations,1);
+  await active.getByText("USD · Fixture reviewed replacement",{exact:true}).waitFor();
+  await page.getByRole("button",{name:"Review this draft",exact:true}).click();
+  assert.equal(await activateButton.isDisabled(),true);
+  assert.equal(await reviewPanel.getByRole("checkbox").nth(1).isChecked(),false);
+  for(let i=0;i<4;i++)await reviewPanel.getByRole("checkbox").nth(i).check();
+  await page.getByLabel("Activation reason",{exact:true}).fill("Fixture restored receiving details newly reviewed");
+  await activateButton.click();
+  await active.getByText("USD · Fixture original recipient",{exact:true}).waitFor();
+  assert.equal(activations,2);
+  await page.getByLabel("Reason to deactivate USD",{exact:true}).fill("Fixture destination revoked");
+  const usd=active.locator("article").filter({has:page.getByText("USD · Fixture original recipient",{exact:true})});
+  await usd.getByRole("button",{name:"Deactivate",exact:true}).click();
+  await page.getByText(/Configuration deactivated\. Customer collection is blocked/).waitFor();
+  assert.equal(await active.getByAltText("Active USD Wise QR").count(),0);
+  assert.equal(await active.getByAltText("Active CAD Wise QR").count(),1);
+  await page.close();
+});
+
+test("a missing, forbidden, or undecodable protected QR blocks image confirmation and activation",async()=>{
+  for(const status of [200,403,404]) {
+    const page=await open(390,incoming(),true);
+    let activated=false;
+    const draft={id:"unreadable-draft",currency:"USD",supported_currencies:["USD"],recipient:"Fixture recipient",
+      instructions:"Fixture instructions only",reference_instructions:"Fixture reference",
+      qr_file_id:"unreadable-qr",active:false,config_status:"draft"};
+    await page.route("**/api/admin/manual-wise/config",r=>fulfill(r,{items:[draft]}));
+    await page.route("**/api/admin/manual-wise/config/*/activate",r=>{activated=true;return fulfill(r,{error:"Must not reach activation"},422);});
+    await page.route("**/api/manual-wise/files/**",r=>r.fulfill({status,contentType:status===200?"image/png":"application/json",
+      body:status===200?"not actually an image":JSON.stringify({error:"Fixture protected-image refusal"})}));
+    await page.reload();
+    await page.getByRole("button",{name:"Review this draft",exact:true}).click();
+    const panel=page.getByTestId("wise-configuration-review");
+    await panel.getByRole("alert").waitFor();
+    assert.equal(await panel.getByRole("checkbox").nth(0).isDisabled(),true);
+    for(let i=1;i<4;i++)await panel.getByRole("checkbox").nth(i).check();
+    await page.getByLabel("Activation reason",{exact:true}).fill("Fixture all other details reviewed");
+    assert.equal(await page.getByRole("button",{name:"Activate reviewed configuration",exact:true}).isDisabled(),true);
+    assert.equal(activated,false);
+    await page.close();
+  }
 });

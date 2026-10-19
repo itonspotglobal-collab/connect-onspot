@@ -56,10 +56,18 @@ export function registerManualWiseRoutes(app:Express,deps:{
     catch(e:any){throw new WiseError(422,e.message);}
     const key=await blobs.save(req.file.buffer,contentType);
     try {
-      const row=(await service.pool.query(`INSERT INTO manual_wise_files(uploaded_by,purpose,object_key,filename,content_type,byte_size)
-        VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,[actor(req),purpose,key,
-        String(req.file.originalname).replace(/[\x00-\x1f/\\]/g,"_").slice(0,180),contentType,req.file.buffer.length])).rows[0];
-      return row.id as string;
+      const insert=async(db:Pick<typeof service.pool,"query">)=>{
+        const row=(await db.query(`INSERT INTO manual_wise_files(uploaded_by,purpose,object_key,filename,content_type,byte_size)
+          VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,[actor(req),purpose,key,
+          String(req.file.originalname).replace(/[\x00-\x1f/\\]/g,"_").slice(0,180),contentType,req.file.buffer.length])).rows[0];
+        if(purpose==="qr")await db.query(`INSERT INTO manual_wise_audit(actor_id,event,details) VALUES($1,'wise_qr_uploaded',$2)`,
+          [actor(req),JSON.stringify({fileId:row.id,contentType,bytes:req.file.buffer.length})]);
+        return row.id as string;
+      };
+      return purpose==="qr" ? await service.tx(async db=>{
+        await service.actor(db,actor(req),true);
+        return insert(db);
+      }) : await insert(service.pool);
     } catch(e){await blobs.delete(key).catch(()=>{});throw e;}
   }
   app.get("/api/manual-wise/obligations",authenticate,handle(req=>service.list(actor(req))));
@@ -122,6 +130,12 @@ export function registerManualWiseRoutes(app:Express,deps:{
     res.send(bytes);
   }));
   app.post("/api/admin/manual-wise/config",authenticate,limiter,handle(req=>service.configure(actor(req),req.body)));
+  app.post("/api/admin/manual-wise/config/:id/activate",authenticate,limiter,handle(req=>
+    service.configurations.activate(actor(req),req.params.id,req.body)));
+  app.post("/api/admin/manual-wise/config/:id/deactivate",authenticate,limiter,handle(req=>
+    service.configurations.deactivate(actor(req),req.params.id,req.body)));
+  app.post("/api/admin/manual-wise/config/:id/restore",authenticate,limiter,handle(req=>
+    service.configurations.restore(actor(req),req.params.id,req.body)));
   app.post("/api/admin/manual-wise/config/qr",authenticate,limiter,handle(async(req,res)=>{
     await service.actor(service.pool,actor(req),true);
     await multipart(req,res);
