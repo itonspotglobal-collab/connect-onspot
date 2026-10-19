@@ -41,6 +41,7 @@
 - [Engagement type rename](engagement-type-rename.md) — 'Half-Day'→'Lite', 'Full-Time'→'Standard'; 4 storage locations, drop-then-rename-then-add constraint pattern, confirmed legal wording.
 - [Billing engine](billing-engine.md) — billing invariants, security deposit ladder, and provider-managed marketplace custody boundary.
 - [Manual Wise settlement](manual-wise-settlement-policy.md) — receipts never settle funds; incoming/outgoing authorities differ, and manual deposit funding needs explicit policy approval.
+- [Wise staging UAT](wise-staging-uat-policy.md) — synthetic no-money fixtures are allowed only in isolated staging; preserve real login and stop if authenticated sessions cannot be established.
 - [Legacy model removal](legacy-model-removal.md) — migrate every remaining caller and test the user-visible flow before deleting a legacy API or table.
 - [Job-form visible fields](job-form-visible-fields.md) — shared Admin/Client form changes must not expose or overwrite hidden legacy job fields.
 - [Job approval transition alerts](job-approval-transition-alerts.md) — approval alerts are per-transition events; retries no-op, while later re-entry creates a fresh Client alert.

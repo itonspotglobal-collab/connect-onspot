@@ -1,0 +1,22 @@
+The Wise QR UAT preflight report is clear. Please address the remaining testing blockers without weakening payment security or using real money.
+
+I want to prepare a safe, isolated staging UAT environment for the manual Wise payment workflow.
+
+Requirements:
+
+1. Inspect the existing authentication, role, and database setup before making changes.
+2. Propose a safe method for creating dedicated Super Admin, Client, and restricted-admin test accounts through the application's supported authentication and role-assignment mechanisms.
+3. Do not ask for or expose personal passwords, production credentials, or authentication tokens.
+4. Confirm that staging uses isolated database records, private file storage, and disabled or safely redirected external notifications.
+5. Prepare two clearly labeled TEST-ONLY QR configurations and disposable invoice/payment records. Never present these as genuine verified Wise receiving destinations.
+6. Create a test-only settlement verification harness that can simulate verified payment evidence without contacting Wise or transferring money. It must be inaccessible in production and must not bypass production authorization.
+7. Test the full authenticated workflow: QR draft, activation, replacement, historical invoice snapshot, receipt submission, rejection, resubmission, approval, and audit history.
+8. Test that restricted admins and clients cannot access Super Admin-only operations.
+9. Test cross-client invoice and receipt isolation.
+10. Test duplicate and concurrent verification safeguards.
+11. Confirm the staging test mechanism cannot be enabled in production through a normal user request or configuration mistake.
+12. Provide actual UAT results, distinguishing simulated financial settlement from real Wise settlement.
+
+Do not deploy to production, apply production migrations, or process real payments.
+
+If authenticated staging sessions cannot be established, stop and document the exact remaining blocker instead of claiming the tests passed.

@@ -2,6 +2,8 @@
 
 Assessment date: 2026-10-19. **Decision: HOLD for authenticated UAT. Not a production sign-off.**
 
+Follow-up: `WISE_STAGING_UAT_SETUP.md` documents the inspected supported account-provisioning path, synthetic-fixture authorization and proposed production-excluded harness. The owner now permits clearly labeled TEST-ONLY QR destinations and simulated evidence in isolated staging; genuine receiving details are not prerequisites for that synthetic run. Staging isolation and supported authenticated account provisioning remain unresolved. No harness or authenticated run has been completed.
+
 No deployment, production migration, receiving-setting write, invoice creation, receipt submission, or settlement approval was performed in this assessment. No credentials were guessed, accounts impersonated, or authentication bypasses introduced.
 
 ## Current live development evidence
