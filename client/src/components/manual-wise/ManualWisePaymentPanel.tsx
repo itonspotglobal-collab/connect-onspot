@@ -46,12 +46,16 @@ function errorText(error: unknown) {
   return e?.response?.data?.error || e?.message || "The request could not be completed.";
 }
 async function protectedFile(fileId: string) {
+  const blob = await protectedFileBlob(fileId);
+  return URL.createObjectURL(blob);
+}
+async function protectedFileBlob(fileId: string) {
   const res = await fetch(`/api/manual-wise/files/${encodeURIComponent(fileId)}`, {
     credentials: "include",
     headers: token() ? { Authorization: `Bearer ${token()}` } : {},
   });
-  if (!res.ok) throw new Error(res.status === 403 ? "Access denied (403) for this receipt." : `Receipt download failed (${res.status}).`);
-  return URL.createObjectURL(await res.blob());
+  if (!res.ok) throw new Error(res.status === 403 ? "Access denied (403) for this protected file." : `Protected file download failed (${res.status}).`);
+  return res.blob();
 }
 function formatMoney(amount: string, currency: string) {
   const value = Number(amount);
@@ -87,7 +91,8 @@ export function ManualWisePaymentPanel({ category, id, title = "Manual Wise paym
   const [reference, setReference] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
-  const [qrUrl, setQrUrl] = useState("");
+  const [qrAsset, setQrAsset] = useState<{ fileId: string; url: string } | null>(null);
+  const [qrLoadError, setQrLoadError] = useState("");
   const queryKey = ["/api/manual-wise/obligations", category, id];
   const query = useQuery<WiseObligation>({
     queryKey,
@@ -120,12 +125,30 @@ export function ManualWisePaymentPanel({ category, id, title = "Manual Wise paym
       await qc.invalidateQueries({ queryKey: ["/api/client/invoices"] });
     },
   });
-  const qrFileId = query.data?.direction === "incoming" ? query.data.instructions?.qrFileId : null;
+  const qrRecord = query.data;
+  const qrStatusAllowed = qrRecord?.paymentStatus === "awaiting_payment" || qrRecord?.paymentStatus === "verification_pending" || qrRecord?.paymentStatus === "rejected";
+  const qrLifecycleBlocked = ["paid", "void", "refunded", "invalidated", "blocked"].includes(qrRecord?.status || "");
+  const qrFileId = qrRecord?.direction === "incoming"
+    && (qrRecord.payable || qrRecord.paymentStatus === "verification_pending")
+    && qrStatusAllowed
+    && !qrLifecycleBlocked
+    && !qrRecord.blockedReason
+    && qrRecord.instructions?.currency === qrRecord.currency
+    && Boolean(qrRecord.instructions?.recipient.trim())
+    ? qrRecord.instructions.qrFileId
+    : null;
   useEffect(() => {
     let alive = true;
     let created = "";
-    if (qrFileId) protectedFile(qrFileId).then((url) => { created = url; if (alive) setQrUrl(url); else URL.revokeObjectURL(url); }).catch(() => { if (alive) setQrUrl(""); });
-    else setQrUrl("");
+    setQrAsset(null);
+    setQrLoadError("");
+    if (qrFileId) protectedFileBlob(qrFileId)
+      .then((blob) => {
+        created = URL.createObjectURL(blob);
+        if (alive) setQrAsset({ fileId: qrFileId, url: created });
+        else URL.revokeObjectURL(created);
+      })
+      .catch((cause: unknown) => { if (alive) setQrLoadError(errorText(cause)); });
     return () => { alive = false; if (created) URL.revokeObjectURL(created); };
   }, [qrFileId]);
   const onFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -141,6 +164,16 @@ export function ManualWisePaymentPanel({ category, id, title = "Manual Wise paym
   const obligation = query.data;
   const canSubmit = obligation.direction === "incoming" && obligation.payable && (obligation.paymentStatus === "awaiting_payment" || obligation.paymentStatus === "rejected");
   const showIncomingInstructions = obligation.direction === "incoming";
+  const qrEligible = obligation.direction === "incoming"
+    && (obligation.payable || obligation.paymentStatus === "verification_pending")
+    && (obligation.paymentStatus === "awaiting_payment" || obligation.paymentStatus === "verification_pending" || obligation.paymentStatus === "rejected")
+    && !["paid", "void", "refunded", "invalidated", "blocked"].includes(obligation.status)
+    && !obligation.blockedReason
+    && Boolean(obligation.instructions)
+    && Boolean(obligation.instructions?.recipient.trim())
+    && obligation.instructions?.currency === obligation.currency;
+  const qrFileConfigured = qrEligible && Boolean(obligation.instructions?.qrFileId);
+  const visibleQr = qrFileConfigured && qrAsset?.fileId === obligation.instructions?.qrFileId ? qrAsset : null;
   return <Card className="overflow-hidden">
     <CardContent className="space-y-5 p-5 sm:p-6">
       {showHeading && <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary"><Landmark className="h-4 w-4" /> Wise transfer</p><h2 className="mt-1 text-lg font-semibold">{title}</h2></div><div className="flex flex-wrap gap-2"><StatusNotice status={obligation.paymentStatus} lifecycleStatus={obligation.status} /><LifecycleNotice status={obligation.status} /></div></div>}
@@ -153,11 +186,16 @@ export function ManualWisePaymentPanel({ category, id, title = "Manual Wise paym
           <div className="rounded-lg border p-4"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recipient</p><p className="mt-1 font-semibold">{obligation.instructions.recipient}</p><p className="mt-1 text-sm text-muted-foreground">Currency: {obligation.instructions.currency}</p></div>
           <div className="rounded-lg border p-4"><p className="whitespace-pre-wrap text-sm leading-relaxed">{obligation.instructions.instructions}</p>{obligation.instructions.referenceInstructions && <p className="mt-3 border-t pt-3 text-sm font-medium">Transfer reference instructions: {obligation.instructions.referenceInstructions}</p>}</div>
         </div>
-        <div className="flex min-h-36 min-w-36 items-center justify-center rounded-xl border border-dashed bg-muted/20 p-3">
-          {qrUrl ? <img src={qrUrl} alt="Authorized Wise payment QR" className="h-40 w-40 object-contain" /> : <div className="max-w-40 text-center"><Landmark className="mx-auto h-7 w-7 text-muted-foreground/50" /><p className="mt-2 text-xs text-muted-foreground">QR code not configured. Use the written recipient instructions.</p></div>}
+         <div className="flex w-full flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-3 sm:w-[280px]">
+           {visibleQr ? <><img src={visibleQr.url} alt="Authorized incoming Wise payment QR code" className="aspect-square h-auto w-full max-w-[260px] object-contain" /><p className="mt-2 text-center text-xs font-medium">Scan using Wise or a compatible app</p><Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => downloadQr(visibleQr.url, obligation.currency)}>Download QR Code</Button></>
+             : !qrEligible ? <div className="max-w-56 py-4 text-center"><Landmark className="mx-auto h-7 w-7 text-muted-foreground/50" /><p className="mt-2 text-xs text-muted-foreground">QR payment is unavailable for this obligation or currency. Contact OnSpot billing support before sending funds.</p></div>
+               : qrLoadError ? <div role="alert" className="max-w-56 py-4 text-center"><p className="text-sm font-medium text-rose-700">The configured QR could not be loaded.</p><p className="mt-1 text-xs text-muted-foreground">{qrLoadError}</p></div>
+                 : qrFileConfigured ? <div className="max-w-56 py-4 text-center"><div className="mx-auto h-7 w-7 animate-pulse rounded bg-muted" /><p className="mt-2 text-xs text-muted-foreground">Loading authorized QR…</p></div>
+                   : <div className="max-w-56 py-4 text-center"><Landmark className="mx-auto h-7 w-7 text-muted-foreground/50" /><p className="mt-2 text-xs text-muted-foreground">QR code not configured. Use the written recipient instructions.</p></div>}
         </div>
       </div> : showIncomingInstructions ? <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"><p className="font-semibold">Payment instructions are not available yet.</p><p className="mt-1">{obligation.blockedReason || "OnSpot has not configured an active Wise recipient for this currency. Do not send funds to an unconfirmed account."}</p></div> : <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">Outgoing settlement details are restricted to the payout administration workflow. No collection QR or incoming payment instructions are shown.</div>}
       {obligation.paymentStatus === "verification_pending" && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"><ShieldCheck className="mr-2 inline h-4 w-4" />Your receipt is evidence for review only. Uploading it does not mark this obligation paid; an administrator must independently verify settlement.</p>}
+      {showIncomingInstructions && canSubmit && <p className="rounded-lg border border-slate-200 bg-muted/30 p-3 text-sm text-muted-foreground">Upload your transfer receipt separately for review. A QR scan or receipt upload does not verify settlement.</p>}
       {canSubmit && obligation.instructions && <form className="space-y-3 border-t pt-4" onSubmit={(event) => { event.preventDefault(); upload.mutate(); }}>
         <p className="font-semibold">Submit transfer receipt</p>
         <p className="text-sm text-muted-foreground">After sending payment externally, enter your Wise transfer reference and attach its receipt.</p>
@@ -179,6 +217,14 @@ export function ManualWisePaymentPanel({ category, id, title = "Manual Wise paym
       <p className="border-t pt-3 text-xs leading-relaxed text-muted-foreground">A submitted receipt is not proof that funds have settled. OnSpot updates payment status only after an authorized administrator independently confirms the transfer.</p>
     </CardContent>
   </Card>;
+}
+
+function downloadQr(url: string, currency: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `wise-payment-qr-${currency.toLowerCase()}.png`;
+  link.rel = "noreferrer";
+  link.click();
 }
 
 function ReceiptDownload({ fileId, name }: { fileId: string; name: string }) {

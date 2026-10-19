@@ -1,18 +1,41 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, FileCheck2, Landmark, RefreshCw, Settings2, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileCheck2, Landmark, RefreshCw, Settings2, Upload } from "lucide-react";
 import { authAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { WiseCategory, WiseObligation, WiseSubmission } from "./ManualWisePaymentPanel";
 
-type WiseConfig = { id: string; currency: string; recipient: string; instructions: string; referenceInstructions: string; active: boolean; qrFileId?: string | null; created_at?: string };
+type WiseConfig = { id: string; currency: string; recipient: string; instructions: string; referenceInstructions: string; active: boolean; qrFileId?: string | null; qr_file_id?: string | null; created_at?: string };
 type AdminSubmission = WiseSubmission & { category: WiseCategory; obligation_id: string; payer_name: string; payer_email: string; expected_recipient: string; history: WiseSubmission[] };
 function errorMessage(error: unknown) {
   const e = error as { response?: { status?: number; data?: { error?: string } }; message?: string };
   if (e?.response?.status === 403 || e?.message?.includes("403")) return "Access denied (403). This console is restricted to authorized Super Admins.";
   return e?.response?.data?.error || e?.message || "The request could not be completed.";
+}
+function adminToken() {
+  return localStorage.getItem("onspot_jwt_token");
+}
+async function fetchQrBlob(path: string) {
+  const token = adminToken();
+  const response = await fetch(path, {
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    throw new Error(response.status === 403
+      ? "Access denied (403). This protected QR is available to authorized Super Admins only."
+      : `QR image request failed (${response.status}).`);
+  }
+  return response.blob();
+}
+function downloadBlob(url: string, name: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.rel = "noreferrer";
+  link.click();
 }
 function useInvalidate() {
   const client = useQueryClient();
@@ -33,6 +56,8 @@ export function AdminWisePayments() {
   const [config, setConfig] = useState(initialConfig);
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrFileId, setQrFileId] = useState("");
+  const [officialQrUrl, setOfficialQrUrl] = useState("");
+  const [officialQrError, setOfficialQrError] = useState("");
   const [quote, setQuote] = useState({ inquiryId: "", amount: "", currency: "USD" });
   const [topup, setTopup] = useState({ depositId: "", amount: "", reference: "" });
   const [topupResult, setTopupResult] = useState("");
@@ -40,6 +65,22 @@ export function AdminWisePayments() {
   const [review, setReview] = useState(initialReview);
   const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value.trim()).map(([key, value]) => [key, value.trim()]));
   const configQuery = useQuery<{ items: WiseConfig[] }>({ queryKey: ["/api/admin/manual-wise/config"], queryFn: () => authAPI.get("/api/admin/manual-wise/config") });
+  useEffect(() => {
+    let alive = true;
+    let createdUrl = "";
+    setOfficialQrError("");
+    fetchQrBlob("/api/admin/manual-wise/config/qr/official")
+      .then((blob) => {
+        createdUrl = URL.createObjectURL(blob);
+        if (alive) setOfficialQrUrl(createdUrl);
+        else URL.revokeObjectURL(createdUrl);
+      })
+      .catch((cause: unknown) => { if (alive) setOfficialQrError(errorMessage(cause)); });
+    return () => {
+      alive = false;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, []);
   const submissionQuery = useQuery<{ items: AdminSubmission[] }>({
     queryKey: ["/api/admin/manual-wise/submissions", filters],
     queryFn: () => authAPI.get(`/api/admin/manual-wise/submissions${params.toString() ? `?${params.toString()}` : ""}`),
@@ -60,6 +101,24 @@ export function AdminWisePayments() {
       return res.json() as Promise<{ id: string }>;
     },
     onSuccess: (data) => { setQrFileId(data.id); setQrFile(null); },
+  });
+  const useOfficialQr = useMutation({
+    mutationFn: async () => {
+      const token = adminToken();
+      const response = await fetch("/api/admin/manual-wise/config/qr/official", {
+        method: "POST",
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(response.status === 403
+          ? "Access denied (403). Only an authorized Super Admin can stage the supplied QR."
+          : body.error || `Could not stage supplied QR (${response.status}).`);
+      }
+      return response.json() as Promise<{ id: string }>;
+    },
+    onSuccess: (data) => setQrFileId(data.id),
   });
   const reviewMutation = useMutation({
     mutationFn: () => authAPI.post(`/api/admin/manual-wise/submissions/${selected!.id}/review`, {
@@ -109,7 +168,7 @@ export function AdminWisePayments() {
     <Card>
       <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Settings2 className="h-5 w-5 text-primary" /> Wise payment instructions</CardTitle><p className="text-sm text-muted-foreground">Existing versions remain immutable. Save a new recipient configuration to replace the active instructions. Do not use placeholder or unverified bank details.</p></CardHeader>
       <CardContent className="space-y-4">
-        {configQuery.isLoading ? <div className="h-16 animate-pulse rounded bg-muted" /> : configs.length > 0 && <div className="space-y-2">{configs.map((item) => <div key={item.id} className="rounded-lg border p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><strong>{item.currency} · {item.recipient}</strong><span className={item.active ? "font-semibold text-emerald-700" : "text-muted-foreground"}>{item.active ? "Active version" : "Historical / inactive"}</span></div><p className="mt-1 whitespace-pre-wrap text-muted-foreground">{item.instructions}</p><p className="mt-1 text-xs text-muted-foreground">{item.qrFileId ? "Authorized QR image configured" : "No QR image configured"}</p></div>)}</div>}
+         {configQuery.isLoading ? <div className="h-16 animate-pulse rounded bg-muted" /> : configs.length > 0 && <div className="space-y-2">{configs.map((item) => { const fileId = item.qr_file_id || item.qrFileId; return <div key={item.id} className="rounded-lg border p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><strong>{item.currency} · {item.recipient}</strong><span className={item.active ? "font-semibold text-emerald-700" : "text-muted-foreground"}>{item.active ? "Active version" : "Historical / inactive"}</span></div><p className="mt-1 whitespace-pre-wrap text-muted-foreground">{item.instructions}</p>{fileId ? <AuthorizedQrPreview fileId={fileId} name={`wise-qr-${item.currency.toLowerCase()}.png`} /> : <p className="mt-2 text-xs text-muted-foreground">No QR image configured for this version.</p>}</div>; })}</div>}
         <form className="space-y-3 border-t pt-4" onSubmit={formSubmit}>
           <p className="font-semibold">Create / replace instructions</p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -121,8 +180,17 @@ export function AdminWisePayments() {
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={config.active} onChange={(event) => setConfig({ ...config, active: event.target.checked })} />Set this configuration as active</label>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={config.depositFundingConfirmed} onChange={(event) => setConfig({ ...config, depositFundingConfirmed: event.target.checked })} /><span>I independently confirmed the destination and any required deposit funding.</span></label>
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950"><AlertTriangle className="mr-1 inline h-4 w-4" />No real recipient or QR is prefilled. Confirm account ownership independently before activating.</div>
-          <div className="flex flex-wrap items-center gap-2"><Input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setQrFile(event.target.files?.[0] || null)} className="max-w-sm" /><Button type="button" variant="outline" disabled={!qrFile || uploadQr.isPending} onClick={() => uploadQr.mutate()}><Upload className="mr-2 h-4 w-4" />{uploadQr.isPending ? "Uploading…" : "Upload QR image"}</Button>{qrFileId && <span className="text-xs text-emerald-700">QR attached to next saved version</span>}</div>
-          {uploadQr.isError && <p role="alert" className="text-sm text-rose-700">{errorMessage(uploadQr.error)}</p>}
+           <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
+             <div className="flex flex-wrap items-center gap-2"><Input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setQrFile(event.target.files?.[0] || null)} className="max-w-sm" /><Button type="button" variant="outline" disabled={!qrFile || uploadQr.isPending} onClick={() => uploadQr.mutate()}><Upload className="mr-2 h-4 w-4" />{uploadQr.isPending ? "Uploading…" : "Upload QR image"}</Button></div>
+             <div className="flex flex-wrap items-center gap-3">
+               {officialQrUrl ? <div className="flex items-center gap-3"><img src={officialQrUrl} alt="Supplied official OnSpot QR preview" className="h-24 w-24 rounded border bg-white object-contain p-1" /><p className="max-w-xs text-xs text-muted-foreground">Supplied official OnSpot QR image. It is not applied until saved with verified recipient instructions.</p></div>
+                 : <p className="text-xs text-muted-foreground">{officialQrError ? `Supplied official QR preview unavailable: ${officialQrError}` : "Loading supplied official QR preview…"}</p>}
+                <Button type="button" variant="outline" disabled={useOfficialQr.isPending} onClick={() => useOfficialQr.mutate()}>{useOfficialQr.isPending ? "Staging supplied QR…" : "Use supplied OnSpot QR"}</Button>
+             </div>
+             {qrFileId && <div className="flex flex-wrap items-center gap-3 border-t pt-3"><p className="text-xs font-medium text-emerald-800">QR staged for the next saved version; it is not active yet.</p><AuthorizedQrPreview fileId={qrFileId} name="wise-qr-staged.png" /></div>}
+             {(uploadQr.isError || useOfficialQr.isError) && <p role="alert" className="text-sm text-rose-700">{errorMessage(uploadQr.error || useOfficialQr.error)}</p>}
+           </div>
+           <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">Before saving, confirm the receiving destination and support currency independently. Saving validates the recipient, currency and instructions; staging a QR alone does not activate payment instructions.</p>
           <Button type="submit" disabled={saveConfig.isPending || !config.currency.trim() || !config.recipient.trim() || !config.instructions.trim()}>{saveConfig.isPending ? "Saving…" : "Save new instructions version"}</Button>
         </form>
       </CardContent>
@@ -162,6 +230,35 @@ export function AdminWisePayments() {
     </CardContent></Card>
     {selected && <ReviewDialog item={selected} review={review} setReview={setReview} onClose={() => setSelected(null)} onSubmit={() => reviewMutation.mutate()} pending={reviewMutation.isPending} error={reviewMutation.error} />}
   </section>;
+}
+
+function AuthorizedQrPreview({ fileId, name }: { fileId: string; name: string }) {
+  const [asset, setAsset] = useState<{ id: string; url: string } | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let alive = true;
+    let createdUrl = "";
+    setAsset(null);
+    setError("");
+    fetchQrBlob(`/api/manual-wise/files/${encodeURIComponent(fileId)}`)
+      .then((blob) => {
+        createdUrl = URL.createObjectURL(blob);
+        if (alive) setAsset({ id: fileId, url: createdUrl });
+        else URL.revokeObjectURL(createdUrl);
+      })
+      .catch((cause: unknown) => { if (alive) setError(errorMessage(cause)); });
+    return () => {
+      alive = false;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [fileId]);
+  const current = asset?.id === fileId ? asset : null;
+  return <div className="mt-2 flex flex-wrap items-center gap-3">
+    {current ? <img src={current.url} alt="Configured Wise QR preview" className="h-28 w-28 rounded border bg-white object-contain p-1" />
+      : error ? <p role="alert" className="max-w-sm text-xs text-rose-700">Protected QR preview unavailable: {error}</p>
+        : <div className="h-28 w-28 animate-pulse rounded border bg-muted" aria-label="Loading QR preview" />}
+    {current && <Button type="button" variant="ghost" size="sm" onClick={() => downloadBlob(current.url, name)}><Download className="mr-2 h-4 w-4" />Download QR</Button>}
+  </div>;
 }
 
 function PayoutPanel({ item, onUpdated }: { item: WiseObligation; onUpdated: () => Promise<void> }) {

@@ -839,3 +839,31 @@ mtime_ms = 1791350864936
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/afb72287-f301-4ac0-abad-53a3df958527/e8aa52fa-829a-483a-af40-dd1726ebd453"
 storage_version_token = "1791350911568209"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "OuFp-2E5glmqibrEgmDA9"
+uri = "file://generated-artifacts/wise-qr/inquiry-1280.png"
+type = "image"
+title = "Desktop Wise QR — inquiry UI test preview"
+description = "Actual shared payment component with the supplied original QR and clearly labeled fixture receiving details. Demonstrates the approved-configuration state, not an activated live customer account."
+logical_id = "3f08842f-6a8e-43ad-8be7-8a7ce592f95a"
+content_hash = "sha256:cdaada5514e997fea0fc50147d0e4779cac316257f4a1b2cd5fb42fa4953df10"
+size = 113121
+mtime_ms = 1792386091390
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/3f08842f-6a8e-43ad-8be7-8a7ce592f95a/ec2ccb36-83af-4992-8d72-a7d0d358e4dd"
+storage_version_token = "1792386264048864"
+content_type = "image/png"
+
+[[outputs]]
+id = "p1N0eT5mC7W6-eJncM_gr"
+uri = "file://generated-artifacts/wise-qr/invoice-390.png"
+type = "image"
+title = "Mobile Wise QR — invoice UI test preview"
+description = "390px isolated component preview showing the complete QR, original-image download and receipt submission. Live activation remains pending receiving destination and currency approval."
+logical_id = "453e9f17-2149-4c1b-a90a-54c86200220f"
+content_hash = "sha256:f6511dd08f0bbd97538af880fe91236584896025e17c771ae5c5fc93e8a2ee08"
+size = 109573
+mtime_ms = 1792386092486
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/453e9f17-2149-4c1b-a90a-54c86200220f/7e48c794-4470-4fde-a99b-80bdb741dd7c"
+storage_version_token = "1792386265979229"
+content_type = "image/png"

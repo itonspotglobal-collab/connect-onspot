@@ -14,3 +14,9 @@ Deposit funding additionally requires an explicit business-approved manual fundi
 **Why:** The earlier billing plan assumed provider-managed custody. The manual request authorizes a software workflow, not an automatic change to legal/operational fund-handling assumptions.
 
 **How to apply:** Keep deposits/top-ups disabled until the business explicitly confirms the operating policy. Pending top-ups provide no coverage. Preserve historical funds, existing principal formulas and lifecycle/termination rules.
+
+The supplied official OnSpot Wise QR must remain byte-for-byte unchanged, including its branding. Providing the official image does not establish supported currencies or approve unknown receiving settings.
+
+**Why:** The product owner explicitly requires preserving the pattern and keeping the image pending if destination/currency approval cannot be established.
+
+**How to apply:** Use existing private storage and admin configuration, never redraw or regenerate the QR. Keep activation gated by confirmed recipient, currency and instructions. Never use the collection QR for outgoing payouts.

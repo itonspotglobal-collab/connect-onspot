@@ -14,6 +14,8 @@ import { requireVerifiedHiringPayment } from "../services/hiringPaymentService";
 import { registerManualWiseRoutes } from "../routes/manualWise";
 import { inspectWiseFile } from "../services/manualWiseFiles";
 import { PDFDocument, PDFName, PDFString } from "pdf-lib";
+import { createHash } from "node:crypto";
+import { officialWiseQr } from "../services/officialWiseQr";
 
 // This suite owns a fresh local PostgreSQL cluster. It cannot connect to the app DB.
 const root=mkdtempSync(join(tmpdir(),"wise-isolated-"));
@@ -91,6 +93,7 @@ before(async()=>{
     VALUES($1,$2,'talent',$3,100,'USD','scheduled')`,[ids.payout,contract,talentInvoice]);
   const app=express();app.use(express.json());
   registerManualWiseRoutes(app,{service,
+    officialQr:async()=>readFileSync("attached_assets/wise-qr-code_1792385025903.png"),
     authenticate:(req:any,res,next)=>{
       const id=req.headers.authorization?.replace("Bearer ","");
       if(!["client","other","admin","limited","talent"].includes(id))return res.status(401).json({error:"Authentication required."});
@@ -285,4 +288,37 @@ test("receipt inspection rejects invalid, oversized and active evidence and acce
   await assert.rejects(inspectWiseFile(passive,true));
   doc.catalog.set(PDFName.of("OpenAction"),doc.context.obj({S:PDFName.of("JavaScript"),JS:PDFString.of("app.alert('fixture')")}));
   await assert.rejects(inspectWiseFile(Buffer.from(await doc.save())),/without active content/);
+});
+test("supplied official QR is admin-only, stages exact original bytes, and does not activate a receiving configuration",async()=>{
+  const url=base+"/api/admin/manual-wise/config/qr/official";
+  for(const method of ["GET","POST"]) {
+    assert.equal((await fetch(url,{method})).status,401);
+    for(const id of ["client","limited","talent"])assert.equal((await fetch(url,{method,headers:{Authorization:`Bearer ${id}`}})).status,403);
+  }
+  const before=(await service.config("admin")).items.map((c:any)=>c.id);
+  const original=readFileSync("attached_assets/wise-qr-code_1792385025903.png");
+  const preview=await fetch(url,{headers:{Authorization:"Bearer admin"}});
+  assert.equal(preview.status,200);
+  assert.ok(Buffer.from(await preview.arrayBuffer()).equals(original));
+  const stage=await fetch(url,{method:"POST",headers:{Authorization:"Bearer admin"}});
+  assert.equal(stage.status,201);
+  const {id}=await stage.json() as any;
+  assert.deepEqual((await service.config("admin")).items.map((c:any)=>c.id),before);
+  const bytes=await fetch(`${base}/api/manual-wise/files/${id}`,{headers:{Authorization:"Bearer admin"}});
+  assert.equal(createHash("sha256").update(Buffer.from(await bytes.arrayBuffer())).digest("hex"),officialWiseQr.sha256);
+  assert.equal((await fetch(`${base}/api/manual-wise/files/${id}`,{headers:{Authorization:"Bearer client"}})).status,404);
+  // Existing bound invoices can adopt a later approved QR without rewriting recipient/instructions.
+  const invoice=randomUUID();
+  await pool.query("INSERT INTO invoices(id,client_id,amount,currency,status) VALUES($1,'client',100,'USD','sent')",[invoice]);
+  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,null);
+  await service.configure("admin",{...config,qrFileId:id});
+  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,id);
+  const ownerDownload=await fetch(`${base}/api/manual-wise/files/${id}`,{headers:{Authorization:"Bearer client"}});
+  assert.equal(ownerDownload.status,200);
+  assert.ok(Buffer.from(await ownerDownload.arrayBuffer()).equals(original));
+  await pool.query("UPDATE invoices SET currency='PHP' WHERE id=$1",[invoice]);
+  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,null);
+  await pool.query("UPDATE invoices SET currency='USD',status='paid' WHERE id=$1",[invoice]);
+  assert.equal((await service.detail("client","invoice",invoice)).instructions?.qrFileId,null);
+  assert.equal((await service.detail("admin","payout",ids.payout)).instructions,null);
 });

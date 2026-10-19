@@ -1,0 +1,229 @@
+# Replit Task: Integrate the Official OnSpot Wise QR Code into the Existing Manual Payment System
+
+## Objective
+
+I have now provided the official OnSpot Wise QR code image as an attachment.
+
+Integrate this QR code into the existing manual Wise payment workflow across the OnSpot application.
+
+**Important: The manual Wise payment and admin verification workflow was already implemented in the previous task. Do not rebuild it, replace it, or introduce a separate payment system.**
+
+This task is specifically about configuring and displaying the official QR code in the existing payment experience.
+
+## 1. Review the existing implementation
+
+Before modifying code, inspect:
+
+- `docs/MANUAL_WISE_PAYMENTS.md`
+- `migrations/0040_manual_wise_payments.sql`
+- Existing Wise payment configuration and admin management functionality
+- Existing reusable Wise payment components
+- Inquiry payment page
+- Pre-offer hiring invoice payment UI
+- Client billing and monthly invoice pages
+- Security deposit and top-up payment screens
+- Admin Ledger → Manual Wise payments
+
+Identify the existing configuration model and the mechanism for uploading, storing, and displaying the QR code.
+
+Reuse that implementation.
+
+Do not create a new payment configuration table or duplicate QR code functionality unless a necessary capability is genuinely missing.
+
+## 2. Use the provided QR code
+
+Use the attached image named `wise-qr-code.png` as the official OnSpot Wise QR code.
+
+Requirements:
+
+- Preserve the original QR code data exactly.
+- Do not regenerate, redraw, crop, recolor, or modify the QR pattern.
+- Do not replace the image with a placeholder.
+- Do not hardcode a different Wise QR code.
+- Preserve the central OnSpot branding.
+- Make the QR image clear and easy to scan.
+- Maintain its original aspect ratio.
+- Ensure the entire QR code remains visible on desktop and mobile.
+
+If the attachment is not accessible in the Replit workspace, stop and ask me to upload it there. Do not substitute a different QR code.
+
+## 3. Configure the QR code using the existing admin settings
+
+Go to the existing:
+
+**Admin Ledger → Manual Wise payments**
+
+Use the existing configuration and storage mechanism to register the provided QR code.
+
+The QR code should be managed through the admin settings, not independently hardcoded on every payment page.
+
+Requirements:
+
+- Authorized administrators can view the configured QR code.
+- Authorized administrators can replace the QR code in the future.
+- The application displays the currently approved QR code.
+- The image persists across application restarts and deployments.
+- Existing Wise recipient details and instructions remain unchanged unless explicitly configured by an administrator.
+- Do not invent account names, currencies, bank details, or payment instructions.
+
+If activation requires recipient/currency configuration or an admin approval step, preserve those requirements. Do not bypass validation simply to make the QR image appear.
+
+## 4. Display the QR code across incoming payment flows
+
+Integrate the configured QR code into all applicable incoming-payment screens.
+
+### A. Inquiry payments
+
+Display the QR code together with:
+
+- Inquiry reference
+- Service description
+- Amount due
+- Currency
+- Wise payment instructions
+- Payment reference field
+- Receipt upload
+- Submit Payment Proof button
+
+### B. Pre-offer hiring fees
+
+Display the QR code in the existing hiring invoice payment instructions.
+
+Preserve the requirement that payment must be verified by the authorized administrator before the offer workflow can proceed.
+
+### C. Client invoices and monthly statements
+
+Display the QR code for unpaid eligible invoices.
+
+Preserve invoice amount, currency, due date, and billing history.
+
+### D. Security deposits and top-ups
+
+Display the QR code when a client is required to fund or replenish a security deposit.
+
+Preserve existing deposit rules and financial state transitions.
+
+### E. Other supported incoming payments
+
+Use the existing shared Wise payment component wherever a real, active incoming-payment obligation is supported.
+
+Do not add payment collection to unrelated screens.
+
+**Do not display OnSpot's collection QR code for outgoing talent payouts.** Those are handled through the existing separate Wise transfer verification workflow.
+
+## 5. Add a Download QR Code option
+
+On customer-facing payment screens, provide:
+
+- A clearly visible QR image
+- A **Download QR Code** button
+- Brief instructions explaining how to pay using Wise
+- Responsive layout for mobile and desktop
+
+The download button must download the actual configured QR image, not a screenshot or regenerated version.
+
+Suggested payment instructions:
+
+"Scan the QR code using Wise or a compatible payment application to complete your transfer. After sending your payment, upload your receipt below. Our team will verify your payment before marking it as paid."
+
+Do not claim universal compatibility with all banking applications unless the QR format has been verified to support them.
+
+## 6. Preserve the manual payment verification workflow
+
+The existing payment process must remain:
+
+1. Client views the amount due and Wise QR code.
+2. Client pays externally.
+3. Client uploads payment receipt and enters the transaction reference.
+4. Payment status becomes **Pending Verification**.
+5. Super Admin reviews the submitted receipt.
+6. Super Admin independently confirms the actual Wise settlement.
+7. Payment is marked **Paid** only after verification.
+
+If verification fails:
+
+- Admin can reject the submission.
+- Admin must provide a rejection reason.
+- Client can resubmit proof.
+- Previous submissions remain in the audit history.
+
+**Displaying or scanning the QR code must never automatically mark a payment as paid.**
+
+## 7. Currency and payment destination safety
+
+Before displaying the QR code for a specific obligation:
+
+- Confirm that the QR code is configured for the obligation's currency and approved receiving destination.
+- Do not assume a single QR code supports USD, PHP, or every currency.
+- Do not automatically convert invoice amounts.
+- Do not change billing amounts or currency values.
+- If the QR code is not valid for that payment obligation, show only an explicitly configured alternative payment method or a clear message to contact OnSpot billing support.
+- Do not expose an invalid or unapproved QR code just to complete the interface.
+
+If the QR destination and supported currencies cannot be established from existing configuration, leave the QR configuration pending admin confirmation and clearly report what information is missing.
+
+## 8. Security and image validation
+
+- Validate the uploaded QR image file.
+- Restrict QR configuration changes to authorized administrators.
+- Do not allow clients to replace the QR code.
+- Use the existing persistent image storage system.
+- Prevent unauthorized configuration updates.
+- Do not expose storage credentials.
+- Preserve the exact QR image bytes when storing and serving the approved asset.
+- Verify that the displayed QR image is the same image configured by the administrator.
+
+## 9. Testing
+
+Test these scenarios:
+
+1. Authorized admin can configure the supplied QR code.
+2. QR code appears on the inquiry payment page.
+3. QR code appears on pre-offer hiring payment screens.
+4. QR code appears on eligible client invoices.
+5. QR code appears on eligible security deposit screens.
+6. QR code is not displayed for outgoing talent payouts.
+7. QR code is fully visible on mobile and desktop.
+8. Download QR Code downloads the correct image.
+9. Unauthorized users cannot modify the QR configuration.
+10. Existing receipt upload still works.
+11. Submitting proof results in Pending Verification, not Paid.
+12. Admin verification and rejection continue working.
+13. Existing paid invoices remain unchanged.
+14. The QR image persists after application restart.
+15. Unsupported currencies do not display an incorrect QR destination.
+16. Existing billing calculations remain unchanged.
+
+Also verify the QR image can be scanned by an appropriate QR reader. Do not perform a real payment or claim that the destination is verified without independently confirming it.
+
+## 10. Deliverables
+
+After implementation, provide:
+
+- Exact files modified
+- Where the QR image is stored
+- How the QR configuration is managed
+- Which payment screens display the QR
+- Any payment categories not yet covered
+- Screenshots of the updated customer payment screens
+- Desktop/mobile test results
+- Build and test results
+- Any remaining configuration requirements
+
+Update `docs/MANUAL_WISE_PAYMENTS.md` to document the QR code setup and usage.
+
+## Restrictions
+
+- Do not implement Wise API integration.
+- Do not implement Stripe or PayPal.
+- Do not introduce automated payment confirmation.
+- Do not change invoice or deposit calculations.
+- Do not change talent payout amounts or schedules.
+- Do not remove existing payment history.
+- Do not create duplicate payment systems.
+- Do not deploy to production.
+- Do not run production database migrations.
+
+Implement and test in development only.
+
+**Before modifying anything, explain how the current Wise QR configuration works and where you will integrate the provided image. Then proceed with the smallest safe changes necessary.**

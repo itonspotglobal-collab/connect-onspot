@@ -24,6 +24,45 @@ Incoming fees and outgoing payouts are separate. Payouts never show an incoming 
 
 ## Configuration and QR setup
 
+### Supplied official QR (development, 2026-10-19)
+
+The supplied `wise-qr-code_1792385025903.png` is staged in persistent **private App Storage**, in the existing `manual-wise` namespace. It is not served from `public/`, the attachments directory, or a temporary local path. The original is 800 × 800 pixels and 36,300 bytes. SHA-256:
+`d11eb23bb6b58d4f6fb3fe531969dede65ef22086a439e8f0655e7a937d5df6e`.
+
+`server/services/officialWiseQr.ts` identifies the immutable private source and verifies its original byte count/hash when loading. No image transformations are performed. Authenticated preview, customer display and **Download QR Code** all use the original PNG bytes.
+
+ZXing-C++ successfully decoded the untouched original as:
+`https://wise.com/pay/business/onspottechnologiesinc?utm_source=qr_codes`.
+This proves readability, **not** beneficiary ownership, supported currencies, or a settled payment. No real payment was made. The temporary scanner tools were removed after the check; the application has no new scanner/runtime dependency.
+
+**Activation is pending:** development currently has no recipient/currency/instruction configuration. No administrator was impersonated, no payment settings were invented, and no financial record was changed to activate the QR. A Super Admin must independently confirm the receiving destination, supported currency and transfer/reference instructions in **Admin Ledger → Manual Wise payments**.
+
+Choose **Use supplied OnSpot QR**, inspect the preview, enter/confirm the real receiving settings and explicitly save the desired version. Selecting the image alone stages a protected file; it does not create or activate receiving instructions. Existing manual upload remains the replacement mechanism. Configured and historical QR images have authenticated previews/downloads.
+
+Additional protected endpoints, using the existing Super Admin permission check and private upload mechanism:
+- `GET /api/admin/manual-wise/config/qr/official` — preview the original pending source.
+- `POST /api/admin/manual-wise/config/qr/official` — register the original as a normal uploaded QR file; returns its existing-style file ID for the existing configuration form.
+
+No new configuration table, migration or payment system was introduced. No production deployment, production migration or production configuration was performed.
+
+#### Eligibility and image replacement
+
+The shared customer component covers inquiries, pre-offer hiring invoices, eligible legacy client invoices, monthly statements, pending security deposits and eligible top-ups. It shows the complete square image, constrained to available width without cropping, and downloads the configured file directly. It never shows OnSpot's collection QR for outgoing Talent payouts, terminal/paid obligations, currency mismatches, or blocked/unapproved receiving instructions. Failures to load a configured image are reported separately from a missing QR.
+
+Existing obligations retain their recipient/instruction snapshots. A newer active QR can be used on an older binding **only when currency, recipient and transfer instructions match exactly**. A change to the receiving destination/instructions never silently redirects that older obligation. Server file authorization includes this same compatibility rule. Unsupported currencies receive no QR and no conversion.
+
+#### Development verification and screenshots
+
+The existing isolated PostgreSQL/HTTP and browser suites now cover official-image staging authorization, exact-byte storage/download, unchanged receiving settings on staging, compatibility with older bindings, unsupported currencies, terminal/outgoing exclusions, all six incoming categories at 390px and 1280px, receipt submission, independent verification and rejection. Screenshots in `generated-artifacts/wise-qr/` are explicitly **isolated UI fixtures**, not activated customer payment accounts:
+- `inquiry-1280.png` — desktop shared inquiry payment component.
+- `invoice-390.png` — narrow-phone shared client invoice component.
+
+Actual development App Storage byte integrity is checked separately before and after restarting the application. Production private-directory/bucket configuration must make the chosen QR available through the same protected storage mechanism; source availability in a different production storage location is not assumed.
+
+Verified on 2026-10-19: **21 backend/billing tests passed, 19 browser tests passed, TypeScript passed, and all production build stages passed**. The stored original matched the attachment before and after the development restart. Anonymous access to the official admin source returned 401. Development still has zero receiving configurations, as required by the pending-approval state. Signed-in live customer/admin pages were not verified; browser coverage uses isolated components and API fixtures. The storage SDK emitted listener-count warnings during successful integrity checks; no image transfer failed. Existing unrelated preview/admin-auth diagnostic warnings remain as described below.
+
+Files changed for this QR enhancement: `server/services/officialWiseQr.ts`, `server/routes/manualWise.ts`, `server/services/manualWiseService.ts`, `client/src/components/manual-wise/ManualWisePaymentPanel.tsx`, `client/src/components/manual-wise/AdminWisePayments.tsx`, `server/tests/manual-wise.integration.test.ts`, `browser-tests/manual-wise.browser.test.ts`, `docs/MANUAL_WISE_PAYMENTS.md`, `.gitignore`, `.replitignore`, and the existing manual-settlement project memory note. The supplied PNG itself is unchanged.
+
 1. Sign in as Super Admin and open **Admin Ledger → Manual Wise payments**.
 2. Enter an approved recipient, currency, transfer instructions and reference instructions. Do not copy account details from an unapproved document.
 3. Optionally upload the actual approved QR image, then save its returned file with the configuration. PNG, JPEG and WebP are supported; PDF is not a QR format.

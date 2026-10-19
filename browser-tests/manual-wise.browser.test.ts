@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { before,after,test } from "node:test";
-import { mkdtempSync,rmSync } from "node:fs";
+import { mkdtempSync,rmSync,readFileSync,mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join,resolve } from "node:path";
 import { createServer,type ViteDevServer } from "vite";
@@ -22,7 +23,7 @@ before(async()=>{
         import '/src/index.css';
         createRoot(document.getElementById('root')).render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>
           <div style={{padding:16,maxWidth:1100,margin:'auto'}}>{location.pathname==='/admin'
-          ? <AdminWisePayments/>:<ManualWisePaymentPanel category="invoice" id="fixture-invoice"/>}</div>
+          ? <AdminWisePayments/>:<ManualWisePaymentPanel category={new URLSearchParams(location.search).get('category') || 'invoice'} id="fixture-invoice"/>}</div>
         </QueryClientProvider>);`;},
       configureServer(server){server.middlewares.use(async(req,res,next)=>{
         if(!req.headers.accept?.includes("text/html"))return next();
@@ -47,13 +48,14 @@ async function open(width=1280,obligation:any=incoming(),admin=false) {
   await page.addInitScript(()=>{(window as any).__name=(fn:unknown)=>fn;localStorage.setItem("onspot_jwt_token","fixture-token");});
   await page.route("**/api/**",async r=>{
     const path=new URL(r.request().url()).pathname;
-    if(path==="/api/manual-wise/obligations/invoice/fixture-invoice")return fulfill(r,obligation);
+    if(path===`/api/manual-wise/obligations/${obligation.category || "invoice"}/fixture-invoice`)return fulfill(r,obligation);
+    if(path==="/api/manual-wise/files/official-qr" || path==="/api/admin/manual-wise/config/qr/official")return r.fulfill({contentType:"image/png",body:readFileSync("attached_assets/wise-qr-code_1792385025903.png")});
     if(path==="/api/admin/manual-wise/submissions")return fulfill(r,{items:[]});
     if(path==="/api/admin/manual-wise/config")return fulfill(r,{items:[]});
     if(path==="/api/admin/manual-wise/payouts")return fulfill(r,{items:[]});
     return fulfill(r,{error:"Unexpected fixture request"},501);
   });
-  await page.goto(base+(admin?"/admin":"/client"));
+  await page.goto(base+(admin?"/admin":`/client?category=${obligation.category || "invoice"}`));
   return page;
 }
 for(const width of [390,1280])test(`incoming proof form at ${width}px uses missing QR placeholder, requires receipt, and reports pending not paid`,async()=>{
@@ -121,5 +123,57 @@ test("admin review requires independent settlement confirmation and sends valida
   });
   await verify.click();await dialog.waitFor({state:"hidden"});
   assert.equal(body.independentlyVerified,true);assert.equal(body.verifiedReference,"WISE-SETTLED");
+  await page.close();
+});
+for(const category of ["inquiry","hiring_invoice","invoice","monthly_invoice","deposit","replenishment"]) {
+  for(const width of [390,1280])test(`official QR stays complete and downloads unchanged for ${category} at ${width}px`,async()=>{
+    const value=incoming();value.category=category;
+    value.instructions.qrFileId="official-qr" as any;
+    const page=await open(width,value);
+    const img=page.getByAltText("Authorized incoming Wise payment QR code");
+    await img.waitFor();
+    assert.equal(await img.evaluate((el:HTMLImageElement)=>el.complete && el.naturalWidth===800 && el.naturalHeight===800),true);
+    const box=(await img.boundingBox())!;
+    assert.ok(Math.abs(box.width-box.height)<1);
+    assert.ok(box.width>=240 && box.width<=280);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    const downloadPromise=page.waitForEvent("download");
+    await page.getByRole("button",{name:"Download QR Code",exact:true}).click();
+    const download=await downloadPromise;
+    const bytes=readFileSync((await download.path())!);
+    assert.equal(createHash("sha256").update(bytes).digest("hex"),"d11eb23bb6b58d4f6fb3fe531969dede65ef22086a439e8f0655e7a937d5df6e");
+    if((category==="inquiry" && width===1280) || (category==="invoice" && width===390)) {
+      mkdirSync("generated-artifacts/wise-qr",{recursive:true});
+      await page.screenshot({path:`generated-artifacts/wise-qr/${category}-${width}.png`,fullPage:true});
+    }
+    await page.close();
+  });
+}
+test("outgoing, blocked, terminal and mismatched-currency payloads never render or download collection QR",async()=>{
+  for(const change of [{direction:"outgoing",category:"payout"},{currency:"PHP"},{status:"void",payable:false},
+    {status:"paid",paymentStatus:"paid",payable:false},{blockedReason:"Destination requires approval"}]) {
+    const value={...incoming(),...change};value.instructions.qrFileId="official-qr" as any;
+    const page=await open(390,value);
+    await page.getByText("Payable amount",{exact:true}).waitFor();
+    assert.equal(await page.getByAltText("Authorized incoming Wise payment QR code").count(),0);
+    assert.equal(await page.getByRole("button",{name:"Download QR Code",exact:true}).count(),0);
+    await page.close();
+  }
+});
+test("admin can preview and stage supplied QR without inventing or automatically saving receiving details",async()=>{
+  const page=await open(1280,incoming(),true);
+  await page.route("**/api/admin/manual-wise/config/qr/official",r=>r.request().method()==="POST"
+    ? fulfill(r,{id:"official-qr"},201)
+    : r.fulfill({contentType:"image/png",body:readFileSync("attached_assets/wise-qr-code_1792385025903.png")}));
+  await page.reload();
+  let saved=false;
+  await page.route("**/api/admin/manual-wise/config",r=>{
+    if(r.request().method()==="POST")saved=true;
+    return fulfill(r,{items:[]});
+  });
+  await page.getByRole("button",{name:"Use supplied OnSpot QR",exact:true}).click();
+  await page.getByText("QR staged for the next saved version; it is not active yet.",{exact:true}).waitFor();
+  assert.equal(saved,false);
+  assert.equal(await page.getByRole("button",{name:/Save.*version/i}).isDisabled(),true);
   await page.close();
 });

@@ -3,12 +3,14 @@ import multer from "multer";
 import type { Readable } from "node:stream";
 import { lstat,readFile } from "node:fs/promises";
 import path from "node:path";
+import { readOfficialWiseQr,officialWiseQr } from "../services/officialWiseQr";
 import { z } from "zod";
 import { ManualWiseService, WiseError } from "../services/manualWiseService";
 import { inspectWiseFile, wisePrivateFile, WISE_FILE_LIMIT } from "../services/manualWiseFiles";
 
 export function registerManualWiseRoutes(app:Express,deps:{
   service:ManualWiseService; authenticate:RequestHandler; limiter:RequestHandler;
+  officialQr?:()=>Promise<Buffer>;
   blobs?: {
     save(buffer:Buffer,contentType:string):Promise<string>;
     read(key:string):Readable;
@@ -87,6 +89,21 @@ export function registerManualWiseRoutes(app:Express,deps:{
     Object.fromEntries(Object.entries(req.query).filter(([,v])=>typeof v==="string").map(([k,v])=>[k,String(v).slice(0,500)])))));
   app.post("/api/admin/manual-wise/submissions/:id/review",authenticate,limiter,handle(req=>service.review(actor(req),req.params.id,req.body)));
   app.get("/api/admin/manual-wise/config",authenticate,handle(req=>service.config(actor(req))));
+  app.get("/api/admin/manual-wise/config/qr/official",authenticate,handle(async(req,res)=>{
+    await service.actor(service.pool as any,actor(req),true);
+    const bytes=await (deps.officialQr ?? readOfficialWiseQr)();
+    res.setHeader("Content-Type","image/png");
+    res.setHeader("Content-Disposition",`inline; filename="${officialWiseQr.filename}"`);
+    res.setHeader("X-Content-Type-Options","nosniff");
+    res.setHeader("Content-Security-Policy","sandbox; default-src 'none'");
+    res.send(bytes);
+  }));
+  app.post("/api/admin/manual-wise/config/qr/official",authenticate,limiter,handle(async(req,res)=>{
+    await service.actor(service.pool as any,actor(req),true);
+    const bytes=await (deps.officialQr ?? readOfficialWiseQr)();
+    req.file={buffer:bytes,originalname:officialWiseQr.filename};
+    res.status(201).json({id:await storeFile(req,"qr")});
+  }));
   app.get("/api/admin/manual-wise/legacy-inquiries/:id/receipt",authenticate,handle(async(req,res)=>{
     await service.actor(service.pool as any,actor(req),true);
     const row=(await service.pool.query("SELECT payment_proof_url FROM inquiries WHERE id=$1",[req.params.id])).rows[0];

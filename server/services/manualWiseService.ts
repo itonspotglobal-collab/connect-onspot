@@ -134,7 +134,7 @@ export class ManualWiseService {
     catch { blockedReason="A finalized payable amount is required. Contact OnSpot for a formal quote."; amount=""; }
     if (!allowed && !settled) blockedReason="This obligation is not eligible for a new payment proof.";
     if (c!=="payout" && !config) blockedReason="Wise payment instructions are not configured for this currency.";
-    const activeConfig=c==="payout" ? null : (await db.query("SELECT deposit_funding_confirmed FROM manual_wise_config WHERE currency=$1 AND active",[curr])).rows[0];
+    const activeConfig=c==="payout" ? null : (await db.query("SELECT * FROM manual_wise_config WHERE currency=$1 AND active",[curr])).rows[0];
     if(config && c!=="payout" && !activeConfig)blockedReason="Wise collection is paused for this currency. Do not send funds.";
     if (c==="hiring_invoice" && config && config.recipient!==r.payment_recipient) {
       blockedReason="Configured Wise recipient does not match this invoice's immutable payment recipient. Financial review is required.";
@@ -146,13 +146,17 @@ export class ManualWiseService {
     if (c==="payout" && !binding.approved_destination) blockedReason="Independently approve the Talent payout destination before recording a transfer.";
     const latest=history[0];
     const paymentStatus=settled ? "paid" : latest?.status ?? "awaiting_payment";
+    const qrConfig=activeConfig && config && activeConfig.recipient===config.recipient &&
+      activeConfig.instructions===config.instructions ? activeConfig : config;
+    const approvedQr=c!=="payout" && config?.currency===curr && allowed && !settled && !blockedReason
+      ? qrConfig?.qr_file_id ?? null : null;
     return {actor,r,binding,config,view:{
       category:c,id,reference:r.invoice_number ?? r.reference_number ?? id,
       amount,currency:curr,payerId,status:r.status,paymentStatus,
       direction:c==="payout" ? "outgoing" : "incoming",
       payable:allowed && !settled && !blockedReason && !["verification_pending","paid"].includes(latest?.status),
       instructions:c==="payout" ? null : config ? {id:config.id,recipient:config.recipient,instructions:config.instructions,
-        referenceInstructions:config.reference_instructions,qrFileId:config.qr_file_id,currency:config.currency} : null,
+        referenceInstructions:config.reference_instructions,qrFileId:approvedQr,currency:config.currency} : null,
       approvedDestination:binding.approved_destination,blockedReason,history,
     }};
   }
@@ -385,7 +389,10 @@ export class ManualWiseService {
     if (!file) return fail(404,"Receipt not found.");
     if (actor.role==="admin" && actor.admin_sub_role===null) return file;
     const allowed=file.purpose==="qr"
-      ? await this.pool.query(`SELECT o.id FROM manual_wise_obligations o JOIN manual_wise_config c ON c.id=o.config_id WHERE o.payer_id=$1 AND c.qr_file_id=$2`,[actorId,id])
+      ? await this.pool.query(`SELECT o.id FROM manual_wise_obligations o JOIN manual_wise_config bound ON bound.id=o.config_id
+          JOIN manual_wise_config c ON c.id=bound.id OR (c.active AND c.currency=bound.currency
+            AND c.recipient=bound.recipient AND c.instructions=bound.instructions)
+          WHERE o.payer_id=$1 AND o.category<>'payout' AND c.qr_file_id=$2`,[actorId,id])
       : await this.pool.query(`SELECT o.id FROM manual_wise_obligations o JOIN manual_wise_submissions s ON s.obligation_id=o.id WHERE o.payer_id=$1 AND o.category<>'payout' AND s.receipt_id=$2`,[actorId,id]);
     if (!allowed.rows.length) return fail(404,"Receipt not found.");
     return file;
