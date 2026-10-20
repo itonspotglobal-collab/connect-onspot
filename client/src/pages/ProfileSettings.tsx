@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { uploadCandidateVideo } from "@/lib/uploadCandidateVideo";
+import { candidateVideoError } from "../../../shared/candidateVideo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -254,6 +256,8 @@ export default function ProfileSettings() {
   const [videoDeleting,   setVideoDeleting]   = useState(false);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
   const videoFileInputRef  = useRef<HTMLInputElement>(null);
+  const videoUploadBusy = useRef(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const idDocFileInputRef  = useRef<HTMLInputElement>(null);
 
   // ── Identity verification document state ─────────────────────────────────
@@ -480,25 +484,23 @@ export default function ProfileSettings() {
   };
 
   const uploadVideo = async (file: File) => {
-    if (!candidateId) return;
+    if (!candidateId || videoUploadBusy.current) return;
+    const validation = candidateVideoError(file.size, file.type);
+    if (validation) {
+      toast({ title: "Upload failed", description: validation, variant: "destructive" });
+      return;
+    }
+    videoUploadBusy.current = true;
+    setVideoUploadProgress(0);
     setVideoUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("video", file);
-      const res = await fetch(`/api/candidates/${candidateId}/video`, {
-        method: "POST",
-        headers: { Authorization: getAuthHeader() },
-        body: fd,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Upload failed");
-      }
+      await uploadCandidateVideo(candidateId, file, getAuthHeader(), setVideoUploadProgress);
       await invalidateCandidate();
       toast({ title: "Video saved", description: "Your video introduction has been updated." });
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
+      videoUploadBusy.current = false;
       setVideoUploading(false);
     }
   };
@@ -1542,7 +1544,7 @@ export default function ProfileSettings() {
                             }}
                           >
                             {videoUploading
-                              ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading…</>
+                              ? <><Loader2 style={{ width: 15, height: 15 }} className="animate-spin" /> Uploading… {videoUploadProgress}%</>
                               : <><Upload style={{ width: 15, height: 15 }} /> Upload a Video File</>}
                           </button>
                           <p className="text-center text-[11px]" style={{ color: MUTED }}>
@@ -1625,7 +1627,7 @@ export default function ProfileSettings() {
                               style={{ height: 38, background: "#059669", border: "none", cursor: videoUploading ? "not-allowed" : "pointer" }}
                             >
                               {videoUploading
-                                ? <><Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> Uploading…</>
+                                ? <><Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> Uploading… {videoUploadProgress}%</>
                                 : <><Upload style={{ width: 14, height: 14 }} /> Save to Profile</>}
                             </button>
                             <button

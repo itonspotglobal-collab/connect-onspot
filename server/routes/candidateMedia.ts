@@ -18,6 +18,10 @@
 
 import type { Express } from "express";
 import type { Multer } from "multer";
+import multer from "multer";
+import { tmpdir } from "node:os";
+import { readFile, unlink } from "node:fs/promises";
+import { MAX_CANDIDATE_VIDEO_BYTES, VIDEO_TOO_LARGE } from "../../shared/candidateVideo";
 import { checkCandidateMediaAuth } from "../lib/candidateMediaAuth.js";
 
 // ─── Dependency interface ──────────────────────────────────────────────────────
@@ -60,6 +64,8 @@ export interface CandidateMediaDeps {
    * Must be tolerant of "not found" — ignore it rather than throwing.
    */
   deleteFromStorage: (url: string) => Promise<void>;
+  /** Production legacy multipart uploads stream from temporary disk, never a 200 MB buffer. */
+  saveVideoFromFile?: (path: string, mimetype: string, originalName: string) => Promise<string>;
 }
 
 // ─── Internal helpers ──────────────────────────────────────────────────────────
@@ -68,7 +74,7 @@ export interface CandidateMediaDeps {
  * Full auth resolution: handles both candidate-JWT (pure) and talent-email
  * (requires DB check) paths in one async function.
  */
-async function resolveAuth(
+export async function resolveAuth(
   authHeader: string | undefined,
   candidateId: string,
   deps: Pick<CandidateMediaDeps, "jwtSecret" | "dbQuery">,
@@ -187,8 +193,26 @@ export function registerCandidateMediaRoutes(
   // ── POST /api/candidates/:id/video ──────────────────────────────────────────
   app.post(
     "/api/candidates/:id/video",
-    upload.single("video"),
+    async (req: any, res: any, next: any) => {
+      try {
+        const auth = await resolveAuth(req.headers.authorization, req.params.id, deps);
+        if (!auth.authorized) return res.status(auth.status).json({ error: auth.error });
+        next();
+      } catch { res.status(503).json({ error: "Could not verify profile access. Please try again." }); }
+    },
+    (req: any, res: any, next: any) => {
+      // Dedicated disk-backed video parser; unrelated resume/global limits stay unchanged.
+      const parser = multer({ dest: tmpdir(), limits: {
+        fileSize: MAX_CANDIDATE_VIDEO_BYTES + 1, files: 1, fields: 0, parts: 2,
+      } }).single("video");
+      parser(req, res, (error: any) => {
+        if (!error) return next();
+        if (error.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: VIDEO_TOO_LARGE });
+        return res.status(400).json({ error: "Invalid video upload. Please select one video file." });
+      });
+    },
     async (req: any, res: any) => {
+      let newUrl: string | undefined;
       try {
         const { id } = req.params;
 
@@ -204,22 +228,27 @@ export function registerCandidateMediaRoutes(
           return res.status(400).json({ error: "Only MP4, WebM, MOV, AVI or MPEG video files are allowed" });
         }
         if (file.size > 200 * 1024 * 1024) {
-          return res.status(400).json({ error: "File too large — max 200 MB" });
+          return res.status(413).json({ error: VIDEO_TOO_LARGE });
         }
 
-        const videoIntroUrl = await deps.saveToStorage(
-          "candidate-videos",
-          file.buffer,
-          file.mimetype,
-          file.originalname,
-        );
+        const videoIntroUrl = deps.saveVideoFromFile
+          ? await deps.saveVideoFromFile(file.path, file.mimetype, file.originalname)
+          : await deps.saveToStorage("candidate-videos", await readFile(file.path), file.mimetype, file.originalname);
+        newUrl = videoIntroUrl;
 
         await deps.updateCandidate(id, { videoIntroUrl, videoIntroFileName: file.originalname });
+        newUrl = undefined;
+        // Preserve older profile media: job applications may retain its URL.
 
         res.json({ success: true, videoIntroUrl, videoIntroFileName: file.originalname });
       } catch (error: any) {
-        console.error("POST /api/candidates/:id/video error:", error);
-        res.status(500).json({ error: "Failed to upload video" });
+        if (newUrl) {
+          try { await deps.deleteFromStorage(newUrl); } catch { console.warn("Failed candidate video cleanup needs retry"); }
+        }
+        console.error("Candidate video upload failed");
+        res.status(503).json({ error: "Video storage is temporarily unavailable. Your previous video has not been replaced." });
+      } finally {
+        if (req.file?.path) await unlink(req.file.path).catch(() => {});
       }
     },
   );

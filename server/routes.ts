@@ -33,6 +33,8 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
   return clean.trim() || null;
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
+import { registerCandidateVideoUploads } from "./routes/candidateVideoUploads";
+import { candidateVideoStorage, saveCandidateVideoFromFile } from "./services/candidateVideoStorage";
 import { registerHiringPaymentRoutes, hiringPaymentFailure } from "./routes/hiringPayments";
 import { registerManualWiseRoutes } from "./routes/manualWise";
 import { ManualWiseService } from "./services/manualWiseService";
@@ -8303,11 +8305,12 @@ export async function registerRoutes(
 
   // ── Candidate resume & video upload/delete ────────────────────────────────
   // Registered via candidateMedia.ts module (injectable deps for testability).
-  registerCandidateMediaRoutes(app, upload, {
+  const candidateMediaDeps = {
     jwtSecret: process.env.JWT_SECRET || "dev-fallback-secret",
     dbQuery: query,
-    updateCandidate: (id, updates) => storage.updateCandidate(id, updates as any) as any,
-    saveToStorage: async (subdir, buffer, mimetype, originalName) => {
+    updateCandidate: (id: string, updates: Record<string, any>) => storage.updateCandidate(id, updates as any) as any,
+    saveVideoFromFile: saveCandidateVideoFromFile,
+    saveToStorage: async (subdir: "candidate-resumes" | "candidate-videos", buffer: Buffer, mimetype: string, originalName: string) => {
       const objectStorageService = new ObjectStorageService();
       const objectId = randomUUID();
       const privateObjectDir = objectStorageService.getPrivateObjectDir();
@@ -8323,12 +8326,14 @@ export async function registerRoutes(
       await setObjectAclPolicy(objectFile, { visibility: "private" });
       return `/objects/${subdir}/${objectId}`;
     },
-    deleteFromStorage: async (url) => {
+    deleteFromStorage: async (url: string) => {
       const objectStorageService = new ObjectStorageService();
       const objectFile = await objectStorageService.getObjectEntityFile(url);
       await objectFile.delete({ ignoreNotFound: true });
     },
-  });
+  };
+  registerCandidateMediaRoutes(app, upload, candidateMediaDeps);
+  registerCandidateVideoUploads(app, candidateMediaDeps, candidateVideoStorage());
 
   // GET /api/candidates/:id/video — Stream profile video to the authenticated owner
   app.get("/api/candidates/:id/video", async (req: any, res) => {

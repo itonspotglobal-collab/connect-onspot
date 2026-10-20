@@ -412,7 +412,7 @@ describe("Production route handlers — real handlers, mocked deps", () => {
   });
 
   // ── (g) POST /video — storage failure → 500 ─────────────────────────────────
-  it("(g) POST /video with valid token but storage failure → 500 + clear error", async () => {
+  it("(g) POST /video with valid token but storage failure → 503 + clear error", async () => {
     const srv = await buildServer(baseDeps({
       saveToStorage: async () => { throw new Error("Storage unavailable: simulated failure"); },
     }));
@@ -422,7 +422,7 @@ describe("Production route handlers — real handlers, mocked deps", () => {
         `Bearer ${makeCandidateToken(CANDIDATE_ID)}`,
         "video", "intro.webm", "video/webm", VIDEO,
       );
-      assert.equal(status, 500, `body: ${JSON.stringify(body)}`);
+      assert.equal(status, 503, `body: ${JSON.stringify(body)}`);
       assert.ok(typeof body.error === "string" && body.error.length > 0);
       assert.ok(!body.error.includes("at Object."), "Error must not expose stack trace");
     } finally { await stopServer(srv); }

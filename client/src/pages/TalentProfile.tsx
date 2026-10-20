@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { uploadCandidateVideo } from "@/lib/uploadCandidateVideo";
+import { candidateVideoError } from "../../../shared/candidateVideo";
 import { ProfileRichTextEditor } from "@/components/ProfileRichTextEditor";
 import { ProfileRichTextRenderer } from "@/components/ProfileRichTextRenderer";
 import { useParams, useLocation } from "wouter";
@@ -746,6 +748,8 @@ export default function TalentProfile() {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const videoFileInputRef = useRef<HTMLInputElement>(null);
+  const videoUploadBusy = useRef(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
 
   // ── Section highlight state (click-only feedback, not scroll-driven) ───────
   const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null);
@@ -1009,29 +1013,27 @@ export default function TalentProfile() {
   }
 
   async function uploadVideo(file: File) {
-    if (!id) return;
+    if (!id || videoUploadBusy.current) return;
+    const validation = candidateVideoError(file.size, file.type);
+    if (validation) {
+      toast({ title: "Upload failed", description: validation, variant: "destructive" });
+      return;
+    }
+    videoUploadBusy.current = true;
+    setVideoUploadProgress(0);
     setVideoUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("video", file);
       const authHeader = talentAuth?.token
         ? `Bearer ${talentAuth.token}`
         : `Bearer ${localStorage.getItem("onspot_jwt_token") || ""}`;
-      const res = await fetch(`/api/candidates/${id}/video`, {
-        method: "POST",
-        headers: { Authorization: authHeader },
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Upload failed" }));
-        throw new Error(err.error || "Upload failed");
-      }
+      await uploadCandidateVideo(id, file, authHeader, setVideoUploadProgress);
       await qc.invalidateQueries({ queryKey: ["/api/candidates", id] });
       toast({ title: "Video uploaded! 🎉", description: "Your video introduction has been saved to your profile." });
       discardVideoRecording();
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message || "Could not upload video.", variant: "destructive" });
     } finally {
+      videoUploadBusy.current = false;
       setVideoUploading(false);
     }
   }
@@ -1983,7 +1985,7 @@ export default function TalentProfile() {
                           className="h-8 w-full rounded-full border-violet-300 text-xs text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-300"
                         >
                           {videoUploading ? (
-                            <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading…</>
+                            <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading… {videoUploadProgress}%</>
                           ) : (
                             <><Upload className="mr-1.5 h-3.5 w-3.5" />Upload a Video File</>
                           )}
@@ -2044,7 +2046,7 @@ export default function TalentProfile() {
                             className="h-8 flex-1 rounded-full bg-emerald-600 text-xs text-white hover:bg-emerald-700"
                           >
                             {videoUploading ? (
-                              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading…</>
+                              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Uploading… {videoUploadProgress}%</>
                             ) : (
                               <><Upload className="mr-1.5 h-3.5 w-3.5" />Save to Profile</>
                             )}
