@@ -484,11 +484,11 @@ export default function ProfileSettings() {
   };
 
   const uploadVideo = async (file: File) => {
-    if (!candidateId || videoUploadBusy.current) return;
+    if (!candidateId || videoUploadBusy.current) return false;
     const validation = candidateVideoError(file.size, file.type);
     if (validation) {
       toast({ title: "Upload failed", description: validation, variant: "destructive" });
-      return;
+      return false;
     }
     videoUploadBusy.current = true;
     setVideoUploadProgress(0);
@@ -497,8 +497,10 @@ export default function ProfileSettings() {
       await uploadCandidateVideo(candidateId, file, getAuthHeader(), setVideoUploadProgress);
       await invalidateCandidate();
       toast({ title: "Video saved", description: "Your video introduction has been updated." });
+      return true;
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+      return false;
     } finally {
       videoUploadBusy.current = false;
       setVideoUploading(false);
@@ -619,27 +621,9 @@ export default function ProfileSettings() {
   async function uploadRecordedVideo() {
     if (!recordedVideoBlob) return;
     const file = new File([recordedVideoBlob], "video-intro.webm", { type: "video/webm" });
-    setVideoUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("video", file);
-      const res = await fetch(`/api/candidates/${candidateId}/video`, {
-        method: "POST",
-        headers: { Authorization: getAuthHeader() },
-        body: fd,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Upload failed");
-      }
-      await invalidateCandidate();
-      toast({ title: "Video saved! 🎉", description: "Your video introduction has been saved." });
-      discardVideoRecording();
-    } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
-    } finally {
-      setVideoUploading(false);
-    }
+    // Recording and file selection must use the same verified direct transport.
+    // Retain the local recording for retry if any transfer or persistence fails.
+    if (await uploadVideo(file)) discardVideoRecording();
   }
 
   // `documents` is now managed by the hook (useQuery) so completion recalculates

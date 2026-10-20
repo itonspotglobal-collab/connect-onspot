@@ -15,6 +15,12 @@ Credential-scrubbed child environments still need browser-specific runtime confi
 
 **How to apply:** Configure a compatible host-wrapped browser or its cache/native-library requirements separately from application credentials. Do not restore production secrets merely to make fixture tests launch. Record failed setup attempts separately from substantive browser assertions.
 
+Replit's native-library audit configuration is distinct from a conventional Linux library search path.
+
+**Why:** Chromium launched in the ordinary shell but failed to find libglib in a credential-scrubbed child, even though its binary and Nix libraries existed. Preserving only LD_LIBRARY_PATH and NIX_LD variables was insufficient; the platform's LD_AUDIT/REPLIT_LD_AUDIT and REPLIT_LD_LIBRARY_PATH configuration was needed.
+
+**How to apply:** Preserve the non-secret browser cache and native-loader configuration when isolating test workers, while continuing to exclude application credentials. Test the browser launch separately before initializing a disposable database.
+
 When validating a new browser suite, run it by file as well as through the package-wide glob. The suites each manage their own Vite lifecycle, and the aggregate command can expose unrelated teardown/timing failures even when the changed suite is green.
 
 **Why:** The package-wide Node test command loads multiple suites that independently start and stop isolated Vite servers; failures in one suite can mask the result of another.

@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { authAPI } from "@/lib/api";
+import { uploadCandidateVideo } from "@/lib/uploadCandidateVideo";
+import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -101,6 +102,14 @@ export default function EnhancedVideoIntroduction({
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+    }
+    streamRef.current?.getTracks().forEach(track => track.stop());
+  }, []);
 
   // Video upload mutation
   const uploadMutation = useMutation({
@@ -108,56 +117,16 @@ export default function EnhancedVideoIntroduction({
       setIsUploading(true);
       setUploadProgress(0);
 
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          return prev + Math.random() * 10;
-        });
-      }, 200);
-
       try {
-        // Get upload URL (similar to portfolio images)
-        const response = await fetch('/api/object-storage/upload-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: `video-intro-${user?.id}-${Date.now()}.webm`,
-            contentType: 'video/webm'
-          })
-        });
-
-        if (!response.ok) throw new Error('Failed to get upload URL');
-
-        const { uploadUrl, objectUrl } = await response.json();
-        
-        // Upload the file
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: videoFile,
-          headers: {
-            'Content-Type': 'video/webm'
-          }
-        });
-
-        if (!uploadResponse.ok) throw new Error('Failed to upload video');
-
-        // Persist to candidates.video_intro_url (source of truth)
-        await authAPI.patch('/api/talent/me/video-intro-url', {
-          fileUrl: objectUrl,
-          fileName: `video-intro-${Date.now()}.webm`,
-        });
-
-        clearInterval(progressInterval);
-        setUploadProgress(100);
-        
-        return objectUrl;
-      } catch (error) {
-        clearInterval(progressInterval);
-        throw error;
+        const token = loadTalentAuth()?.token || localStorage.getItem("onspot_jwt_token");
+        if (!token) throw new Error("Please sign in to save your introduction.");
+        const authorization = `Bearer ${token}`;
+        const response = await fetch("/api/candidates/me", { headers: { Authorization: authorization } });
+        if (!response.ok) throw new Error("Could not load your Talent profile. Please sign in again.");
+        const candidate = await response.json();
+        const saved = await uploadCandidateVideo(candidate.id, videoFile, authorization, setUploadProgress);
+        queryClient.invalidateQueries({ queryKey: ["/api/candidates", candidate.id] });
+        return saved.videoIntroUrl;
       } finally {
         setIsUploading(false);
       }
@@ -170,10 +139,10 @@ export default function EnhancedVideoIntroduction({
         description: "Your video introduction is now part of your profile.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Upload Failed",
-        description: "Unable to upload video. Please try again.",
+        description: error.message || "Unable to upload video. Please try again.",
         variant: "destructive"
       });
       setUploadProgress(0);
@@ -221,9 +190,9 @@ export default function EnhancedVideoIntroduction({
 
     try {
       chunksRef.current = [];
-      const mediaRecorder = new MediaRecorder(streamRef.current, {
-        mimeType: 'video/webm;codecs=vp9'
-      });
+      const type = ["video/webm;codecs=vp9", "video/webm", "video/mp4"].find(value => MediaRecorder.isTypeSupported(value));
+      if (!type) throw new Error("No supported recording format");
+      const mediaRecorder = new MediaRecorder(streamRef.current, { mimeType: type });
       
       mediaRecorderRef.current = mediaRecorder;
       
@@ -234,7 +203,7 @@ export default function EnhancedVideoIntroduction({
       };
       
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType.split(";")[0] });
         const url = URL.createObjectURL(blob);
         setRecordedVideoUrl(url);
         setRecordingState('completed');
@@ -294,7 +263,7 @@ export default function EnhancedVideoIntroduction({
     try {
       const response = await fetch(recordedVideoUrl);
       const blob = await response.blob();
-      const file = new File([blob], 'video-intro.webm', { type: 'video/webm' });
+      const file = new File([blob], blob.type === "video/mp4" ? "video-intro.mp4" : "video-intro.webm", { type: blob.type });
       uploadMutation.mutate(file);
     } catch (error) {
       toast({

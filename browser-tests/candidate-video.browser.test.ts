@@ -130,3 +130,10 @@ test("both existing profile pages use the same direct uploader with validation, 
     assert.match(source, filename === "TalentProfile" ? /qc.invalidateQueries/ : /await invalidateCandidate\(\)/);
   }
 });
+
+test("Settings recordings cannot regress to the legacy multipart video endpoint", () => {
+  const source = readFileSync("client/src/pages/ProfileSettings.tsx", "utf8");
+  const recordedHandler = source.slice(source.indexOf("async function uploadRecordedVideo()"), source.indexOf("// `documents`"));
+  assert.match(recordedHandler, /if \(await uploadVideo\(file\)\) discardVideoRecording\(\)/);
+  assert.doesNotMatch(recordedHandler, /FormData|fetch\(/);
+});

@@ -11,9 +11,20 @@ async function responseError(response: Response, fallback: string) {
 export async function uploadCandidateVideo(
   candidateId: string, file: File, authorization: string, onProgress: (percent: number) => void,
 ) {
+  return uploadPrivateVideo(`/api/candidates/${encodeURIComponent(candidateId)}/video/uploads`, file, authorization, onProgress);
+}
+
+export async function uploadApplicationVideo(
+  jobId: string, file: File, authorization: string, onProgress: (percent: number) => void,
+) {
+  return uploadPrivateVideo(`/api/jobs/${encodeURIComponent(jobId)}/video/uploads`, file, authorization, onProgress);
+}
+
+async function uploadPrivateVideo(
+  base: string, file: File, authorization: string, onProgress: (percent: number) => void,
+) {
   const validation = candidateVideoError(file.size, file.type);
   if (validation) throw new Error(validation);
-  const base = `/api/candidates/${encodeURIComponent(candidateId)}/video/uploads`;
   const headers = { Authorization: authorization, "Content-Type": "application/json" };
   const initiation = await fetch(base, { method: "POST", headers,
     body: JSON.stringify({ filename: file.name, size: file.size, type: file.type }) });

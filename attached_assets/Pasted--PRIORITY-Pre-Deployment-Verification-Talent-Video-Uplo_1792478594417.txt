@@ -1,0 +1,238 @@
+# PRIORITY: Pre-Deployment Verification — Talent Video Upload and Job Application Submission
+
+## Background
+
+We previously received reports from Talent users experiencing video upload failures in two different areas:
+
+**Issue 1: Talent Profile Video Introduction**
+- A Talent user attempted to upload a video introduction.
+- The upload failed with an "Upload Failed" message.
+- A separate reported video was only 63 MB and received HTTP 413.
+
+**Issue 2: Job Application Video Upload and Submission**
+- A Talent user attempted to apply for a job requiring a video introduction.
+- The application submission failed.
+- The user reported that the video appeared to upload in one section but the application still failed during submission.
+- This may be a separate issue from the Talent Profile uploader.
+
+These reports occurred BEFORE the recent video-upload fix.
+
+The recent fix reportedly implemented direct-to-private-storage uploads for Talent Profile and Profile Settings, with successful fixture-based tests.
+
+However, the Job Application video upload flow has not yet been confirmed to work, and the updated implementation has not been verified on the published deployment.
+
+## OBJECTIVE
+
+Perform a comprehensive pre-deployment audit, fix any remaining problems, and verify that Talent users can successfully:
+
+1. Upload a video introduction under Talent Profile.
+2. Upload a video introduction under Profile Settings.
+3. Upload or record a video during a job application.
+4. Submit a job application with a required video introduction.
+5. Complete the entire application process without encountering upload or submission errors.
+
+**Do not deploy yet.**
+
+## 1. Audit all video upload flows
+
+Inspect the actual current implementation, including:
+
+- `client/src/pages/TalentProfile.tsx`
+- `client/src/pages/ProfileSettings.tsx`
+- `client/src/components/EnhancedVideoIntroduction.tsx`
+- Job Application pages and components
+- `server/routes/candidateMedia.ts`
+- `server/routes.ts`
+- Job Application submission endpoints
+- Object storage integration
+- Relevant authentication and authorization middleware
+
+Identify all video upload endpoints used by the application.
+
+Document which frontend component calls each endpoint and how uploaded videos are stored and associated with the correct Talent account or job application.
+
+Do not assume that the Job Application uploader uses the same implementation as Talent Profile.
+
+## 2. Verify Talent Profile video uploads
+
+Test the complete upload process:
+
+- Select a video file.
+- Validate its size and format.
+- Upload to private storage.
+- Verify the uploaded object.
+- Save the video URL and filename.
+- Display the uploaded video.
+- Refresh the page.
+- Verify the video is still available.
+- Replace an existing video.
+- Delete an existing video.
+
+Test valid videos of 5, 30, 63, 100, and 200 MiB.
+
+Ensure no HTTP 413 errors occur for supported files.
+
+## 3. Verify Profile Settings video uploads
+
+Repeat the same testing under Profile Settings.
+
+Ensure videos uploaded in Profile Settings appear correctly in Talent Profile and vice versa.
+
+Confirm that both pages use the correct persisted Candidate data rather than temporary browser state.
+
+## 4. Investigate the Job Application video upload failure
+
+This is a critical part of the task.
+
+Trace the full job application video upload flow from frontend to backend.
+
+Determine whether the Job Application uploader:
+
+- Still sends large multipart video requests through the application server.
+- Uses the new direct-to-storage upload approach.
+- Has a different size restriction.
+- Uses different storage authorization.
+- Correctly associates uploaded videos with the application.
+- Properly handles upload completion and errors.
+
+If this flow still uses an upload path affected by Google Frontend request-size restrictions, implement a compatible direct-to-storage or streaming solution using the existing storage provider.
+
+Do not simply increase Multer limits.
+
+Do not change unrelated application behavior.
+
+## 5. Fix application submission after video upload
+
+Investigate why a video may appear uploaded successfully but the application submission still fails.
+
+Verify:
+
+- Upload completion is confirmed before application submission.
+- The application uses the correct persisted video reference.
+- Required video validation recognizes a successfully uploaded video.
+- Temporary upload state does not incorrectly indicate success.
+- The video belongs to the authenticated Talent and intended application.
+- The backend accepts the correct video reference.
+- Submission errors are correctly displayed.
+- Duplicate submissions are prevented.
+- Successful submissions are persisted.
+
+Ensure that uploading a video and submitting the application work together as one reliable workflow.
+
+Do not mark an application as submitted if required uploads or persistence fail.
+
+## 6. Verify video recording functionality
+
+Test both recorded and uploaded video files.
+
+Ensure:
+- Recording works.
+- Preview works.
+- Recorded video uploads successfully.
+- Upload progress is displayed.
+- Failed uploads can be retried.
+- Submission works after recording.
+- Camera and microphone resources are released appropriately.
+
+## 7. Verify end-to-end application functionality
+
+Test the following scenarios:
+
+| Scenario | Expected result |
+|---|---|
+| Talent uploads 63 MiB profile video | Success |
+| Talent uploads video in Profile Settings | Success |
+| Talent records a video introduction | Success |
+| Talent applies to a job requiring video | Success |
+| Talent uploads video during application | Success |
+| Talent submits application after video upload | Success |
+| Talent submits without required video | Clear validation error |
+| Talent applies to job without video requirement | Success without video |
+| Talent refreshes after successful upload | Persisted video remains |
+| Upload fails halfway | No false success |
+| Talent retries failed upload | Successful recovery |
+| Talent double-clicks Submit | No duplicate application |
+| Unauthorized Talent attempts upload | Rejected |
+| Talent attempts to access another user's video | Rejected |
+
+Use real browser interactions and actual application routes where feasible, not only mocked tests.
+
+Verify the final application record in the database.
+
+Confirm that the application is associated with the correct Talent and job.
+
+## 8. Check deployment compatibility
+
+Confirm that the implementation works with the actual published hosting architecture.
+
+Review:
+- Google Frontend request limitations.
+- Replit deployment configuration.
+- Private object storage.
+- Signed upload authorization.
+- Production environment variables.
+- Cross-origin restrictions, if applicable.
+- File size and MIME validation.
+- Storage cleanup after failed uploads.
+
+Do not expose credentials or weaken security.
+
+Do not assume local success guarantees production success.
+
+## 9. Regression testing
+
+Verify that changes do not break:
+
+- Talent Profile
+- Profile Settings
+- Resume uploads
+- Existing video playback
+- Video replacement and deletion
+- Job browsing
+- Job application forms
+- Application submission
+- Admin Job Applications
+- Existing application records
+- Candidate authentication
+- Profile completion calculations
+
+Ensure existing successfully uploaded videos remain accessible.
+
+## 10. Final report before deployment
+
+Provide a detailed report containing:
+
+1. Root cause of the original Talent Profile upload error.
+2. Root cause of the Job Application upload/submission failure, if reproducible.
+3. Whether the two problems are related.
+4. All upload endpoints reviewed.
+5. Fixes implemented, if necessary.
+6. Files modified.
+7. Tests performed and actual results.
+8. Whether real storage was used during testing.
+9. Whether real browser workflows were tested.
+10. Any outstanding deployment configuration requirements.
+11. Remaining risks or unresolved issues.
+12. Final production readiness assessment.
+
+Clearly distinguish between:
+- PASS — Verified
+- FAIL — Requires fixing
+- NOT TESTED — Requires verification
+
+Do not mark untested functionality as passed.
+
+## IMPORTANT INSTRUCTIONS
+
+- Do not deploy automatically.
+- Do not perform production migrations without approval.
+- Do not modify unrelated features.
+- Do not redesign the existing UI.
+- Preserve existing Talent and application data.
+- Fix confirmed issues rather than only documenting them.
+- Add regression tests for any bugs found.
+- Do not claim production verification based on fixture tests.
+
+**Final goal:** Both Talent Profile video uploads and Job Application video uploads/submissions must be fully functional, secure, and reliable before deployment.
+
+After completing the audit and necessary fixes, stop and provide the final verification report for my review.

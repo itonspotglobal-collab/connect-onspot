@@ -34,6 +34,7 @@ function sanitizeProfileHtml(input: string | null | undefined): string | null {
 }
 import { registerCandidateMediaRoutes } from "./routes/candidateMedia.js";
 import { registerCandidateVideoUploads } from "./routes/candidateVideoUploads";
+import { registerApplicationVideoUploads, readApplicationVideoToken, verifyApplicationVideoObject } from "./routes/applicationVideoUploads";
 import { candidateVideoStorage, saveCandidateVideoFromFile } from "./services/candidateVideoStorage";
 import { registerHiringPaymentRoutes, hiringPaymentFailure } from "./routes/hiringPayments";
 import { registerManualWiseRoutes } from "./routes/manualWise";
@@ -8334,6 +8335,11 @@ export async function registerRoutes(
   };
   registerCandidateMediaRoutes(app, upload, candidateMediaDeps);
   registerCandidateVideoUploads(app, candidateMediaDeps, candidateVideoStorage());
+  const applicationVideoStore = candidateVideoStorage("application-videos");
+  registerApplicationVideoUploads(app, {
+    authenticate: authenticateJWT, jwtSecret: candidateMediaDeps.jwtSecret,
+    getJob: (id) => storage.getJob(id), store: applicationVideoStore,
+  });
 
   // GET /api/candidates/:id/video — Stream profile video to the authenticated owner
   app.get("/api/candidates/:id/video", async (req: any, res) => {
@@ -18461,6 +18467,7 @@ export async function registerRoutes(
   app.post("/api/jobs/:jobId/apply", applyLimiter, parseApplicationAttachments, async (req: Request, res: Response) => {
     const newlyUploadedObjectFiles: Array<{ delete: (options?: any) => Promise<any> }> = [];
     let submissionPersisted = false;
+    let submissionRequestId: string | null = null;
     const cleanupNewUploads = async () => {
       await Promise.allSettled(newlyUploadedObjectFiles.map((file) => file.delete({ ignoreNotFound: true })));
     };
@@ -18524,6 +18531,24 @@ export async function registerRoutes(
         }
       } catch (_) { /* token absent or invalid — continue as public applicant */ }
 
+      // One key per form attempt; intentionally starting a fresh application still
+      // remains allowed. The existing primary key arbitrates concurrent retries.
+      const requestKey = req.get("Idempotency-Key");
+      if (requestKey && !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestKey)) {
+        return res.status(400).json({ error: "Invalid application request key" });
+      }
+      submissionRequestId = earlyAuthedUser && requestKey
+        ? createHash("sha256").update(JSON.stringify([earlyAuthedUser.id, jobId, requestKey])).digest("hex").slice(0, 32)
+          .replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, "$1-$2-$3-$4-$5")
+        : null;
+      if (submissionRequestId) {
+        const prior = await query("SELECT id FROM job_submissions WHERE id=$1 AND talent_id=$2 AND job_id=$3",
+          [submissionRequestId, earlyAuthedUser!.id, jobId]);
+        if (prior.rows.length) return res.status(201).json({
+          success: true, accountAction: "already_authenticated", applicationId: prior.rows[0].id, replayed: true,
+        });
+      }
+
       // CV / resume is never required — the talent's profile serves as their resume.
       // A file is accepted if the applicant voluntarily attaches one, but never blocked.
       const cvFile = files?.["resume"]?.[0];
@@ -18545,7 +18570,11 @@ export async function registerRoutes(
       const videoFile = files?.["video"]?.[0];
       const requiresVideoIntro = !!(job as any).requiresVideoIntro;
       const useProfileVideo = req.body.useProfileVideo === "true";
-      if (requiresVideoIntro && !videoFile && !useProfileVideo) {
+      const applicationVideoToken = req.body.applicationVideoToken;
+      if (applicationVideoToken && (videoFile || useProfileVideo)) {
+        return res.status(400).json({ error: "invalid_video_reference", message: "Choose one video source." });
+      }
+      if (requiresVideoIntro && !videoFile && !useProfileVideo && !applicationVideoToken) {
         return res.status(400).json({
           error: "video_required",
           message: "A video introduction is required for this position. Please upload an MP4, MOV, or WebM file.",
@@ -18605,6 +18634,31 @@ export async function registerRoutes(
       // ── Upload video introduction to object storage (if present) ─────────────
       let videoIntroUrl: string | null = null;
       let videoIntroFileName: string | null = null;
+      if (applicationVideoToken) {
+        if (!earlyAuthedUser || earlyAuthedUser.role !== "talent") {
+          return failAfterUpload(403, { error: "invalid_video_reference", message: "Sign in to upload an application video." });
+        }
+        let input;
+        try {
+          input = readApplicationVideoToken(applicationVideoToken, candidateMediaDeps.jwtSecret, earlyAuthedUser.id, String(jobId));
+        } catch {
+          return failAfterUpload(403, { error: "invalid_video_reference", message: "Your video authorization is invalid or expired. Please upload again." });
+        }
+        try {
+          const object = await verifyApplicationVideoObject(input, applicationVideoStore);
+          videoIntroUrl = await applicationVideoStore.publish(input.uploadId, object.generation, input.type, input.filename);
+          videoIntroFileName = input.filename;
+          newlyUploadedObjectFiles.push({
+            delete: () => applicationVideoStore.discard(input.uploadId, true),
+          });
+          await applicationVideoStore.discard(input.uploadId).catch(() => {});
+        } catch (error: any) {
+          await applicationVideoStore.discard(input.uploadId).catch(() => {});
+          return failAfterUpload(error.status || 503, {
+            error: "video_upload_failed", message: error.status ? error.message : "Could not confirm your video. Please upload again.",
+          });
+        }
+      }
       if (videoFile) {
         try {
           const objectStorageService = new ObjectStorageService();
@@ -18820,7 +18874,8 @@ export async function registerRoutes(
               video_introduction_url, video_introduction_file_name,
              status, registration_status, talent_id, is_repeat_application, answers,
              proposed_rate, proposed_budget, estimated_duration)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', 'linked', $13, $14, $15, $16, $17, $18)
+           VALUES (COALESCE($19::uuid, gen_random_uuid()), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'new', 'linked', $13, $14, $15, $16, $17, $18)
+           ON CONFLICT (id) DO NOTHING
            RETURNING id`,
           [
             jobId, job.clientId || null,
@@ -18838,8 +18893,15 @@ export async function registerRoutes(
             proposedRate,
             proposedBudget,
             estimatedDuration,
+            submissionRequestId,
           ],
         );
+        if (!result.rows.length && submissionRequestId) {
+          await cleanupNewUploads();
+          return res.status(201).json({
+            success: true, accountAction: "already_authenticated", applicationId: submissionRequestId, replayed: true,
+          });
+        }
         submissionPersisted = true;
 
         // Non-blocking: seed the CV onto the linked candidate profile if they don't have one yet
@@ -19029,9 +19091,21 @@ export async function registerRoutes(
 
       return res.status(201).json(responseBody);
     } catch (err: any) {
-      if (!submissionPersisted) await cleanupNewUploads();
+      if (!submissionPersisted) {
+        // The insert may have committed even if its acknowledgement was lost.
+        // Reconcile before deleting attachments; never break a saved submission.
+        if (submissionRequestId) {
+          try {
+            const persisted = await query("SELECT id FROM job_submissions WHERE id=$1", [submissionRequestId]);
+            if (persisted.rows.length) return res.status(201).json({
+              success: true, accountAction: "already_authenticated", applicationId: submissionRequestId, replayed: true,
+            });
+            await cleanupNewUploads();
+          } catch { console.warn("Application attachment commit state requires reconciliation"); }
+        } else await cleanupNewUploads();
+      }
       console.error("POST /api/jobs/:jobId/apply error:", err);
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: "Your application could not be confirmed. Please retry." });
     }
   });
 

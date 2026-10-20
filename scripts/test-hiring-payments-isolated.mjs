@@ -8,8 +8,9 @@ import { createServer } from "node:net";
 import pg from "pg";
 import { build } from "esbuild";
 
-const env = Object.fromEntries(["PATH","HOME","LANG","TZ","TMPDIR","LD_LIBRARY_PATH",
-  "PLAYWRIGHT_EXECUTABLE_PATH","PLAYWRIGHT_BROWSERS_PATH"].filter(k => process.env[k]).map(k => [k,process.env[k]]));
+const env = Object.fromEntries(["PATH","HOME","LANG","TZ","TMPDIR","LD_LIBRARY_PATH","NIX_LD","NIX_LD_LIBRARY_PATH",
+  "LD_AUDIT","REPLIT_LD_AUDIT","REPLIT_LD_LIBRARY_PATH",
+  "XDG_CACHE_HOME","PLAYWRIGHT_EXECUTABLE_PATH","PLAYWRIGHT_BROWSERS_PATH"].filter(k => process.env[k]).map(k => [k,process.env[k]]));
 const root = await mkdtemp(join(tmpdir(),"onspot-hiring-payment-"));
 const data = join(root,"data");
 const socket = createServer();
@@ -37,7 +38,13 @@ try {
   }
   if (!ready) throw new Error("Disposable PostgreSQL failed to start");
   const url = `postgresql://hiring_fixture@127.0.0.1:${port}/onspot_hiring_test`;
-  const workerEnv = { DATABASE_URL:url,HIRING_FLOW_TEST_DATABASE_URL:url,JWT_SECRET:"hiring-payment-fixture-only",DISABLE_AUTH:"false" };
+  const videoOnly = process.argv.includes("--video-only");
+  const workerEnv = { DATABASE_URL:url,HIRING_FLOW_TEST_DATABASE_URL:url,JWT_SECRET:"hiring-payment-fixture-only",DISABLE_AUTH:"false",
+    ...(videoOnly ? { REPLIT_DOMAINS: "127.0.0.1", NODE_ENV: "test" } : {}),
+    ...(videoOnly && process.argv.includes("--real-storage") ? {
+      VIDEO_UAT_REAL_STORAGE: "true", PRIVATE_OBJECT_DIR: process.env.PRIVATE_OBJECT_DIR,
+    } : {}),
+  };
   const schema = join(root,"schema");
   await run(process.execPath,["node_modules/drizzle-kit/bin.cjs","generate","--dialect","postgresql","--schema","./shared/schema.ts","--out",schema],workerEnv);
   const db = new pg.Client({connectionString:url});
@@ -74,11 +81,11 @@ try {
   } catch(e) { await db.query("ROLLBACK"); throw e; } finally { await db.end(); }
   // Run the existing real signing/contract regression before adding the new gate.
   // Its fixture deliberately manufactures accepted offers, which are now forbidden.
-  if (!process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")) {
+  if (!videoOnly && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")) {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts","contracts"],workerEnv);
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
-  const entries = process.argv.includes("--regressions-only") ? [
+  const entries = videoOnly ? ["server/tests/application-video-flow.fixture.ts"] : process.argv.includes("--regressions-only") ? [
     "server/tests/talent-invoice-calculations.test.ts",
     "server/tests/talent-invoices-usd-guard.test.ts",
     "server/tests/ledger-currency-summary.test.ts",
@@ -91,6 +98,21 @@ try {
     entryPoints:[entry],outfile:output,
     bundle:true,platform:"node",format:"esm",packages:"external",target:"node22",
     plugins:[{name:"owned-database-only",setup(builder) {
+      if (videoOnly) {
+        // Video UAT never exercises the assistant's unrelated KV memory store.
+        // Deny it explicitly instead of inheriting a live REPLIT_DB_URL.
+        builder.onResolve({filter:/^@replit\/database$/},() => ({path:"denied-kv",namespace:"video-uat"}));
+        builder.onLoad({filter:/.*/,namespace:"video-uat"},() => ({contents:`
+          const deny=()=>{throw new Error("Unrelated KV access forbidden in video UAT")};
+          export default class { get=deny; set=deny; delete=deny; list=deny; }
+        `,loader:"js"}));
+        builder.onResolve({filter:/^openai$/},() => ({path:"denied-ai",namespace:"video-uat-ai"}));
+        builder.onLoad({filter:/.*/,namespace:"video-uat-ai"},() => ({contents:`
+          export default class {
+            constructor() { return new Proxy(this,{get(){throw new Error("Unrelated AI access forbidden in video UAT")}}); }
+          }
+        `,loader:"js"}));
+      }
       builder.onLoad({filter:/client-team-dashboard-activity\.test\.ts$/},async args => ({
         contents:(await readFile(args.path,"utf8")).replaceAll("import.meta.url",JSON.stringify(pathToFileURL(args.path).href)),
         loader:"ts",resolveDir:dirname(args.path),

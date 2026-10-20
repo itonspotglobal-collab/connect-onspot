@@ -22,17 +22,17 @@ export async function saveCandidateVideoFromFile(path: string, type: string, fil
 }
 
 /** Signed PUTs target quarantine only. A generation-pinned copy seals the final video. */
-export function candidateVideoStorage() {
+export function candidateVideoStorage(namespace: "candidate-videos" | "application-videos" = "candidate-videos") {
   function file(uploadId: string, pending = false, generation?: string) {
     const root = new ObjectStorageService().getPrivateObjectDir().replace(/\/+$/, "");
-    const full = `${root}/candidate-videos/${pending ? "_pending/" : ""}${uploadId}`;
+    const full = `${root}/${namespace}/${pending ? "_pending/" : ""}${uploadId}`;
     const [bucket, ...name] = full.split("/").filter(Boolean);
     return objectStorageClient.bucket(bucket).file(name.join("/"), generation ? { generation } : undefined);
   }
   return {
     async pruneExpired() {
       const root = new ObjectStorageService().getPrivateObjectDir().replace(/\/+$/, "");
-      const [bucket, ...prefix] = `${root}/candidate-videos/_pending/`.split("/").filter(Boolean);
+      const [bucket, ...prefix] = `${root}/${namespace}/_pending/`.split("/").filter(Boolean);
       // Bounded maintenance of abandoned quarantine objects. Only this private
       // upload prefix is eligible; never touch final or historical profile media.
       const [objects] = await objectStorageClient.bucket(bucket).getFiles({
@@ -72,7 +72,7 @@ export function candidateVideoStorage() {
         await target.delete({ ignoreNotFound: true }).catch(() => {});
         throw error;
       }
-      return `/objects/candidate-videos/${uploadId}`;
+      return `/objects/${namespace}/${uploadId}`;
     },
     async discard(uploadId: string, published = false) {
       await file(uploadId, !published).delete({ ignoreNotFound: true });

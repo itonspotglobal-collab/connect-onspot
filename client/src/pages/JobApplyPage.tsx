@@ -28,6 +28,9 @@ import { getPublicCompanyName } from "@/lib/jobUtils";
 import { loadTalentAuth, type TalentAuthState } from "@/components/TalentLoginModal";
 import { validatePhone } from "@/lib/phoneValidation";
 import { resolveJobApplicationAction } from "@/lib/jobApplication";
+import { uploadApplicationVideo } from "@/lib/uploadCandidateVideo";
+import { ApplicationVideoRecorder } from "@/components/ApplicationVideoRecorder";
+import { candidateVideoError } from "@shared/candidateVideo";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -195,6 +198,9 @@ export default function JobApplyPage() {
   // ── Form submission state ─────────────────────────────────────────────────
   const [isPending, setIsPending] = useState(false);
   const [submitStep, setSubmitStep] = useState<"uploading" | "saving" | null>(null);
+  const submitBusyRef = useRef(false);
+  const submissionKeyRef = useRef(crypto.randomUUID());
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [emailMismatchError, setEmailMismatchError] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -420,28 +426,33 @@ export default function JobApplyPage() {
   };
 
   const processVideoFile = (file: File) => {
+    setVideoFile(null);
+    setUseExistingVideo(false);
     setVideoState("validating");
     setVideoError(null);
-    setTimeout(() => {
-      const allowedTypes = ["video/mp4", "video/quicktime", "video/webm"];
-      const allowedExtensions = [".mp4", ".mov", ".webm"];
-      const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-      // Some browsers do not populate File.type for an otherwise valid video,
-      // so keep the validation aligned with the MIME types and extensions in accept.
-      if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-        setVideoState("idle");
-        setVideoError("Please upload an MP4, MOV, or WebM video file");
-        return;
-      }
-      if (file.size > 200 * 1024 * 1024) {
-        setVideoState("idle");
-        setVideoError("Video must be 200 MB or smaller");
-        return;
-      }
-      setVideoFile(file);
-      setVideoState("ready");
-      setUseExistingVideo(false);
-    }, 300);
+    const allowedTypes = ["video/mp4", "video/quicktime", "video/webm"];
+    const allowedExtensions = [".mp4", ".mov", ".webm"];
+    const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    // Only infer a MIME type when the browser omitted it. A declared non-video
+    // MIME must not bypass verification just because its filename ends in MP4.
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      setVideoState("idle");
+      setVideoError("Please upload an MP4, MOV, or WebM video file");
+      return;
+    }
+    const normalizedFile = file.type ? file : new File([file], file.name, {
+      type: fileExtension === ".webm" ? "video/webm" : fileExtension === ".mov" ? "video/quicktime" : "video/mp4",
+    });
+    const validationError = candidateVideoError(normalizedFile.size, normalizedFile.type);
+    if (validationError) {
+      setVideoState("idle");
+      setVideoError(validationError);
+      return;
+    }
+    // No artificial timer: a new recording must replace the old profile-video
+    // selection before Continue/Submit can validate the next step.
+    setVideoFile(normalizedFile);
+    setVideoState("ready");
   };
 
   const resetVideoInput = () => {
@@ -585,12 +596,15 @@ export default function JobApplyPage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   const doSubmit = async () => {
+    if (submitBusyRef.current) return;
+    if (!validateResume() || !validateQuestions()) return;
+    submitBusyRef.current = true;
     setIsPending(true);
+    setVideoUploadProgress(0);
     setSubmitError(null);
     setWizardStep("submitting");
     setSubmitStep("uploading");
     setEmailMismatchError(false);
-    const stepTimer = setTimeout(() => setSubmitStep("saving"), 2500);
 
     try {
       const talentToken = talentSession?.token ?? null;
@@ -611,9 +625,12 @@ export default function JobApplyPage() {
         formData.append("useProfileResume", "true");
       }
 
-      // Video: attach new file OR signal server to reuse profile video
+      // Video bytes go directly to private storage. Submit only the verified,
+      // Talent-and-job-bound capability, never a large multipart video.
       if (videoFile && !useExistingVideo) {
-        formData.append("video", videoFile);
+        if (!authToken) throw new Error("Please sign in to upload your application video.");
+        const uploaded = await uploadApplicationVideo(String(jobId), videoFile, `Bearer ${authToken}`, setVideoUploadProgress);
+        formData.append("applicationVideoToken", uploaded.applicationVideoToken);
       } else if (useExistingVideo && requiresVideoIntro) {
         formData.append("useProfileVideo", "true");
       }
@@ -631,13 +648,12 @@ export default function JobApplyPage() {
         formData.append("answers", JSON.stringify(answersArr));
       }
 
+      setSubmitStep("saving");
       const res = await fetch(`/api/jobs/${jobId}/apply`, {
         method: "POST",
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+        headers: authToken ? { Authorization: `Bearer ${authToken}`, "Idempotency-Key": submissionKeyRef.current } : {},
         body: formData,
       });
-
-      clearTimeout(stepTimer);
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Submission failed" }));
@@ -665,6 +681,7 @@ export default function JobApplyPage() {
             "missing_video",
             "missing_video_intro",
             "video_required",
+            "invalid_video_reference",
           ].includes(errorCode) ||
           (errorCode.includes("profile") && errorCode.includes("video")) ||
           (res.status === 400 && /\bvideo\b/i.test(serverMessage || errorCode) &&
@@ -679,6 +696,7 @@ export default function JobApplyPage() {
       }
 
       const data = await res.json();
+      if (!data.success || !data.applicationId) throw new Error("The server did not confirm your application was saved. Please retry.");
       if (data.success && data.applicationId) {
         trackEvent("application_submitted", {
           account_state: data.accountAction === "already_authenticated"
@@ -719,11 +737,11 @@ export default function JobApplyPage() {
         navigate(`/talent/signup?applicationToken=${encodeURIComponent(data.continuationToken)}`);
       }
     } catch (err: any) {
-      clearTimeout(stepTimer);
       setSubmitError(err.message || "Submission failed. Please try again.");
       setWizardStep("confirm");
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
     } finally {
+      submitBusyRef.current = false;
       setIsPending(false);
       setSubmitStep(null);
     }
@@ -739,7 +757,7 @@ export default function JobApplyPage() {
   // Loading / error / guard screens
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (isLoading || isLoadingTalent) {
+  if (isLoading || (isLoadingTalent && !isError)) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <TopNavigation />
@@ -1138,6 +1156,7 @@ export default function JobApplyPage() {
           </label>
         )}
 
+        <ApplicationVideoRecorder disabled={isPending} onFile={processVideoFile} />
         {videoError && <p className="text-xs text-red-500">{videoError}</p>}
       </div>
     );
@@ -1572,7 +1591,7 @@ export default function JobApplyPage() {
       <Loader2 className="h-10 w-10 animate-spin text-[#474ead]" />
       <div className="text-center">
         <p className="text-base font-semibold text-slate-800 dark:text-slate-200">
-          {submitStep === "saving" ? "Saving your application…" : "Uploading your CV…"}
+          {submitStep === "saving" ? "Saving your application…" : `Uploading your video… ${videoUploadProgress}%`}
         </p>
         <p className="text-sm text-slate-500 mt-1">This will only take a moment.</p>
       </div>

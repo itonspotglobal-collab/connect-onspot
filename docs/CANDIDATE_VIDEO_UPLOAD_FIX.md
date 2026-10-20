@@ -1,5 +1,7 @@
 # Talent profile video upload: HTTP 413 fix
 
+Follow-up verification, job-application fixes, and authenticated disposable-account UAT are documented in [the pre-deployment verification report](TALENT_VIDEO_PREDEPLOYMENT_UAT.html). The evidence below describes the initial profile-only fix and must not be read as published-release verification.
+
 ## Confirmed cause
 
 On 2026-10-20, the same 63 MiB multipart probe was sent without authentication to a nonexistent candidate ID, so no profile could be updated:

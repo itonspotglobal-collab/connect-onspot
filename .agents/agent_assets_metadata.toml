@@ -895,3 +895,17 @@ mtime_ms = 1792395749260
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/42fcc3b7-05e0-4fa4-b5a0-49f039b44803/98492ab1-ab63-4f6e-b4e0-cf4eddaeef17"
 storage_version_token = "1792396096488536"
 content_type = "image/png"
+
+[[outputs]]
+id = "d9Ib1YowlRxiVtHdTj_qp"
+uri = "file://docs/TALENT_VIDEO_PREDEPLOYMENT_UAT.html"
+type = "html"
+title = "Talent Video — Pre-deployment Verification Report"
+description = "Root causes, endpoint audit, fixes, 10 authenticated end-to-end scenarios, 65 backend tests, 7 browser/helper checks, remaining gaps and release checklist. No deployment performed."
+logical_id = "4778d80d-8b06-44af-bfb9-9a3debb1fb66"
+content_hash = "sha256:4e3edba9b1b3c765050e44241e8d902f951e84ce2b9ba330db473083f9167b46"
+size = 23325
+mtime_ms = 1792481334244
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/4778d80d-8b06-44af-bfb9-9a3debb1fb66/248a4492-3641-47f6-b68f-777d1f9291af"
+storage_version_token = "1792481370536352"
+content_type = "text/html"

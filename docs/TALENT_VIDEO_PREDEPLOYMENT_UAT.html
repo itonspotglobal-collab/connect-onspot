@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OnSpot Talent Video — Pre-deployment Verification</title>
+<style>
+body{margin:0;background:#f4f5f8;color:#172033;font:16px/1.6 system-ui,sans-serif}main{max-width:1040px;margin:auto;background:white;padding:40px}h1,h2,h3{line-height:1.25}h1{font-size:30px}h2{margin-top:36px;font-size:23px}h3{font-size:18px}table{border-collapse:collapse;width:100%;font-size:14px;margin:16px 0}th,td{border:1px solid #d9dfea;padding:10px;text-align:left;vertical-align:top}th{background:#f0f3f9}code,pre{font:13px/1.5 ui-monospace,monospace}code{overflow-wrap:anywhere}pre{background:#f4f6fa;padding:14px;white-space:pre-wrap;overflow-wrap:anywhere}.notice{border-left:4px solid #474ead;background:#eef0fc;padding:16px}.pass{font-weight:700;color:#166534}.pending{font-weight:700;color:#92400e}.fail{font-weight:700;color:#991b1b}.small{font-size:14px;color:#526077}li{margin:6px 0}@media(max-width:700px){main{padding:20px}table{font-size:12px}th,td{padding:7px}}
+</style>
+<main>
+<h1>Talent Video Upload and Job Application Submission</h1>
+<p class="small">Pre-deployment audit and verification · 20 October 2026 · No deployment authorized or performed</p>
+<div class="notice"><strong>Development verification passes for the corrected flows.</strong> This is not published-production certification. The authenticated browser UAT uses the actual application frontend, production route implementations, normal password login, disposable seeded accounts, disposable PostgreSQL, and real private object storage. It does not use customer accounts or the application's existing database.</div>
+
+<h2>1. Root causes and relationship between the reports</h2>
+<ol>
+<li><strong>Original profile HTTP 413 — confirmed infrastructure rejection.</strong> A previous safe 63 MiB multipart probe against a nonexistent candidate reached Express in development and returned JSON 401. The same unauthenticated probe against the published host returned Google Frontend HTML 413 before Express. Multer already allowed 200 MiB. Raising its limit would not solve this. The exact ingress threshold was not measured.</li>
+<li><strong>Job application had a separate affected upload path.</strong> Source tracing confirmed that JobApplyPage still appended the video file to the final <code>POST /api/jobs/:jobId/apply</code> multipart body. The profile fix had not changed that path. It was exposed to the same published large-request architecture, but the historic application failure was not separately reproduced against production.</li>
+<li><strong>Settings recordings had another separate multipart path.</strong> Supplemental authenticated recording UAT found that Profile Settings file selection used direct storage while its recording-save handler still posted multipart to the legacy candidate-video endpoint. That handler now shares the direct uploader and retains the recording on failure. The corrected recording/save/refresh/delete browser scenario passes.</li>
+<li><strong>Recording/selection race — reproduced in authenticated browser UAT.</strong> File validation ran after an artificial 300 ms timeout. Advancing immediately after a recording could persist the previous profile video instead of the new recording. Validation is now synchronous and clears the previous selection before accepting a new file. The immediate-advance recorded-submission regression passes.</li>
+<li><strong>Misleading submission progress.</strong> A 2.5-second timer changed the UI to “Saving” regardless of transfer completion. Real transfer progress and verified completion now control that state.</li>
+<li><strong>Unavailable jobs could remain on “Preparing your application…”.</strong> A failed job lookup never completed Talent prefill, while the spinner masked the lookup error. The error is now visible and the browser regression passes.</li>
+<li><strong>Historical media deletion risk.</strong> Profile deletion previously deleted its storage object even when an application retained that URL. It now clears the profile fields while preserving objects referenced by submitted applications. Replacement continues retaining old committed media.</li>
+</ol>
+<p>The first two reports share an infrastructure risk, but the application also had independent workflow defects. The original user's complete historical failure cannot be reconstructed without their original request/logs; this report does not claim otherwise.</p>
+
+<h2>2. Endpoint and association audit</h2>
+<table>
+<thead><tr><th>Endpoint / transport</th><th>Caller and purpose</th><th>Ownership and persistence</th></tr></thead>
+<tbody>
+<tr><td><code>POST /api/candidates/:id/video/uploads</code><br><code>…/complete</code><br><code>…/cancel</code></td><td>TalentProfile and ProfileSettings use the shared uploader for files and recordings. EnhancedVideoIntroduction now uses the same uploader; no mounted import of that standalone component was found.</td><td>Existing candidate/talent JWT ownership checks. Short-lived signed PUT targets private quarantine. Completion checks actual size, MIME, signature and generation, then performs an immutable copy and candidate URL/filename update. Cancel cannot delete a committed final file.</td></tr>
+<tr><td>Signed storage <code>PUT</code></td><td>Browser transfers video bytes directly to the existing storage provider, not through the application ingress.</td><td>No application Authorization header or cookies are sent to storage. The signed URL expires after 15 minutes. Provider metadata, not client claims alone, is verified.</td></tr>
+<tr><td><code>POST /api/candidates/:id/video</code></td><td>Legacy multipart compatibility path; current profile/settings upload controls no longer use it.</td><td>Ownership is checked before parsing. Disk-backed parsing/streaming preserves the previous profile fix. Old clients using this path remain subject to published ingress limits.</td></tr>
+<tr><td><code>GET /api/candidates/:id/video</code><br><code>DELETE /api/candidates/:id/video</code></td><td>Authenticated profile playback and removal.</td><td>Existing role/ownership rules retained. Removal clears both candidate fields and does not destroy an application-referenced object.</td></tr>
+<tr><td><code>POST /api/jobs/:jobId/video/uploads</code><br><code>…/complete</code><br><code>…/cancel</code></td><td>JobApplyPage file and recording submissions use the shared direct uploader.</td><td>Actual JWT middleware and Talent-only gate. Job must accept built-in applications. Verified receipt binds user, job, file metadata and storage generation. Completion leaves bytes quarantined; it does not submit an application or overwrite the profile.</td></tr>
+<tr><td><code>POST /api/jobs/:jobId/apply</code></td><td>JobApplyPage sends ordinary form fields and a verified applicationVideoToken, or requests reuse of its owned profile video. No new-flow video bytes are attached to this request.</td><td>Receipt ownership/job/expiry and actual storage generation are checked again. The verified object is privately published, URL and original filename persist on job_submissions, and only database-confirmed success is shown. Per-form idempotency uses the existing submission primary key. Legacy multipart attachments remain supported.</td></tr>
+<tr><td><code>GET /api/jobs/:jobId/application-prefill</code><br><code>…/my-application</code></td><td>Talent session prefill, profile video selection and prior-application warning.</td><td>Existing authenticated identity resolves candidate data; application contact email is not used as proof of video ownership.</td></tr>
+<tr><td><code>GET /api/admin/job-applications/:applicationId/video</code><br><code>GET /api/admin/talent/:id/video</code></td><td>Existing authenticated review/playback surfaces.</td><td>Existing role/sub-role checks retained. The application-review proxy was exercised with a normally signed-in disposable Talent Acquisition Admin.</td></tr>
+<tr><td><code>POST /api/object-storage/upload-url</code><br><code>PATCH /api/talent/me/video-intro-url</code><br><code>GET /api/objects/:objectPath</code></td><td>Legacy generic signed-upload/document-persistence and ACL retrieval surfaces, including standalone ProfileOnboarding source. No mounted import of that legacy onboarding component was found.</td><td>Existing authenticated upload and private-object ownership/existence checks remain; the active new video controls do not rely on accepting an arbitrary client URL. Another Talent's private-object read was rejected.</td></tr>
+</tbody></table>
+
+<h2>3. What changed</h2>
+<ul>
+<li>Added authenticated, job-scoped direct video upload initiation, verification, cancellation and submission receipts using the existing storage provider.</li>
+<li>Generalized the existing private-video storage adapter to separate profile and application namespaces. Signed PUTs can write only quarantine; final publication is generation-pinned.</li>
+<li>Application submission now awaits upload verification, submits a scoped receipt, stores the correct video reference and original filename, and rejects missing/foreign/wrong-job/expired references.</li>
+<li>Added synchronous double-click prevention and database-backed retry idempotency without schema changes. Intentional new repeat applications still use a new form key.</li>
+<li>Added application recording with browser-supported MIME selection, local preview, retry-preserved file, a two-minute stop limit and track/object-URL cleanup.</li>
+<li>Removed the file-validation timer and stale prior-video selection race. Added a clear unavailable-job error path.</li>
+<li>Retained history when removing profile media. Rollback cleans request-owned attachments; uncertain database acknowledgement is reconciled before deleting potentially committed media.</li>
+<li>Removed simulated progress and the obsolete generic-upload path from standalone EnhancedVideoIntroduction.</li>
+<li>No UI redesign, new storage provider, Base64 video transport, application database conversion, global request-limit increase, production migration, or deployment.</li>
+</ul>
+
+<h2>4. Actual authenticated browser and storage verification</h2>
+<p>The disposable test accounts were seeded with hashed passwords and verified-email metadata; they were not created through the public signup UI. Sessions were obtained from the normal <code>/api/login</code> and <code>/api/talent-auth/login</code> password endpoints, not forged or injected server JWTs. The browser used the resulting normal Talent session. The actual compiled frontend and full route implementations ran against an explicitly isolated PostgreSQL instance. Unrelated AI/KV integrations were denied; external email credentials were excluded. Real storage operations were not mocked.</p>
+<table>
+<thead><tr><th>Scenario</th><th>Actual result</th><th>Evidence boundary</th></tr></thead>
+<tbody>
+<tr><td>Talent Profile uploads: 5, 30, 63, 100, 200 MiB</td><td class="pass">PASS — Verified</td><td>Actual file input, signed storage PUT, verified completion, exact stored byte count, private ACL, database URL/filename, page refresh and Settings consistency.</td></tr>
+<tr><td>Profile Settings uploads: same five sizes</td><td class="pass">PASS — Verified</td><td>Actual Documents controls, same storage/persistence checks, refresh and Talent Profile consistency.</td></tr>
+<tr><td>63 MiB application video and final submission</td><td class="pass">PASS — Verified</td><td>Actual application wizard; correct user/job/video/name/status in PostgreSQL; one submission after two same-task clicks; normally authenticated Admin video endpoint returns video.</td></tr>
+<tr><td>Application recording, preview, immediate advance, upload and submission</td><td class="pass">PASS — Verified</td><td>Chromium MediaRecorder with simulated camera/microphone devices; actual encoded video and real storage; persisted new recording, not the previous profile video; stopped media tracks confirmed.</td></tr>
+<tr><td>Interrupted upload and retry</td><td class="pass">PASS — Verified with fault injection</td><td>Browser storage request deliberately aborted; actual UI error, no application row; retry of the same selected file transfers to real storage and adds exactly one submission. This does not simulate a measured halfway byte offset.</td></tr>
+<tr><td>Required video missing; optional video absent</td><td class="pass">PASS — Verified</td><td>Actual application API rejects the required case and persists an optional-video application with null video fields.</td></tr>
+<tr><td>Duplicate retries; wrong Talent/job; unauthenticated/non-Talent uploads; private access</td><td class="pass">PASS — Verified</td><td>Actual JWT middleware and database. Retries return the same submission. Foreign receipts and another Talent's video access fail; Client/Admin upload attempts fail.</td></tr>
+<tr><td>Profile reuse then profile removal</td><td class="pass">PASS — Verified</td><td>Submission retains its video snapshot; profile fields clear; referenced private storage object still exists. Owner playback endpoint works before removal.</td></tr>
+<tr><td>Unknown job</td><td class="pass">PASS — Verified</td><td>Actual browser displays “Job not found”, rather than an indefinite preparation spinner.</td></tr>
+<tr><td>Profile and Settings recording/save/delete controls</td><td class="pass">PASS — Verified on both pages</td><td>Actual signed-in recording controls, preview, Save to Profile, verified direct upload, persisted filename after refresh, native deletion confirmation, cleared database fields and removed unreferenced storage object. Expected object-not-found confirms deletion.</td></tr>
+</tbody></table>
+<p>Every test-created final/pending object is tracked for removal. The runner shuts down and deletes its owned PostgreSQL cluster and temporary media files. Successful runs reported no cleanup failure. No existing candidate, job, application, financial record, or live account was edited.</p>
+
+<h2>5. Isolated regressions and build checks</h2>
+<table>
+<thead><tr><th>Check</th><th>Result</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Backend regression suite</td><td class="pass">65 passed</td><td>Candidate media/resume behavior, private document URL checks, candidate compatibility, profile direct-upload boundaries and application upload capabilities. Provider/database boundaries are injected in these unit tests.</td></tr>
+<tr><td>Browser helper/contract regressions</td><td class="pass">7 passed</td><td>Actual browser XHR against an isolated local receiver, progress, credential isolation, client validation, HTML 413/error recovery, page integration contracts and Settings recording-transport regression. These are not live storage/account UAT.</td></tr>
+<tr><td>Authenticated disposable-account UAT</td><td class="pass">10 passed</td><td>Distinct from the mocked/injected suites above; actual routes, compiled pages, password login, PostgreSQL and private storage. The two file-size-matrix cases contain ten total large-file uploads, not just two individual transfers.</td></tr>
+<tr><td>TypeScript</td><td class="pass">PASS</td><td><code>npx tsc --noEmit</code></td></tr>
+<tr><td>Production build</td><td class="pass">PASS — all four stages</td><td>Frontend, server, migration-runner bundle and reconciliation-SQL packaging. Building the migration runner does not execute production migrations.</td></tr>
+<tr><td>Patch whitespace</td><td class="pass">PASS</td><td><code>git diff --check</code></td></tr>
+</tbody></table>
+<p>SDK MaxListenersExceededWarning messages appeared during repeated large transfers; assertions, transfers and cleanup still completed. Unrelated application integrations were intentionally unavailable in the isolated environment. Initial fixture setup failures (native browser loader and unrelated imported services) were corrected in test infrastructure, not by weakening application authentication.</p>
+<p>The development application was restarted and the public Find Work preview rendered. Existing unrelated warnings remain for Lindy Embed authorization and the missing Stripe public key. The separately configured admin-auth-check workflow was already failed and was not rerun or certified by this task; that is distinct from the successful normal-password Admin login and application-video proxy exercised in the isolated UAT.</p>
+
+<h2>6. Deployment architecture and remaining risks</h2>
+<ul>
+<li><strong>Large video bytes bypass application ingress.</strong> Only small JSON authorization/verification requests and ordinary final form fields reach Express. Signed storage transfers accept the tested 200 MiB maximum.</li>
+<li><strong>Private storage configuration:</strong> the published runtime must have the correct <code>PRIVATE_OBJECT_DIR</code>, sidecar/provider access, signing/copy/metadata/delete permissions and the intended production bucket. The successful development-storage run does not prove that production uses the same configuration.</li>
+<li><strong>Authentication:</strong> published frontend and backend must share the intended production JWT signing configuration. No test secret or seeded account must be copied to production.</li>
+<li><strong>CORS:</strong> real Chromium-to-storage transfers succeeded from the isolated local frontend; the earlier transport check accepted the development preview origin. The actual published origin and its production-storage binding still require release-environment verification.</li>
+<li><strong>Legacy cached clients:</strong> old multipart video requests can still hit the Google Frontend limit. Release frontend and backend together and verify a fresh client session after an approved publish. The compatibility endpoint is not a workaround for old large-body clients.</li>
+<li><strong>Validation:</strong> the exact accepted boundary is 209,715,200 bytes (200 MiB; UI calls this “200 MB”). Actual object size/type and container signatures are checked. This is not comprehensive codec transcoding, malware scanning or validation of every frame.</li>
+<li><strong>Abandoned uploads:</strong> failed/cancelled transfers are removed best effort; expired quarantine cleanup is bounded and triggered by new initiations. It is not a continuously scheduled provider lifecycle policy. Historical committed media is deliberately retained when needed by applications.</li>
+<li><strong>Ambiguous database failures:</strong> if commit state cannot be read back, media may be retained for reconciliation rather than deleting a potentially committed application/profile attachment. This is intentional data-preservation behavior.</li>
+<li><strong>Performance:</strong> legacy authenticated playback may fetch a video into a browser Blob. Physical low-memory/mobile playback and long/slow-network behavior remain to be verified.</li>
+</ul>
+
+<h2>7. Not tested — do not count these as passes</h2>
+<ul>
+<li><span class="pending">NOT TESTED:</span> updated code on a published deployment. Nothing was published.</li>
+<li><span class="pending">NOT TESTED:</span> existing approved accounts in a separately provisioned staging project or customer/production accounts. This run used disposable seeded identities with real password login.</li>
+<li><span class="pending">NOT TESTED:</span> physical webcams/microphones, iOS Safari, Android hardware, permission-denial variations and low-memory mobile playback. Chromium used simulated media devices.</li>
+<li><span class="pending">NOT TESTED:</span> the complete signed-in Admin Job Applications screen; its authenticated video review proxy was tested.</li>
+<li><span class="pending">NOT TESTED:</span> exhaustive existing-customer media inventory, every job-browsing interaction, resume-upload UI, or every profile-completion permutation. Relevant backend resume/compatibility regressions passed; unrelated modules were not redesigned or certified.</li>
+<li><span class="pending">NOT TESTED:</span> an upload failure at an exact halfway byte offset on a physical unstable network. Browser interruption and no-false-success/retry behavior were verified with fault injection.</li>
+</ul>
+
+<h2>8. Files changed in this follow-up</h2>
+<pre>client/src/lib/uploadCandidateVideo.ts
+client/src/pages/JobApplyPage.tsx
+client/src/pages/ProfileSettings.tsx
+client/src/components/ApplicationVideoRecorder.tsx
+client/src/components/EnhancedVideoIntroduction.tsx
+server/services/candidateVideoStorage.ts
+server/routes/applicationVideoUploads.ts
+server/routes/candidateMedia.ts
+server/routes.ts
+server/tests/application-video-uploads.test.ts
+server/tests/application-video-flow.fixture.ts
+browser-tests/candidate-video.browser.test.ts
+scripts/test-hiring-payments-isolated.mjs
+docs/CANDIDATE_VIDEO_UPLOAD_FIX.md
+docs/TALENT_VIDEO_PREDEPLOYMENT_UAT.html
+.agents/memory/video-upload-ingress.md
+.agents/memory/browser-test-environment.md</pre>
+<p>TalentProfile's active upload/recording controls already use the preceding direct-upload fix. ProfileSettings' existing file-upload helper now also handles its formerly separate recording-save path. No package, schema, migration, production deployment configuration or workflow command was changed.</p>
+
+<h2>9. Reproduction commands</h2>
+<pre>npx tsc --noEmit
+npx tsx --test --test-concurrency=1 \
+  server/tests/application-video-uploads.test.ts \
+  server/tests/candidate-video-uploads.test.ts \
+  server/tests/candidate-media.test.ts \
+  server/tests/talent-document-url.test.ts \
+  server/tests/candidate-profile-compat.test.ts
+npx tsx --test --test-concurrency=1 browser-tests/candidate-video.browser.test.ts
+npm run build
+node scripts/test-hiring-payments-isolated.mjs --video-only --real-storage
+git diff --check</pre>
+<p>The final command explicitly creates/removes private test objects and owns its disposable database. It must not be redirected to an application or production database. Build before running the compiled-frontend UAT after frontend changes.</p>
+
+<h2>10. Production readiness checklist</h2>
+<ul>
+<li>[x] Profile and Settings large-file uploads use direct private storage.</li>
+<li>[x] Application upload and submission are connected by a verified Talent/job-scoped reference.</li>
+<li>[x] Database linkage, required/optional validation, recording race, retry and duplicate protection verified.</li>
+<li>[x] Private access and historical application attachments protected.</li>
+<li>[x] Relevant regressions, typecheck and production build pass.</li>
+<li>[x] No new application schema migration required for these changes.</li>
+<li>[ ] Check published runtime storage/JWT configuration and intended bucket without exposing values.</li>
+<li>[ ] Verify production-origin storage CORS and an approved signed-in release smoke test when publishing is separately authorized.</li>
+<li>[ ] Complete physical mobile-camera/playback checks or explicitly accept that residual risk.</li>
+<li>[ ] User reviews and approves release. No automatic publish or production migration.</li>
+</ul>
+<div class="notice"><strong>Assessment:</strong> the confirmed development defects are fixed and the core authenticated development verification passes. Production behavior remains unverified. This report is a pre-deployment review, not permission to deploy.</div>
+</main>
+</html>

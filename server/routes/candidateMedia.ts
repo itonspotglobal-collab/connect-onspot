@@ -271,11 +271,18 @@ export function registerCandidateMediaRoutes(
 
       const { videoIntroUrl } = candRow.rows[0];
       if (videoIntroUrl) {
-        try {
-          await deps.deleteFromStorage(videoIntroUrl);
-        } catch (delErr) {
-          console.warn("DELETE /api/candidates/:id/video — could not delete object:", delErr);
-          // Non-fatal: clear the DB record regardless
+        // Removing the profile introduction must not destroy a previously
+        // submitted application's immutable attachment.
+        const references = await deps.dbQuery(
+          "SELECT id FROM job_submissions WHERE video_introduction_url=$1 LIMIT 1", [videoIntroUrl],
+        );
+        if (!references.rows.length) {
+          try {
+            await deps.deleteFromStorage(videoIntroUrl);
+          } catch (delErr) {
+            console.warn("DELETE /api/candidates/:id/video — could not delete object:", delErr);
+            // Non-fatal: clear the DB record regardless
+          }
         }
       }
 
