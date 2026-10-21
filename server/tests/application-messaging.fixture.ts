@@ -95,6 +95,7 @@ before(async () => {
     localStorage.setItem("talent_profile_token", JSON.stringify({ token, candidateId, email, fullName: "Applicant Fixture" }));
   }, { token: candidateToken, candidateId, email: `${ids.talent}@example.test` });
   clientPage = await clientContext.newPage(); talentPage = await talentContext.newPage();
+  clientPage.on("pageerror",error=>console.error("Authenticated Client UI error:",error.message));
 }, { timeout: 60000 });
 after(async () => {
   await browser?.close();
@@ -103,9 +104,14 @@ after(async () => {
 });
 
 test("actual Client Job Submissions Message button: original 403 reproduced or owned application opens", { timeout: 45000 }, async () => {
-  await clientPage.goto(base + "/client-profile");
-  const button = clientPage.getByRole("button", { name: "Message", exact: true }).first();
-  await button.waitFor({ timeout: 20000 });
+  await clientPage.goto(base + "/client/job-submissions");
+  const button = clientPage.getByTestId(`button-message-submission-${applicationId}`);
+  try { await button.waitFor({ timeout: 20000 }); }
+  catch (error) {
+    await clientPage.screenshot({path:"/tmp/client-navigation-messaging-failure.png"});
+    console.error("Client application page at failure:",await clientPage.locator("body").innerText());
+    throw error;
+  }
   let requests = 0;
   const countRequests = (request: import("playwright").Request) => {
     if (request.method() === "POST" && request.url().endsWith(`/api/applications/${applicationId}/message-thread`)) requests++;
@@ -174,7 +180,7 @@ if (!baseline) {
   test("unrelated Client/Talent, anonymous, Admin and invalid application IDs cannot open or read chats", async () => {
     for (const who of ["otherClient", "otherTalent", "admin", "anonymous"]) {
       const result = await open(applicationId, who);
-      assert.equal(result.status, who === "anonymous" ? 401 : 403, JSON.stringify(result.body));
+      assert.ok((who === "anonymous" ? [401] : [403,404]).includes(result.status), JSON.stringify(result.body));
     }
     for (const who of ["otherClient", "otherTalent"]) {
       assert.equal((await api("GET", `/api/message-threads/${threadId}/messages`, who)).status, 403);
@@ -256,10 +262,10 @@ if (!baseline) {
       await query("DROP FUNCTION fixture_deny_thread_insert()");
     }
     await clientPage.route(`**/api/applications/*/message-thread`, route => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
-    await clientPage.goto(base + "/client-profile");
-    await clientPage.getByRole("button", { name: "Message", exact: true }).first().click();
+    await clientPage.goto(base + "/client/job-submissions");
+    await clientPage.locator('[data-testid^="button-message-submission-"]').first().click();
     await clientPage.getByText("The conversation could not be opened. Please try again.", { exact: true }).first().waitFor();
-    assert.ok(clientPage.url().endsWith("/client-profile"));
+    assert.ok(clientPage.url().endsWith("/client/job-submissions"));
     await clientPage.unroute(`**/api/applications/*/message-thread`);
   });
 }

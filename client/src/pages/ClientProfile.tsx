@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, Link, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,15 +46,12 @@ import {
   MapPin,
   Clock,
   Briefcase,
-  Plus,
   Pencil,
   Trash2,
   ExternalLink,
   Eye,
   EyeOff,
   ArrowLeft,
-  CheckCircle2,
-  XCircle,
   Save,
   X,
   Users,
@@ -75,15 +71,13 @@ import {
   RequestInterviewDialog,
   canRequestInterview,
 } from "@/components/InterviewWorkflowUi";
-import { ClientJobTalentSearchDialog } from "@/components/ClientJobTalentSearchDialog";
 import { JobRichText } from "@/components/JobRichText";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
-import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 import { ClientHiringPaymentPanel, type HiringInvoice } from "@/components/hiring-payments/HiringPayments";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
-interface JobSubmission {
+export interface JobSubmission {
   hiringPipelineEligible: boolean;
   id: string;
   jobId: string;
@@ -158,7 +152,7 @@ interface OfferRecord {
   sent_at: string | null;
   created_at: string;
 }
-function ViewSubmissionModal({
+export function ViewSubmissionModal({
   submission,
   requestedInterviewId,
   onClose,
@@ -551,10 +545,19 @@ interface ClientProfile {
 // Shows the full details of a client-owned job regardless of its status.
 // Uses data already loaded from GET /api/client/jobs (SELECT j.*) — no extra fetch.
 // For open+approved jobs a "View public listing" link is also shown.
-function ClientJobPreviewDialog({ job, onClose }: { job: Job | null; onClose: () => void }) {
+export function ClientJobPreviewDialog({ job, onClose }: { job: Job | null; onClose: () => void }) {
   if (!job) return null;
 
-  const pay = buildRateDisplay(job as any);
+  const normalizedJob = {
+    ...(job as any),
+    salaryDisplay: (job as any).salaryDisplay ?? (job as any).salary_display,
+    budget: (job as any).budget,
+    budgetCurrency: (job as any).budgetCurrency ?? (job as any).budget_currency,
+    customCurrencyCode: (job as any).customCurrencyCode ?? (job as any).custom_currency_code,
+    engagementType: (job as any).engagementType ?? (job as any).engagement_type,
+  };
+  const hasSalary = Boolean(normalizedJob.salaryDisplay?.trim() || normalizedJob.budget);
+  const pay = hasSalary ? buildRateDisplay(normalizedJob) : "";
   const approvalStatus =
     (job as any).approvalStatus ??
     (job as any).approval_status ??
@@ -639,7 +642,7 @@ function ClientJobPreviewDialog({ job, onClose }: { job: Job | null; onClose: ()
 }
 
 // ─── Job row inside client profile ────────────────────────────────────────────
-function ClientJobRow({
+export function ClientJobRow({
   job,
   onEdit,
   onToggle,
@@ -660,8 +663,15 @@ function ClientJobRow({
 }) {
   const isOpen = job.status === "open";
   const isDraft = job.status === "draft";
-  const pay = buildRateDisplay(job as any);
-  const timeAgo = getTimeAgo(job.createdAt);
+  const normalizedJob = {
+    ...(job as any),
+    salaryDisplay: (job as any).salaryDisplay ?? (job as any).salary_display,
+    budget: (job as any).budget,
+    budgetCurrency: (job as any).budgetCurrency ?? (job as any).budget_currency,
+    customCurrencyCode: (job as any).customCurrencyCode ?? (job as any).custom_currency_code,
+    engagementType: (job as any).engagementType ?? (job as any).engagement_type,
+  };
+  const pay = normalizedJob.salaryDisplay?.trim() || normalizedJob.budget ? buildRateDisplay(normalizedJob) : "";
   const approvalStatus =
     (job as any).approvalStatus ??
     (job as any).approval_status ??
@@ -670,6 +680,9 @@ function ClientJobRow({
     isOpen &&
     approvalStatus === "approved" &&
     (job as any).createdVia !== "search_scaffold";
+  const workArrangement = (job as any).workArrangement ?? (job as any).work_arrangement ??
+    (job as any).workSetup ?? (job as any).work_setup ?? job.location;
+  const postedAt = (job as any).createdAt ?? (job as any).created_at;
 
   const approvalBadge = ({
     pending: { label: "Pending Approval", className: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" },
@@ -679,7 +692,7 @@ function ClientJobRow({
   } as Record<string, { label: string; className: string }>)[approvalStatus] ?? { label: approvalStatus, className: "bg-slate-100 text-slate-500" };
 
   return (
-    <div className="group relative rounded-xl border border-slate-200 bg-white dark:border-white/[0.08] dark:bg-slate-900/60 transition-shadow hover:shadow-sm">
+    <div data-testid={`client-job-${job.id}`} className="group relative rounded-xl border border-slate-200 bg-white dark:border-white/[0.08] dark:bg-slate-900/60 transition-shadow hover:shadow-sm">
       <div
         className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${
           approvalStatus === "approved" && isOpen
@@ -693,7 +706,7 @@ function ClientJobRow({
                   : "bg-slate-300 dark:bg-white/20"
         }`}
       />
-      <div className="flex flex-col gap-3 px-5 py-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 px-5 py-4 pl-7 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
@@ -731,20 +744,18 @@ function ClientJobRow({
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-500 dark:text-slate-400">
-            <span className="capitalize">{getJobFunctionDisplay(job).replace(/-/g, " ")}</span>
-            <span className="text-slate-300 dark:text-white/20">·</span>
-            <span>{job.location || "Remote"}</span>
+            {getJobFunctionDisplay(job) && <span className="capitalize">{getJobFunctionDisplay(job).replace(/-/g, " ")}</span>}
+            {workArrangement && <><span className="text-slate-300 dark:text-white/20">·</span><span className="capitalize">{String(workArrangement).replace(/[_-]/g, " ")}</span></>}
             {pay && (
               <>
                 <span className="text-slate-300 dark:text-white/20">·</span>
                 <span className="font-medium text-[#474ead] dark:text-indigo-400">{pay}</span>
               </>
             )}
-            <span className="text-slate-300 dark:text-white/20">·</span>
-            <span className="flex items-center gap-1">
+            {postedAt && <><span className="text-slate-300 dark:text-white/20">·</span><span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {timeAgo}
-            </span>
+              {getTimeAgo(postedAt)}
+            </span></>}
             {(job.proposalCount ?? 0) > 0 && (
               <>
                 <span className="text-slate-300 dark:text-white/20">·</span>
@@ -788,7 +799,7 @@ function ClientJobRow({
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="icon" disabled={isDeleting}>
+              <Button variant="outline" size="icon" disabled={isDeleting} aria-label={`Delete job ${job.title}`} data-testid={`button-delete-job-${job.id}`}>
                 <Trash2 className="w-3.5 h-3.5 text-red-400" />
               </Button>
             </AlertDialogTrigger>
@@ -842,19 +853,27 @@ function ProfileField({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export default function ClientProfile() {
-  const { user, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const search = useSearch();
+  const params = new URLSearchParams(search);
+  const destination = params.get("applicationId") || params.get("interviewId")
+    ? "/client/job-submissions"
+    : params.get("jobId") ? "/client/job-postings" : null;
+  useEffect(() => {
+    if (destination) navigate(`${destination}?${search}`, { replace: true });
+  }, [destination, navigate, search]);
+  // Do not mount overview queries when resolving a historical resource link.
+  return destination ? null : <ClientProfileOverview />;
+}
+
+function ClientProfileOverview() {
+  const { user, isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const unreadMessagesCount = useUnreadMessagesCount();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Partial<ClientProfile>>({});
-  const [viewingJob, setViewingJob] = useState<Job | null>(null);
-  const [talentSearchJob, setTalentSearchJob] = useState<{ id: string; title: string } | null>(null);
-  const [viewingSubmission, setViewingSubmission] = useState<JobSubmission | null>(null);
-  const [extendingOfferFor, setExtendingOfferFor] = useState<JobSubmission | null>(null);
-  const { applicationId: requestedApplicationId, interviewId: requestedInterviewId } = getDeepLinkResourceIds(search);
 
   // ─── Redirect if not client ───────────────────────────────────────────────
   if (!isAuthenticated || user?.role !== "client") {
@@ -920,12 +939,18 @@ export default function ClientProfile() {
     onError: (err: any) => toast({ title: "Could not save acceptance", description: err.message, variant: "destructive" }),
   });
 
-  const { data: jobs = [], isLoading: jobsLoading } = useQuery<Job[]>({
+  const { data: jobs = [], isLoading: jobsLoading, isError: jobsError, refetch: refetchJobs } = useQuery<Job[]>({
     queryKey: ["/api/client/jobs"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/client/jobs");
       return res.json();
     },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+  });
+  const { data: submissions = [], isLoading: submissionsLoading, isError: submissionsError, refetch: refetchSubmissions } = useQuery<JobSubmission[]>({
+    queryKey: ["/api/client/job-submissions"],
+    queryFn: async () => (await apiRequest("GET", "/api/client/job-submissions")).json(),
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
@@ -941,34 +966,6 @@ export default function ClientProfile() {
     },
     onError: (err: any) =>
       toast({ title: "Failed to save profile", description: err.message, variant: "destructive" }),
-  });
-
-  const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiRequest("PATCH", `/api/client/jobs/${id}/status`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/client/jobs"] });
-      toast({ title: "Job status updated" });
-    },
-    onError: (err: any) =>
-      toast({ title: "Failed to update status", description: err.message, variant: "destructive" }),
-  });
-
-  const deleteJobMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await apiRequest("DELETE", `/api/client/jobs/${id}`);
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || body.error || "Failed to delete job");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/client/jobs"] });
-      toast({ title: "Job deleted" });
-    },
-    onError: (err: any) =>
-      toast({ title: "Could not delete job", description: err.message, variant: "destructive" }),
   });
 
   // ─── Edit handlers ────────────────────────────────────────────────────────
@@ -993,19 +990,12 @@ export default function ClientProfile() {
   const field = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
-  const draftJobs = jobs.filter((j) => j.status === "draft");
   const openJobs = jobs.filter((j) => j.status === "open");
-  const closedJobs = jobs.filter((j) => ["closed", "cancelled", "completed"].includes(j.status ?? ""));
-  const [jobTab, setJobTab] = useState<"all" | "drafts" | "pending" | "open" | "closed">("all");
   const approvalOf = (job: Job) =>
     (job as any).approvalStatus ?? (job as any).approval_status ?? "pending";
-  const visibleJobs = jobs.filter((job) => {
-    if (jobTab === "drafts") return job.status === "draft";
-    if (jobTab === "pending") return job.status !== "draft" && approvalOf(job) === "pending";
-    if (jobTab === "open") return job.status === "open";
-    if (jobTab === "closed") return ["closed", "cancelled", "completed"].includes(job.status ?? "");
-    return true;
-  });
+  const recentJobs = [...jobs].sort((a, b) => new Date((b as any).createdAt ?? (b as any).created_at ?? 0).getTime() - new Date((a as any).createdAt ?? (a as any).created_at ?? 0).getTime()).slice(0, 3);
+  const uniqueSubmissions = Array.from(new Map(submissions.map((submission) => [submission.id, submission])).values());
+  const recentSubmissions = [...uniqueSubmissions].sort((a, b) => new Date(b.submittedAt ?? 0).getTime() - new Date(a.submittedAt ?? 0).getTime()).slice(0, 3);
   const companyName = profile?.companyName || "My Company";
 
   return (
@@ -1070,13 +1060,9 @@ export default function ClientProfile() {
                   <p className="text-[10px] uppercase tracking-wider text-slate-400">Total Jobs</p>
                 </div>
               </div>
-              <Button
-                onClick={() => navigate("/client/jobs/new")}
-                className="bg-[#474ead] text-white shadow-[0_4px_16px_rgba(71,78,173,0.4)] hover:bg-[#3d439c]"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Post a Job
-              </Button>
+              <Link href="/client/job-postings" className="inline-flex h-10 items-center rounded-md bg-[#474ead] px-4 text-sm font-medium text-white shadow-sm hover:bg-[#3d439c]">
+                <Briefcase className="mr-2 h-4 w-4" />Manage Job Postings
+              </Link>
             </div>
           </div>
         </div>
@@ -1225,123 +1211,41 @@ export default function ClientProfile() {
           </CardContent>
         </Card>
 
-        {/* ── Job Postings ─────────────────────────────────────────────────── */}
-        <div>
-          <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
-            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-              <Briefcase className="h-5 w-5 text-[#474ead]" />
-              Job Postings
-              <span className="ml-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-white/[0.08] dark:text-slate-300">
-                {jobs.length}
-              </span>
-            </h2>
-            <div className="flex items-center gap-2">
-              {openJobs.length > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {openJobs.length} open
-                </div>
-              )}
-              {closedJobs.length > 0 && (
-                <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                  <XCircle className="h-3.5 w-3.5" />
-                  {closedJobs.length} closed
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                <FileText className="h-3.5 w-3.5" />
-                {draftJobs.length} draft{draftJobs.length !== 1 ? "s" : ""}
-              </div>
-              <Button
-                size="sm"
-                className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-                onClick={() => navigate("/client/jobs/new")}
-              >
-                <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Post a Job
-              </Button>
+        <section data-testid="client-jobs-preview" aria-labelledby="profile-jobs-heading" className="rounded-xl border border-slate-200 bg-white p-5 dark:border-white/[0.08] dark:bg-slate-900/60">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="profile-jobs-heading" className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"><Briefcase className="h-5 w-5 text-[#474ead]" />Job Postings</h2>
+              <p className="mt-1 text-sm text-slate-500">{jobs.length} total · {openJobs.length} open · {jobs.filter((job) => job.status !== "draft" && approvalOf(job) === "pending").length} pending</p>
             </div>
+            <Link href="/client/job-postings" className="text-sm font-semibold text-[#474ead] hover:underline">View All Job Postings <span aria-hidden="true">→</span></Link>
           </div>
+          {jobsError ? <div role="alert" className="text-sm text-slate-600">Job postings could not be loaded. <Button variant="ghost" onClick={() => refetchJobs()}>Retry</Button></div> : jobsLoading ? <div className="space-y-2">{[0, 1, 2].map((index) => <Skeleton key={index} className="h-14 w-full" />)}</div> : recentJobs.length ? (
+            <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+              {recentJobs.map((job) => <div key={job.id} data-testid={`client-job-${job.id}`} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
+                <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{job.title}</span>
+                <span className="text-xs text-slate-500">{job.status === "open" ? "Open" : job.status === "draft" ? "Draft" : job.status === "closed" ? "Closed" : job.status}{((job as any).createdAt ?? (job as any).created_at) && ` · ${new Date((job as any).createdAt ?? (job as any).created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}</span>
+              </div>)}
+            </div>
+          ) : <p className="text-sm text-slate-500">No job postings yet.</p>}
+        </section>
 
-          <div className="mb-4 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-white/[0.08] dark:bg-white/[0.04]">
-            {([
-              ["all", "All Jobs", jobs.length],
-              ["drafts", "Drafts", draftJobs.length],
-              ["pending", "Pending", jobs.filter((j) => j.status !== "draft" && approvalOf(j) === "pending").length],
-              ["open", "Open", openJobs.length],
-              ["closed", "Closed", closedJobs.length],
-            ] as const).map(([key, label, count]) => (
-              <button
-                key={key}
-                onClick={() => setJobTab(key)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  jobTab === key
-                    ? "bg-[#474ead] text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/[0.06]"
-                }`}
-              >
-                {label} <span className="ml-1 opacity-75">{count}</span>
-              </button>
-            ))}
+        <section data-testid="client-submissions-preview" aria-labelledby="profile-submissions-heading" className="rounded-xl border border-slate-200 bg-white p-5 dark:border-white/[0.08] dark:bg-slate-900/60">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="profile-submissions-heading" className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white"><Inbox className="h-5 w-5 text-[#474ead]" />Job Submissions</h2>
+              <p className="mt-1 text-sm text-slate-500">{uniqueSubmissions.length} applications · {uniqueSubmissions.filter((submission) => submission.status === "new").length} new · {uniqueSubmissions.filter((submission) => submission.status === "shortlisted").length} shortlisted</p>
+            </div>
+            <Link href="/client/job-submissions" className="text-sm font-semibold text-[#474ead] hover:underline">View All Submissions <span aria-hidden="true">→</span></Link>
           </div>
-
-          {jobsLoading ? (
-            <div className="space-y-3">
-              {[1, 2].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+          {submissionsError ? <div role="alert" className="text-sm text-slate-600">Applications could not be loaded. <Button variant="ghost" onClick={() => refetchSubmissions()}>Retry</Button></div> : submissionsLoading ? <div className="space-y-2">{[0, 1, 2].map((index) => <Skeleton key={index} className="h-14 w-full" />)}</div> : recentSubmissions.length ? (
+            <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+              {recentSubmissions.map((submission) => <div key={submission.id} data-testid={`client-application-${submission.id}`} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold)}</p><p className="truncate text-xs text-slate-500">{submission.jobTitle}</p></div>
+                <span className="text-xs text-slate-500">{SUBMISSION_STATUS_LABELS[submission.status]?.label ?? submission.status}</span>
+              </div>)}
             </div>
-          ) : visibleJobs.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead]/10">
-                  <Briefcase className="h-7 w-7 text-[#474ead]" />
-                </div>
-                <h3 className="mb-1 text-base font-semibold text-slate-900 dark:text-white">
-                   {jobTab === "drafts" ? "No job drafts yet" : "No job postings yet"}
-                </h3>
-                <p className="mb-5 max-w-xs text-sm text-slate-500 dark:text-slate-400">
-                  Post your first job to start finding talent on OnSpot.
-                </p>
-                <Button
-                  className="bg-[#474ead] text-white hover:bg-[#3d439c]"
-                  onClick={() => navigate("/client/jobs/new")}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Post Your First Job
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-               {visibleJobs.map((job) => (
-                <ClientJobRow
-                  key={job.id}
-                  job={job}
-                  onEdit={() => navigate(`/client/jobs/${job.id}/edit`)}
-                  onToggle={() =>
-                    toggleStatusMutation.mutate({
-                      id: job.id,
-                      status: job.status === "open" ? "closed" : "open",
-                    })
-                  }
-                  onDelete={() => deleteJobMutation.mutate(job.id)}
-                  onView={() => setViewingJob(job)}
-                  onInvite={() => setTalentSearchJob({ id: job.id, title: job.title })}
-                  isToggling={toggleStatusMutation.isPending}
-                  isDeleting={deleteJobMutation.isPending}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Job Submissions ───────────────────────────────────────────────── */}
-        <JobSubmissionsSection
-          onView={(sub) => setViewingSubmission(sub)}
-          onExtendOffer={(sub) => setExtendingOfferFor(sub)}
-          requestedApplicationId={requestedApplicationId}
-          requestedInterviewId={requestedInterviewId}
-          nameRevealThreshold={nameRevealThreshold}
-        />
+          ) : <p className="text-sm text-slate-500">No applications yet.</p>}
+        </section>
 
         {/* ── Footer info ──────────────────────────────────────────────────── */}
         {profile?.createdAt && (
@@ -1352,66 +1256,29 @@ export default function ClientProfile() {
         )}
       </div>
 
-      {/* ── Job preview dialog (owner-aware — works for draft/closed/pending) ── */}
-      <ClientJobPreviewDialog
-        job={viewingJob}
-        onClose={() => setViewingJob(null)}
-      />
-
-      <ClientJobTalentSearchDialog
-        open={Boolean(talentSearchJob)}
-        onOpenChange={(open) => {
-          if (!open) setTalentSearchJob(null);
-        }}
-        job={talentSearchJob}
-      />
-
-      {/* ── View Submission modal ─────────────────────────────────────────────── */}
-      {viewingSubmission && (
-        <ViewSubmissionModal
-          submission={viewingSubmission}
-          requestedInterviewId={requestedInterviewId}
-          onClose={() => setViewingSubmission(null)}
-          onStatusChange={(id, status, statusVersion) =>
-            setViewingSubmission((prev) => prev && prev.id === id ? { ...prev, status, statusVersion } : prev)
-          }
-          onExtendOffer={(sub) => setExtendingOfferFor(sub)}
-          nameRevealThreshold={nameRevealThreshold}
-        />
-      )}
-
-      {/* ── Extend Offer dialog ──────────────────────────────────────────────── */}
-      {extendingOfferFor && (
-        <ExtendOfferDialog
-          submission={extendingOfferFor}
-          onClose={() => setExtendingOfferFor(null)}
-          onOfferSent={() => {
-            setExtendingOfferFor(null);
-            queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
-          }}
-        />
-      )}
     </div>
   );
 }
 
 // ─── Job Submissions Section ──────────────────────────────────────────────────
-function JobSubmissionsSection({
+export function JobSubmissionsSection({
   onView,
   onExtendOffer,
   requestedApplicationId,
   requestedInterviewId,
   nameRevealThreshold = "submitted",
+  workspace = false,
 }: {
   onView: (sub: JobSubmission) => void;
   onExtendOffer: (sub: JobSubmission) => void;
   requestedApplicationId: string | null;
   requestedInterviewId: string | null;
   nameRevealThreshold?: string;
+  workspace?: boolean;
 }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const { data: submissions = [], isLoading } = useQuery<JobSubmission[]>({
+  const { data: rawSubmissions = [], isLoading, isError, refetch } = useQuery<JobSubmission[]>({
     queryKey: ["/api/client/job-submissions"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/client/job-submissions");
@@ -1420,6 +1287,13 @@ function JobSubmissionsSection({
     staleTime: 0,
     refetchOnWindowFocus: true,
   });
+  const submissions = Array.from(new Map(rawSubmissions.map((submission) => [submission.id, submission])).values());
+  const [searchText, setSearchText] = useState("");
+  const [jobFilter, setJobFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const onViewRef = useRef(onView);
   onViewRef.current = onView;
   const openedDeepLink = useRef<string | null>(null);
@@ -1449,6 +1323,32 @@ function JobSubmissionsSection({
       .filter((thread) => thread.jobId)
       .map((thread) => [thread.jobId as string, thread.unreadCount]),
   );
+  const filteredSubmissions = submissions
+    .filter((sub) => {
+      const query = searchText.trim().toLowerCase();
+      const maskedApplicant = maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status, nameRevealThreshold).toLowerCase();
+      const matchesSearch = !query || maskedApplicant.includes(query) || sub.jobTitle.toLowerCase().includes(query);
+      const matchesJob = jobFilter === "all" || sub.jobId === jobFilter;
+      const matchesStatus = statusFilter === "all" ||
+        (statusFilter === "under_review" ? ["under_review", "reviewed"].includes(sub.status) : sub.status === statusFilter);
+      return matchesSearch && matchesJob && matchesStatus;
+    })
+    .sort((a, b) => {
+      const delta = new Date(a.submittedAt || 0).getTime() - new Date(b.submittedAt || 0).getTime();
+      return sortOrder === "newest" ? -delta : delta;
+    });
+  const pageCount = Math.max(1, Math.ceil(filteredSubmissions.length / pageSize));
+  const pageSubmissions = filteredSubmissions.slice((page - 1) * pageSize, page * pageSize);
+  const summaryCounts = {
+    total: submissions.length,
+    new: submissions.filter((sub) => sub.status === "new").length,
+    underReview: submissions.filter((sub) => ["under_review", "reviewed"].includes(sub.status)).length,
+    shortlisted: submissions.filter((sub) => sub.status === "shortlisted").length,
+    rejected: submissions.filter((sub) => sub.status === "rejected").length,
+  };
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   const openingMessageRef = useRef(false);
   const openMessageMutation = useMutation({
@@ -1488,6 +1388,49 @@ function JobSubmissionsSection({
 
   return (
     <div>
+      {workspace && (
+        <>
+          <section aria-label="Application counts" className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {([
+              ["total", "Total Applications", summaryCounts.total],
+              ["new", "New Applications", summaryCounts.new],
+              ["under-review", "Under Review", summaryCounts.underReview],
+              ["shortlisted", "Shortlisted", summaryCounts.shortlisted],
+              ["rejected", "Rejected", summaryCounts.rejected],
+            ] as const).map(([key, label, count]) => (
+              <div key={key} data-testid={`submissions-count-${key}`} data-value={count} className="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-white/[0.08] dark:bg-slate-900/60">
+                <p className="text-xl font-semibold text-slate-900 dark:text-white">{count}</p>
+                <p className="mt-0.5 text-xs font-medium text-slate-500">{label}</p>
+              </div>
+            ))}
+          </section>
+          <div className="mb-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-2 lg:grid-cols-4 dark:border-white/[0.08] dark:bg-slate-900/60">
+            <Input aria-label="Search applications by applicant or job title" placeholder="Search applicant or job title" value={searchText} onChange={(event) => { setSearchText(event.target.value); setPage(1); }} data-testid="input-submission-search" />
+            <Select value={jobFilter} onValueChange={(value) => { setJobFilter(value); setPage(1); }}>
+              <SelectTrigger aria-label="Filter applications by job posting" data-testid="select-submission-job"><SelectValue placeholder="All job postings" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All job postings</SelectItem>
+                {Array.from(new Map(submissions.map((sub) => [sub.jobId, sub.jobTitle])).entries()).map(([id, title]) => <SelectItem key={id} value={id}>{title}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1); }}>
+              <SelectTrigger aria-label="Filter applications by status" data-testid="select-submission-status"><SelectValue placeholder="All statuses" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="under_review">Under Review</SelectItem>
+                <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+                {Object.entries(SUBMISSION_STATUS_LABELS).filter(([status]) => !["new", "reviewed", "under_review", "shortlisted", "rejected"].includes(status)).map(([status, info]) => <SelectItem key={status} value={status}>{info.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={sortOrder} onValueChange={(value: "newest" | "oldest") => { setSortOrder(value); setPage(1); }}>
+              <SelectTrigger aria-label="Sort applications by date" data-testid="select-submission-sort"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="newest">Newest first</SelectItem><SelectItem value="oldest">Oldest first</SelectItem></SelectContent>
+            </Select>
+          </div>
+        </>
+      )}
       <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
         <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
           <Inbox className="h-5 w-5 text-[#474ead]" />
@@ -1530,27 +1473,32 @@ function JobSubmissionsSection({
           This application or interview is unavailable, or is not associated with your account.
         </p>
       )}
-      {isLoading ? (
-        <div className="space-y-3">
+      {isError ? (
+        <Card><CardContent className="flex flex-col items-center py-12 text-center">
+          <p role="alert" className="mb-4 text-sm text-slate-600 dark:text-slate-300">Applications could not be loaded. Please retry.</p>
+          <Button variant="outline" onClick={() => refetch()}>Retry</Button>
+        </CardContent></Card>
+      ) : isLoading ? (
+        <div className="space-y-3" aria-label="Loading applications">
           {[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
         </div>
-      ) : submissions.length === 0 ? (
+      ) : (workspace ? filteredSubmissions.length === 0 : submissions.length === 0) ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-14 text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#474ead]/10">
               <Inbox className="h-7 w-7 text-[#474ead]" />
             </div>
             <h3 className="mb-1 text-base font-semibold text-slate-900 dark:text-white">
-              No submissions yet
+              {submissions.length && workspace ? "No applications match these filters" : "No submissions yet"}
             </h3>
             <p className="max-w-xs text-sm text-slate-500 dark:text-slate-400">
-              Applications submitted via your Built-in Form jobs will appear here.
+              {submissions.length && workspace ? "Adjust your search or filters to see applications." : "Applications submitted via your Built-in Form jobs will appear here."}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/[0.08]">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/[0.08]">
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 dark:border-white/[0.06] dark:bg-white/[0.02]">
                 <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">Applicant</th>
@@ -1561,13 +1509,14 @@ function JobSubmissionsSection({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06]">
-              {submissions.map((sub) => {
+              {pageSubmissions.map((sub) => {
                 const statusInfo = SUBMISSION_STATUS_LABELS[sub.status] ?? SUBMISSION_STATUS_LABELS.new;
                 const clientInvited = sub.initiated_by === "client";
                 const pendingInvite = sub.status === "invited";
                 return (
                   <tr
                     key={sub.id}
+                    data-testid={`client-application-${sub.id}`}
                     className={`transition-colors ${
                       pendingInvite
                         ? "bg-indigo-50/60 hover:bg-indigo-50 dark:bg-indigo-900/[0.08] dark:hover:bg-indigo-900/[0.14]"
@@ -1630,6 +1579,7 @@ function JobSubmissionsSection({
                           variant="ghost"
                           size="sm"
                           className="gap-1.5 text-xs"
+                          aria-label={`Message applicant for ${sub.jobTitle}`}
                           disabled={openMessageMutation.isPending}
                           onClick={() => {
                             if (openingMessageRef.current) return;
@@ -1670,6 +1620,16 @@ function JobSubmissionsSection({
           </table>
         </div>
       )}
+      {workspace && filteredSubmissions.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-slate-500">Showing {Math.min((page - 1) * pageSize + 1, filteredSubmissions.length)}–{Math.min(page * pageSize, filteredSubmissions.length)} of {filteredSubmissions.length}</p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((current) => current - 1)} data-testid="button-submissions-previous">Previous</Button>
+            <span className="text-xs text-slate-500" aria-live="polite">Page {page} of {pageCount}</span>
+            <Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((current) => current + 1)} data-testid="button-submissions-next">Next</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1677,11 +1637,14 @@ function JobSubmissionsSection({
 // Reveal logic is shared with the server — see shared/submissionStatuses.ts.
 import { revealedStatusesForThreshold } from "@shared/submissionStatuses";
 function maskSubmissionName(
-  name: string,
+  name: string | null | undefined,
   initiatedBy: string | null,
   status: string,
   threshold = "submitted",
 ): string {
+  // Older genuine applications may not have applicant_name populated. Keep
+  // both rendering and masked-name search usable without revealing other data.
+  if (!name?.trim()) return "Talent Profile";
   if (initiatedBy !== "client") return name;
   // Reveal only once talent's status meets or exceeds the configured threshold
   if (revealedStatuses(threshold).has(status)) return name;

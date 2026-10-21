@@ -1,6 +1,7 @@
 import { 
   Calendar,
   Clock3,
+  Briefcase,
   FileText,
   Home, 
   Search, 
@@ -12,6 +13,7 @@ import {
   Receipt,
   UserCircle,
   CalendarOff,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +43,16 @@ const coreModules = [
     title: "Find Talent",
     url: "/hire-talent",
     icon: Search,
+  },
+  {
+    title: "Job Postings",
+    url: "/client/job-postings",
+    icon: Briefcase,
+  },
+  {
+    title: "Job Submissions",
+    url: "/client/job-submissions",
+    icon: ClipboardList,
   },
   {
     title: "Messages",

@@ -1,0 +1,396 @@
+# TASK: Client Account Navigation Improvement — Dedicated Job Postings and Job Submissions Pages
+
+## Project
+OnSpot / `connect-onspot`
+
+## Objective
+
+Improve the Client Account navigation and user experience by creating two dedicated pages:
+
+1. **Job Postings**
+2. **Job Submissions**
+
+Currently, Clients can only access their Job Postings and Job Submissions through the Client Profile page.
+
+We want these features to be directly accessible through the sidebar under **Core Modules**.
+
+Since both features will have their own dedicated pages, the Client Profile should display only a summarized preview of each section instead of the full management interface.
+
+**Important: This is primarily a frontend navigation and UI restructuring task. Preserve all existing backend functionality, database records, permissions, and hiring workflows.**
+
+---
+
+## 1. Audit the Existing Implementation
+
+Before making changes, inspect the existing:
+
+- Client sidebar navigation
+- Client Profile page
+- Job Postings section
+- Job Submissions section
+- Existing Client job management endpoints
+- Application details and status update functionality
+- Client permissions and organization ownership rules
+
+Identify the existing components, API endpoints, and reusable logic.
+
+Reuse existing components and functionality wherever possible.
+
+Do not create duplicate backend workflows or independent copies of the same business logic.
+
+## 2. Add New Sidebar Navigation Items
+
+Under **Core Modules**, update the Client sidebar to display:
+
+1. Dashboard
+2. Find Talent
+3. Job Postings
+4. Job Submissions
+5. Messages
+6. Interviews
+
+Keep all existing Management and System navigation items unchanged.
+
+### Navigation requirements
+
+- Job Postings and Job Submissions must have appropriate Lucide icons.
+- Follow the existing sidebar design and styling.
+- Apply the same active-state highlighting as other sidebar items.
+- Support collapsed sidebar behavior if implemented.
+- Support mobile and tablet navigation.
+- Preserve role-based navigation restrictions.
+- Only authorized Client accounts should access these pages.
+
+Use the application's existing routing conventions.
+
+Suggested routes:
+
+- `/client/job-postings`
+- `/client/job-submissions`
+
+If equivalent routes already exist, reuse them instead of creating duplicates.
+
+## 3. Create a Dedicated Job Postings Page
+
+Create a new **Job Postings** page accessible through the Client sidebar.
+
+Move or reuse the existing Job Postings management section currently displayed inside Client Profile.
+
+### Page header
+
+Title: **Job Postings**
+
+Description: "Create, manage, and track your job openings."
+
+Include the existing **Post a Job** action.
+
+### Job summary
+
+Display existing job counts:
+
+- All Jobs
+- Drafts
+- Pending
+- Open
+- Closed
+
+Use the existing job status values and counting logic.
+
+### Job listing
+
+Display all job postings that the authenticated Client is authorized to manage.
+
+Each job should show:
+
+- Job title
+- Category
+- Work arrangement
+- Salary information, when available
+- Posting date
+- Job status
+- Approval status, when applicable
+
+Preserve existing actions:
+
+- Invite Talent
+- Close / Reopen, when allowed
+- Edit
+- View
+- Delete, when allowed
+
+### Additional requirements
+
+- Existing job filters must continue working.
+- Preserve existing job creation and editing flows.
+- Preserve Admin approval requirements for job postings.
+- Do not expose other Clients' jobs.
+- Include loading, empty, and error states.
+- Make the page responsive.
+
+When a Client clicks **View**, open the existing job details experience.
+
+Do not create a new job details system if one already exists.
+
+## 4. Create a Dedicated Job Submissions Page
+
+Create a separate **Job Submissions** page accessible through the Client sidebar.
+
+Move or reuse the existing Job Submissions section currently displayed inside Client Profile.
+
+### Page header
+
+Title: **Job Submissions**
+
+Description: "Review and manage applications submitted to your job openings."
+
+### Summary information
+
+Display:
+
+- Total Applications
+- New Applications
+- Under Review
+- Shortlisted
+- Rejected
+
+Use the application's actual canonical status values and mappings.
+
+Avoid counting the same application more than once.
+
+### Application listing
+
+Display the Client's eligible job applications.
+
+Each application should show:
+
+- Applicant display name
+- Applied position
+- Application date
+- Current application status
+- Available actions
+
+Preserve existing actions:
+
+- View Application
+- Message Talent, when permitted
+- Change Application Status, when permitted
+
+### Search and filtering
+
+Add or preserve:
+
+- Search by applicant name or job title
+- Filter by job posting
+- Filter by application status
+- Sort by newest or oldest application
+
+Use server-side pagination or the existing pagination approach where appropriate.
+
+### Important: Preserve Automatic Status Emails
+
+The application status automation was recently updated.
+
+Clients can now change eligible application statuses without Admin approval.
+
+When a Client changes an eligible application status:
+
+1. Validate the requested transition.
+2. Automatically select the appropriate existing email template.
+3. Send the corresponding email to the Talent.
+4. Complete the application status transition according to the existing email delivery and recovery rules.
+5. Update the Talent-facing application status and notifications.
+
+Do not reintroduce Admin approval.
+
+Do not open a manual email composer.
+
+Do not create a second status update API.
+
+**Reuse the exact existing status update endpoint and automatic email implementation.**
+
+Preserve duplicate-email prevention, failure handling, retry safety, and status history.
+
+### Privacy and workflow restrictions
+
+- Preserve masked Talent information.
+- Do not expose restricted contact details.
+- Show only applications the Client is authorized to access.
+- Do not mix private Search-to-Shortlist records with actual job applications.
+- Preserve existing interview, offer, contract, and hiring workflow restrictions.
+
+## 5. Simplify the Client Profile Page
+
+Since Job Postings and Job Submissions will now have dedicated pages, the Client Profile should no longer display their complete management interfaces.
+
+Instead, convert both sections into compact summary previews.
+
+### Job Postings preview
+
+Display:
+
+- Section title: Job Postings
+- Total number of jobs
+- Open jobs count
+- Pending jobs count
+- A preview of the 3 most recent job postings
+
+Each preview may show:
+
+- Job title
+- Current status
+- Date
+
+Include a clearly visible:
+
+**View All Job Postings →**
+
+This button should navigate to the new Job Postings page.
+
+### Job Submissions preview
+
+Display:
+
+- Section title: Job Submissions
+- Total number of applications
+- New applications count
+- Shortlisted applications count
+- A preview of the 3 most recent applications
+
+Each preview may show:
+
+- Applicant display name
+- Applied position
+- Current status
+
+Include:
+
+**View All Submissions →**
+
+This button should navigate to the new Job Submissions page.
+
+### Profile simplification rules
+
+Remove the full job listing and full application table from Client Profile.
+
+Remove full management controls from the preview sections, except navigation to the appropriate dedicated pages.
+
+Keep the Client's existing profile information, company details, and other unrelated profile functionality unchanged.
+
+The Client Profile should function as a profile overview, not the primary job management workspace.
+
+## 6. Preserve Existing Business Logic
+
+This is a navigation and component restructuring task.
+
+Do not modify:
+
+- Job posting approval rules
+- Talent application submission logic
+- Automatic status email templates
+- Email retry and recovery rules
+- Talent privacy restrictions
+- Interview scheduling
+- Offer management
+- Contract workflows
+- Hiring finalization
+- Existing database status values
+
+If a component contains business logic, extract and reuse it safely instead of duplicating the logic across pages.
+
+## 7. Navigation and Deep Links
+
+Ensure all existing links and navigation flows continue working.
+
+For example:
+
+- Clicking Job Postings in the sidebar opens the new Job Postings page.
+- Clicking Job Submissions opens the new Job Submissions page.
+- Clicking View All Job Postings in Client Profile opens the Job Postings page.
+- Clicking View All Submissions opens the Job Submissions page.
+- Clicking an application opens the correct application details.
+- Returning from application details should preserve the relevant navigation context when practical.
+
+Check existing notifications and deep links pointing to job postings or applications.
+
+Update them where necessary without breaking existing links.
+
+## 8. Responsive UI Requirements
+
+Follow the current OnSpot design system.
+
+Use existing:
+
+- Typography
+- Colors
+- Cards
+- Tables
+- Buttons
+- Badges
+- Spacing
+- Icons
+
+Ensure both pages work properly on:
+
+- Desktop
+- Tablet
+- Mobile
+
+For smaller screens, use responsive cards or horizontal scrolling where appropriate.
+
+Avoid overcrowded tables and overlapping action buttons.
+
+## 9. Testing
+
+Verify the following:
+
+1. Job Postings appears under Core Modules.
+2. Job Submissions appears under Core Modules.
+3. Both pages load correctly.
+4. Sidebar active-state highlighting works.
+5. Existing Job Postings actions still work.
+6. Existing Job Submissions actions still work.
+7. Automatic status emails continue working.
+8. No Admin approval is required for eligible Client application status updates.
+9. Client Profile displays summary previews only.
+10. View All buttons navigate correctly.
+11. Job counts and application counts remain accurate.
+12. Client ownership restrictions remain enforced.
+13. Private shortlist records do not appear as job applications.
+14. Mobile navigation and responsive layouts work.
+15. Existing routes and deep links remain functional.
+16. No duplicate API requests or duplicate notifications are introduced.
+
+Run relevant tests, TypeScript checks, and the production build.
+
+## 10. Expected Result
+
+### Before
+
+Client Sidebar → Client Profile → Job Postings / Job Submissions
+
+The Client must navigate through the profile to manage jobs and applications.
+
+### After
+
+Client Sidebar → Job Postings
+
+Client Sidebar → Job Submissions
+
+Client Sidebar → Client Profile → Summary Previews → View All
+
+Clients can access both management features directly while the Client Profile remains clean and concise.
+
+## Final Deliverables
+
+After implementation, provide:
+
+1. Summary of changes.
+2. Files created and modified.
+3. Routes added or reused.
+4. Description of how existing components were reused.
+5. Confirmation that job management functionality remains unchanged.
+6. Confirmation that automatic application-status emails still work.
+7. Test results.
+8. Any remaining issues.
+
+**Implement the complete frontend restructuring. Do not stop at a proposed plan. Do not deploy or run production migrations without approval.**

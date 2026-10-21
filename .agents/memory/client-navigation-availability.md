@@ -20,3 +20,14 @@ Billing, Monthly Invoices, and Contract End Requests are distinct flows, not pre
 **Why:** The owner explicitly prohibited retargeting the obsolete links to vaguely related functionality.
 
 **How to apply:** Only introduce an alias or redirect when the intended functionality is demonstrably equivalent; otherwise remove unavailable navigation and preserve normal route-not-found behavior.
+
+Keep Client Profile as a company/profile overview with compact job and
+application previews, not the primary hiring-management workspace.
+
+**Why:** On 2026-10-22 the owner explicitly requested dedicated Job Postings and
+Job Submissions destinations while preserving the existing workflow and the
+Management/System navigation.
+
+**How to apply:** Put full management actions in the dedicated destinations and
+link there from previews. Preserve old notification/email resource links rather
+than requiring senders or historical messages to change.

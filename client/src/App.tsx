@@ -92,6 +92,8 @@ import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
+import ClientJobPostings from "@/pages/client/JobPostings";
+import ClientJobSubmissions from "@/pages/client/JobSubmissions";
 import ClientTeamDashboard from "@/pages/ClientTeamDashboard";
 import TalentPayouts from "@/pages/TalentPayouts";
 import Timesheets from "@/pages/Timesheets";
@@ -414,6 +416,8 @@ function ClientRouter() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/client/job-postings" component={ClientJobPostings} />
+          <Route path="/client/job-submissions" component={ClientJobSubmissions} />
           <Route path="/client-profile" component={ClientProfile} />
           <Route path="/contracts" component={ContractsPage} />
           <Route path="/client/billing/invoices/:id" component={Billing} />
@@ -670,6 +674,8 @@ function AppContent() {
       
       {/* Client Protected Routes */}
       <Route path="/client-dashboard" component={LegacyClientDashboardRedirect} />
+      <Route path="/client/job-postings" component={ClientRouter} />
+      <Route path="/client/job-submissions" component={ClientRouter} />
       <Route path="/client/interviews" component={ClientRouter} />
       <Route path="/client/timesheets" component={ClientRouter} />
       <Route path="/client/monthly-invoices" component={ClientRouter} />

@@ -130,11 +130,7 @@ test("Authenticated Client UI updates Under Review automatically without compose
     localStorage.setItem("onspot_user", JSON.stringify(login.user));
   }, logins.client);
   try {
-    await page.goto(base + "/client-profile", { waitUntil: "domcontentloaded" });
-    const tab = page.getByRole("tab", { name: /job submissions/i });
-    if (await tab.count()) await tab.click();
-    const view = page.getByRole("button", { name: "View", exact: true }).last();
-    await view.waitFor(); await view.click();
+    await page.goto(base + `/client/job-submissions?applicationId=${uiApplication}`, { waitUntil: "domcontentloaded" });
     await page.getByText("Update application status", { exact: true }).waitFor();
     await page.getByRole("combobox").last().click();
     await page.getByRole("option", { name: "Under Review", exact: true }).click();
@@ -159,6 +155,9 @@ test("Authenticated Client UI updates Under Review automatically without compose
     await talentPage.screenshot({ path: "/tmp/client-status-talent-view.png" });
   } finally { await talentPage.close(); }
 });
+
+// Shared only by the disposable navigation fixture, never by application code.
+export { browser, base, logins, ids, jobId, application, api, counts };
 
 test("All four Client statuses select existing customized default templates, history and Talent display", async () => {
   for (const [target, stage] of [["under_review","under_review"], ["reviewed","under_review"], ["shortlisted","shortlisted"], ["rejected","rejected"]]) {

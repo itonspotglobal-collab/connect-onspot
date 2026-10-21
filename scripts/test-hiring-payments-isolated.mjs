@@ -41,7 +41,8 @@ try {
   const url = `postgresql://hiring_fixture@127.0.0.1:${port}/onspot_hiring_test`;
   const videoOnly = process.argv.includes("--video-only");
   const messagingOnly = process.argv.includes("--messaging-only");
-  const clientStatusOnly = process.argv.includes("--client-status-only");
+  const clientNavigationOnly = process.argv.includes("--client-navigation-only");
+  const clientStatusOnly = process.argv.includes("--client-status-only") || clientNavigationOnly;
   const messagingBaseline = messagingOnly && process.argv.includes("--baseline");
   const baselineRef = process.argv.find(arg => arg.startsWith("--baseline-ref="))?.slice("--baseline-ref=".length);
   if (messagingBaseline && !baselineRef) throw new Error("--baseline requires --baseline-ref=<pre-fix git revision>");
@@ -95,7 +96,7 @@ try {
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
   const entries = clientStatusOnly ? [
-    "server/tests/client-application-status.fixture.ts",
+    clientNavigationOnly ? "server/tests/client-account-navigation.fixture.ts" : "server/tests/client-application-status.fixture.ts",
     "server/tests/applicant-email-templates.test.ts",
     "server/tests/email-variable-resolver.test.ts",
   ] : messagingOnly ? [
