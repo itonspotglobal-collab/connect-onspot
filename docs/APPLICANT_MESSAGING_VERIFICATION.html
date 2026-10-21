@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OnSpot — Applicant Messaging Verification</title>
+<style>
+body{margin:0;background:#f4f5f9;color:#1d2638;font:16px/1.6 system-ui,sans-serif}main{max-width:1020px;margin:auto;padding:36px;background:white}h1,h2{line-height:1.25}h1{font-size:30px}h2{font-size:23px;margin-top:32px}table{width:100%;border-collapse:collapse;font-size:14px;margin:18px 0}th,td{border:1px solid #d8dfeb;padding:10px;text-align:left;vertical-align:top}th{background:#f1f3f8}code,pre{font:13px/1.5 ui-monospace,monospace}code{overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f5f8;padding:14px}.notice{padding:16px;border-left:4px solid #474ead;background:#f0f1fc}.pass{color:#176130;font-weight:700}.pending{color:#8b5200;font-weight:700}.small{color:#566174;font-size:14px}li{margin:7px 0}@media(max-width:650px){main{padding:20px}table{font-size:12px}th,td{padding:6px}}
+</style>
+<main>
+<h1>Client → Applicant Messaging: Fix and Verification</h1>
+<p class="small">21 October 2026 · Development verification · No automatic deployment</p>
+<div class="notice"><strong>Result:</strong> the original 403 was reproduced through the actual Client Job Submissions button against the original registered route. The fixed route opens an authorized direct applicant's conversation, and the browser Client/Talent send-and-reply flow passes. There are no application schema changes or production migrations.</div>
+
+<h2>1. Confirmed root cause and failing request</h2>
+<p><code>POST /api/applications/:applicationId/message-thread</code> rejected ordinary applications because its helper contained:</p>
+<pre>if (submission.workflow_type !== "client_invitation") {
+  return { status: 403, error: "Conversation is not available for this application." };
+}</pre>
+<p>Genuine applicants use <code>workflow_type='application'</code>. A job-owning Client therefore received <strong>403</strong> even for a valid, linked Talent with status <code>new</code>. The frontend hid every error behind “Unable to open conversation. Please try again.” It did not reveal the policy restriction.</p>
+<table>
+<tr><th>Evidence</th><th>Observed response</th></tr>
+<tr><td>Original production route implementation, isolated seeded account, normal password login, actual Job Submissions button</td><td><strong>403</strong><br><code>{"error":"Conversation is not available for this application."}</code></td></tr>
+<tr><td>Fixed implementation, same scenario and browser entry point</td><td class="pass">201 with a valid threadId, followed by navigation to /messages/:threadId</td></tr>
+<tr><td>Existing conversation / repeated requests</td><td class="pass">200 with the same threadId; message history retained</td></tr>
+</table>
+<p>The original reported customer's account was not accessed and its historical network trace was not available. The status above is an actual controlled reproduction, not a claim that the customer's live request was inspected. No applicant or job identifiers from the report were hardcoded.</p>
+<p><strong>Policy decision:</strong> after being informed of the existing restriction, the owner explicitly authorized job owners to message Talent who applied directly to their own jobs. This fix implements that application-scoped permission; it does not silently remove the generic invitation gate.</p>
+
+<h2>2. Flow and account mapping audit</h2>
+<ol>
+<li><code>client/src/pages/ClientProfile.tsx</code>, <code>JobSubmissionsSection</code>, loads <code>GET /api/client/job-submissions</code> and renders each applicant's Message button.</li>
+<li>The button sends the submission's ID in the path to <code>POST /api/applications/:applicationId/message-thread</code>. It does not submit a Client, candidate or Talent participant ID.</li>
+<li>Existing <code>authenticateJWT</code> normalizes the signed-in session to a canonical <code>users.id</code>. Only Client and Talent roles can use this bridge.</li>
+<li>The server reads the exact <code>job_submissions</code> row and its <code>jobs</code> row. <code>jobs.client_id</code> determines the authorized job owner; <code>client_profiles.id</code> is not a messaging participant.</li>
+<li><code>job_submissions.talent_id</code> references <code>users.id</code>, not <code>candidates.id</code>. The fixture deliberately uses different candidate and user IDs. No foreign key or existing identifier was rewritten.</li>
+<li>Explicit Talent IDs must resolve to a user with role Talent. Legacy email matching remains available only when talent_id is null, and must also resolve to a Talent user. A present but invalid/non-Talent ID can no longer silently fall back to a different user via the application email.</li>
+<li>Creation/reuse uses <code>message_threads</code>. Actual message bodies and read state use <code>messages</code>. Existing policy consent uses <code>user_policy_acceptances</code>; grouped alerts use <code>notifications</code>.</li>
+<li>The server returns a valid threadId. The Client navigates to the existing <code>Messages</code> interface; both participants load their authorized thread list and history.</li>
+</ol>
+
+<h2>3. Fixes implemented</h2>
+<ul>
+<li>Allow genuine Talent-initiated <code>application</code> rows as well as existing formal <code>client_invitation</code> rows. Continue rejecting silent <code>client_shortlist</code> records.</li>
+<li>Require a canonical Client job owner and a canonical Talent account. Participants and job context are always derived server-side.</li>
+<li>Retain the existing positive stage allow-list for starting new conversations. Existing authorized history remains reusable under the previous behavior.</li>
+<li>Serialize creation with the existing pair/job transaction advisory lock. Prefer an existing job-specific thread, then the established direct channel; create only if neither exists.</li>
+<li>After acquiring the creation lock, reread and share-lock the job/application rows. Reject changed ownership, assignment or workflow and evaluate the latest stage rather than stale pre-lock data.</li>
+<li>Preserve sender enforcement, participant checks, messaging-policy consent, contact redaction, name masking, message history and notification behavior.</li>
+<li>Add a synchronous frontend in-flight guard in addition to the existing loading/disabled state. The browser double-click test confirms exactly one API request.</li>
+<li>Reject empty/invalid success payloads rather than navigating to an empty conversation. Invalidate the thread list after success and display meaningful API error text, with a safe fallback for non-JSON infrastructure errors.</li>
+</ul>
+<p>The generic <code>POST /api/message-threads</code> remains invitation-only. Other direct-message, invitation acceptance, hiring status, privacy and identity-reveal policies were not broadened.</p>
+
+<h2>4. Verification results</h2>
+<div class="notice"><strong>29 final tests passed:</strong> 8 new end-to-end/integration scenarios, 12 existing production-route regressions and 9 existing grouped-notification regressions. The expected original-403 reproduction is a separate passing baseline test.</div>
+<table>
+<tr><th>Scenario</th><th>Result and verification boundary</th></tr>
+<tr><td>Client clicks Message for a new applicant</td><td class="pass">PASS — actual compiled Job Submissions UI, normal password session, full registered route and disposable PostgreSQL. Correct job and canonical participant IDs persisted.</td></tr>
+<tr><td>Client sends; Talent receives and replies; Client receives reply</td><td class="pass">PASS — two separate browser contexts, actual Messages UI, actual messaging-policy acceptance controls, persisted messages and real registered APIs.</td></tr>
+<tr><td>Refresh, login again, both inboxes and history</td><td class="pass">PASS — browser refresh on both sides, normal password re-login, API history after re-login, both authorized thread lists and Talent-side application bridge reuse.</td></tr>
+<tr><td>Repeated clicks and concurrent requests</td><td class="pass">PASS — one browser request for two immediate clicks; 12 mixed-participant existing-thread requests reuse history; 10 simultaneous first-create requests yield one new thread.</td></tr>
+<tr><td>Existing direct and invitation channels</td><td class="pass">PASS — existing matching job thread or established direct thread reused without deletion or replacement.</td></tr>
+<tr><td>Client accesses unrelated applicant / Talent accesses another chat</td><td class="pass">PASS — unrelated Client/Talent creation and read/send access rejected; their inboxes contain no private thread. Anonymous and Admin bridge attempts also rejected.</td></tr>
+<tr><td>Invalid or missing participant/application identifiers</td><td class="pass">PASS — controlled 404, no new thread. A non-Talent explicit user ID does not fall back through email. Legacy null-ID Talent email mapping reuses the canonical thread.</td></tr>
+<tr><td>Shortlists, invitation policy and ineligible stages</td><td class="pass">PASS — private shortlists remain excluded; rejected/pending-invitation new-thread attempts blocked; generic relationship endpoint remains invitation-only.</td></tr>
+<tr><td>Application changes while creation waits</td><td class="pass">PASS — deliberately hold the creation lock, reject the application, then release; request returns 409 and creates no thread.</td></tr>
+<tr><td>Database failure and malformed API success</td><td class="pass">PASS — test-only insert failure in the owned database returns controlled 500 and rolls back. Browser fault injection of an empty success payload shows an error and does not navigate.</td></tr>
+<tr><td>Notifications</td><td class="pass">PASS — recipient/thread new_message alerts persisted in both directions; all 9 existing grouping/read-state tests pass. External email delivery and visual bell interaction were not certified.</td></tr>
+<tr><td>Existing messaging authorization, consent and privacy regressions</td><td class="pass">PASS — 12 actual registered-route tests. These use synthetic signed fixture JWTs, not browser password login; they are separate from the new authenticated browser tests.</td></tr>
+<tr><td>TypeScript, production build, whitespace</td><td class="pass">PASS — npx tsc --noEmit; all production build stages; git diff --check.</td></tr>
+</table>
+<p>The new browser/API fixture uses normally authenticated, disposable seeded accounts and a fresh owned local PostgreSQL instance, not customer accounts or the application database. No messaging endpoint is mocked for the successful round trip. Unrelated AI/KV integrations are explicitly denied and external-service credentials are removed from test processes. Privacy protections remain enabled; external semantic-AI and email delivery are not part of this verification.</p>
+<p>Older production-route fixtures initially failed the new email-ownership gate because their synthetic identities lacked verification metadata. Only those fixture identities were updated to be verified; authentication was not bypassed. One run also encountered the repository's documented Node test-worker deserialization issue; serial test execution resolved it. The final complete run passes.</p>
+<p>The development application restarted successfully. The unauthenticated preview correctly showed the sign-in gate; the signed-in UI was verified separately by the browser fixture above. Unrelated Lindy Embed authorization and missing Stripe public-key warnings remain. The separate admin-auth-check workflow reports network failures and is not included among the passing checks; no conclusion about those Admin endpoints is inferred from a network error.</p>
+
+<h2>5. Files modified</h2>
+<pre>client/src/pages/ClientProfile.tsx
+server/routes.ts
+server/tests/application-messaging.fixture.ts
+server/tests/message-threads-production.test.ts
+scripts/test-hiring-payments-isolated.mjs
+.agents/memory/client-talent-messaging.md
+.agents/memory/formal-pipeline-guard.md
+docs/APPLICANT_MESSAGING_VERIFICATION.html</pre>
+<p>Existing unrelated working-tree edits were left untouched. No redesign, package installation, application schema change, data backfill, destructive migration or conversation/message deletion was performed. The injected failure trigger exists only temporarily in the disposable test database and is removed there.</p>
+
+<h2>6. Reproduction and regression commands</h2>
+<pre>npx tsc --noEmit
+npm run build
+node scripts/test-hiring-payments-isolated.mjs --messaging-only
+
+# Run only the two existing regression suites:
+node scripts/test-hiring-payments-isolated.mjs --messaging-only --regressions-only
+
+# Reproduce the old policy with a pre-fix route revision, not a mirrored handler:
+node scripts/test-hiring-payments-isolated.mjs --messaging-only \
+  --baseline --baseline-ref=&lt;pre-fix git revision&gt;
+
+git diff --check</pre>
+<p>Build first after frontend changes. These commands create and clean up an explicitly owned local test database. They must never be redirected to the application or production database. The baseline check expects the original 403 and is not a live production probe.</p>
+
+<h2>7. Remaining checks and readiness</h2>
+<ul>
+<li class="pending">NOT TESTED: the updated code on a published deployment or the specifically reported customer's historical account/session.</li>
+<li class="pending">NOT TESTED: production database inventory, exhaustive legacy-account linkage, all unrelated dashboard/detail modal interactions, physical mobile browsers and external message-email delivery.</li>
+<li>Eligible linked applicants now open a conversation in development. Unregistered applicants without a canonical Talent user still receive a controlled unavailable response; this fix does not fabricate accounts or alter existing relationships.</li>
+<li>Stage restrictions for starting new conversations remain intentional. A rejected or otherwise ineligible application without an established channel cannot start a new conversation.</li>
+<li>No schema migration or new environment variable is required. A separately approved release is needed to make the corrected frontend/backend available to production users, followed by a minimal authorized account smoke test.</li>
+</ul>
+<div class="notice"><strong>Assessment:</strong> the confirmed blocker is fixed and the development release candidate passes the relevant authenticated flow and regressions. Production behavior is not yet verified. No automatic deployment or production migration is authorized or performed.</div>
+</main>
+</html>

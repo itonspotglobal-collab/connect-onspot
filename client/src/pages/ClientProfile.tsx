@@ -1451,18 +1451,40 @@ function JobSubmissionsSection({
     },
   });
 
+  const openingMessageRef = useRef(false);
   const openMessageMutation = useMutation({
     mutationFn: async (applicationId: string) => {
       const res = await apiRequest("POST", `/api/applications/${applicationId}/message-thread`);
-      return res.json() as Promise<{ threadId: string }>;
+      const data = await res.json() as { threadId?: string };
+      if (typeof data.threadId !== "string" || !data.threadId.trim()) {
+        throw new Error("The conversation could not be opened. Please try again.");
+      }
+      return { threadId: data.threadId };
     },
-    onSuccess: ({ threadId }) => navigate(`/messages/${threadId}`),
-    onError: () =>
+    onSuccess: ({ threadId }) => {
+      queryClient.invalidateQueries({ queryKey: ["my-message-threads"] });
+      navigate(`/messages/${encodeURIComponent(threadId)}`);
+    },
+    onError: (error: Error) => {
+      let description = "The conversation could not be opened. Please try again.";
+      const responseBody = error.message.match(/^\d{3}:\s*([\s\S]*)$/)?.[1];
+      if (responseBody) {
+        try {
+          const body = JSON.parse(responseBody);
+          if (typeof body.error === "string") {
+            description = typeof body.message === "string" ? body.message : body.error;
+          }
+        } catch { /* Non-JSON infrastructure errors use the safe default. */ }
+      } else if (error.message === "The conversation could not be opened. Please try again.") {
+        description = error.message;
+      }
       toast({
         title: "Unable to open conversation",
-        description: "Please try again.",
+        description,
         variant: "destructive",
-      }),
+      });
+    },
+    onSettled: () => { openingMessageRef.current = false; },
   });
 
   return (
@@ -1610,7 +1632,11 @@ function JobSubmissionsSection({
                           size="sm"
                           className="gap-1.5 text-xs"
                           disabled={openMessageMutation.isPending}
-                          onClick={() => openMessageMutation.mutate(sub.id)}
+                          onClick={() => {
+                            if (openingMessageRef.current) return;
+                            openingMessageRef.current = true;
+                            openMessageMutation.mutate(sub.id);
+                          }}
                           data-testid={`button-message-submission-${sub.id}`}
                         >
                           {openMessageMutation.isPending ? (

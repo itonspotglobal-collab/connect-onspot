@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createServer } from "node:net";
 import pg from "pg";
 import { build } from "esbuild";
@@ -39,8 +40,14 @@ try {
   if (!ready) throw new Error("Disposable PostgreSQL failed to start");
   const url = `postgresql://hiring_fixture@127.0.0.1:${port}/onspot_hiring_test`;
   const videoOnly = process.argv.includes("--video-only");
+  const messagingOnly = process.argv.includes("--messaging-only");
+  const messagingBaseline = messagingOnly && process.argv.includes("--baseline");
+  const baselineRef = process.argv.find(arg => arg.startsWith("--baseline-ref="))?.slice("--baseline-ref=".length);
+  if (messagingBaseline && !baselineRef) throw new Error("--baseline requires --baseline-ref=<pre-fix git revision>");
+  const isolatedApp = videoOnly || messagingOnly;
   const workerEnv = { DATABASE_URL:url,HIRING_FLOW_TEST_DATABASE_URL:url,JWT_SECRET:"hiring-payment-fixture-only",DISABLE_AUTH:"false",
-    ...(videoOnly ? { REPLIT_DOMAINS: "127.0.0.1", NODE_ENV: "test" } : {}),
+    ...(isolatedApp ? { REPLIT_DOMAINS: "127.0.0.1", NODE_ENV: "test" } : {}),
+    ...(messagingBaseline ? { MESSAGING_UAT_BASELINE: "true" } : {}),
     ...(videoOnly && process.argv.includes("--real-storage") ? {
       VIDEO_UAT_REAL_STORAGE: "true", PRIVATE_OBJECT_DIR: process.env.PRIVATE_OBJECT_DIR,
     } : {}),
@@ -81,11 +88,14 @@ try {
   } catch(e) { await db.query("ROLLBACK"); throw e; } finally { await db.end(); }
   // Run the existing real signing/contract regression before adding the new gate.
   // Its fixture deliberately manufactures accepted offers, which are now forbidden.
-  if (!videoOnly && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")) {
+  if (!isolatedApp && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")) {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts","contracts"],workerEnv);
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
-  const entries = videoOnly ? ["server/tests/application-video-flow.fixture.ts"] : process.argv.includes("--regressions-only") ? [
+  const entries = messagingOnly ? [
+    ...(!process.argv.includes("--regressions-only") ? ["server/tests/application-messaging.fixture.ts"] : []),
+    ...(!messagingBaseline ? ["server/tests/message-threads-production.test.ts", "server/tests/message-notification-grouping.test.ts"] : []),
+  ] : videoOnly ? ["server/tests/application-video-flow.fixture.ts"] : process.argv.includes("--regressions-only") ? [
     "server/tests/talent-invoice-calculations.test.ts",
     "server/tests/talent-invoices-usd-guard.test.ts",
     "server/tests/ledger-currency-summary.test.ts",
@@ -98,7 +108,7 @@ try {
     entryPoints:[entry],outfile:output,
     bundle:true,platform:"node",format:"esm",packages:"external",target:"node22",
     plugins:[{name:"owned-database-only",setup(builder) {
-      if (videoOnly) {
+      if (isolatedApp) {
         // Video UAT never exercises the assistant's unrelated KV memory store.
         // Deny it explicitly instead of inheriting a live REPLIT_DB_URL.
         builder.onResolve({filter:/^@replit\/database$/},() => ({path:"denied-kv",namespace:"video-uat"}));
@@ -113,6 +123,17 @@ try {
           }
         `,loader:"js"}));
       }
+      if (messagingBaseline) {
+        // Compile the original tracked production route, not a mirrored handler.
+        // No workspace files or production databases are changed by reproduction.
+        builder.onLoad({filter:/[/\\]server[/\\]routes\.ts$/},args => {
+          const contents = execFileSync("git",["show",`${baselineRef}:server/routes.ts`],{encoding:"utf8",maxBuffer:4*1024*1024});
+          if (!contents.includes('if (submission.workflow_type !== "client_invitation")')) {
+            throw new Error("The baseline revision must contain the original invitation-only application guard");
+          }
+          return { contents, loader:"ts", resolveDir:dirname(args.path) };
+        });
+      }
       builder.onLoad({filter:/client-team-dashboard-activity\.test\.ts$/},async args => ({
         contents:(await readFile(args.path,"utf8")).replaceAll("import.meta.url",JSON.stringify(pathToFileURL(args.path).href)),
         loader:"ts",resolveDir:dirname(args.path),
@@ -123,7 +144,7 @@ try {
       });
     }}],
   });
-    await run(process.execPath,["--test",output],workerEnv);
+    await run(process.execPath,["--test","--test-concurrency=1",output],workerEnv);
   }
 } finally {
   if (postgres && postgres.exitCode===null) {

@@ -11578,6 +11578,7 @@ export async function registerRoutes(
          js.client_id,
          js.status,
          js.workflow_type,
+         js.initiated_by,
          js.talent_id,
          js.email AS applicant_email,
          j.client_id AS job_owner_id,
@@ -11585,8 +11586,10 @@ export async function registerRoutes(
          COALESCE(talent_by_id.id, talent_by_email.id) AS talent_user_id
        FROM job_submissions js
        JOIN jobs j ON j.id = js.job_id
-       LEFT JOIN users talent_by_id ON talent_by_id.id = js.talent_id
-       LEFT JOIN users talent_by_email ON lower(talent_by_email.email) = lower(js.email)
+       JOIN users job_owner ON job_owner.id = j.client_id AND job_owner.role = 'client'
+       LEFT JOIN users talent_by_id ON talent_by_id.id = js.talent_id AND talent_by_id.role = 'talent'
+       LEFT JOIN users talent_by_email ON js.talent_id IS NULL
+         AND lower(talent_by_email.email) = lower(js.email) AND talent_by_email.role = 'talent'
        WHERE js.id = $1
        LIMIT 1`,
       [applicationId],
@@ -11596,15 +11599,19 @@ export async function registerRoutes(
     }
 
     const submission = application.rows[0];
-    const clientId = submission.job_owner_id ?? submission.client_id;
+    const clientId = submission.job_owner_id;
     const talentUserId = submission.talent_user_id as string | null;
     const jobId = submission.job_id as string | null;
 
     if (!clientId || !talentUserId || !jobId || clientId === talentUserId) {
       return { status: 404, error: "Conversation is not available for this application." };
     }
-    if (submission.workflow_type !== "client_invitation") {
-      return { status: 403, error: "Conversation is not available for this application." };
+    // Application-scoped consent is distinct from the generic invitation-only
+    // thread endpoint. A real applicant may talk to the owner of their job;
+    // private Client shortlist rows must never establish that relationship.
+    const isApplication = submission.workflow_type === "application" && submission.initiated_by === "talent";
+    if (submission.workflow_type !== "client_invitation" && !isApplication) {
+      return { status: 403, error: "Messaging is not available for this submission type." };
     }
     if (role === "client" && clientId !== authenticatedUserId) {
       return { status: 403, error: "Conversation is not available for this application." };
@@ -11620,6 +11627,24 @@ export async function registerRoutes(
         `SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2 || ':' || $3))`,
         [clientId, talentUserId, jobId],
       );
+
+      // Recheck persisted authorization after waiting for the creation lock.
+      // Hold the job/application rows until commit so a concurrent transfer,
+      // reassignment or stage change cannot authorize a stale new conversation.
+      const current = await txClient.query(
+        `SELECT js.job_id, js.talent_id, js.email, js.workflow_type, js.initiated_by,
+                js.status, j.client_id AS job_owner_id
+           FROM job_submissions js JOIN jobs j ON j.id = js.job_id
+          WHERE js.id = $1 FOR SHARE OF js, j`,
+        [applicationId],
+      );
+      const latest = current.rows[0];
+      if (!latest || latest.job_owner_id !== clientId || latest.job_id !== jobId ||
+          latest.talent_id !== submission.talent_id || latest.email !== submission.applicant_email ||
+          latest.workflow_type !== submission.workflow_type || latest.initiated_by !== submission.initiated_by) {
+        await txClient.query("ROLLBACK");
+        return { status: 409, error: "This application has changed. Please refresh and try again." };
+      }
 
       // Job-specific application threads take precedence. A pre-existing direct
       // or invitation thread is the established relationship-level channel and
@@ -11648,9 +11673,9 @@ export async function registerRoutes(
         return { threadId: existingDirect.rows[0].id, isNew: false };
       }
 
-      if (!APPLICATION_CHAT_STARTABLE_STATUSES.has(submission.status)) {
+      if (!APPLICATION_CHAT_STARTABLE_STATUSES.has(latest.status)) {
         await txClient.query("ROLLBACK");
-        return { status: 409, error: "Conversation is not available for this application." };
+        return { status: 409, error: "A new conversation cannot be started at this application stage." };
       }
 
       const created = await txClient.query(

@@ -909,3 +909,17 @@ mtime_ms = 1792481334244
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/4778d80d-8b06-44af-bfb9-9a3debb1fb66/248a4492-3641-47f6-b68f-777d1f9291af"
 storage_version_token = "1792481370536352"
 content_type = "text/html"
+
+[[outputs]]
+id = "SfZgi1g8Y8eCwwaRY9mWS"
+uri = "file://docs/APPLICANT_MESSAGING_VERIFICATION.html"
+type = "html"
+title = "Applicant Messaging — Fix and Verification Report"
+description = "Confirmed 403 root cause, approved application-scoped messaging fix, account mapping, 29 passing tests, modified files, verification limits and release requirements. No deployment performed."
+logical_id = "78f9797b-f84b-4e40-9cbf-667cf0acd749"
+content_hash = "sha256:6935458cf067581176049d4cfb03ff255765a50080b3dac1499c1484468af167"
+size = 14647
+mtime_ms = 1792554384642
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/78f9797b-f84b-4e40-9cbf-667cf0acd749/fb0e74c9-edae-4638-a64f-92ea963b1fa7"
+storage_version_token = "1792554392982758"
+content_type = "text/html"

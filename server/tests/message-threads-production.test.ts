@@ -159,6 +159,19 @@ describe("production messaging routes (registerRoutes)", () => {
               ($3, NULL, 'msgprod-unlinked@example.com')`,
       [CANDIDATE_ID, TALENT_ID, LEGACY_CANDIDATE_ID],
     );
+    // These fixtures exercise messaging authorization, not the separate signup
+    // email-verification gate. Keep real middleware enabled and verify only
+    // these synthetic identities before issuing the fixture JWTs.
+    await query(
+      `UPDATE users SET email_verified_at = NOW(), email_verified_email = email
+       WHERE id = ANY($1::text[])`,
+      [[CLIENT_ID, TALENT_ID, OUTSIDER_ID]],
+    );
+    await query(
+      `UPDATE candidates SET email_verified_at = NOW(), email_verified_email = email
+       WHERE id = ANY($1::text[])`,
+      [[CANDIDATE_ID, LEGACY_CANDIDATE_ID]],
+    );
     const app = express();
     app.use(express.json());
     const httpServer = await registerRoutes(app);

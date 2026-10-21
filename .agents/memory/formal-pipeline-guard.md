@@ -15,6 +15,12 @@ Name-reveal and invitation-established messaging remain separate, invitation-onl
 
 **How to apply:** Keep privacy relationship checks distinct when changing hiring predicates or adding new hiring endpoints.
 
+The owner separately approved application-scoped messaging for job owners and their genuine direct applicants on 2026-10-21; see [Client↔talent messaging](client-talent-messaging.md).
+
+**Why:** This is explicit messaging-policy approval, not an implied side effect of the broader hiring rules.
+
+**How to apply:** Preserve invitation-only identity revelation and generic relationship creation while allowing the owned-application exception.
+
 ## Hiring UAT scope
 
 Application milestones must reflect actual persisted transition history, not assumed completion of every stage preceding the current status.
