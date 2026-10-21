@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import TalentLandingSignup from "@/components/join-talent/TalentLandingSignup";
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
 import heroImage from "@/assets/join-talent/hero.webp";
@@ -131,6 +131,21 @@ function Check() {
 }
 
 function WorkweekIllustration() {
+  const clipId = useId();
+  const barX = 36;
+  const barWidth = 488;
+  const barHeight = 24;
+  const barRadius = barHeight / 2;
+  const freelanceY = 132;
+  const onSpotY = 259;
+  const findingWidth = 174;
+  const adminWidth = 104;
+  const lessAdminWidth = 70;
+  const workWidth = barWidth - findingWidth - adminWidth;
+  const onSpotWorkWidth = barWidth - lessAdminWidth;
+  const headingOffset = -14;
+  const labelOffset = barHeight + 29;
+
   return (
     <svg
       className="tl-week-illustration"
@@ -143,6 +158,14 @@ function WorkweekIllustration() {
         An illustrative comparison: working alone leaves time for client-finding
         and payment chasing, while OnSpot keeps more time focused on the work.
       </desc>
+      <defs>
+        <clipPath id={`${clipId}-freelance`}>
+          <rect x={barX} y={freelanceY} width={barWidth} height={barHeight} rx={barRadius} />
+        </clipPath>
+        <clipPath id={`${clipId}-onspot`}>
+          <rect x={barX} y={onSpotY} width={barWidth} height={barHeight} rx={barRadius} />
+        </clipPath>
+      </defs>
       <rect
         x="1"
         y="1"
@@ -155,31 +178,34 @@ function WorkweekIllustration() {
       <text x="36" y="62" fill="#fff" fontSize="21" fontWeight="800">
         Where your work week goes
       </text>
-      <text x="36" y="118" fill="#e5e8ff" fontSize="15" fontWeight="700">
+      <text x={barX} y={freelanceY + headingOffset} fill="#e5e8ff" fontSize="15" fontWeight="700">
         Freelancing on your own
       </text>
-      <rect x="36" y="132" width="488" height="24" rx="12" fill="#2639bc" />
-      <rect x="36" y="132" width="174" height="24" rx="12" fill="#ffc72c" />
-      <rect x="210" y="132" width="104" height="24" fill="#8290ee" />
-      <text x="36" y="185" fill="#cbd1f7" fontSize="11">
+      <g clipPath={`url(#${clipId}-freelance)`}>
+        <rect x={barX} y={freelanceY} width={findingWidth} height={barHeight} fill="#ffc72c" />
+        <rect x={barX + findingWidth} y={freelanceY} width={adminWidth} height={barHeight} fill="#8290ee" />
+        <rect x={barX + findingWidth + adminWidth} y={freelanceY} width={workWidth} height={barHeight} fill="#2639bc" />
+      </g>
+      <text x={barX + findingWidth / 2} y={freelanceY + labelOffset} textAnchor="middle" fill="#cbd1f7" fontSize="11">
         Finding clients
       </text>
-      <text x="216" y="185" fill="#cbd1f7" fontSize="11">
+      <text x={barX + findingWidth + adminWidth / 2} y={freelanceY + labelOffset} textAnchor="middle" fill="#cbd1f7" fontSize="11">
         Admin &amp; chasing
       </text>
-      <text x="390" y="185" fill="#cbd1f7" fontSize="11">
+      <text x={barX + findingWidth + adminWidth + workWidth / 2} y={freelanceY + labelOffset} textAnchor="middle" fill="#cbd1f7" fontSize="11">
         The actual work
       </text>
-      <text x="36" y="245" fill="#fff" fontSize="15" fontWeight="700">
+      <text x={barX} y={onSpotY + headingOffset} fill="#fff" fontSize="15" fontWeight="700">
         Working with OnSpot
       </text>
-      <rect x="36" y="259" width="488" height="24" rx="12" fill="#2639bc" />
-      <rect x="36" y="259" width="70" height="24" rx="12" fill="#8290ee" />
-      <rect x="106" y="259" width="418" height="24" rx="12" fill="#ffc72c" />
-      <text x="36" y="312" fill="#cbd1f7" fontSize="11">
+      <g clipPath={`url(#${clipId}-onspot)`}>
+        <rect x={barX} y={onSpotY} width={lessAdminWidth} height={barHeight} fill="#8290ee" />
+        <rect x={barX + lessAdminWidth} y={onSpotY} width={onSpotWorkWidth} height={barHeight} fill="#ffc72c" />
+      </g>
+      <text x={barX + lessAdminWidth / 2} y={onSpotY + labelOffset} textAnchor="middle" fill="#cbd1f7" fontSize="11">
         Less admin
       </text>
-      <text x="330" y="312" fill="#cbd1f7" fontSize="11">
+      <text x={barX + lessAdminWidth + onSpotWorkWidth / 2} y={onSpotY + labelOffset} textAnchor="middle" fill="#cbd1f7" fontSize="11">
         More time for the work you love
       </text>
       <path d="M36 348h488" stroke="rgba(255,255,255,.15)" />

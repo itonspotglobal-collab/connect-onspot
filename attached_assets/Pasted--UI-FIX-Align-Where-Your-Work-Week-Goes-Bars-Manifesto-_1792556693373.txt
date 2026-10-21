@@ -1,0 +1,108 @@
+# UI FIX: Align "Where Your Work Week Goes" Bars — Manifesto Page
+
+## Issue
+
+On the Manifesto page, the illustration titled **"Where your work week goes"** has visual alignment inconsistencies between its two horizontal comparison bars:
+
+1. "Freelancing on your own"
+2. "Working with OnSpot"
+
+The bars and their colored segments need to be properly aligned and visually consistent.
+
+## Relevant File
+
+`client/src/pages/Manifesto.tsx`
+
+Locate the SVG illustration for "Where your work week goes", including its `<rect>`, `<text>`, and related SVG elements.
+
+## Required Fix
+
+### 1. Align Both Horizontal Bars
+
+Ensure both comparison bars:
+
+- Start at exactly the same horizontal position.
+- End at exactly the same horizontal position.
+- Have identical total widths.
+- Have identical heights.
+- Use consistent corner rounding.
+- Maintain appropriate vertical spacing.
+- Have their colored segments positioned correctly within the bar boundaries.
+
+Use shared SVG coordinate constants where appropriate instead of unrelated hardcoded values.
+
+### 2. Correct Segment Alignment
+
+For "Freelancing on your own":
+- Preserve the existing yellow, light purple, and blue segments.
+- Ensure the segments connect correctly.
+- Prevent overlapping, unintended gaps, or segments extending beyond the bar.
+
+For "Working with OnSpot":
+- Preserve the existing light purple and yellow segments.
+- Ensure the segments align with the same overall bar width as the first comparison.
+- Ensure the yellow segment begins immediately after the light purple segment.
+
+Keep the current illustrative proportions unless adjustments are necessary for alignment.
+
+### 3. Fix Labels and Spacing
+
+Ensure:
+- Both bar headings are left-aligned.
+- Labels beneath each bar are properly positioned relative to their segments.
+- Text does not overlap or extend outside the illustration.
+- Vertical spacing between headings, bars, and labels is consistent.
+- The bottom disclaimer remains correctly positioned.
+
+### 4. Preserve Existing Design
+
+Do not redesign the Manifesto page.
+
+Keep:
+- Existing blue background and card design.
+- Yellow, purple, and blue color palette.
+- Typography.
+- Rounded corners.
+- Overall illustration dimensions.
+- Surrounding Manifesto page content.
+- Existing responsive behavior.
+
+Only modify the SVG illustration and any directly related styling required to fix its alignment.
+
+### 5. Responsive Verification
+
+Test the illustration at desktop, tablet, and mobile viewport sizes.
+
+Confirm:
+- Both bars remain aligned.
+- No horizontal overflow.
+- No clipped labels.
+- No distorted SVG scaling.
+- Consistent spacing and proportions.
+
+### 6. Final Verification
+
+Compare the updated illustration against the original screenshot.
+
+Confirm that:
+- Both bars have identical start and end positions.
+- Their colored segments remain correctly proportioned.
+- Labels are readable and properly positioned.
+- The card remains visually balanced.
+
+Run TypeScript checks and the production build.
+
+## Restrictions
+
+- Do not change unrelated Manifesto page sections.
+- Do not modify the content or wording.
+- Do not introduce new animations.
+- Do not redesign the illustration.
+- Do not modify global styles unnecessarily.
+- Do not deploy automatically.
+
+## Expected Result
+
+The "Where your work week goes" illustration should display two clean, consistently aligned horizontal bars, with properly positioned segments and labels.
+
+Provide a summary of the SVG coordinates or styles changed, along with desktop and mobile verification results.

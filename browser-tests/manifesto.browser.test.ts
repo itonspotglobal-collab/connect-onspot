@@ -138,6 +138,70 @@ for (const width of [320, 375, 390, 430, 768, 1024, 1440]) {
   });
 }
 
+test("Workweek SVG bars, segment joins and labels align at mobile, tablet and desktop widths", { timeout: 90_000 }, async () => {
+  for (const width of [320, 390, 768, 1440]) {
+    const { page, writes, errors } = await open(width);
+    try {
+      await page.evaluate(() => document.fonts.ready);
+      const svg = page.locator(".tl-week-illustration");
+      await svg.scrollIntoViewIfNeeded();
+      const geometry = await svg.evaluate((element: SVGSVGElement) => {
+        const clips = Array.from(element.querySelectorAll("clipPath rect")).map(rect => ({
+          x: Number(rect.getAttribute("x")), y: Number(rect.getAttribute("y")),
+          width: Number(rect.getAttribute("width")), height: Number(rect.getAttribute("height")),
+          rx: Number(rect.getAttribute("rx")),
+        }));
+        const rows = Array.from(element.querySelectorAll("g[clip-path]")).map(group =>
+          Array.from(group.querySelectorAll("rect")).map(rect => ({
+            x: Number(rect.getAttribute("x")), y: Number(rect.getAttribute("y")),
+            width: Number(rect.getAttribute("width")), height: Number(rect.getAttribute("height")),
+          })));
+        const texts = Array.from(element.querySelectorAll("text")).map(text => {
+          const box = text.getBBox();
+          return { x: box.x, right: box.x + box.width, y: box.y, bottom: box.y + box.height,
+            anchorX: Number(text.getAttribute("x")), baseline: Number(text.getAttribute("y")) };
+        });
+        const bounds = element.getBoundingClientRect();
+        return { clips, rows, texts, width: bounds.width, height: bounds.height, left: bounds.left, right: bounds.right };
+      });
+      assert.deepEqual(geometry.clips, [
+        { x: 36, y: 132, width: 488, height: 24, rx: 12 },
+        { x: 36, y: 259, width: 488, height: 24, rx: 12 },
+      ]);
+      assert.deepEqual(geometry.rows.map(row => row.map(segment => segment.width)), [[174, 104, 210], [70, 418]]);
+      for (const [i, row] of geometry.rows.entries()) {
+        let nextX = 36;
+        for (const segment of row) {
+          assert.equal(segment.x, nextX, "Segments must join without gaps or overlaps");
+          assert.equal(segment.y, geometry.clips[i].y);
+          assert.equal(segment.height, 24);
+          nextX += segment.width;
+        }
+        assert.equal(nextX, 524);
+      }
+      assert.deepEqual([geometry.texts[1].anchorX, geometry.texts[5].anchorX], [36, 36]);
+      for (const [rowIndex, labelIndices] of [[2, 3, 4], [6, 7]].entries()) {
+        for (const [segmentIndex, textIndex] of labelIndices.entries()) {
+          const label = geometry.texts[textIndex];
+          const segment = geometry.rows[rowIndex][segmentIndex];
+          assert.equal(label.anchorX, segment.x + segment.width / 2);
+          assert.ok(label.x >= segment.x && label.right <= segment.x + segment.width, "Label fits its segment");
+          assert.equal(label.baseline - segment.y, 53);
+        }
+      }
+      for (const text of geometry.texts) {
+        assert.ok(text.x >= 0 && text.right <= 560 && text.y >= 0 && text.bottom <= 400, "Text remains inside the SVG");
+      }
+      assert.ok(Math.abs(geometry.width / geometry.height - 560 / 400) < 0.001, "SVG aspect ratio remains unchanged");
+      assert.ok(geometry.left >= 0 && geometry.right <= width);
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await svg.screenshot({ path: `/tmp/workweek-after-${width}.png` });
+      assert.deepEqual(writes, []);
+      assert.deepEqual(errors, []);
+    } finally { await page.close(); }
+  }
+});
+
 test("FAQ answers and all anchor/signup controls work with keyboard and reduced motion", async () => {
   const { page } = await open();
   try {
