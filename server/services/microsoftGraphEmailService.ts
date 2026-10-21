@@ -121,6 +121,8 @@ export interface SendEmailOptions {
 export interface SendEmailResult {
   success: boolean;
   error?: string;
+  /** Unknown transport/provider outcomes must not be blindly resent. */
+  deliveryState?: "not_sent" | "unknown";
 }
 
 export interface OrganizationInvitationEmailOptions {
@@ -203,6 +205,7 @@ export async function sendOrganizationInvitationEmail(
 
 /** Send a single HTML email to an applicant via Microsoft Graph /sendMail. */
 export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEmailResult> {
+  let deliveryState: "not_sent" | "unknown" = "not_sent";
   try {
     // If a senderEmail is supplied and is in the allowlist, use it; otherwise fall back to config.
     const fromAddress =
@@ -242,6 +245,7 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
 
     // Send via the shared mailbox's sendMail endpoint
     const graphUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(fromAddress)}/sendMail`;
+    deliveryState = "unknown";
     const res = await fetch(graphUrl, {
       method: "POST",
       headers: {
@@ -252,6 +256,7 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
     });
 
     if (!res.ok) {
+      if (res.status >= 400 && res.status < 500 && res.status !== 408) deliveryState = "not_sent";
       const text = await res.text();
       if (opts.redactErrors) throw new SignupGraphError("sendMail", res.status, text);
       throw new Error(`Graph /sendMail failed (${res.status}): ${text.slice(0, 400)}`);
@@ -264,10 +269,10 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
   } catch (err: any) {
     if (opts.redactErrors) {
       console.error("[signup-verification] EMAIL_SEND_FAILED", signupErrorDiagnostic(err));
-      return { success: false, error: "Email delivery failed" };
+      return { success: false, error: "Email delivery failed", deliveryState };
     }
     console.error("[microsoftGraphEmailService] sendApplicantEmail error:", err.message);
-    return { success: false, error: err.message };
+    return { success: false, error: err.message, deliveryState };
   }
 }
 

@@ -9,6 +9,8 @@ const parsed = new URL(address);
 if (parsed.hostname !== "127.0.0.1" || parsed.pathname !== "/onspot_hiring_test" ||
     parsed.username !== "hiring_fixture") throw new Error("Hiring tests require the disposable local fixture database");
 export const pool = new pg.Pool({ connectionString: address });
+export const applicantEmailLedgerPool = new pg.Pool({ connectionString: address, max: 2 });
+export const applicantEmailLedgerQuery = (sql: string, params?: any[]) => applicantEmailLedgerPool.query(sql, params);
 export const db = drizzle(pool, { schema });
 export const query = (sql: string, params?: any[]) => pool.query(sql, params);
 export const getClient = () => pool.connect();

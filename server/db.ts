@@ -12,6 +12,12 @@ if (!process.env.DATABASE_URL) {
 }
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Delivery evidence must be committed independently of the application status
+// transaction. A bounded, separate pool prevents status-lock waiters from
+// consuming every connection required to record the provider result.
+export const applicantEmailLedgerPool = new Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
+export const applicantEmailLedgerQuery = (text: string, params: any[] = []) =>
+  applicantEmailLedgerPool.query(text, params);
 export const db = drizzle({ client: pool, schema });
 
 // Handle connection errors

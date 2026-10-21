@@ -19998,6 +19998,7 @@ export async function registerRoutes(
       initiated_by: row.initiated_by,
       submittedAt:  row.submittedAt  ?? row.submitted_at,
       updatedAt:    row.updatedAt    ?? row.updated_at,
+      statusVersion: row.statusVersion,
       createdAt:    row.createdAt    ?? row.created_at,
       jobTitle:     row.jobTitle,
       jobCompany:   row.jobCompany,
@@ -20068,6 +20069,7 @@ export async function registerRoutes(
       js.workflow_type            AS "workflowType",
       js.submitted_at             AS "submittedAt",
       js.updated_at               AS "updatedAt",
+      js.updated_at::text          AS "statusVersion",
       js.created_at               AS "createdAt",
       js.initiated_by,
       js.registration_status      AS "registrationStatus",
@@ -20175,183 +20177,8 @@ export async function registerRoutes(
   // Uses the canonical CLIENT_SETTABLE_STATUSES list from shared/submissionStatuses.ts.
   // Pipeline-driven statuses (interviewing, offer_extended, etc.) are set as side
   // effects of creating interview/offer/contract records — never directly via this endpoint.
-  app.patch("/api/client/job-submissions/:id/status", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      return res.status(403).json({
-        error: "status_email_required",
-        message: "Clients must request an Admin-approved status change.",
-      });
-      /*
-      const { id } = req.params;
-      const { status } = req.body;
-      const { CLIENT_SETTABLE_STATUSES, submissionStatusLabel } =
-        await import("../shared/submissionStatuses");
-      if (!status || !CLIENT_SETTABLE_STATUSES.includes(status as any)) {
-        return res.status(400).json({
-          error: "Invalid status",
-          allowed: CLIENT_SETTABLE_STATUSES,
-        });
-      }
-
-      client = await getClient();
-      await client.query("BEGIN");
-      await client.query(
-        "SELECT pg_advisory_xact_lock(hashtext($1))",
-        [`client-status:${id}`],
-      );
-
-      // Lock only the canonical submission row. Optional relations must not be
-      // part of a SELECT ... FOR UPDATE because PostgreSQL rejects locking the
-      // nullable side of an outer join.
-      const current = await client.query(
-        `SELECT js.status, js.initiated_by, js.talent_id, js.email,
-                js.first_name, js.last_name, js.applicant_name,
-                 js.job_id, js.client_id
-           FROM job_submissions js
-          WHERE js.id = $1 AND js.client_id = $2
-          FOR UPDATE`,
-        [id, userId],
-      );
-      if (current.rows.length === 0) {
-        await client.query("ROLLBACK");
-        return res.status(404).json({ error: "Submission not found or forbidden" });
-      }
-      const currentRow = current.rows[0];
-      const [jobResult, clientUserResult] = await Promise.all([
-        client.query(
-          `SELECT title FROM jobs WHERE id = $1 LIMIT 1`,
-          [currentRow.job_id],
-        ),
-        client.query(
-          `SELECT first_name, last_name, company
-             FROM users
-            WHERE id = $1
-            LIMIT 1`,
-          [currentRow.client_id],
-        ),
-      ]);
-      currentRow.job_title = jobResult.rows[0]?.title ?? null;
-      currentRow.client_first_name = clientUserResult.rows[0]?.first_name ?? null;
-      currentRow.client_last_name = clientUserResult.rows[0]?.last_name ?? null;
-      currentRow.client_company = clientUserResult.rows[0]?.company ?? null;
-      const currentStatus: string = currentRow.status;
-      const initiatedBy: string | null = currentRow.initiated_by;
-      if (initiatedBy === "client" && (currentStatus === "invited" || currentStatus === "declined")) {
-        await client.query("ROLLBACK");
-        return res.status(409).json({
-          error: "cannot_update_pending_invitation",
-          message:
-            currentStatus === "invited"
-              ? "This invitation is awaiting the talent's response. Status can only change once the talent accepts or declines."
-              : "This invitation was declined by the talent and its status cannot be changed.",
-        });
-      }
-
-      if (currentStatus === status) {
-        await client.query("ROLLBACK");
-        return res.status(409).json({
-          error: "status_already_set",
-          message: "This application already has the requested status.",
-        });
-      }
-
-      await client.query(
-        `UPDATE job_submissions
-            SET status = $1, updated_at = NOW()
-          WHERE id = $2 AND client_id = $3 AND status = $4`,
-        [status, id, userId, currentStatus],
-      );
-
-      await client.query(
-        `INSERT INTO job_application_status_history
-           (application_id, previous_status, new_status, note, changed_by)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [id, currentStatus, status, "Status updated by Client", userId],
-      );
-
-      const talentUser = await client.query(
-        `SELECT id
-           FROM users
-          WHERE role = 'talent'
-            AND (id = $1 OR lower(email) = lower($2))
-          LIMIT 1`,
-        [currentRow.talent_id, currentRow.email],
-      );
-      if (talentUser.rows.length > 0) {
-        const talentMessage =
-          status === "rejected"
-            ? `Your application for ${currentRow.job_title || "your application"} was not selected.`
-            : `Your application for ${currentRow.job_title || "your application"} is now ${submissionStatusLabel(status)}.`;
-        await client.query(
-          `INSERT INTO notifications
-             (user_id, type, title, message, related_id, related_type)
-           SELECT $1, 'job_application_status_changed', 'Application update', $2, $3, 'job_submission'
-            WHERE NOT EXISTS (
-              SELECT 1
-                FROM notifications
-               WHERE user_id = $1
-                 AND type = 'job_application_status_changed'
-                   AND related_id = $4
-                 AND message = $2
-            )`,
-            [talentUser.rows[0].id, talentMessage, id, id],
-        );
-      }
-
-      const clientName =
-        [currentRow.client_first_name, currentRow.client_last_name]
-          .filter(Boolean)
-          .join(" ") ||
-        currentRow.client_company ||
-        "A Client";
-      const talentName =
-        [currentRow.first_name, currentRow.last_name]
-          .filter(Boolean)
-          .join(" ") ||
-        currentRow.applicant_name ||
-        "a Talent";
-      const adminMessage =
-        `${clientName} changed ${talentName}'s application for ` +
-        `${currentRow.job_title || "a job"} to ${submissionStatusLabel(status)}.`;
-      await client.query(
-        `INSERT INTO notifications
-           (user_id, type, title, message, related_id, related_type)
-         SELECT u.id, 'client_application_status_changed',
-                'Client updated application', $1, $2, 'job_submission'
-           FROM users u
-          WHERE u.role = 'admin'
-            AND NOT EXISTS (
-              SELECT 1
-                FROM notifications n
-               WHERE n.user_id = u.id
-                 AND n.type = 'client_application_status_changed'
-                   AND n.related_id = $3
-                 AND n.message = $1
-            )`,
-        [adminMessage, id, id],
-      );
-      await client.query("COMMIT");
-
-      // Re-fetch via canonical projection (same as GET endpoints) so the response
-      // shape is consistent and no raw DB columns bypass the sanitizer.
-      const [updated, threshold] = await Promise.all([
-        query(
-          `${CLIENT_SUBMISSION_SELECT}
-           WHERE js.id = $1 AND js.client_id = $2`,
-          [id, userId],
-        ),
-        getNameRevealThreshold(),
-      ]);
-      if (updated.rows.length === 0) return res.status(404).json({ error: "Submission not found or forbidden" });
-      const revealed = revealedStatusesForThreshold(threshold);
-      return res.json(sanitizeClientSubmissionRow(updated.rows[0], revealed));
-      */
-    } catch (err: any) {
-      console.error("Client application status update failed:", err);
-      return res.status(500).json({ error: "Failed to update application status" });
-    }
+  app.patch("/api/client/job-submissions/:id/status", authenticateJWT, requireClient, async (req: Request, res: Response) => {
+    return handleApplicationStatusEmail(req, res);
   });
 
   // ── Phase 1: Interview Scheduling (client-driven) ────────────────────────────
@@ -23837,9 +23664,8 @@ export async function registerRoutes(
     }
   });
 
-  // ── Client status-change approval requests ─────────────────────────────────────
-  // These routes never mutate job_submissions.status. The actual transition is
-  // performed by the Admin email workflow below after delivery succeeds.
+  // Historical approval records remain readable/cancellable. New Client
+  // transitions use the shared automatic status-with-email handler.
   app.get("/api/client/job-submissions/:id/status-change-request", authenticateJWT, requireClient, async (req: any, res: Response) => {
     const result = await query(
       `SELECT r.id, r.current_status AS "currentStatus", r.requested_status AS "requestedStatus",
@@ -23857,52 +23683,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/client/job-submissions/:id/status-change-requests", authenticateJWT, requireClient, async (req: any, res: Response) => {
-    const { requestedStatus, reason } = req.body ?? {};
-    const { CLIENT_SETTABLE_STATUSES, submissionStatusLabel } = await import("../shared/submissionStatuses");
-    if (!CLIENT_SETTABLE_STATUSES.includes(requestedStatus)) {
-      return res.status(400).json({ error: "This status cannot be requested through the approval workflow." });
-    }
-    const dbClient = await getClient();
-    try {
-      await dbClient.query("BEGIN");
-      await dbClient.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`status-request:${req.params.id}`]);
-      const appResult = await dbClient.query(
-        `SELECT js.id, js.job_id, js.status, js.talent_id, js.first_name, js.last_name, js.applicant_name,
-                j.title AS job_title
-         FROM job_submissions js JOIN jobs j ON j.id = js.job_id
-         WHERE js.id = $1 AND j.client_id = $2
-           AND js.${SHORTLIST_EXCLUSION_PREDICATE}
-         FOR UPDATE OF js`,
-        [req.params.id, req.user.id],
-      );
-      if (!appResult.rows[0]) { await dbClient.query("ROLLBACK"); return res.status(403).json({ error: "Application not found or not owned by you." }); }
-      const application = appResult.rows[0];
-      if (application.status === requestedStatus) { await dbClient.query("ROLLBACK"); return res.status(409).json({ error: "Application already has that status." }); }
-      const inserted = await dbClient.query(
-        `INSERT INTO application_status_change_requests
-           (application_id, requested_by_user_id, requested_by_role, current_status, requested_status, reason)
-         VALUES ($1, $2, 'client', $3, $4, $5)
-         RETURNING id, current_status AS "currentStatus", requested_status AS "requestedStatus", status, created_at AS "createdAt"`,
-        [application.id, req.user.id, application.status, requestedStatus, reason?.trim() || null],
-      );
-      const requester = await dbClient.query(`SELECT first_name, last_name, company FROM users WHERE id = $1`, [req.user.id]);
-      const name = [requester.rows[0]?.first_name, requester.rows[0]?.last_name].filter(Boolean).join(" ") || requester.rows[0]?.company || "A Client";
-      const talent = [application.first_name, application.last_name].filter(Boolean).join(" ") || application.applicant_name || "a Talent";
-      const message = `${name} requested to change ${talent}'s application for ${application.job_title || "a job"} from ${submissionStatusLabel(application.status)} to ${submissionStatusLabel(requestedStatus)}.`;
-      await dbClient.query(
-        `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
-         SELECT u.id, 'application_status_change_requested', 'Application status change requested', $1, $2, 'application_status_change_request'
-         FROM users u WHERE u.role = 'admin'`,
-        [message, inserted.rows[0].id],
-      );
-      await dbClient.query("COMMIT");
-      return res.status(201).json(inserted.rows[0]);
-    } catch (err: any) {
-      await dbClient.query("ROLLBACK").catch(() => {});
-      if (err?.code === "23505") return res.status(409).json({ error: "A status change request is already pending for this application." });
-      console.error("Create status change request failed:", err);
-      return res.status(500).json({ error: "Unable to create status change request." });
-    } finally { dbClient.release(); }
+    return res.status(410).json({ error: "Client status approval requests are retired. Refresh and use Update Status; the applicant email is sent automatically." });
   });
 
   app.patch("/api/client/status-change-requests/:id/cancel", authenticateJWT, requireClient, async (req: any, res: Response) => {
@@ -23949,20 +23730,19 @@ export async function registerRoutes(
     try {
       await dbClient.query("BEGIN");
       const result = await dbClient.query(
-        `UPDATE application_status_change_requests
-         SET status = 'rejected', reviewed_by_user_id = $1, reviewed_at = NOW(), admin_note = $2, updated_at = NOW()
-         WHERE id = $3 AND status = 'pending'
+        `UPDATE application_status_change_requests r
+         SET status = 'cancelled', reviewed_by_user_id = $1, reviewed_at = NOW(), admin_note = $2, updated_at = NOW()
+         WHERE r.id = $3 AND r.status = 'pending'
+           AND NOT EXISTS (
+             SELECT 1 FROM job_application_emails e
+             WHERE e.application_id=r.application_id AND e.status='sent' AND e.is_test=false
+               AND e.status_update=r.requested_status AND e.status_previous=r.current_status
+               AND e.created_at >= r.created_at
+           )
          RETURNING application_id, requested_by_user_id, current_status, requested_status`,
-        [req.user.id, req.body?.adminNote?.trim() || null, req.params.id],
+        [req.user.id, "Historical request archived; Client status approval is retired.", req.params.id],
       );
-      if (!result.rows[0]) { await dbClient.query("ROLLBACK"); return res.status(409).json({ error: "This request is no longer pending." }); }
-      const r = result.rows[0];
-      await dbClient.query(
-        `INSERT INTO notifications (user_id, type, title, message, related_id, related_type)
-         VALUES ($1, 'application_status_change_rejected', 'Status change request declined',
-                 'Your application status change request was declined.', $2, 'application_status_change_request')`,
-        [r.requested_by_user_id, req.params.id],
-      );
+      if (!result.rows[0]) { await dbClient.query("ROLLBACK"); return res.status(409).json({ error: "This request is no longer pending, or its delivered email requires recovery instead of archiving." }); }
       await dbClient.query("COMMIT");
       return res.json({ success: true });
     } catch (err) { await dbClient.query("ROLLBACK").catch(() => {}); return res.status(500).json({ error: "Unable to reject request." }); }
@@ -24302,6 +24082,19 @@ export async function registerRoutes(
       statusChangeRequestId,
     } = req.body ?? {};
     const sentBy: string | null = req.user?.id ?? null;
+    const isClientActor = req.user?.role === "client";
+    let clientLedger: any = null;
+    if (statusChangeRequestId) {
+      return res.status(410).json({ error: "Approval email actions are retired. Previously delivered legacy requests can still be finalized without resending." });
+    }
+    if (isClientActor && (
+      typeof req.body?.status !== "string" ||
+      typeof req.body?.expectedStatus !== "string" ||
+      typeof req.body?.expectedVersion !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(req.body?.operationId ?? "")
+    )) {
+      return res.status(400).json({ error: "Refresh the application and confirm a status update with its current version and update identifier." });
+    }
     const dbClient = await getClient();
     let emailDelivered = false;
     let approvalCommitStep = "validate_request";
@@ -24328,13 +24121,12 @@ export async function registerRoutes(
     try {
       const { ADMIN_SETTABLE_STATUSES, CLIENT_SETTABLE_STATUSES, submissionStatusLabel } =
         await import("../shared/submissionStatuses");
-      const isClientActor = false;
       const LEGACY_STATUS_ALIASES: Record<string, string> = {
         submitted: "new",
         interview: "interviewing",
         offered: "offer_extended",
       };
-      let updateStage = rawUpdateStage
+      let updateStage = isClientActor ? req.body.status : rawUpdateStage
         ? LEGACY_STATUS_ALIASES[rawUpdateStage] ?? rawUpdateStage
         : null;
 
@@ -24351,7 +24143,7 @@ export async function registerRoutes(
       const allowedStatuses = isClientActor
         ? CLIENT_SETTABLE_STATUSES
         : GENERIC_ADMIN_EMAIL_STATUSES;
-      if (updateStage && !allowedStatuses.includes(updateStage as any)) {
+      if ((isClientActor && !updateStage) || (updateStage && !allowedStatuses.includes(updateStage as any))) {
         return res.status(400).json({
           error: "Invalid status transition",
           message: `This status is managed by its dedicated workflow. Email status changes support: ${allowedStatuses.join(", ")}`,
@@ -24404,10 +24196,11 @@ export async function registerRoutes(
       const appRow = await dbClient.query(
         `SELECT js.id, js.job_id, js.client_id, js.first_name, js.last_name,
                 js.applicant_name, js.email, js.phone, js.talent_id,
-                js.status, js.submitted_at
+                 js.status, js.submitted_at, js.workflow_type, js.initiated_by,
+                 js.updated_at::text AS status_version
            FROM job_submissions js
           WHERE js.id = $1
-          FOR UPDATE`,
+           FOR NO KEY UPDATE`,
         [id],
       );
       if (appRow.rows.length === 0) {
@@ -24415,12 +24208,8 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Application not found" });
       }
       const app_ = appRow.rows[0];
-      if (isClientActor && app_.client_id !== req.user.id) {
-        await rollbackQuietly();
-        return res.status(403).json({ error: "You do not own this application" });
-      }
       const jobRow = await dbClient.query(
-        `SELECT title, company, location FROM jobs WHERE id = $1 LIMIT 1`,
+        `SELECT title, company, location, client_id FROM jobs WHERE id = $1 LIMIT 1 FOR SHARE`,
         [app_.job_id],
       );
       if (jobRow.rows.length === 0) {
@@ -24430,6 +24219,63 @@ export async function registerRoutes(
       app_.job_title = jobRow.rows[0].title;
       app_.job_company = jobRow.rows[0].company;
       app_.job_location = jobRow.rows[0].location;
+      if (!isClientActor && updateStage) {
+        const pendingClientEmail = await dbClient.query(
+          `SELECT id FROM job_application_emails WHERE application_id=$1
+           AND status_source_version IS NOT NULL AND status_completed_at IS NULL
+           AND status IN ('sending','sent','delivery_unknown') LIMIT 1`, [id],
+        );
+        if (pendingClientEmail.rows.length) {
+          await rollbackQuietly();
+          return res.status(409).json({ error: "An automatic Client status email needs recovery. Resolve its delivery history before another status email is sent." });
+        }
+      }
+      if (isClientActor) {
+        if (jobRow.rows[0].client_id !== sentBy ||
+            !((app_.workflow_type === "application" && app_.initiated_by === "talent") ||
+              (app_.workflow_type === "client_invitation" && app_.initiated_by === "client"))) {
+          await rollbackQuietly();
+          return res.status(403).json({ error: "Application not found or not owned by you." });
+        }
+        app_.client_id = jobRow.rows[0].client_id;
+        // An already-completed operation is a replay, not a new transition.
+        const completed = await dbClient.query(
+          `SELECT status_update, status_previous, status_source_version, sent_by
+           FROM job_application_emails WHERE id=$1 AND application_id=$2 AND status_completed_at IS NOT NULL`,
+          [req.body.operationId, id],
+        );
+        if (completed.rows[0]) {
+          const previous = completed.rows[0];
+          if (previous.sent_by !== sentBy || previous.status_update !== updateStage ||
+              previous.status_previous !== req.body.expectedStatus || previous.status_source_version !== req.body.expectedVersion) {
+            await rollbackQuietly();
+            return res.status(409).json({ error: "This update identifier was already used for another transition." });
+          }
+          await rollbackQuietly();
+          return res.json({ success: true, alreadyApplied: true, emailSent: false, status: app_.status, statusVersion: app_.status_version });
+        }
+        const { canClientUpdateApplicationStatus } = await import("../shared/submissionStatuses");
+        if (updateStage !== app_.status && !canClientUpdateApplicationStatus(app_.status, updateStage)) {
+          await rollbackQuietly();
+          return res.status(409).json({ error: "This application stage is terminal or managed by its dedicated hiring workflow." });
+        }
+        if (app_.status !== req.body.expectedStatus || app_.status_version !== req.body.expectedVersion) {
+          await rollbackQuietly();
+          return res.status(409).json({ error: "The application has changed. Refresh it before changing its status." });
+        }
+        const legacyDelivery = await dbClient.query(
+          `SELECT r.id FROM application_status_change_requests r
+           JOIN job_application_emails e ON e.application_id=r.application_id
+             AND e.status='sent' AND e.is_test=false AND e.status_update=r.requested_status
+             AND e.status_previous=r.current_status AND e.created_at >= r.created_at
+           WHERE r.application_id=$1 AND r.status='pending' AND r.current_status=$2
+             AND e.status_source_version IS NULL LIMIT 1`, [id, app_.status],
+        );
+        if (legacyDelivery.rows.length) {
+          await rollbackQuietly();
+          return res.status(409).json({ error: "A historical approval email was already sent. Ask an administrator to recover that delivered update before making another change." });
+        }
+      }
 
       if (approvedRequest) {
         if (app_.status !== approvedRequest.current_status) {
@@ -24451,6 +24297,7 @@ export async function registerRoutes(
 
       if (updateStage && updateStage === app_.status) {
         await rollbackQuietly();
+        if (isClientActor) return res.json({ success: true, alreadyApplied: true, emailSent: false, status: app_.status, statusVersion: app_.status_version });
         return res.status(409).json({
           error: "status_already_set",
           message: "This application already has the requested status.",
@@ -24464,6 +24311,17 @@ export async function registerRoutes(
         });
       }
 
+      if (isClientActor) {
+        const { deliverClientApplicationStatusEmail } = await import("./services/clientApplicationStatusEmail");
+        const delivered = await deliverClientApplicationStatusEmail({
+          dbClient, application: app_, actorId: sentBy!, operationId: req.body.operationId,
+          target: updateStage, expectedStatus: req.body.expectedStatus, expectedVersion: req.body.expectedVersion,
+        });
+        clientLedger = delivered.ledger;
+        emailDelivered = true;
+      }
+
+      if (!isClientActor) {
       let subjectRaw = subject;
       let bodyRaw = bodyHtml;
       const resolvedTemplateId = templateId ?? null;
@@ -24594,6 +24452,7 @@ export async function registerRoutes(
           updateStage ? (note?.trim() || "Status updated with applicant email sent") : null,
         ],
       );
+      }
 
       let updatedApplication = app_;
       let statusHistoryId: string | null = null;
@@ -24603,7 +24462,7 @@ export async function registerRoutes(
           `UPDATE job_submissions
               SET status = $1, updated_at = NOW()
             WHERE id = $2 AND status = $3
-          RETURNING *`,
+           RETURNING *, updated_at::text AS status_version`,
           [updateStage, id, app_.status],
         );
         if (updated.rows.length === 0) {
@@ -24612,7 +24471,7 @@ export async function registerRoutes(
         updatedApplication = updated.rows[0];
 
         approvalCommitStep = "write_status_history";
-        const historyNote = approvedRequest
+        const historyNote = isClientActor ? "Status updated by Client with automatic applicant email" : approvedRequest
           ? `Client status request ${approvedRequest.id}: ${note?.trim() || "Approved after applicant email delivery"}`
           : note?.trim() || "Status updated with applicant email sent";
         const historyResult = await dbClient.query(
@@ -24652,19 +24511,14 @@ export async function registerRoutes(
             `${app_.job_title || "a job"} to ${submissionStatusLabel(updateStage)}.`;
           await dbClient.query(
             `INSERT INTO notifications
-               (user_id, type, title, message, related_id, related_type)
-             SELECT u.id, 'client_application_status_changed',
-                    'Client updated application', $1, $2, 'job_submission'
+               (user_id, type, title, message, related_id, related_type, event_key)
+               SELECT u.id, 'client_application_status_changed',
+                    'Client updated application', $1, $2, 'job_submission',
+                    'client-status:' || $3::text || ':' || u.id
                FROM users u
               WHERE u.role = 'admin'
-                AND NOT EXISTS (
-                  SELECT 1 FROM notifications n
-                   WHERE n.user_id = u.id
-                     AND n.type = 'client_application_status_changed'
-                     AND n.related_id = $3
-                     AND n.message = $1
-                )`,
-            [adminMessage, id, id],
+              ON CONFLICT (event_key) WHERE event_key IS NOT NULL DO NOTHING`,
+             [adminMessage, id, statusHistoryId],
           );
         }
         if (approvedRequest) {
@@ -24701,9 +24555,27 @@ export async function registerRoutes(
         }
       }
 
+      if (isClientActor && clientLedger) {
+        await notifyTalentOfApplicationStatusChange({
+          submissionId: id, talentUserId: app_.talent_id, applicantEmail: app_.email,
+          jobTitle: app_.job_title, companyName: app_.job_company,
+          previousStatus: app_.status, newStatus: updateStage,
+          eventKey: `job-application-status-history:${statusHistoryId}`,
+          transaction: dbClient,
+        });
+        await dbClient.query(
+          `UPDATE job_application_emails SET status_completed_at=NOW(), error_message=NULL WHERE id=$1`,
+          [clientLedger.id],
+        );
+        await dbClient.query(
+          `UPDATE application_status_change_requests SET status='cancelled',
+             admin_note='Retired by direct Client status update; no approval is required.',
+             updated_at=NOW() WHERE application_id=$1 AND status='pending'`, [id],
+        );
+      }
       approvalCommitStep = "commit";
       await dbClient.query("COMMIT");
-      if (updateStage) {
+      if (updateStage && !isClientActor) {
         await notifyTalentOfApplicationStatusChange({
           submissionId: id,
           talentUserId: app_.talent_id,
@@ -24715,6 +24587,9 @@ export async function registerRoutes(
           eventKey: `job-application-status-history:${statusHistoryId}`,
         });
       }
+      if (isClientActor) {
+        return res.json({ success: true, emailSent: true, status: updateStage, statusVersion: updatedApplication.status_version });
+      }
       return res.json({
         success: true,
         sentTo: app_.email,
@@ -24722,6 +24597,14 @@ export async function registerRoutes(
       });
     } catch (err: any) {
       await rollbackQuietly();
+      if (isClientActor) {
+        if (!err?.clientSafe) console.error("Client automatic status email transition failed:", err);
+        return res.status(err?.clientSafe ? err.status : 500).json({
+          error: err?.clientSafe ? err.message : emailDelivered
+            ? "The email was sent, but the status update needs recovery. Retry the same update to finalize it without resending."
+            : "The status update could not be completed. Refresh and retry; if email delivery is uncertain, contact an administrator.",
+        });
+      }
       if (emailDelivered) {
         console.error(
           `[CRITICAL] APPROVAL_COMMIT_STEP=${approvalCommitStep}; applicant email delivered but status transaction failed for ${id}:`,
@@ -24798,6 +24681,9 @@ export async function registerRoutes(
                 jae.status, jae.error_message AS "errorMessage",
                 jae.is_test AS "isTest", jae.sent_at AS "sentAt",
                 jae.sender_email AS "senderEmail", jae.sender_name AS "senderName",
+                (jae.status_source_version IS NOT NULL) AS "automaticStatus",
+                jae.status_update AS "statusUpdate", jae.status_previous AS "statusPrevious",
+                jae.status_completed_at AS "statusCompletedAt", jae.delivery_attempts AS "deliveryAttempts",
                 aet.name AS "templateName",
                 u.first_name AS "senderFirstName", u.last_name AS "senderLastName"
          FROM job_application_emails jae
@@ -24841,7 +24727,7 @@ export async function registerRoutes(
       await dbClient.query("BEGIN");
       await dbClient.query(
         "SELECT pg_advisory_xact_lock(hashtext($1))",
-        [`admin-status-email-retry:${id}`],
+        [`admin-status-email:${id}`],
       );
       const emailRow = await dbClient.query(
         `SELECT *
@@ -24855,6 +24741,10 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Email record not found" });
       }
       const prev = emailRow.rows[0];
+      if (prev?.status_source_version) {
+        await rollbackQuietly();
+        return res.status(409).json({ error: "Automatic Client status emails must be retried through the Client's version-checked status action, not the manual email resend endpoint." });
+      }
       if (prev.is_test) {
         await rollbackQuietly();
         return res.status(400).json({ error: "Test emails cannot be retried from applicant history" });

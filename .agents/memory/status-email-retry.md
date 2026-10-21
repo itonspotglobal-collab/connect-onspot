@@ -3,8 +3,14 @@ name: Status email retry invariant
 description: Durable rules for applicant email retries that are coupled to application status changes.
 ---
 
-Failed applicant emails that were intended to change application status must retain the requested status, previous status, and internal note with the email attempt. A retry must be strictly Admin-authorized, serialized per application, allowed only for a failed attempt, and commit status/history/Talent notification only after successful delivery.
+Failed applicant emails intended to change status must retain the requested/previous status and source version. Manual Admin emails retain their Admin-only retry gate. Automatic Client status emails retry only through the owning Client's version-checked status action, never the manual resend endpoint. Both paths serialize against the same application email lock.
 
 **Why:** An email-history retry that only resends the message can tell a Talent their application changed while the canonical application still has the old status, and repeated retries can duplicate delivery.
 
-**How to apply:** Keep dedicated interview, offer, contract, hire, and withdrawal workflows outside the generic status-email path. For generic Admin status changes, use the locked email-send/retry transaction and treat any post-delivery DB failure as a consistency error. Commit the status/history first, then create the Talent alert using that history record's immutable event key so delivery failures cannot undo the status and retries cannot duplicate the alert. Talent-portal notification reads must resolve the candidate's linked `users.id`, never trust token email alone.
+**How to apply:** Keep dedicated hiring actions separate. For automatic Client updates, durably record delivery independently of the status transaction: known rejection permits retry; known acceptance permits finalization without resending; ambiguous outcomes block resending pending independent provider evidence. Commit history and in-app alerts together, keyed by the history event. Retain manual Admin recovery behavior. Talent-portal reads must resolve the persisted candidate/user link, never token email alone.
+
+Delivery-ledger writes need capacity independent of transactions waiting on application locks, and notification lookups inside the atomic Client transition must use its transaction connection.
+
+**Why:** Concurrent requests can occupy every ordinary pool connection while the lock holder waits for another connection to persist its email evidence, causing a deadlock unrelated to PostgreSQL row locking.
+
+**How to apply:** Preserve the separately bounded ledger pool and avoid unrelated pool checkouts from inside the locked Client transition.

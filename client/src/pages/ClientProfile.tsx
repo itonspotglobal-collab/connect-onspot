@@ -67,6 +67,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { Job } from "@shared/schema";
+import { CLIENT_SETTABLE_STATUSES, canClientUpdateApplicationStatus } from "@shared/submissionStatuses";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
 import { formatInterviewTime } from "@/lib/formatInterviewTime";
 import {
@@ -98,6 +99,7 @@ interface JobSubmission {
   expectedSalary: string | null;
   availability: string | null;
   status: string;
+  statusVersion: string;
   proposer_role?: string;
   parent_offer_id?: string | null;
   submittedAt: string;
@@ -167,7 +169,7 @@ function ViewSubmissionModal({
   submission: JobSubmission;
   requestedInterviewId: string | null;
   onClose: () => void;
-  onStatusChange: (id: string, status: string) => void;
+  onStatusChange: (id: string, status: string, statusVersion: string) => void;
   onExtendOffer: (sub: JobSubmission) => void;
   nameRevealThreshold?: string;
 }) {
@@ -177,10 +179,8 @@ function ViewSubmissionModal({
   const [requestedStatus, setRequestedStatus] = useState<string>("");
   const [requestConfirmOpen, setRequestConfirmOpen] = useState(false);
   const [requestInterviewOpen, setRequestInterviewOpen] = useState(false);
-  const { data: pendingRequest, refetch: refetchPendingRequest } = useQuery<any>({
-    queryKey: ["/api/client/job-submissions", submission.id, "status-change-request"],
-    queryFn: async () => (await apiRequest("GET", `/api/client/job-submissions/${submission.id}/status-change-request`)).json(),
-  });
+  const statusOperation = useRef<{ id: string; status: string } | null>(null);
+  const statusBusy = useRef(false);
   const { data: interviewRows = [], isLoading: interviewRowsLoading, refetch: refetchInterviews } = useQuery<any[]>({
     queryKey: ["/api/client/interviews", submission.id],
     queryFn: async () => {
@@ -225,22 +225,33 @@ function ViewSubmissionModal({
     }
   };
   const requestStatusMutation = useMutation({
-    mutationFn: () => apiRequest("POST", `/api/client/job-submissions/${submission.id}/status-change-requests`, {
-      requestedStatus,
-    }),
-    onSuccess: () => {
-      refetchPendingRequest();
+    mutationFn: async () => {
+      if (!statusOperation.current || statusOperation.current.status !== requestedStatus) {
+        statusOperation.current = { id: crypto.randomUUID(), status: requestedStatus };
+      }
+      return (await apiRequest("PATCH", `/api/client/job-submissions/${submission.id}/status`, {
+        status: requestedStatus, expectedStatus: submission.status,
+        expectedVersion: submission.statusVersion, operationId: statusOperation.current.id,
+      })).json();
+    },
+    onSuccess: (result) => {
+      onStatusChange(submission.id, result.status, result.statusVersion);
+      queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
       queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
-      toast({ title: "Status change request sent", description: "An administrator will review it before the application status changes." });
+      toast({
+        title: `Application status ${result.alreadyApplied ? "is already" : "updated to"} ${SUBMISSION_STATUS_LABELS[result.status]?.label ?? result.status}`,
+        description: result.emailSent ? "The applicant has been notified by email." : "No additional email was sent.",
+      });
+      statusOperation.current = null;
       setRequestedStatus("");
       setRequestConfirmOpen(false);
     },
-    onError: (err: any) =>
-      toast({ title: "Request could not be sent", description: err.message, variant: "destructive" }),
-  });
-  const cancelRequestMutation = useMutation({
-    mutationFn: () => apiRequest("PATCH", `/api/client/status-change-requests/${pendingRequest.id}/cancel`),
-    onSuccess: () => { refetchPendingRequest(); toast({ title: "Status change request cancelled" }); },
+    onError: (err: any) => {
+      let message = "The status update could not be completed.";
+      try { const body = JSON.parse(err.message.replace(/^\d+:\s*/, "")); message = body.message || body.error || message; } catch {}
+      toast({ title: "Status was not updated", description: message, variant: "destructive" });
+    },
+    onSettled: () => { statusBusy.current = false; },
   });
   const canRequestInterviewNow =
     canRequestInterview(submission.status) &&
@@ -272,7 +283,7 @@ function ViewSubmissionModal({
             {submission.jobCompany && <p className="text-xs text-slate-500">{submission.jobCompany}</p>}
           </div>
 
-          {/* Status + Admin approval request */}
+          {/* Canonical status and automatic applicant email */}
           <div className="flex flex-wrap items-center gap-3">
             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${statusInfo.color}`}>
               {statusInfo.label}
@@ -291,26 +302,18 @@ function ViewSubmissionModal({
                 Pending and declined invitations are locked — only the talent's respond
                 endpoint may transition those rows. */}
           </div>
-          {!isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
-            pendingRequest ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
-                <p className="font-semibold text-amber-900">Status change request</p>
-                <p className="mt-1 text-amber-800">{SUBMISSION_STATUS_LABELS[pendingRequest.currentStatus]?.label ?? pendingRequest.currentStatus} → {SUBMISSION_STATUS_LABELS[pendingRequest.requestedStatus]?.label ?? pendingRequest.requestedStatus}</p>
-                <p className="mt-1 text-xs text-amber-700">Pending Admin Approval</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => cancelRequestMutation.mutate()} disabled={cancelRequestMutation.isPending}>Cancel Request</Button>
-              </div>
-            ) : (
+          {CLIENT_SETTABLE_STATUSES.some(status => canClientUpdateApplicationStatus(submission.status, status)) && (
               <div className="space-y-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Request status change</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Update application status</Label>
                 <div className="flex gap-2">
-                  <Select value={requestedStatus} onValueChange={setRequestedStatus}>
-                    <SelectTrigger className="h-9 flex-1"><SelectValue placeholder="Choose a requested status" /></SelectTrigger>
-                    <SelectContent>{(["under_review", "reviewed", "shortlisted", "rejected"] as const).filter(v => v !== submission.status).map(v => <SelectItem key={v} value={v}>{SUBMISSION_STATUS_LABELS[v]?.label ?? v}</SelectItem>)}</SelectContent>
+                  <Select value={requestedStatus} onValueChange={setRequestedStatus} disabled={requestStatusMutation.isPending}>
+                    <SelectTrigger className="h-9 flex-1"><SelectValue placeholder="Choose a status" /></SelectTrigger>
+                    <SelectContent>{CLIENT_SETTABLE_STATUSES.filter(v => v !== submission.status && canClientUpdateApplicationStatus(submission.status, v)).map(v => <SelectItem key={v} value={v}>{SUBMISSION_STATUS_LABELS[v]?.label ?? v}</SelectItem>)}</SelectContent>
                   </Select>
-                  <Button disabled={!requestedStatus} onClick={() => setRequestConfirmOpen(true)}>Request Status Change</Button>
+                  <Button disabled={!requestedStatus || requestStatusMutation.isPending} onClick={() => setRequestConfirmOpen(true)}>Update Status</Button>
                 </div>
+                <p className="text-xs text-muted-foreground">The applicant’s status email will be sent automatically. No Admin approval is required.</p>
               </div>
-            )
           )}
 
            {/* Interview coordination */}
@@ -489,11 +492,16 @@ function ViewSubmissionModal({
         </div>
         <AlertDialog open={requestConfirmOpen} onOpenChange={setRequestConfirmOpen}>
           <AlertDialogContent>
-            <AlertDialogHeader><AlertDialogTitle>Request status change?</AlertDialogTitle><AlertDialogDescription>
-              This request will be sent to an administrator for approval. The application will remain {statusInfo.label} until it is approved and the applicant email is sent.
+            <AlertDialogHeader><AlertDialogTitle>Update application status?</AlertDialogTitle><AlertDialogDescription>
+              The corresponding applicant email will be sent automatically before the status changes. If sending fails, the application will remain {statusInfo.label}.
             </AlertDialogDescription></AlertDialogHeader>
             <div className="text-sm space-y-1"><p><strong>Talent:</strong> {submission.applicantName}</p><p><strong>Position:</strong> {submission.jobTitle}</p><p><strong>Requested status:</strong> {SUBMISSION_STATUS_LABELS[requestedStatus]?.label}</p></div>
-            <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => requestStatusMutation.mutate()} disabled={requestStatusMutation.isPending}>Send Request</AlertDialogAction></AlertDialogFooter>
+            <AlertDialogFooter><AlertDialogCancel disabled={requestStatusMutation.isPending}>Cancel</AlertDialogCancel><AlertDialogAction onClick={(event) => {
+              event.preventDefault();
+              if (statusBusy.current) return;
+              statusBusy.current = true;
+              requestStatusMutation.mutate();
+            }} disabled={requestStatusMutation.isPending}>{requestStatusMutation.isPending ? "Sending email…" : "Confirm & Notify Applicant"}</AlertDialogAction></AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </DialogContent>
@@ -1364,8 +1372,8 @@ export default function ClientProfile() {
           submission={viewingSubmission}
           requestedInterviewId={requestedInterviewId}
           onClose={() => setViewingSubmission(null)}
-          onStatusChange={(id, status) =>
-            setViewingSubmission((prev) => prev && prev.id === id ? { ...prev, status } : prev)
+          onStatusChange={(id, status, statusVersion) =>
+            setViewingSubmission((prev) => prev && prev.id === id ? { ...prev, status, statusVersion } : prev)
           }
           onExtendOffer={(sub) => setExtendingOfferFor(sub)}
           nameRevealThreshold={nameRevealThreshold}
@@ -1441,15 +1449,6 @@ function JobSubmissionsSection({
       .filter((thread) => thread.jobId)
       .map((thread) => [thread.jobId as string, thread.unreadCount]),
   );
-
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiRequest("PATCH", `/api/client/job-submissions/${id}/status`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] });
-      queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
-    },
-  });
 
   const openingMessageRef = useRef(false);
   const openMessageMutation = useMutation({

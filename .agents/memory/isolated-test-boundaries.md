@@ -3,6 +3,18 @@ name: Isolated server test boundaries
 description: Transitive imports can initialize external stores or auth services before pure unit assertions run.
 ---
 
+Development module resolution and production bundling can select different
+extensions for an otherwise identical import.
+
+**Why:** The development TypeScript runner selected a legacy JavaScript sibling,
+while the production bundler and isolated database alias selected TypeScript.
+A new TypeScript-only export passed build/fixture checks but was absent from the
+extensionless development import.
+
+**How to apply:** Resolve new critical exports explicitly and check their actual
+development imports as well as the bundle. Database-alias fixtures alone do not
+prove real development module wiring.
+
 Treat the entire import chain, not just a test's own query calls, as the boundary of an isolated server test.
 
 **Why:** Tests of pure privacy functions and injected route helpers initialized conversation-memory storage or authentication metadata through transitive imports. Denying SQL alone did not make those imports independent of the environment.

@@ -1,0 +1,342 @@
+# TASK: Remove Admin Approval for Client Application Status Changes and Automatically Send Status Emails
+
+## Project
+OnSpot / `connect-onspot`
+
+## Objective
+
+Update the existing Client application management workflow so that Client accounts can directly change the application status of Talents who applied to job postings owned by that Client, without requiring Admin approval.
+
+Whenever a Client changes an applicant's status, the system must automatically send the Talent the appropriate application-status email using the existing email template system.
+
+This requirement applies to **ALL supported Client-editable application statuses**, not just Shortlisted.
+
+**Important: Implement these changes in the existing codebase. Do not rebuild the application management module or introduce a separate status system.**
+
+---
+
+## 1. Audit the Existing Implementation First
+
+Before modifying anything, inspect the existing Client application management, Admin approval, notification, and email delivery workflows.
+
+Pay particular attention to:
+
+- `server/routes.ts`
+- `client/src/lib/applicationStatus.ts`
+- `client/src/components/ClientEmailComposer.tsx`
+- `client/src/pages/AdminJobApplications.tsx`
+- `client/src/pages/AdminEmailTemplates.tsx`
+- `server/seeds/seedEmailTemplates.ts`
+- `server/services/emailVariableResolver.ts`
+- `server/services/microsoftGraphEmailService.ts`
+- `.agents/memory/client-status-approval.md`
+- `.agents/memory/status-email-retry.md`
+- `.agents/memory/client-shortlist-workflow.md`
+
+Also locate the actual Client application list, application detail pages, status update endpoints, Admin approval queue, and email history implementation.
+
+Identify the exact functions, API routes, database tables, validation rules, status mappings, and email templates currently being used.
+
+Do not assume the implementation is limited to the files listed above.
+
+## 2. Remove Admin Approval for Client Application Status Changes
+
+### Current behavior
+
+1. Talent applies to a Client's job posting.
+2. Client reviews the application.
+3. Client selects a new application status.
+4. The system creates an Admin approval request.
+5. An Admin approves the requested status change.
+6. Admin uses the email composer to send the appropriate email.
+7. The application status is finalized through the existing approval process.
+
+### New required behavior
+
+1. Talent applies to a Client's job posting.
+2. Client reviews the application.
+3. Client selects a new application status.
+4. The system validates and processes the status change directly.
+5. No Admin approval is required.
+6. The system automatically selects and sends the corresponding email template to the Talent.
+7. The application status, history, and notifications are updated consistently.
+
+The Client should never have to wait for Admin approval for an eligible application-status update.
+
+Remove the approval-request requirement for Client-initiated generic application status changes.
+
+Update both frontend and backend behavior. Do not simply hide the approval UI while retaining the approval requirement in the API.
+
+### Scope
+
+Only remove the Admin approval requirement for **Client-initiated application status updates on applications to the Client's own posted jobs**.
+
+Do not remove or change Admin approval for:
+
+- New job postings
+- Talent account verification
+- Other unrelated approval processes
+- Financial or contractual approvals
+
+Preserve existing Admin access and oversight of application records.
+
+## 3. Automatic Email Sending Based on the Selected Status
+
+Whenever a Client successfully initiates an eligible application status transition, automatically send the appropriate email to the Talent.
+
+Use the application's existing status-specific email templates.
+
+Examples:
+
+| Selected Status | Automatic Email |
+|---|---|
+| Under Review | Under Review email |
+| Shortlisted | Shortlisted email |
+| Rejected / Not Selected | Rejection or Not Selected email |
+| Other supported statuses | Corresponding existing status email |
+
+These examples are illustrative. Audit the real status configuration and existing templates to determine the complete supported mapping.
+
+Do not hardcode new status values or invent missing templates.
+
+For example:
+
+**If a Client selects Shortlisted:**
+
+- Automatically select the existing Shortlisted email template.
+- Populate the correct Talent, company, and job information.
+- Send it to the Talent through the existing email service.
+- Record the email attempt and resulting delivery state.
+- Complete the application status transition according to the consistency requirements below.
+
+The Client must not need to open an email composer, edit an email, or manually send it.
+
+### Template requirements
+
+- Reuse the existing Admin-managed email templates.
+- Preserve customized templates and their current branding.
+- Use existing template variable resolution and sanitization.
+- Preserve the existing email sender configuration.
+- Use the Microsoft Graph email integration already configured in the project.
+- Preserve email deep links and other existing formatting.
+- Do not expose the Talent's email address or other restricted contact information to the Client frontend.
+- Do not silently use the wrong template if the corresponding status template is missing.
+
+If a required email template is unavailable or invalid, block the automated delivery safely and return an actionable error instead of sending incorrect content.
+
+## 4. Remove the Email Composer from the Client Status Update Process
+
+Changing an application status should not open the existing manual email composer.
+
+The Client should be able to:
+
+1. Open the application details.
+2. Select an eligible status.
+3. Confirm the status change if the existing UI requires confirmation.
+4. See a success or failure message.
+
+The rest should happen automatically.
+
+Display a success message such as:
+
+"Application status updated to Shortlisted. The applicant has been notified by email."
+
+Only display an email-sent success message after successful email delivery.
+
+If email delivery fails, display a clear error and do not claim the Talent was notified.
+
+**Do not remove the email composer globally.** Preserve it for Admin workflows or other features that still require manual email composition.
+
+## 5. Support All Eligible Application Statuses
+
+Do not implement this feature exclusively for Shortlisted.
+
+Review the existing shared status configuration, backend status validation, and application transition logic.
+
+For every status that Clients are already authorized to select, ensure the automatic email behavior works consistently.
+
+Important distinctions:
+
+- Preserve canonical database status values and existing display-label mappings.
+- Do not introduce duplicate status values.
+- Do not make unsupported statuses available simply because they appear in the shared display configuration.
+- Preserve terminal-status restrictions and existing transition guards.
+
+**Dedicated workflows must remain dedicated.**
+
+Interview scheduling, job offers, offer acceptance, contracts, hiring finalization, withdrawal, and other specialized actions may have additional business rules.
+
+Do not bypass these rules or change their state through a generic status selector if they are controlled by dedicated workflows.
+
+Instead, ensure the existing dedicated transitions and their established notifications continue working correctly.
+
+## 6. Database Updates, Email Delivery, and Retry Safety
+
+The application status and Talent email must remain consistent.
+
+The system must never report a successfully completed status change and email notification if the email was not actually sent.
+
+Implement or reuse the existing email-linked status transition infrastructure with the following requirements:
+
+- Validate the requested transition server-side.
+- Serialize competing status changes for the same application.
+- Avoid sending duplicate emails for repeated requests or retries.
+- Record delivery attempts and failures in the existing email history.
+- Preserve the previous status and intended new status when an email fails.
+- If delivery fails before the status transition is committed, retain the existing status and permit a safe retry.
+- If delivery succeeds but a subsequent database operation fails, preserve evidence of successful delivery and recover the transition without resending the email.
+- Prevent stale requests from overwriting more recent status changes.
+- Record the status history exactly once per successful transition.
+- Avoid sending a new email when the selected status is already the current status.
+
+Use the project's current transaction, locking, notification, and retry patterns wherever possible.
+
+Do not implement a naive frontend flow that independently calls "update status" and "send email" without server-side consistency controls.
+
+## 7. Preserve Talent Notifications and Status History
+
+When an application status successfully changes:
+
+- Update the canonical application status.
+- Create the existing application status history record.
+- Update the Talent-facing application status display.
+- Trigger the existing in-app Talent status notification.
+- Send the appropriate email automatically.
+- Preserve any existing Client and Admin activity records or audit history.
+
+The Talent should see the same updated application status in their dashboard and application details.
+
+Notifications should reflect the actual successful transition and should not be duplicated.
+
+Admins should still be able to view completed status changes and their history even though approval is no longer required.
+
+## 8. Remove Obsolete Client Status Approval UI
+
+Update the relevant Client and Admin interfaces.
+
+### Client interface
+
+Remove outdated messages such as:
+
+- Pending Admin Approval
+- Waiting for Admin Approval
+- Status Change Requested
+- Awaiting Approval
+
+For the new direct-update workflow, display the actual current application status.
+
+### Admin interface
+
+Client status changes should no longer create new pending Admin approval requests.
+
+Remove or retire the obsolete Client application status approval actions from the Admin queue without affecting unrelated approval requests.
+
+Preserve historical approval data and audit records. Do not delete existing records unnecessarily.
+
+Handle any existing pending Client application status requests safely so that they cannot later overwrite a newer status change or generate duplicate emails.
+
+If data migration is required, make it explicit, safe, and backward compatible.
+
+## 9. Security and Permissions
+
+Client accounts must only be able to change the status of applications associated with job postings that they own or are explicitly authorized to manage.
+
+Enforce this in the backend, not just the frontend.
+
+Requirements:
+
+- Authenticate the Client.
+- Validate ownership or appropriate organization-level access.
+- Verify the record is a genuine application to the Client's job.
+- Reject unauthorized status updates.
+- Validate all requested status transitions.
+- Preserve server-side Talent contact privacy.
+- Never return restricted applicant contact information in Client API responses.
+
+Do not allow a Client to update another Client's applicants by modifying request IDs.
+
+## 10. Important: Preserve the Separate Search-to-Shortlist Workflow
+
+The existing system has a separate feature where Clients browse Talent profiles and privately add Talents to a shortlist.
+
+This is different from changing the status of an actual job application to **Shortlisted**.
+
+Do not change the private Search-to-Shortlist workflow.
+
+Private shortlisting must continue to behave as designed and must not automatically email the Talent.
+
+The new automatic Shortlisted email applies only when a Client changes an existing actual job application to Shortlisted.
+
+Preserve existing workflow-type validation for `application`, `client_shortlist`, and `client_invitation`.
+
+## 11. Testing and Regression Checks
+
+Test the complete workflow, including:
+
+1. Client changes an eligible application from Submitted to Under Review.
+2. Client changes an eligible application to Shortlisted.
+3. Client changes an eligible application to Rejected.
+4. Each status selects the correct existing email template.
+5. The email is automatically sent without an email composer.
+6. The Talent's dashboard displays the updated status.
+7. Talent receives the corresponding in-app notification.
+8. No Admin approval request is created.
+9. Admin can still see the status change and audit history.
+10. An unauthorized Client cannot modify another Client's applications.
+11. Selecting the same status twice does not send duplicate emails.
+12. Email delivery failure is handled safely.
+13. Email retries do not generate duplicate messages or history.
+14. Concurrent or stale status updates cannot overwrite newer changes.
+15. Private Search-to-Shortlist remains silent.
+16. Existing job approval and other Admin approval workflows remain unchanged.
+17. Interview, offer, contract, hiring, and withdrawal workflows continue following their existing business rules.
+18. Existing customized email templates remain intact.
+
+Run relevant backend tests, frontend tests, TypeScript checks, and the production build.
+
+Fix regressions introduced by these changes.
+
+## 12. Implementation Constraints
+
+- Make targeted modifications to the existing implementation.
+- Reuse current services, templates, database tables, and reusable components.
+- Avoid unrelated UI redesigns.
+- Do not change existing application status names unnecessarily.
+- Do not delete historical approval, notification, or email records.
+- Do not weaken role-based authorization or privacy controls.
+- Do not add a second independent status-update workflow.
+- Do not send duplicate notifications or emails.
+- Keep the existing Admin email and application management functionality working.
+
+Update the relevant internal developer documentation and agent-memory files so they no longer describe the old Admin-required Client status workflow as the current behavior.
+
+## Expected Result
+
+**Before:**
+
+Client changes application status → Admin approval request → Admin approves → Admin manually sends email → Status updated.
+
+**After:**
+
+Client changes application status → System validates the transition → Corresponding email automatically sent → Application status and notifications finalized consistently.
+
+No Admin approval required.
+
+No manual email composer required.
+
+All eligible Client-editable application statuses are covered.
+
+## Final Deliverables
+
+After implementation, provide:
+
+1. Summary of changes made.
+2. Files modified.
+3. Status-to-email-template mapping used.
+4. Explanation of how the old Admin approval requirement was removed.
+5. Explanation of how automatic email delivery and failed-email retries work.
+6. Confirmation that Client ownership and Talent privacy are enforced.
+7. Test results, including any skipped or failed tests.
+8. Confirmation that unrelated approval workflows and dedicated hiring workflows remain unchanged.
+
+**Implement the solution fully, not just as a proposed plan.**

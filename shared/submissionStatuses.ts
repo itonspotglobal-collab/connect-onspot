@@ -75,6 +75,21 @@ export const CLIENT_SETTABLE_STATUSES: SubmissionStatus[] = [
   "rejected",
 ];
 
+/** Existing applicant-template stages, not new template definitions. Reviewed
+ * shares the existing Under Review email, just as the Talent status display does. */
+export const CLIENT_STATUS_TEMPLATE_STAGES: Record<string, string> = {
+  under_review: "under_review",
+  reviewed: "under_review",
+  shortlisted: "shortlisted",
+  rejected: "rejected",
+};
+
+export function canClientUpdateApplicationStatus(current: string, target: string): boolean {
+  if (!CLIENT_SETTABLE_STATUSES.includes(target as SubmissionStatus)) return false;
+  if (current === "interviewing") return target === "rejected";
+  return ["new", "under_review", "reviewed", "shortlisted"].includes(current);
+}
+
 /**
  * Statuses the ADMIN may write directly via PATCH /api/admin/job-applications/:id.
  * Contract-stage statuses (contract_sent, hired) are set via the hiring_contracts workflow.

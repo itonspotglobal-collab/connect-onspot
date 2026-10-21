@@ -36,7 +36,12 @@ interface EmailHistoryRow {
   id: string;
   subject: string;
   sentTo: string;
-  status: "sent" | "failed";
+  status: "sent" | "failed" | "sending" | "delivery_unknown";
+  automaticStatus?: boolean;
+  statusUpdate?: string;
+  statusPrevious?: string;
+  statusCompletedAt?: string | null;
+  deliveryAttempts?: Array<{ at: string; state: string; error?: string }>;
   errorMessage?: string;
   isTest: boolean;
   sentAt: string;
@@ -480,14 +485,31 @@ function HistoryTab({ appId }: { appId: string }) {
                 )}
                 <span>{fmtDate(row.sentAt)}</span>
               </div>
-              {row.status === "failed" && row.errorMessage && (
+              {row.errorMessage && (
                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3 flex-shrink-0" />
                   {row.errorMessage}
                 </p>
               )}
+              {row.automaticStatus && (
+                <div className="mt-2 space-y-1 text-xs text-slate-600">
+                  <p>Automatic Client status email · {row.statusPrevious} → {row.statusUpdate}</p>
+                  <p>{row.status === "sent"
+                    ? row.statusCompletedAt ? "Email sent and application status saved." : "Email sent; status recovery is pending. The Client can retry the original status without resending."
+                    : row.status === "failed"
+                      ? "Email failed; status unchanged. Retry from the Client application status action."
+                      : "Delivery is unconfirmed; automatic resending is blocked. Check Microsoft Graph delivery evidence before any manual recovery."}</p>
+                  {(row.deliveryAttempts?.length ?? 0) > 0 && (
+                    <details><summary className="cursor-pointer">Delivery attempt history</summary>
+                      <ol className="mt-1 space-y-1">{row.deliveryAttempts!.map((attempt, index) => (
+                        <li key={index}>{fmtDate(attempt.at)} · {attempt.state}{attempt.error ? ` · ${attempt.error}` : ""}</li>
+                      ))}</ol>
+                    </details>
+                  )}
+                </div>
+              )}
             </div>
-            {row.status === "failed" && (
+            {row.status === "failed" && !row.automaticStatus && (
               <Button
                 size="sm"
                 variant="outline"

@@ -1186,7 +1186,7 @@ export default function AdminJobApplications() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/status-change-requests"] });
       setReviewRequest(null);
-      toast({ title: "Status change request declined" });
+      toast({ title: "Historical request archived" });
     },
   });
   const finalizeStatusRequestMutation = useMutation({
@@ -1196,10 +1196,10 @@ export default function AdminJobApplications() {
       queryClient.invalidateQueries({ queryKey: [listKeyPrefix] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications/summary"] });
       setReviewRequest(null);
-      toast({ title: "Approval finalized", description: "The status, history, and notifications were saved without sending another email." });
+      toast({ title: "Delivered update recovered", description: "The status, history, and notifications were saved without sending another email." });
     },
     onError: (err: any) => toast({
-      title: "Could not finalize approval",
+      title: "Could not recover delivered update",
       description: err.message,
       variant: "destructive",
     }),
@@ -1275,8 +1275,8 @@ export default function AdminJobApplications() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-indigo-950">Status Requests ({pendingStatusRequests.length})</p>
-                  <p className="text-sm text-indigo-800">Client requests require your approval and applicant email before a status changes.</p>
+                  <p className="font-semibold text-indigo-950">Historical Status Requests ({pendingStatusRequests.length})</p>
+                  <p className="text-sm text-indigo-800">Clients now update statuses directly with automatic emails. Archive older requests, or recover an update only if its email was already sent.</p>
                 </div>
               </div>
               <div className="mt-3 space-y-2">
@@ -1643,24 +1643,16 @@ export default function AdminJobApplications() {
             )}
           </div>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => reviewRequest && rejectStatusRequestMutation.mutate(reviewRequest.id)} disabled={rejectStatusRequestMutation.isPending}>Reject Request</Button>
+            {!reviewRequest?.emailAlreadySent && <Button variant="outline" onClick={() => reviewRequest && rejectStatusRequestMutation.mutate(reviewRequest.id)} disabled={rejectStatusRequestMutation.isPending}>Archive Historical Request</Button>}
             {reviewRequest?.emailAlreadySent && (
               <Button
                 variant="outline"
                 onClick={() => finalizeStatusRequestMutation.mutate(reviewRequest.id)}
                 disabled={finalizeStatusRequestMutation.isPending}
               >
-                {finalizeStatusRequestMutation.isPending ? "Finalizing…" : "Finalize Approval"}
+                {finalizeStatusRequestMutation.isPending ? "Finalizing…" : "Recover Delivered Update"}
               </Button>
             )}
-            <Button className="bg-[#474ead] text-white" onClick={() => {
-              if (!reviewRequest) return;
-              setPendingStatusChange({ applicationId: reviewRequest.applicationId, previousStatus: reviewRequest.currentStatus, newStatus: reviewRequest.requestedStatus });
-              setStatusChangeRequestId(reviewRequest.id);
-              setApprovalRequestContext({ requestedBy: reviewRequest.clientName, requestId: reviewRequest.id });
-              setEmailDialog({ id: reviewRequest.applicationId, jobId: "", jobTitle: reviewRequest.jobTitle, firstName: reviewRequest.firstName, lastName: reviewRequest.lastName, applicantName: reviewRequest.applicantName, email: reviewRequest.email, status: reviewRequest.actualStatus, registrationStatus: "" });
-              setReviewRequest(null);
-            }}>Approve & Email Applicant</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

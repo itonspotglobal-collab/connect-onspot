@@ -19,6 +19,7 @@ type TalentApplicationStatusNotificationInput = {
   previousStatus: string;
   newStatus: string;
   eventKey?: string | null | undefined;
+  transaction?: { query: (sql: string, params?: any[]) => Promise<any> };
 };
 
 type AdminClientStatusNotificationInput = {
@@ -80,12 +81,14 @@ export async function resolveTalentNotificationRecipient({
   talentUserId,
   candidateId,
   applicantEmail,
+  transaction,
 }: {
   talentUserId?: string | null;
   candidateId?: string | null;
   applicantEmail?: string | null;
+  transaction?: { query: (sql: string, params?: any[]) => Promise<any> };
 }): Promise<string | null> {
-  const userLookup = await query(
+  const userLookup = await (transaction ? transaction.query.bind(transaction) : query)(
     `SELECT u.id
        FROM users u
        LEFT JOIN candidates c ON c.user_id = u.id
@@ -230,6 +233,7 @@ export async function notifyTalentOfApplicationStatusChange({
   previousStatus,
   newStatus,
   eventKey,
+  transaction,
 }: TalentApplicationStatusNotificationInput): Promise<void> {
   if (previousStatus === newStatus) return;
 
@@ -238,6 +242,7 @@ export async function notifyTalentOfApplicationStatusChange({
       talentUserId,
       candidateId,
       applicantEmail,
+      transaction,
     });
     if (!recipientUserId) {
       console.warn(
@@ -252,7 +257,7 @@ export async function notifyTalentOfApplicationStatusChange({
       newStatus === "hired"
         ? `talent-hired:${submissionId}`
         : eventKey ?? `application-status:${submissionId}:${previousStatus}:${newStatus}`;
-    const created = await query(
+    const created = await (transaction ? transaction.query.bind(transaction) : query)(
       `INSERT INTO notifications
          (user_id, type, title, message, related_id, related_type, event_key)
        VALUES ($1, 'job_application_status_changed', $2, $3, $4, 'job_submission', $5)
@@ -270,6 +275,7 @@ export async function notifyTalentOfApplicationStatusChange({
       notificationId: created.rows[0].id,
     });
   } catch (error) {
+    if (transaction) throw error;
     console.error(
       `[application-status] failed to create status notification for ${submissionId}:`,
       error,

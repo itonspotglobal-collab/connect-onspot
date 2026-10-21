@@ -41,12 +41,14 @@ try {
   const url = `postgresql://hiring_fixture@127.0.0.1:${port}/onspot_hiring_test`;
   const videoOnly = process.argv.includes("--video-only");
   const messagingOnly = process.argv.includes("--messaging-only");
+  const clientStatusOnly = process.argv.includes("--client-status-only");
   const messagingBaseline = messagingOnly && process.argv.includes("--baseline");
   const baselineRef = process.argv.find(arg => arg.startsWith("--baseline-ref="))?.slice("--baseline-ref=".length);
   if (messagingBaseline && !baselineRef) throw new Error("--baseline requires --baseline-ref=<pre-fix git revision>");
-  const isolatedApp = videoOnly || messagingOnly;
+  const isolatedApp = videoOnly || messagingOnly || clientStatusOnly;
   const workerEnv = { DATABASE_URL:url,HIRING_FLOW_TEST_DATABASE_URL:url,JWT_SECRET:"hiring-payment-fixture-only",DISABLE_AUTH:"false",
     ...(isolatedApp ? { REPLIT_DOMAINS: "127.0.0.1", NODE_ENV: "test" } : {}),
+    ...(clientStatusOnly ? { PUBLIC_APP_URL: "https://fixture.example.test" } : {}),
     ...(messagingBaseline ? { MESSAGING_UAT_BASELINE: "true" } : {}),
     ...(videoOnly && process.argv.includes("--real-storage") ? {
       VIDEO_UAT_REAL_STORAGE: "true", PRIVATE_OBJECT_DIR: process.env.PRIVATE_OBJECT_DIR,
@@ -92,7 +94,11 @@ try {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts","contracts"],workerEnv);
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
-  const entries = messagingOnly ? [
+  const entries = clientStatusOnly ? [
+    "server/tests/client-application-status.fixture.ts",
+    "server/tests/applicant-email-templates.test.ts",
+    "server/tests/email-variable-resolver.test.ts",
+  ] : messagingOnly ? [
     ...(!process.argv.includes("--regressions-only") ? ["server/tests/application-messaging.fixture.ts"] : []),
     ...(!messagingBaseline ? ["server/tests/message-threads-production.test.ts", "server/tests/message-notification-grouping.test.ts"] : []),
   ] : videoOnly ? ["server/tests/application-video-flow.fixture.ts"] : process.argv.includes("--regressions-only") ? [
