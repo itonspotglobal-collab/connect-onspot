@@ -1,0 +1,216 @@
+# BUG FIX: Client Cannot Message Talent Applicant from Job Submissions
+
+## Problem Description
+
+A new bug has been reported in the Client account's Job Submissions section.
+
+When a Client views applicants who submitted applications for their job posting and clicks the **Message** button beside an applicant, the application fails to open or create a conversation.
+
+**Actual error:**
+"Unable to open conversation. Please try again."
+
+## Steps to Reproduce
+
+1. Log in using a Client account.
+2. Navigate to the Client Dashboard.
+3. Open the Job Submissions section.
+4. Locate an applicant who applied for a job.
+5. Click the "Message" button beside the applicant.
+6. Observe that an error toast appears instead of opening the conversation.
+
+**Example scenario:**
+- Applicant: Ica Jael Atendido
+- Position: Executive Assistant
+- Application date: October 20, 2026
+- Application status: NEW
+
+These details are only for identifying the reported scenario. Do not hardcode any user, applicant, or job identifiers.
+
+## Expected Behavior
+
+When the Client clicks "Message":
+
+1. The system identifies the correct Talent account associated with the job application.
+2. It verifies that the Client is authorized to contact that applicant.
+3. If an existing conversation exists between the Client and Talent in the appropriate job context, open it.
+4. If no conversation exists, securely create a new conversation.
+5. Navigate to the messaging interface or open the existing conversation panel.
+6. Allow the Client to send messages to the Talent.
+7. Allow the Talent to receive and reply to those messages.
+8. Ensure the conversation persists after refreshing or logging in again.
+
+## TASK 1: Investigate the root cause
+
+Trace the entire messaging flow from:
+
+Client Job Submissions → Message button → Messaging API → Conversation creation/retrieval → Database → Messages UI.
+
+Inspect the actual codebase and identify:
+
+- The frontend component rendering Job Submissions.
+- The Message button's click handler.
+- The API endpoint called when the Client clicks Message.
+- The request payload being sent.
+- The authentication middleware.
+- The conversation creation and retrieval logic.
+- The database tables involved.
+- The navigation logic after conversation creation.
+
+Check browser network errors and backend logs to identify the exact failing request, HTTP status code, and server-side error.
+
+Do not assume the cause without confirming it.
+
+## TASK 2: Verify Client and Talent account mapping
+
+Investigate whether the application correctly maps:
+
+- Client user ID
+- Client profile ID
+- Job ID
+- Job application ID
+- Candidate/Talent profile ID
+- Talent user ID
+- Messaging conversation participants
+
+Pay particular attention to whether the messaging system expects `users.id` while the Job Submissions feature supplies `candidates.id` or another identifier.
+
+Ensure the correct user identifiers are used.
+
+Do not modify unrelated user IDs or existing database relationships.
+
+## TASK 3: Fix conversation creation and retrieval
+
+Ensure clicking Message correctly creates or retrieves the appropriate conversation.
+
+Requirements:
+
+- If a valid conversation already exists, reuse it.
+- If no conversation exists, create one using the correct participants and job context.
+- Prevent accidental duplicate conversations caused by repeated clicks or concurrent requests.
+- Ensure the authenticated Client is associated with the relevant job posting or has the appropriate authorization.
+- Ensure the Talent is associated with the submitted application.
+- Preserve existing conversations and message history.
+- Do not create conversations with invalid or missing participant IDs.
+
+Handle errors properly and return meaningful API responses.
+
+## TASK 4: Verify messaging permissions
+
+Review existing messaging authorization and business rules.
+
+Confirm that:
+
+- A Client can message an applicant for their own job posting when allowed by the application's messaging policy.
+- A Talent can reply to an authorized Client conversation.
+- Clients cannot access unrelated applicants' private conversations.
+- Talent users cannot access conversations belonging to other Talent accounts.
+- Authentication and authorization remain enforced.
+
+Do not bypass or disable existing messaging security to fix this issue.
+
+If an existing business rule intentionally restricts messaging at a particular application stage, preserve that rule and report the restriction instead of silently changing it.
+
+## TASK 5: Fix frontend messaging behavior
+
+Update the relevant Job Submissions component.
+
+When clicking Message:
+
+- Show an appropriate loading state.
+- Prevent duplicate requests while loading.
+- Retrieve or create the conversation.
+- Open the correct conversation after success.
+- Display a clear error message if the operation fails.
+- Avoid navigating to an invalid or empty conversation.
+- Preserve the existing UI design.
+
+Do not redesign Job Submissions or the messaging interface.
+
+## TASK 6: Verify Messages functionality
+
+Test the complete messaging experience.
+
+Confirm that:
+
+1. Client clicks Message from Job Submissions.
+2. The correct Talent conversation opens.
+3. Client sends a message.
+4. Talent receives the message.
+5. Talent replies.
+6. Client receives the reply.
+7. Both users can view conversation history.
+8. Messages persist after page refresh.
+9. Existing conversations continue working.
+10. Message notifications work if supported by the current implementation.
+
+Ensure the conversation appears correctly in the Messages section for both authorized users.
+
+## TASK 7: Test scenarios
+
+| Scenario | Expected Result |
+|---|---|
+| Client messages a new applicant | Conversation opens |
+| Client messages an existing applicant | Existing conversation opens |
+| Client sends a message | Talent receives it |
+| Talent replies | Client receives it |
+| Client clicks Message repeatedly | No duplicate conversations |
+| Client refreshes Messages page | Conversation persists |
+| Client messages applicant for own job | Authorized access works |
+| Client accesses unrelated applicant | Access denied |
+| Talent accesses another Talent's chat | Access denied |
+| Invalid applicant identifier | Controlled error |
+| API or database failure | Clear error, no corrupt records |
+| Existing conversation history | Preserved |
+
+Use automated backend tests and browser-based end-to-end tests where feasible.
+
+## TASK 8: Regression testing
+
+Ensure the fix does not break:
+
+- Client Dashboard
+- Job Submissions
+- Applicant details
+- Job application records
+- Talent Dashboard
+- Messages page
+- Existing conversations
+- Message notifications
+- Job posting ownership checks
+- Authentication and authorization
+- Other messaging entry points
+
+## TASK 9: Final report
+
+After implementing the fix, provide:
+
+1. Confirmed root cause.
+2. Exact failing API endpoint and HTTP status.
+3. Explanation of why the conversation could not open.
+4. Files modified.
+5. Database changes, if any.
+6. Fixes implemented.
+7. Tests performed and results.
+8. Remaining issues or deployment requirements.
+9. Production readiness assessment.
+
+Clearly distinguish verified results from untested scenarios.
+
+## IMPORTANT RESTRICTIONS
+
+- Do not deploy automatically.
+- Do not modify unrelated features.
+- Do not redesign the existing interface.
+- Do not remove messaging authorization.
+- Do not hardcode applicant or user IDs.
+- Do not delete existing conversations or messages.
+- Do not change database schemas unless necessary.
+- Do not run destructive migrations.
+- Do not introduce duplicate conversations.
+- Do not claim success without verifying the actual Client-to-Talent messaging flow.
+
+**PRIMARY GOAL:**
+
+A Client must be able to click the Message button beside a Talent applicant in Job Submissions and successfully open a secure, persistent conversation with that applicant.
+
+Fix the issue, perform regression testing, and provide a verification report before deployment.
