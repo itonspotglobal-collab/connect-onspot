@@ -1,9 +1,23 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+export class ApiRequestError extends Error {
+  readonly code?: string;
+  constructor(public readonly status: number, text: string, public readonly data?: any) {
+    // Preserve the existing message contract for legacy callers while allowing
+    // new UI to branch on typed HTTP status and server codes.
+    super(`${status}: ${text}`);
+    this.name = "ApiRequestError";
+    const code = data?.code ?? data?.error;
+    if (typeof code === "string") this.code = code;
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let data: unknown;
+    try { data = JSON.parse(text); } catch { /* Non-JSON failures retain HTTP status. */ }
+    throw new ApiRequestError(res.status, text, data);
   }
 }
 

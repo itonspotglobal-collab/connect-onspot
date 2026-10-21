@@ -72,6 +72,147 @@ export async function hiringPaymentRequest(method: string, url: string, body?: u
   return response.json();
 }
 
+export interface HiringPaymentErrorInfo {
+  kind:
+    | "job-billing"
+    | "billing-policy"
+    | "authorization"
+    | "not-found"
+    | "ineligible"
+    | "identity-conflict"
+    | "server"
+    | "network"
+    | "request";
+  heading: string;
+  message: string;
+  missingFields: string[];
+  editPath: string | null;
+}
+
+const missingFieldLabels: Record<string, string> = {
+  engagementType: "Engagement type",
+  billingMode: "Billing mode",
+};
+
+function safeJobEditPath(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\/client\/jobs\/[A-Za-z0-9_-]+\/edit$/.test(value)) {
+    return null;
+  }
+  return value;
+}
+
+/** Convert structured API/network failures to user-safe copy; never expose raw payloads. */
+export function getHiringPaymentErrorInfo(cause: unknown): HiringPaymentErrorInfo {
+  const error = cause && typeof cause === "object"
+    ? cause as { status?: unknown; code?: unknown; data?: unknown }
+    : {};
+  const status = typeof error.status === "number" ? error.status : undefined;
+  const code = typeof error.code === "string" ? error.code : undefined;
+  const data = error.data && typeof error.data === "object"
+    ? error.data as { details?: unknown }
+    : {};
+  const details = data.details && typeof data.details === "object"
+    ? data.details as { missingFields?: unknown; editPath?: unknown }
+    : {};
+  const missingFields = Array.isArray(details.missingFields)
+    ? details.missingFields
+        .filter((field): field is string => typeof field === "string" && field in missingFieldLabels)
+        .map((field) => missingFieldLabels[field])
+    : [];
+  const editPath = safeJobEditPath(details.editPath);
+  const base = { missingFields, editPath };
+
+  if (code === "JOB_BILLING_CLASSIFICATION_REQUIRED") {
+    return {
+      ...base,
+      kind: "job-billing",
+      heading: "Job billing setup required",
+      message: "This job needs an engagement type and billing mode before a hiring invoice can be prepared. Please complete the job's billing settings and try again.",
+    };
+  }
+  if (code === "HIRING_BILLING_POLICY_REQUIRED") {
+    return {
+      ...base,
+      kind: "billing-policy",
+      heading: "Hiring fee policy unavailable",
+      message: "A hiring fee policy has not been configured. Contact an OnSpot administrator; no fee has been assumed.",
+    };
+  }
+  if (status === 401 || status === 403) {
+    return {
+      ...base,
+      kind: "authorization",
+      heading: "Authorization required",
+      message: status === 401
+        ? "Your session may have expired. Sign in again, then retry this action."
+        : "You do not have permission to prepare this hiring invoice. Contact an OnSpot administrator if you need access.",
+    };
+  }
+  if (status === 404) {
+    return {
+      ...base,
+      kind: "not-found",
+      heading: "Application or job unavailable",
+      message: "The application or job could not be found. Refresh the page and try again.",
+    };
+  }
+  if (code === "APPLICATION_NOT_OFFER_ELIGIBLE") {
+    return {
+      ...base,
+      kind: "ineligible",
+      heading: "Application is not ready for an offer",
+      message: "This application is not at an eligible stage for offer preparation. Review its current status before trying again.",
+    };
+  }
+  if (code && (
+    [
+      "HIRING_INVOICE_CONFLICT",
+      "HIRING_INVOICE_IDENTITY_CONFLICT",
+      "HIRING_INVOICE_ATTEMPT_CONFLICT",
+      "HIRING_ATTEMPT_IDENTITY_CONFLICT",
+      "INVOICE_ATTEMPT_IDENTITY_CONFLICT",
+    ].includes(code)
+    || /(?:INVOICE|ATTEMPT).*(?:IDENTITY|CONFLICT)|(?:IDENTITY|CONFLICT).*(?:INVOICE|ATTEMPT)/.test(code)
+  )) {
+    return {
+      ...base,
+      kind: "identity-conflict",
+      heading: "Invoice could not be matched",
+      message: "The application and invoice details could not be safely matched. No payment status was changed. Refresh the page or contact an OnSpot administrator.",
+    };
+  }
+  if (status !== undefined && status >= 500) {
+    return {
+      ...base,
+      kind: "server",
+      heading: "Invoice preparation unavailable",
+      message: "OnSpot could not prepare the hiring invoice right now. No payment status was changed. Please try again shortly.",
+    };
+  }
+  if (status === 409) {
+    return {
+      ...base,
+      kind: "request",
+      heading: "Request conflicts with current status",
+      message: "The application or invoice changed and this request could not be completed. Refresh the page before trying again.",
+    };
+  }
+  if (status === undefined) {
+    return {
+      ...base,
+      kind: "network",
+      heading: "Connection problem",
+      message: "OnSpot could not be reached. Check your connection and try again.",
+    };
+  }
+  return {
+    ...base,
+    kind: "request",
+    heading: "Invoice could not be prepared",
+    message: "The hiring invoice could not be prepared. Refresh the page or contact an OnSpot administrator.",
+  };
+}
+
 export function HiringInvoiceStatus({ status }: { status: string }) {
   const color = status === "paid"
     ? "border-emerald-300 bg-emerald-50 text-emerald-800"

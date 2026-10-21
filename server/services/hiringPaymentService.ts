@@ -9,7 +9,7 @@ interface PaymentPool extends HiringPaymentDb {
   connect(): Promise<HiringPaymentDb & { release(): void }>;
 }
 export class HiringPaymentError extends Error {
-  constructor(public status: number, public code: string, message: string) { super(message); }
+  constructor(public status: number, public code: string, message: string, public details?: Record<string, unknown>) { super(message); }
 }
 const fail = (status: number, code: string, message: string): never => { throw new HiringPaymentError(status, code, message); };
 const moneyCents = (value: string) => {
@@ -102,9 +102,22 @@ export class HiringPaymentService {
           !eligibility.rows.length) {
         return fail(409, "APPLICATION_NOT_OFFER_ELIGIBLE", "This original application is not eligible for an offer.");
       }
-      const { rows: [job] } = await db.query("SELECT engagement_type,billing_mode FROM jobs WHERE id=$1",[s.job_id]);
+      const { rows: [job] } = await db.query("SELECT id,client_id,status,engagement_type,billing_mode FROM jobs WHERE id=$1",[s.job_id]);
       if (!job || !["Lite","Standard"].includes(job.engagement_type) || !["tracked","guaranteed"].includes(job.billing_mode)) {
-        return fail(409,"JOB_BILLING_CLASSIFICATION_REQUIRED","The job needs a valid engagement type and billing mode before a hiring invoice can be issued.");
+        throw new HiringPaymentError(409,"JOB_BILLING_CLASSIFICATION_REQUIRED",
+          "The job needs a valid engagement type and billing mode before a hiring invoice can be issued.", {
+            jobId: s.job_id,
+            engagementType: job?.engagement_type ?? null,
+            billingMode: job?.billing_mode ?? null,
+            missingFields: [
+              ...(["Lite","Standard"].includes(job?.engagement_type) ? [] : ["engagementType"]),
+              ...(["tracked","guaranteed"].includes(job?.billing_mode) ? [] : ["billingMode"]),
+            ],
+            // Reuse the existing owner-aware editor and its approval/lifecycle
+            // checks, never a financial override or a guessed classification.
+            editPath: job?.client_id === actorId && ["draft","open","published","closed"].includes(job.status)
+              ? `/client/jobs/${encodeURIComponent(s.job_id)}/edit` : null,
+          });
       }
       // No new interview prerequisite: use the existing formal/stage eligibility.
       const existing = await db.query(`SELECT i.* FROM hiring_pre_offer_invoices i

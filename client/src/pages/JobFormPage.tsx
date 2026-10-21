@@ -801,7 +801,7 @@ function validateStep(
     ) {
       errors.otherFunction = "Please specify the function.";
     }
-    if (!formData.engagementType?.trim()) errors.engagementType = "An Engagement Type (Lite or Standard) must be set before publishing a job.";
+    if (!["Lite", "Standard"].includes(formData.engagementType)) errors.engagementType = "Choose Lite or Standard before publishing a job.";
     if (!["tracked", "guaranteed"].includes(formData.billingMode)) errors.billingMode = "Choose Tracked or Guaranteed billing mode before publishing.";
     if (!formData.experienceLevel) errors.experienceLevel = "Experience level is required";
   }

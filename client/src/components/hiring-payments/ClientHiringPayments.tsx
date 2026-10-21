@@ -13,6 +13,8 @@ import {
   HiringInvoice,
   HiringInvoiceHistory,
   statusLabel,
+  getHiringPaymentErrorInfo,
+  HiringPaymentErrorInfo,
 } from "./paymentTypes";
 
 function InvoiceDetail({ invoice, history, onClose, onRetry }: {
@@ -73,22 +75,16 @@ function InvoiceDetail({ invoice, history, onClose, onRetry }: {
 export function ClientHiringPaymentPanel({ submissionId }: { submissionId: string }) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<HiringInvoice | null>(null);
-  const [policyError, setPolicyError] = useState("");
+  const [readyError, setReadyError] = useState<HiringPaymentErrorInfo | null>(null);
   const { data: invoices = [], isLoading, isError, refetch, isFetching } = useQuery<HiringInvoice[]>({
     queryKey: ["/api/client/hiring-invoices", submissionId],
     queryFn: () => hiringPaymentRequest("GET", `/api/client/hiring-invoices?submissionId=${encodeURIComponent(submissionId)}`),
     refetchInterval: 30_000,
   });
   const ready = useMutation({
-    mutationFn: async () => {
-      try { return await hiringPaymentRequest("POST", "/api/client/hiring-invoices/ready", { submissionId }); }
-      catch (cause: any) {
-        if (String(cause.message).includes("HIRING_BILLING_POLICY_REQUIRED")) throw new Error("A hiring fee policy has not been configured yet. Contact OnSpot billing support; no amount has been assumed.");
-        throw cause;
-      }
-    },
-    onSuccess: async () => { setPolicyError(""); await queryClient.invalidateQueries({ queryKey: ["/api/client/hiring-invoices", submissionId] }); },
-    onError: (cause: Error) => setPolicyError(cause.message || "Invoice could not be issued."),
+    mutationFn: () => hiringPaymentRequest("POST", "/api/client/hiring-invoices/ready", { submissionId }),
+    onSuccess: async () => { setReadyError(null); await queryClient.invalidateQueries({ queryKey: ["/api/client/hiring-invoices", submissionId] }); },
+    onError: (cause: unknown) => setReadyError(getHiringPaymentErrorInfo(cause)),
   });
   const active = invoices.find((invoice) => !["void", "refunded", "invalidated"].includes(invoice.status));
   const verifiedInvoice = invoices.find((invoice) => invoice.status === "paid" && Boolean(invoice.verified_at));
@@ -110,7 +106,45 @@ export function ClientHiringPaymentPanel({ submissionId }: { submissionId: strin
           : active
             ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/75 p-3 dark:bg-slate-900/60"><div><p className="font-medium">{active.invoice_number} · {formatPaymentAmount(active.amount, active.currency)}</p><p className="text-sm text-muted-foreground">{active.job_title || "Hiring fee"} · Due {formatPaymentDate(active.due_date)}</p><HiringInvoiceStatus status={active.status} /></div><Button onClick={() => setSelected(active)}>View invoice &amp; payment instructions</Button></div>
             : <Button onClick={() => ready.mutate()} disabled={ready.isPending}>{ready.isPending ? "Preparing invoice…" : "Ready for Offer"}</Button>}
-      {policyError && <p role="alert" className="text-sm text-rose-800">{policyError}</p>}
+      {readyError && (
+        <div
+          role="alert"
+          className={`space-y-2 rounded-lg border p-4 text-sm ${
+            readyError.kind === "job-billing"
+              ? "border-amber-300 bg-amber-50 text-amber-950"
+              : "border-rose-200 bg-rose-50 text-rose-900"
+          }`}
+        >
+          <p className="font-semibold">{readyError.heading}</p>
+          <p>{readyError.message}</p>
+          {readyError.kind === "job-billing" && readyError.missingFields.length > 0 && (
+            <div>
+              <p className="font-medium">Missing job billing settings:</p>
+              <ul className="list-inside list-disc">
+                {readyError.missingFields.map((field) => <li key={field}>{field}</li>)}
+              </ul>
+            </div>
+          )}
+          {readyError.kind === "job-billing" && (
+            readyError.editPath
+              ? <a
+                  href={readyError.editPath}
+                  className="inline-flex min-h-9 items-center rounded-md border border-current px-3 font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                >
+                  Review Job Billing Settings
+                </a>
+              : <p className="font-medium">Please contact an OnSpot administrator to update this job's billing settings.</p>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setReadyError(null)}
+            className="ml-2"
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
       {selected && (detail.isLoading
         ? <div className="h-10 animate-pulse rounded bg-slate-200" />
         : detail.data

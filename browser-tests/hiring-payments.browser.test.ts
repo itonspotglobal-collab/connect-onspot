@@ -43,7 +43,7 @@ const invoice={
   payment_recipient:"Fixture Recipient",payment_instructions:"Fixture transfer instructions",payment_reference:null,
   verified_at:null,created_at:"2026-10-14T00:00:00Z",updated_at:"2026-10-14T00:00:00Z",
 };
-async function fixture(mode="",width=390,status:string|null=null){
+async function fixture(mode="",width=390,status:string|null=null,readyFailure?:{status:number;body:unknown}){
   const page=await browser.newPage({viewport:{width,height:844}});
   const state={invoices:status?[{...invoice,status,verified_at:status==="paid"?"2026-10-14T01:00:00Z":null}]:[] as any[],posts:[] as any[]};
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
@@ -53,7 +53,10 @@ async function fixture(mode="",width=390,status:string|null=null){
     let body:any,code=200;
     if(method==="POST"){
       const request=route.request().postDataJSON();state.posts.push({path,body:request});
-      if(path.endsWith("/ready")){state.invoices=[{...invoice}];body=state.invoices[0];}
+      if(path.endsWith("/ready")){
+        if(readyFailure){code=readyFailure.status;body=readyFailure.body;}
+        else{state.invoices=[{...invoice}];body=state.invoices[0];}
+      }
       else if(path.endsWith("/reference")){state.invoices[0]={...state.invoices[0],status:"verification_pending",payment_reference:request.reference};body=state.invoices[0];}
       else if(path.endsWith("/review")){state.invoices[0]={...state.invoices[0],status:"paid",verified_at:"2026-10-14T01:00:00Z"};body=state.invoices[0];}
       else{body={error:"UNEXPECTED_TEST_MUTATION"};code=500;}
@@ -61,6 +64,11 @@ async function fixture(mode="",width=390,status:string|null=null){
     else if(path.endsWith("/exceptions"))body=[];
     else if(path.endsWith("/hiring-invoices"))body=state.invoices;
     else if(path.includes("/hiring-invoices/"))body={invoice:state.invoices[0],history:[{id:"1",event:"invoice_issued",previous_status:null,new_status:"issued",created_at:invoice.created_at}]};
+    else if(path.startsWith("/api/manual-wise/obligations/"))body={
+      id:"invoice-fixture",category:"hiring_invoice",amount:"135.25",currency:"USD",payerId:"fixture-client",
+      status:"issued",paymentStatus:"awaiting_payment",payable:true,direction:"incoming",instructions:null,history:[],
+      blockedReason:"No approved payment instructions are available. Contact OnSpot billing support.",
+    };
     else if(path==="/api/client/offers")body=[];
     else{body={error:"UNEXPECTED_TEST_QUERY"};code=404;}
     await route.fulfill({status:code,json:body});
@@ -68,18 +76,15 @@ async function fixture(mode="",width=390,status:string|null=null){
   await page.goto(`${base}/?mode=${mode}`);
   return {page,state,errors};
 }
-test("Client readiness issues real intent once; reference remains pending and never claims payment",async()=>{
+test("Client readiness issues intent once; missing approved Wise instructions never becomes a payment fallback",async()=>{
   const {page,state,errors}=await fixture();
   await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
   await page.getByText("HPO-00000001", {exact:false}).first().waitFor();
   assert.equal(state.posts.length,1);
   await page.getByRole("button",{name:/View invoice.*payment instructions/i}).click();
-  await page.getByText("Fixture transfer instructions").waitFor();
-  await page.getByLabel("Payment reference",{exact:true}).fill("Bank fixture reference");
-  await page.getByRole("button",{name:"Submit reference",exact:true}).click();
-  await page.getByText("Verification pending",{exact:true}).waitFor();
+  await page.getByText("No approved payment instructions are available. Contact OnSpot billing support.",{exact:true}).waitFor();
   assert.equal(await page.getByText("Payment Verified",{exact:true}).count(),0);
-  assert.equal(state.posts.at(-1).body.reference,"Bank fixture reference");
+  assert.equal(state.posts.length,1);
   assert.deepEqual(errors,[]);
   await page.close();
 });
@@ -94,28 +99,15 @@ for(const status of ["issued","verification_pending","paid"]){
     assert.deepEqual(errors,[]);await page.close();
   });
 }
-test("Admin sees expected terms but must independently enter settlement details and attest before verifying",async()=>{
+test("Admin pending hiring invoices route receipt verification to the unified Wise workflow",async()=>{
   const {page,state,errors}=await fixture("admin",1280,"verification_pending");
-  await page.getByRole("button",{name:"Review",exact:true}).click();
-  const dialog=page.getByRole("dialog");await dialog.waitFor();
-  const inputs=dialog.locator('input:not([type="checkbox"])');
-  for(const input of await inputs.all()) {
-    if(await input.isEditable()) assert.equal(await input.inputValue(),"");
-  }
-  await page.waitForFunction(()=>getComputedStyle(document.querySelector('[role="dialog"]')!).opacity==="1");
+  const review = page.getByRole("link",{name:"Review receipt in Payment Verifications",exact:true});
+  await review.waitFor();
+  assert.equal(await review.getAttribute("href"),"/admin/ledger#manual-wise-admin");
+  assert.equal(await page.getByRole("button",{name:"Review",exact:true}).count(),0);
+  assert.equal(await page.getByRole("button",{name:"Record verify",exact:true}).count(),0);
   await page.screenshot({path:"/tmp/hiring-payments-admin-review.png",fullPage:true});
   assert.equal(state.posts.length,0);
-  await dialog.getByLabel("Required reason",{exact:true}).fill("Independently checked fixture settlement");
-  await dialog.getByLabel("Verified amount",{exact:true}).fill("135.25");
-  await dialog.getByLabel("Independently checked reference",{exact:true}).fill("Bank settlement fixture");
-  await dialog.getByLabel("Verified recipient",{exact:true}).fill("Fixture Recipient");
-  const confirm=dialog.getByRole("button",{name:"Record verify",exact:true});
-  assert.equal(await confirm.isDisabled(),true);
-  await dialog.getByRole("checkbox").check();
-  await confirm.click();
-  await page.getByText("Invoice review recorded.",{exact:true}).waitFor();
-  assert.equal(state.posts[0].body.independentlyVerified,true);
-  assert.equal(state.posts[0].body.verifiedReference,"Bank settlement fixture");
   assert.deepEqual(errors,[]);await page.close();
 });
 test("Client invoice list clearly separates pre-offer billing and opens immutable history",async()=>{
@@ -129,3 +121,52 @@ test("Client invoice list clearly separates pre-offer billing and opens immutabl
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.deepEqual(errors,[]);await page.close();
 });
+
+test("Structured classification error offers only the authorized job editor, never raw JSON",async()=>{
+  const {page,errors}=await fixture("",390,null,{status:409,body:{
+    code:"JOB_BILLING_CLASSIFICATION_REQUIRED",message:"Raw backend detail must not display",
+    details:{missingFields:["engagementType","billingMode"],editPath:"/client/jobs/job-fixture/edit"},
+  }});
+  try {
+    await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
+    await page.getByText("Job billing setup required",{exact:true}).waitFor();
+    await page.getByText("Engagement type",{exact:true}).waitFor();
+    await page.getByText("Billing mode",{exact:true}).waitFor();
+    assert.equal(await page.getByRole("link",{name:"Review Job Billing Settings"}).getAttribute("href"),"/client/jobs/job-fixture/edit");
+    assert.doesNotMatch(await page.locator("main").innerText(),/Raw backend|JOB_BILLING_CLASSIFICATION_REQUIRED|409:/);
+    assert.deepEqual(errors,[]);
+  } finally {await page.close();}
+});
+
+test("Classification errors without a safe editor show administrator guidance",async()=>{
+  for(const editPath of [null,"https://example.test/unsafe","//example.test/unsafe","/admin/jobs/job-fixture/edit"]){
+    const {page}=await fixture("",390,null,{status:409,body:{
+      code:"JOB_BILLING_CLASSIFICATION_REQUIRED",details:{missingFields:["billingMode"],editPath},
+    }});
+    try {
+      await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
+      await page.getByText(/Please contact an OnSpot administrator to update this job/).waitFor();
+      assert.equal(await page.getByRole("link",{name:"Review Job Billing Settings"}).count(),0);
+    } finally {await page.close();}
+  }
+});
+
+for(const [status,code,heading] of [
+  [409,"HIRING_BILLING_POLICY_REQUIRED","Hiring fee policy unavailable"],
+  [401,"UNAUTHORIZED","Authorization required"],
+  [403,"FORBIDDEN","Authorization required"],
+  [404,"APPLICATION_NOT_FOUND","Application or job unavailable"],
+  [409,"APPLICATION_NOT_OFFER_ELIGIBLE","Application is not ready for an offer"],
+  [409,"HIRING_ATTEMPT_IDENTITY_CHANGED","Invoice could not be matched"],
+  [503,"HIRING_PAYMENT_FAILED","Invoice preparation unavailable"],
+] as const){
+  test(`Ready for Offer handles structured ${code} separately`,async()=>{
+    const {page,errors}=await fixture("",390,null,{status,body:{code,message:"Raw internal server detail"}});
+    try {
+      await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
+      await page.getByText(heading,{exact:true}).waitFor();
+      assert.doesNotMatch(await page.locator("main").innerText(),/Raw internal server detail|\{"code"/);
+      assert.deepEqual(errors,[]);
+    } finally {await page.close();}
+  });
+}

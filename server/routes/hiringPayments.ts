@@ -4,7 +4,8 @@ import { z } from "zod";
 
 export function hiringPaymentFailure(res: Response, error: any): boolean {
   if (error instanceof HiringPaymentError) {
-    res.status(error.status).json({ error: error.code, code: error.code, message: error.message }); return true;
+    res.status(error.status).json({ error: error.code, code: error.code, message: error.message,
+      ...(error.details ? { details: error.details } : {}) }); return true;
   }
   if (error?.code === "P0001" && String(error.message).includes("PRE_OFFER_PAYMENT_REQUIRED")) {
     res.status(409).json({ error: "PRE_OFFER_PAYMENT_REQUIRED", code: "PRE_OFFER_PAYMENT_REQUIRED", message: PAYMENT_REQUIRED_MESSAGE }); return true;
