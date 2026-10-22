@@ -15,13 +15,13 @@ description: Durable money, identity, lifecycle, and concurrency rules for billi
 
 ## Contract activation and deposits
 
-- A fully signed contract must create exactly one pending security deposit in the same transaction as activation.
+- The revised offer-first business sequence requires exactly one initial security deposit after offer acceptance, using a provisional engagement if necessary. Verified funding precedes final agreements; all applicable signatures precede activation.
 - Deposit escalation is ordered: `pending → held → drawn → replenishment_pending → suspended → held|forfeited`; normal or mutual termination uses `held → applied`.
 - Forfeiture is valid only with terminal reason `nonpayment_breach`; other terminal paths must not be recorded as forfeiture.
 
-**Why:** The ledger must not show an active contract without its deposit, and terminal reasons distinguish nonpayment recovery from ordinary termination.
+**Why:** The owner superseded activation-time initial deposit creation with acceptance-time funding before agreements. The ledger must not show an active contract without its verified deposit, and terminal reasons distinguish nonpayment recovery from ordinary termination.
 
-**How to apply:** Keep activation and the initial deposit insert atomic, enforce transitions server-side, and validate terminal reasons before writing terminal timestamps.
+**How to apply:** Preserve historical activation-created deposits without recreating or reclassifying them. New acceptance-time deposits must use the unchanged formula, immutable accepted terms and idempotent linkage. Preserve accepted offers on recoverable deposit-creation failure, and verified deposits on document-generation failure. Receipt submission alone never unlocks agreements or activation. Enforce transitions server-side and validate terminal reasons before writing terminal timestamps.
 
 ## Ledger concurrency
 

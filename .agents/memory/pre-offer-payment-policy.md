@@ -1,15 +1,15 @@
 ---
-name: Pre-offer hiring payment policy
-description: Business rules for pre-offer charges, independent settlement verification, and preserving legitimate hiring history.
+name: Offer acceptance and security deposit policy
+description: Revised business sequence, independent settlement verification, and preserving historical pre-offer financial records.
 ---
 
-An independently verified pre-offer hiring fee is required before creating or sending a new formal offer, including counters and renewals. It is a separate financial lifecycle, not a security deposit or recurring engagement invoice.
+The approved target sequence is offer → applicant acceptance → security deposit obligation → independently verified deposit funding → MSA and Contractor Agreement → required signatures → activation. New offers must not require a pre-offer hiring fee or automatically issue a pre-offer invoice.
 
-**Why:** The owner requires payment before offer creation, not merely before contract signing. Payment never substitutes for the required contract signatures and must not mark Talent Hired.
+**Why:** The owner explicitly superseded the earlier payment-before-offer requirement with the team-approved offer-first sequence. Payment still never substitutes for signatures or independently marks Talent Hired.
 
-**How to apply:** Preserve the original application and existing stage/direct-offer eligibility; do not add a universal interview prerequisite. Reuse a valid paid authorization within the same original hiring attempt, rather than charging again for a counteroffer or reoffer. A reversal blocks future offers but must not rewrite accepted offers, signed contracts, legitimate hires, or historical financial records.
+**How to apply:** Preserve original applications and existing eligibility; do not add an interview prerequisite. Preserve historical pre-offer invoices and settlements without automatically refunding, voiding, converting them to deposits, or charging the former fee at another stage. Accepted offers need recoverable, idempotent deposit creation. Missing approved legal templates or terms must block document generation for authorized review, not produce invented agreements.
 
-Pricing, tax treatment, due terms, recipient and instructions must be explicitly authorized. Missing policy blocks issuance; neither a zero fee nor an invented charge is an acceptable fallback. Manual references are unverified claims. Until the owner authorizes another financial permission, policy authorization and manual settlement verification are restricted to database-confirmed Super Admins.
+Pricing, tax treatment, due terms, recipient and instructions must be explicitly authorized. Neither a zero amount nor an invented charge is an acceptable fallback. Keep the approved security-deposit formula and billing calculations unchanged. Manual references are unverified claims. Policy authorization and manual settlement verification remain restricted to database-confirmed Super Admins.
 
 **Why:** A Client screenshot/reference/success redirect does not prove that OnSpot received the correct amount. Broad administrative or development-auth privileges must not bypass financial authorization.
 
@@ -25,6 +25,5 @@ Tracked/Guaranteed merely to unblock Ready for Offer, and prohibited silently
 changing issued invoices or contracts.
 
 **How to apply:** Explain which choice is missing and provide the existing owned
-job editor only when permitted. Do not bypass normal job re-review, the separate
-hiring-fee-policy requirement, independent settlement verification, or offer
-eligibility after the classification is corrected.
+job editor only when permitted. Do not bypass normal job re-review, independent
+settlement verification, or offer eligibility after correcting classification.
