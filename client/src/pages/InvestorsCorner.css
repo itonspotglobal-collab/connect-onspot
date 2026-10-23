@@ -1,19 +1,3 @@
-@font-face {
-  font-family: "Mont";
-  src: url("/fonts/mont/Mont-ExtraLightDEMO.woff") format("woff");
-  font-style: normal;
-  font-weight: 300;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Mont";
-  src: url("/fonts/mont/Mont-HeavyDEMO.woff") format("woff");
-  font-style: normal;
-  font-weight: 900;
-  font-display: swap;
-}
-
 .onspot-investors-page,
 .investor-request-dialog {
   --night: #121d6b;
@@ -35,7 +19,7 @@
   --field: #f4f6ff;
   --field-line: #d3d8f5;
   --error: #c4314b;
-  --sans: "Mont", "Mont Brand", sans-serif;
+  --sans: var(--font-sans, Inter, sans-serif);
   --wrap: 1160px;
   --measure: 64ch;
 }
@@ -125,28 +109,42 @@
 
 .onspot-investors-page .investor-open {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
   gap: clamp(40px, 7vw, 110px);
-  align-items: end;
+  align-items: center;
   padding-block: clamp(72px, 10vw, 140px) clamp(60px, 7vw, 96px);
 }
 
 .onspot-investors-page .investor-open h1 {
-  max-width: 18ch;
+  max-width: 23ch;
   color: var(--white);
-  font-size: clamp(38px, 5.2vw, 70px);
+  font-size: clamp(34px, 3.35vw, 48px);
   font-weight: 800;
-  line-height: 1.04;
-  letter-spacing: -.038em;
+  line-height: 1.08;
+  letter-spacing: -.032em;
 }
 
-.onspot-investors-page .investor-lead {
-  padding-left: 24px;
-  border-left: 2px solid var(--gold);
-  color: var(--white);
-  font-size: 19px;
-  font-weight: 600;
-  line-height: 1.6;
+.onspot-investors-page .investor-phone-frame {
+  position: relative;
+  width: min(100%, 440px);
+  aspect-ratio: 8 / 9;
+  margin-inline: auto;
+  overflow: hidden;
+}
+
+.onspot-investors-page .investor-phone-art {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: block;
+  width: 200%;
+  max-width: none;
+  height: 100%;
+  object-fit: contain;
+}
+
+.onspot-investors-page .investor-invest-title-accent {
+  color: var(--gold);
 }
 
 .onspot-investors-page .investor-facts {
@@ -431,6 +429,11 @@
   text-transform: uppercase;
 }
 
+.onspot-investors-page .investor-sign {
+  gap: 14px;
+  margin-top: 0;
+}
+
 .onspot-investors-page .investor-signature-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -438,22 +441,25 @@
 }
 
 .onspot-investors-page .investor-sign .investor-monogram {
-  display: grid;
-  width: 56px;
-  height: 56px;
+  display: block;
+  width: 62px;
+  height: 62px;
   flex: 0 0 auto;
-  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .24);
   border-radius: 50%;
-  color: var(--ink);
-  background: var(--gold);
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -.02em;
+  background: rgba(255, 255, 255, .1);
+  object-fit: cover;
+  object-position: center 28%;
 }
 
 .onspot-investors-page .investor-sign b,
 .onspot-investors-page .investor-sign span {
   display: block;
+}
+
+.onspot-investors-page .investor-sign div span {
+  margin-top: 3px;
 }
 
 .onspot-investors-page .investor-sign b {
@@ -873,10 +879,15 @@
   .onspot-investors-page .investor-open {
     grid-template-columns: 1fr;
     align-items: start;
+    gap: 28px;
   }
 
-  .onspot-investors-page .investor-lead {
-    max-width: 46ch;
+  .onspot-investors-page .investor-open h1 {
+    max-width: 23ch;
+  }
+
+  .onspot-investors-page .investor-phone-frame {
+    width: min(100%, 420px);
   }
 
   .onspot-investors-page .investor-letter {
@@ -892,7 +903,7 @@
   }
 
   .onspot-investors-page .investor-signature-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
   }
 
@@ -964,6 +975,14 @@
 
   .onspot-investors-page .investor-top > span {
     display: none;
+  }
+
+  .onspot-investors-page .investor-phone-frame {
+    width: min(100%, 360px);
+  }
+
+  .onspot-investors-page .investor-signature-list {
+    grid-template-columns: 1fr;
   }
 
   .investor-request-viewport {

@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Menu, X, Mail, Phone, MapPin } from "lucide-react";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
+import valPhoto from "@assets/val_1780574815788.png";
 import { Footer } from "@/components/Footer";
 
 const nurPhoto = "/nur-ceo.jpeg";
@@ -24,7 +25,7 @@ const NAV_LINKS = [
   { label: "Our Story", href: "#story" },
   { label: "What We Believe", href: "#beliefs" },
   { label: "Culture", href: "#culture" },
-  { label: "Leadership", href: "#team" },
+  { label: "Founding Team", href: "#team" },
   { label: "Vision", href: "#vision" },
 ];
 
@@ -97,7 +98,16 @@ const peopleValues = [
   },
 ];
 
-const leaders = [
+const leaders: Array<{
+  name: string;
+  role: string;
+  photo?: string;
+  imgPos?: string;
+  photoBg?: string;
+  imgScale?: string;
+  bio: string;
+  photoPending?: boolean;
+}> = [
   {
     name: "Nur Laminero",
     role: "Co-Founder & CEO",
@@ -107,7 +117,7 @@ const leaders = [
   },
   {
     name: "Jake Wainberg",
-    role: "Founder & President",
+    role: "Co-Founder & President",
     photo: jakePhoto,
     imgPos: "50% 22%",
     bio: "20 years building startups in New York before leading growth and business development globally for OnSpot.",
@@ -119,6 +129,21 @@ const leaders = [
     imgPos: "50% 18%",
     photoBg: "linear-gradient(160deg, #1A1E5C 0%, #2D3496 38%, #474EAD 72%, #5C63BE 100%)",
     bio: "20+ years in the BPO industry and operating startups before running global operations for OnSpot.",
+  },
+  {
+    name: "Val Legaspi",
+    role: "Title pending approval",
+    photo: valPhoto,
+    imgPos: "50% 45%",
+    imgScale: "scale(1.45)",
+    bio: "Biography pending approval",
+  },
+  {
+    name: "Emmanuel Rogel (Emman)",
+    role: "Title pending approval",
+    photoBg: "linear-gradient(145deg, #E9EAF4 0%, #D9DCEE 52%, #C9CDE3 100%)",
+    photoPending: true,
+    bio: "Biography pending approval",
   },
 ];
 
@@ -621,11 +646,11 @@ export default function WhyOnSpotAbout() {
         </div>
       </section>
 
-      {/* ── Leadership ───────────────────────────────────────────────────────── */}
+      {/* ── Founding Team ────────────────────────────────────────────────────── */}
       <section id="team" style={{ background: PAPER, padding: "96px 0" }}>
         <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 32px" }}>
           <div style={{ marginBottom: 48 }}>
-            <Kicker>Leadership</Kicker>
+            <Kicker>Founding Team</Kicker>
             <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: "clamp(26px,3.2vw,36px)", fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.02em", color: CHARCOAL, marginBottom: 12 }}>
               The people building it.
             </h2>
@@ -643,15 +668,27 @@ export default function WhyOnSpotAbout() {
                 onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "translateY(0)"; }}
               >
                 {/* Photo */}
-                <div style={{ height: 220, background: (l as any).photoBg ?? "#f0eff4", overflow: "hidden", position: "relative" }}>
-                  <div style={{ position: "absolute", inset: 0, transform: (l as any).imgScale || "none", transformOrigin: "50% 42%" }}>
-                    <img
-                      src={l.photo}
-                      alt={l.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: l.imgPos, transition: "transform 0.5s" }}
-                    />
-                  </div>
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 48, background: "linear-gradient(to top, rgba(255,255,255,0.5), transparent)" }} />
+                <div style={{ height: 220, background: l.photoBg ?? "#f0eff4", overflow: "hidden", position: "relative" }}>
+                  {l.photo ? (
+                    <div style={{ position: "absolute", inset: 0, transform: l.imgScale ?? "none", transformOrigin: "50% 42%" }}>
+                      <img
+                        src={l.photo}
+                        alt={l.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: l.imgPos, transition: "transform 0.5s" }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      role="img"
+                      aria-label="Profile photo pending approval"
+                      style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "radial-gradient(ellipse at 50% 36%, rgba(255,255,255,.76), transparent 45%), linear-gradient(135deg, rgba(71,78,173,.08), rgba(71,78,173,.2))" }}
+                    >
+                      <span style={{ color: P, fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", padding: "8px 12px", border: `1px solid ${P}30`, borderRadius: 999, background: "rgba(255,255,255,.58)" }}>
+                        Photo pending approval
+                      </span>
+                    </div>
+                  )}
+                  {!l.photoPending && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 48, background: "linear-gradient(to top, rgba(255,255,255,0.5), transparent)" }} />}
                 </div>
 
                 {/* Text */}

@@ -13,7 +13,7 @@ let base: string;
 const cacheDir = mkdtempSync(join(tmpdir(), "investor-docs-vite-"));
 before(async () => {
   vite = await createServer({
-    configFile: false, root: resolve("client"), cacheDir,
+    configFile: false, root: resolve("client"), publicDir: resolve("public"), cacheDir,
     resolve: { alias: { "@": resolve("client/src"), "@shared": resolve("shared"), "@assets": resolve("attached_assets") } },
     optimizeDeps: {
       noDiscovery: true,
@@ -28,13 +28,16 @@ before(async () => {
         return `
           import React from 'react'; import {createRoot} from 'react-dom/client';
           import InvestorsCorner from '/src/pages/InvestorsCorner.tsx';
+          import WhyOnSpotAbout from '/src/pages/WhyOnSpotAbout.tsx';
           import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
           import {InvestorGoalSettings} from '/src/components/InvestorGoalSettings.tsx';
           import '/src/index.css';
           const settings={investor_goal_contractors_2027:'{CONTRACTOR_GOAL}',investor_goal_clients_2027:'{CLIENT_GOAL}'};
           createRoot(document.getElementById('root')).render(location.pathname==='/settings'
             ? <QueryClientProvider client={new QueryClient()}><InvestorGoalSettings settings={settings}/></QueryClientProvider>
-            : <QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><InvestorsCorner/></QueryClientProvider>);
+            : <QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>
+                {location.pathname==='/why-onspot/about' ? <WhyOnSpotAbout/> : <InvestorsCorner/>}
+              </QueryClientProvider>);
         `;
       },
       configureServer(server) {
@@ -72,7 +75,7 @@ async function openPage(width = 1280, height = 900, statsHandler?: Parameters<Pa
   return page;
 }
 
-test("direct URL, refresh, metadata, official logo and exact narrative match reference", async () => {
+test("direct URL, refreshed content and unchanged reference narrative preserve investment links", async () => {
   const page = await openPage();
   await page.reload();
   await page.locator("h1").waitFor();
@@ -84,11 +87,27 @@ test("direct URL, refresh, metadata, official logo and exact narrative match ref
   assert.equal(await page.locator(".investor-top a").getAttribute("href"), "/");
   const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
   const actual = normalize(await page.locator(".onspot-investors-page").innerText());
+  const headline = "OnSpot is the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it.";
+  assert.equal(normalize(await page.locator("h1").innerText()), headline);
+  assert.equal(actual.split(headline).length - 1, 1);
+  assert.doesNotMatch(await page.locator(".investor-open").innerText(), /Hi, I.m Nur Laminero/);
+  assert.equal(normalize(await page.locator(".investor-fact").first().innerText()),
+    "7 days As fast as 7 days for businesses to find, hire, and to start global talent");
+  const letter = page.locator(".investor-letter p").filter({ hasText: "We spent four years running a BPO" });
+  assert.equal(normalize(await letter.innerText()),
+    "We spent four years running a BPO before building this platform. We did not guess at the problem. We lived inside it — and we built OnSpot from operational truth rather than theory. We are already self-sustaining. Operations are fully covered by revenue before a single dollar of external investment.");
+  assert.deepEqual(await letter.locator("strong").allTextContents().then(values => values.map(normalize)),
+    ["We did not guess at the problem. We lived inside it", "We are already self-sustaining."]);
+  assert.equal(normalize(await page.locator("#investor-invest-title").innerText()), "Invest in the Future of Work today.");
+  assert.ok(await page.locator("#investor-invest-title strong, #investor-invest-title em, #investor-invest-title span").filter({ hasText: "Future of Work" }).count());
   const reference = await browser.newPage();
   await reference.goto(`${base}/reference`);
   const expected = await reference.locator("main").innerText();
   for (const line of expected.split("\n").map(normalize).filter(Boolean)) {
-    if (line === "A letter from Nur Laminero") continue;
+    // The approved update supersedes these reference passages only.
+    if (line === "A letter from Nur Laminero" ||
+      /^(Hi, I.m Nur Laminero|We.re the unified outsourcing|As fast as 7 days|My co-founders Jake|Invest in OnSpot today|Co-Founder and CEO)/.test(line) ||
+      ["NL", "J", "M", "Macky"].includes(line)) continue;
     assert.ok(actual.includes(line), `Missing reference text: ${line}`);
   }
   assert.equal(await page.locator("#investor-letter-title").innerText(), "A letter from the founders.");
@@ -97,8 +116,20 @@ test("direct URL, refresh, metadata, official logo and exact narrative match ref
   assert.doesNotMatch(actual, /you may lose your entire investment|© 2026 OnSpot Global/);
   const founders = page.locator(".investor-signatures");
   assert.match(await founders.innerText(), /Nur Laminero/);
-  assert.match(await founders.innerText(), /Jake/);
-  assert.match(await founders.innerText(), /Macky/);
+  assert.match(await founders.innerText(), /Jake Wainberg/);
+  assert.match(await founders.innerText(), /Mark Apostol/);
+  assert.deepEqual(await founders.locator(".investor-sign b").allTextContents(), ["Nur Laminero", "Jake Wainberg", "Mark Apostol"]);
+  assert.deepEqual(await founders.locator(".investor-sign span").allTextContents(), ["Co-Founder & CEO", "Co-Founder & President", "Co-Founder & COO"]);
+  assert.equal(await founders.locator("img").count(), 3);
+  for (const image of await founders.locator("img").all()) {
+    assert.ok(await image.getAttribute("alt"));
+    await image.evaluate((el: HTMLImageElement) => el.decode());
+    assert.ok(await image.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
+  }
+  const phone = page.locator(".investor-open img");
+  assert.equal(await phone.count(), 1);
+  await phone.evaluate((el: HTMLImageElement) => el.decode());
+  assert.ok(await phone.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
   const wefunder = page.getByRole("link", { name: /WeFunder/ });
   assert.equal(await wefunder.getAttribute("href"), "https://wefunder.com/onspot");
   assert.equal(await wefunder.getAttribute("target"), "_blank");
@@ -109,7 +140,7 @@ test("direct URL, refresh, metadata, official logo and exact narrative match ref
   await page.close();
 });
 
-test("traction loads aggregates, updates on refresh and uses locally served Mont", async () => {
+test("traction refresh behavior is preserved and page and portaled dialog use homepage Inter", async () => {
   let loads = 0;
   const page = await openPage(1280, 900, route => {
     loads++;
@@ -124,20 +155,54 @@ test("traction loads aggregates, updates on refresh and uses locally served Mont
   await page.clock.fastForward(60_001);
   await page.getByText("1,235", { exact: true }).waitFor();
   assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["1,235", "55"]);
-  await page.evaluate(async () => {
-    await document.fonts.load('300 16px "Mont"');
-    await document.fonts.load('900 16px "Mont"');
-    await document.fonts.ready;
-  });
-  assert.equal(await page.evaluate(() => document.fonts.check('300 16px "Mont"') && document.fonts.check('900 16px "Mont"')), true);
-  assert.equal((await page.request.get(`${base}/fonts/mont/Mont-HeavyDEMO.woff`)).status(), 200);
   await page.getByRole("button", { name: /Meet the Founders/ }).click();
   for (const selector of [".onspot-investors-page h1", ".investor-traction-card b",
     ".investor-footer p", ".investor-request-dialog input", ".investor-request-dialog button"]) {
-    assert.match(await page.locator(selector).first().evaluate(el => getComputedStyle(el).fontFamily), /Mont/);
+    const font = await page.locator(selector).first().evaluate(el => getComputedStyle(el).fontFamily);
+    assert.match(font, /Inter/);
+    assert.doesNotMatch(font, /Mont/);
   }
   await page.close();
 });
+
+for (const width of [320, 390, 768, 1024, 1440]) {
+  test(`Founding Team has five honest profiles in order and fits ${width}px`, async () => {
+    const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });
+    page.setDefaultTimeout(10_000);
+    await page.addInitScript(() => { (window as any).__name = (fn: unknown) => fn; });
+    await page.goto(`${base}/why-onspot/about#team`);
+    const team = page.locator("#team");
+    const names = team.locator(".about-grid-leaders > div > div:last-child > p:first-child");
+    await names.first().waitFor();
+    assert.deepEqual((await names.allTextContents()).map(name => name.replace(" (Emman)", "")),
+      ["Nur Laminero", "Jake Wainberg", "Mark Apostol", "Val Legaspi", "Emmanuel Rogel"]);
+    assert.doesNotMatch(await team.innerText(), /Leadership/);
+    assert.ok(await page.getByRole("button", { name: "Founding Team", exact: true, includeHidden: true }).count());
+    const cards = team.locator(".about-grid-leaders > div");
+    assert.equal(await cards.count(), 5);
+    for (const index of [3, 4]) {
+      assert.match(await cards.nth(index).innerText(), /pending approval/i);
+      assert.doesNotMatch(await cards.nth(index).innerText(), /Co-Founder|CEO|COO|President|years of|years in/);
+    }
+    assert.match(await cards.nth(4).innerText(), /photo.*pending|pending.*photo/i);
+    assert.equal(await cards.nth(4).locator("img").count(), 0);
+    assert.equal(await team.locator("img").count(), 4);
+    for (const image of await team.locator("img").all()) {
+      assert.ok(await image.getAttribute("alt"));
+      await image.evaluate((el: HTMLImageElement) => el.decode());
+      assert.ok(await image.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
+    }
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    for (const card of await cards.all()) {
+      const bounds = await card.boundingBox();
+      assert.ok(bounds && bounds.x >= -1 && bounds.x + bounds.width <= width + 1);
+    }
+    if (width === 390 || width === 1440) {
+      await team.screenshot({ path: `/tmp/onspot-founding-team-${width}.png`, animations: "disabled" });
+    }
+    await page.close();
+  });
+}
 
 test("traction loading and unavailable states never fabricate zero and can retry", async () => {
   let release: (() => void) | undefined;
@@ -173,6 +238,10 @@ for (const width of [320, 390, 768, 1024, 1440]) {
   test(`page and both request dialogs fit ${width}px with no horizontal overflow`, async () => {
     const page = await openPage(width, width === 320 ? 568 : 844);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    if (width === 390 || width === 1440) {
+      await page.locator(".investor-open img").evaluate((el: HTMLImageElement) => el.decode());
+      await page.locator(".investor-open").screenshot({ path: `/tmp/onspot-investor-hero-${width}.png`, animations: "disabled" });
+    }
     for (const name of [/Meet the Founders/, /Seedscope/]) {
       const card = page.getByRole("button", { name });
       await card.click();

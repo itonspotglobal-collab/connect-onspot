@@ -6,6 +6,8 @@ import {
   type InvestorDocument,
 } from "@/components/InvestorDocumentDialog";
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
+import jakePhoto from "@assets/Jake_1775039278985.png";
+import phoneMockup from "@assets/iphone_mockup_transparent_1791189886936.png";
 import "./InvestorsCorner.css";
 
 type InvestorStats = {
@@ -97,13 +99,17 @@ export default function InvestorsCorner() {
           aria-labelledby="investor-open-title"
         >
           <h1 id="investor-open-title">
-            Hi, I’m Nur Laminero and I’m the Co‑Founder and CEO of OnSpot.
+            OnSpot is the unified outsourcing system where businesses find,
+            hire, pay, and manage vetted remote talent in one place — and talent
+            earns more doing it.
           </h1>
-          <p className="investor-lead">
-            We’re the unified outsourcing system where businesses find, hire,
-            pay, and manage vetted remote talent in one place — and talent earns
-            more doing it.
-          </p>
+          <div className="investor-phone-frame">
+            <img
+              className="investor-phone-art"
+              src={phoneMockup}
+              alt="OnSpot shown on a smartphone"
+            />
+          </div>
         </section>
 
         <section className="investor-wrap" aria-label="At a glance">
@@ -111,8 +117,8 @@ export default function InvestorsCorner() {
             <div className="investor-fact">
               <b>7 days</b>
               <span>
-                As fast as 7 days for businesses to find, hire, and manage global
-                talent
+                As fast as 7 days for businesses to find, hire, and to start
+                global talent
               </span>
             </div>
             <div className="investor-fact">
@@ -227,8 +233,7 @@ export default function InvestorsCorner() {
               </div>
             </div>
             <p>
-              My co-founders Jake and Mark and I spent four years running a BPO
-              before building this platform.{" "}
+              We spent four years running a BPO before building this platform.{" "}
               <strong>
                 We did not guess at the problem. We lived inside it
               </strong>{" "}
@@ -246,28 +251,36 @@ export default function InvestorsCorner() {
               <h3>The Founders of OnSpot</h3>
               <div className="investor-signature-list">
                 <div className="investor-sign">
-                  <span className="investor-monogram" aria-hidden="true">
-                    NL
-                  </span>
+                  <img
+                    className="investor-monogram"
+                    src="/nur-ceo.jpeg"
+                    alt="Nur Laminero"
+                  />
                   <div>
                     <b>Nur Laminero</b>
-                    <span>Co-Founder and CEO, OnSpot</span>
+                    <span>Co-Founder &amp; CEO</span>
                   </div>
                 </div>
                 <div className="investor-sign">
-                  <span className="investor-monogram" aria-hidden="true">
-                    J
-                  </span>
+                  <img
+                    className="investor-monogram"
+                    src={jakePhoto}
+                    alt="Jake Wainberg"
+                  />
                   <div>
-                    <b>Jake</b>
+                    <b>Jake Wainberg</b>
+                    <span>Co-Founder &amp; President</span>
                   </div>
                 </div>
                 <div className="investor-sign">
-                  <span className="investor-monogram" aria-hidden="true">
-                    M
-                  </span>
+                  <img
+                    className="investor-monogram"
+                    src="/mark-apostol.png"
+                    alt="Mark Apostol"
+                  />
                   <div>
-                    <b>Macky</b>
+                    <b>Mark Apostol</b>
+                    <span>Co-Founder &amp; COO</span>
                   </div>
                 </div>
               </div>
@@ -280,7 +293,9 @@ export default function InvestorsCorner() {
           aria-labelledby="investor-invest-title"
         >
           <div className="investor-invest-head">
-            <h2 id="investor-invest-title">Invest in OnSpot today.</h2>
+            <h2 id="investor-invest-title">
+              Invest in the <span className="investor-invest-title-accent">Future of Work</span> today.
+            </h2>
           </div>
           <div className="investor-cards">
             <button

@@ -3,7 +3,7 @@ name: Investors visual authority
 description: Approved CEO-letter design with owner-authorized traction, collective-founder and footer refinements.
 ---
 
-The owner supplied a new Investors HTML design on 2026-10-15 and explicitly authorized replacing the former public Investors presentation. The letter, three highlights, investment resource cards, blue gradient, gold accents and Mont typography remain the design authority. Later refinements explicitly restore registered-account traction, collective-founder attribution and a shortened information-only footer disclaimer. Do not restore the former account gauges, phone artwork, tagline or inquiry-card layout.
+The owner supplied a new Investors HTML design on 2026-10-15 and explicitly authorized replacing the former public Investors presentation. The letter, three highlights, investment resource cards, blue gradient and gold accents remain the design authority. Later approved website updates supersede the original typography and phone-art restrictions: match Home's shared body font and reuse the supplied phone artwork in Investors, without changing Home's carousel. Registered-account traction, collective-founder attribution and the shortened information-only footer disclaimer remain approved.
 
 **Why:** The owner specifically requested recreation of the supplied HTML, not a fresh design or continuation of the earlier fundraising hero.
 
@@ -20,3 +20,14 @@ Do not infer that the supplied hiring-speed or self-sustaining claims were indep
 **Why:** These are owner-provided marketing statements, not results from a business or financial audit.
 
 **How to apply:** Keep copy changes separate from factual verification, and do not introduce new claims or guarantees during implementation.
+
+New Founding Team profile copy requires approval; repository photographs may be
+reused only with a confirmed identity. A missing portrait should remain an
+explicit pending-photo state rather than a fabricated image or stock person.
+
+**Why:** The owner specifically prohibited inventing titles, biographies,
+experience and photographs, and requested collaborative approval of the new copy.
+
+**How to apply:** Keep pending labels visible until approved content is supplied.
+Do not treat an illustrative title from an older crop instruction as confirmation
+of a current Founding Team role.
