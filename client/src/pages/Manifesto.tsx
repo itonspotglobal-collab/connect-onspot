@@ -1,3 +1,4 @@
+
 import { useEffect, useId, useState, type ReactNode } from "react";
 import TalentLandingSignup from "@/components/join-talent/TalentLandingSignup";
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";

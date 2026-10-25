@@ -923,3 +923,17 @@ mtime_ms = 1792554384642
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/78f9797b-f84b-4e40-9cbf-667cf0acd749/fb0e74c9-edae-4638-a64f-92ea963b1fa7"
 storage_version_token = "1792554392982758"
 content_type = "text/html"
+
+[[outputs]]
+id = "4K6XAAh9Ksa4c9_x88cBw"
+uri = "file://generated-artifacts/contract-invoice-uat/report.html"
+type = "html"
+title = "Contract and invoicing verification — blocked"
+description = "Detailed 13-area test matrix, exact PDF rejection evidence, 59 passing regressions, sample calculations, implementation map, and prerequisites for authenticated staging UAT. No invoice or settlement was created."
+logical_id = "cb7d5c31-a3cc-4aa6-9fde-cff9b859e98c"
+content_hash = "sha256:c58eec86bbe2cb142c80d73580f0abba6508b418227c3f8c8a7061a2596ce64e"
+size = 18428
+mtime_ms = 1792919509722
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/cb7d5c31-a3cc-4aa6-9fde-cff9b859e98c/d3f6eb54-a00f-449f-8715-63c660418540"
+storage_version_token = "1792919518128952"
+content_type = "text/html"
