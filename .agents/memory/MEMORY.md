@@ -75,3 +75,4 @@
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — public signup overlays the mounted page; direct auth cancellation preserves origin independently of success redirects.
 - [Hiring activation policy](pre-offer-payment-policy.md) — new acceptances issue deposits before agreements; activation needs held funds, signed contractor agreement and current signed MSA; preserve legacy paths.
+- [Workflow port exclusivity](workflow-port-exclusivity.md) — a managed restart can leave an orphaned app process; sharing the preview port masks duplicates and repeats scheduled work.
