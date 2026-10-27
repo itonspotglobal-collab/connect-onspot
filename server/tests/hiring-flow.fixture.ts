@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { queueHiringLifecycleEvent } from "../services/hiringLifecycleEvents";
 import { requireVerifiedHiringPayment } from "../services/hiringPaymentService";
+import {requireHiringStage,issueAcceptedOfferDeposit,lockOnboarding} from "../services/contractorOnboardingPolicy";
 import { hiringPaymentFailure } from "../routes/hiringPayments";
 import ts from "typescript";
 import jwt from "jsonwebtoken";
@@ -64,7 +65,7 @@ function handler(method: string, path: string): any {
   const dependencies: Record<string, any> = {
     pool, query, storage, jwt, escHtml, filterMessageContent, ...guard, ...times, ...calendar, ...emails, ...currency,
     ...applicationNotifications, sendClientNewApplicationEmail,
-    queueHiringLifecycleEvent,dispatchHiringLifecycleEvents:async()=>{},
+    queueHiringLifecycleEvent,requireHiringStage,issueAcceptedOfferDeposit,lockOnboarding,dispatchHiringLifecycleEvents:async()=>{},
     requireVerifiedHiringPayment,hiringPaymentFailure,
     require: (name: string) => {
       if (name.includes("microsoftGraphEmailService")) return graphEmail;
@@ -256,7 +257,7 @@ for (const workflow of ["application", "client_invitation"] as const) {
       id = saved.rows[0].id;
       const accepted = await invoke("post", "/api/talent/invitations/:id/respond", { action: "accept" }, talent, { id });
       assert.equal(accepted.statusCode, 200, JSON.stringify(accepted.body));
-      assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "new");
+      assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "interviewing");
       await query("UPDATE job_submissions SET status='reviewed' WHERE id=$1", [id]);
     }
     let result = await invoke("post", "/api/client/interviews", { submissionId: id, proposedTimes: [slot], durationMinutes: 60 }, other);

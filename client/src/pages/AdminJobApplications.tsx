@@ -3,6 +3,7 @@ import { useLocation, useSearch } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { TopNavigation } from "@/components/TopNavigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
 } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { getDeepLinkResourceIds } from "@/lib/deepLinks";
+import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
 
 const ApplicantEmailComposer = lazy(() => import("@/components/ApplicantEmailComposer"));
 
@@ -287,6 +289,8 @@ function DetailDialog({
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const onboarding = useContractorOnboarding(applicationId ?? undefined);
   const cvInputRef = useRef<HTMLInputElement>(null);
   const [cvUploading, setCvUploading] = useState(false);
   const [cvOpening, setCvOpening] = useState<"view" | "download" | null>(null);
@@ -298,6 +302,11 @@ function DetailDialog({
   const [videoPlayerUrl, setVideoPlayerUrl] = useState<string | null>(null);
   const [videoPlayerError, setVideoPlayerError] = useState<string | null>(null);
   const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
+  const [offerRate, setOfferRate] = useState("");
+  const [offerStartDate, setOfferStartDate] = useState("");
+  const [offerExpiryDate, setOfferExpiryDate] = useState("");
+  const [offerOverrideReason, setOfferOverrideReason] = useState("");
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
 
   // Revoke blob URL and reset player when the dialog closes
   useEffect(() => {
@@ -317,6 +326,69 @@ function DetailDialog({
     queryFn: () => apiFetch(`/api/admin/job-applications/${applicationId}`),
     enabled: !!applicationId && open,
   });
+  const { data: adminUsers = [] } = useQuery<Array<{ id: string; role?: string; adminSubRole?: string | null; admin_sub_role?: string | null }>>({
+    queryKey: ["/api/admin/users"],
+    queryFn: () => apiFetch("/api/admin/users"),
+    enabled: open && user?.role === "admin",
+    retry: false,
+  });
+  const persistedSuperAdmin = Boolean(user && adminUsers.some((admin) => {
+    if (admin.id !== user.id || admin.role !== "admin") return false;
+    const hasPersistedSubRole = Object.prototype.hasOwnProperty.call(admin, "adminSubRole")
+      || Object.prototype.hasOwnProperty.call(admin, "admin_sub_role");
+    const subRole = Object.prototype.hasOwnProperty.call(admin, "adminSubRole") ? admin.adminSubRole : admin.admin_sub_role;
+    return hasPersistedSubRole && subRole === null;
+  }));
+
+  useEffect(() => {
+    setOfferRate("");
+    setOfferStartDate("");
+    setOfferExpiryDate("");
+    setOfferOverrideReason("");
+  }, [applicationId]);
+
+  async function sendAdminOffer(event: React.FormEvent) {
+    event.preventDefault();
+    if (!detail || !persistedSuperAdmin || offerSubmitting) return;
+    const rate = Number(offerRate);
+    const startDate = new Date(`${offerStartDate}T00:00:00`);
+    const expiryDate = offerExpiryDate ? new Date(`${offerExpiryDate}T00:00:00`) : null;
+    if (!Number.isFinite(rate) || rate <= 0 || !offerStartDate || Number.isNaN(startDate.getTime()) || !offerOverrideReason.trim()) {
+      toast({ title: "Complete the offer details", description: "Enter a positive rate, valid proposed start date, and written Super Admin override reason.", variant: "destructive" });
+      return;
+    }
+    if (offerExpiryDate && (!expiryDate || Number.isNaN(expiryDate.getTime()))) {
+      toast({ title: "Invalid expiration date", description: "Choose a valid offer expiration date.", variant: "destructive" });
+      return;
+    }
+    setOfferSubmitting(true);
+    try {
+      await apiFetch("/api/client/offers", {
+        method: "POST",
+        body: JSON.stringify({
+          submissionId: detail.id,
+          rate,
+          rateCurrency: "USD",
+          proposedStartDate: offerStartDate,
+          ...(offerExpiryDate ? { expiresAt: offerExpiryDate } : {}),
+          stageOverrideReason: offerOverrideReason.trim(),
+        }),
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/contractor-onboarding", detail.id] }),
+      ]);
+      toast({ title: "Offer sent", description: "The server accepted the Super Admin offer request." });
+      setOfferRate("");
+      setOfferStartDate("");
+      setOfferExpiryDate("");
+      setOfferOverrideReason("");
+      await refetchDetail();
+    } catch (error) {
+      toast({ title: "Could not send offer", description: error instanceof Error ? error.message : "The offer could not be completed.", variant: "destructive" });
+    } finally { setOfferSubmitting(false); }
+  }
 
   async function handleCvUpload(file: File) {
     const allowed = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
@@ -568,6 +640,7 @@ function DetailDialog({
                 )
               )}
             </section>
+            <ContractorOnboardingTracker data={onboarding.data} isLoading={onboarding.isLoading} isError={onboarding.isError} onRetry={() => void onboarding.refetch()} />
 
             {detail.hiringPipelineEligible === true
               && detail.latestOffer
@@ -609,9 +682,51 @@ function DetailDialog({
                company={detail.jobCompany}
                currentStatus={detail.status}
                onAction={() => setInterviewDialogOpen(true)}
-               actionDisabled={!detail.hiringPipelineEligible || !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(detail.status)}
-               disabledReason={!detail.hiringPipelineEligible ? "Hiring requires a linked Talent application to a real approved job, or an eligible Client invitation." : !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(detail.status) ? "This application is not at an interview scheduling stage." : undefined}
+              actionDisabled={!detail.hiringPipelineEligible || !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(detail.status) || (onboarding.data?.policy === "deposit_first" && !onboarding.data.canScheduleInterview)}
+              disabledReason={!detail.hiringPipelineEligible ? "Hiring requires a linked Talent application to a real approved job, or an eligible Client invitation." : onboarding.data?.policy === "deposit_first" && !onboarding.data.canScheduleInterview ? "Shortlist this applicant before scheduling an interview." : !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(detail.status) ? "This application is not at an interview scheduling stage." : undefined}
              />
+
+             {persistedSuperAdmin && detail.hiringPipelineEligible === true
+               && ["new", "under_review", "reviewed", "shortlisted", "interviewing", "offer_declined"].includes(detail.status)
+               && (
+                 <section className="rounded-xl border border-[#cbd9cf] bg-[#f8fbf8] p-4">
+                   <div className="flex items-start gap-3">
+                     <div className="rounded-lg bg-[#e7efe9] p-2 text-[#45664d]"><FileText className="h-4 w-4" /></div>
+                     <div className="min-w-0 flex-1">
+                       <h3 className="text-sm font-semibold text-[#20352a]">Super Admin offer</h3>
+                       <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                         Use only for a documented stage override. Server policy remains authoritative.
+                         {onboarding.data?.canSendOffer === false && onboarding.data.missing?.length
+                           ? ` Current blockers: ${onboarding.data.missing.join(", ")}.`
+                           : ""}
+                       </p>
+                       <form className="mt-4 space-y-3" onSubmit={sendAdminOffer}>
+                         <div className="grid gap-3 sm:grid-cols-3">
+                           <div className="space-y-1.5">
+                             <Label htmlFor="admin-offer-rate">Rate (USD)</Label>
+                             <Input id="admin-offer-rate" type="number" inputMode="decimal" min="0.01" step="any" required value={offerRate} onChange={(event) => setOfferRate(event.target.value)} placeholder="Enter agreed rate" />
+                           </div>
+                           <div className="space-y-1.5">
+                             <Label htmlFor="admin-offer-start">Proposed start date</Label>
+                             <Input id="admin-offer-start" type="date" required value={offerStartDate} onChange={(event) => setOfferStartDate(event.target.value)} />
+                           </div>
+                           <div className="space-y-1.5">
+                             <Label htmlFor="admin-offer-expiry">Offer expiration <span className="font-normal text-slate-400">Optional</span></Label>
+                             <Input id="admin-offer-expiry" type="date" value={offerExpiryDate} onChange={(event) => setOfferExpiryDate(event.target.value)} />
+                           </div>
+                         </div>
+                         <div className="space-y-1.5">
+                           <Label htmlFor="admin-offer-override-reason">Written override reason</Label>
+                           <Textarea id="admin-offer-override-reason" value={offerOverrideReason} onChange={(event) => setOfferOverrideReason(event.target.value)} placeholder="Explain why the standard shortlist/final-interview gate is being overridden." rows={3} maxLength={1200} required />
+                         </div>
+                         <Button type="submit" disabled={offerSubmitting || !(Number(offerRate) > 0) || !offerStartDate || !offerOverrideReason.trim()} className="bg-[#405f4d] text-white hover:bg-[#344d3e]">
+                           {offerSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending offer…</> : "Send Super Admin offer"}
+                         </Button>
+                       </form>
+                     </div>
+                   </div>
+                 </section>
+               )}
 
             {(detail.status === "offer_accepted" || detail.status === "contract_sent" || detail.status === "contract_signed" || detail.status === "hired" || detail.acceptedOfferId) && (
               <ContractApplicationPanel submissionId={detail.id} acceptedOfferId={detail.acceptedOfferId} />
@@ -846,6 +961,7 @@ function DetailDialog({
         setInterviewDialogOpen(false);
         queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
       }}
+      defaultInterviewType={onboarding.data?.defaultInterviewType}
       context={{
         applicantName: detail ? applicantName(detail) : "Applicant",
         position: detail?.jobTitle ?? "Position",

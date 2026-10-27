@@ -28,6 +28,8 @@ import { query } from "../db.js";
 import { BILLING_CURRENCY, requireUsdCurrency } from "../../shared/currency";
 import { queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
 import { dispatchHiringLifecycleEvents } from "./hiringLifecycleDispatch";
+import { isDepositFirst, requirePaidContract, lockOnboarding } from "./contractorOnboardingPolicy";
+import { tryActivateEngagement } from "./hiringLifecycleEvents";
 
 export class ContractError extends Error {
   status: number;
@@ -87,6 +89,8 @@ export async function createHiringContract(params: {
 }): Promise<Record<string, any>> {
   const { offerId, templateRef, documentPath, adminId } = params;
   return withTransaction(async (client) => {
+    const identity=(await client.query("SELECT submission_id FROM offers WHERE id=$1",[offerId])).rows[0];
+    if(identity)await lockOnboarding(client,identity.submission_id);
     // Lock the offer row so two concurrent creates serialize on it.
     const offerResult = await client.query(
       `SELECT id, submission_id, status, billing_mode, proposed_start_date, rate_currency FROM offers WHERE id = $1 FOR UPDATE`,
@@ -94,6 +98,9 @@ export async function createHiringContract(params: {
     );
     if (offerResult.rows.length === 0) throw new ContractError(404, { error: "Offer not found" });
     const offer = offerResult.rows[0];
+    await requirePaidContract(client,offerId,offer.submission_id);
+    if(await isDepositFirst(client,offer.submission_id)&&!params.prepareOnly)
+      throw new ContractError(409,{error:"private_document_required",message:"Use Prepare Contract to review and send the private Contractor Agreement PDF."});
     requireUsdCurrency(offer.rate_currency);
     if (offer.status !== "accepted" && offer.status !== "offer_accepted") {
       throw new ContractError(409, {
@@ -179,6 +186,11 @@ export async function createHiringContract(params: {
       throw err;
     }
 
+    if(await isDepositFirst(client,submissionId)) {
+      await client.query(`UPDATE security_deposits SET hiring_contract_id=$2 WHERE offer_id=$1 AND
+        (hiring_contract_id IS NULL OR EXISTS(SELECT 1 FROM hiring_contracts old WHERE old.id=security_deposits.hiring_contract_id AND old.status IN ('void','voided')))`,
+        [offerId,insert.rows[0].id]);
+    }
     if (params.prepareOnly) return insert.rows[0];
     await client.query(
       `UPDATE job_submissions SET status = 'contract_sent', updated_at = NOW() WHERE id = $1`,
@@ -224,6 +236,8 @@ export async function updateHiringContract(
     adminId,
   } = updates;
   const result = await withTransaction(async (client) => {
+    const identity=(await client.query("SELECT submission_id FROM hiring_contracts WHERE id=$1",[contractId])).rows[0];
+    if(identity)await lockOnboarding(client,identity.submission_id);
     let hiredTransition: { submissionId: string; previousStatus: string } | null = null;
     const contractResult = await client.query(
       `SELECT * FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
@@ -323,6 +337,7 @@ export async function updateHiringContract(
 
     // Signing issues the deposit; independent settlement alone activates hiring.
     if (fullySigned) {
+      const depositFirst=await isDepositFirst(client,contract.submission_id);
       const sub = await client.query(
         `SELECT id, status FROM job_submissions WHERE id = $1 FOR UPDATE`,
         [contract.submission_id],
@@ -349,9 +364,16 @@ export async function updateHiringContract(
       await client.query(
         `INSERT INTO job_application_status_history
            (application_id, previous_status, new_status, note, changed_by)
-          VALUES ($1, $2, 'contract_signed', 'Required contract signatures complete; security deposit awaiting verification', $3)`,
-        [contract.submission_id, previousStatus, adminId ?? null],
+          VALUES ($1, $2, 'contract_signed', $4, $3)`,
+         [contract.submission_id, previousStatus, adminId ?? null,depositFirst
+           ?"Required Contractor Agreement signatures complete; checking held deposit and signed current Client MSA"
+           :"Required contract signatures complete; security deposit awaiting verification"],
       );
+
+      if(depositFirst) {
+        await tryActivateEngagement(client,contract.submission_id,adminId??null);
+        return {contract:updated.rows[0],hiredTransition};
+      }
 
       // Keep the existing deposit principal formula and canonical ledger row.
       const offerForDeposit = await client.query(

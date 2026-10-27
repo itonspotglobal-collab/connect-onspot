@@ -1,9 +1,15 @@
 ---
 name: Contract signing parties
-description: Required signatures for uploaded OnSpot, Client and Organization agreements.
+description: New-flow Contractor Agreement plus separate Client MSA; historical multi-party agreements retain their signing rules.
 ---
 
-OnSpot must always sign before Hired/billing activation. OnSpot agreements require Talent and OnSpot. Client/Organization agreements additionally require the authenticated authorized Client/Organization representative, attributed to a real person.
+For applications entering the revised onboarding flow, the Contractor Agreement is Talent + OnSpot, and the Client separately signs the current versioned Master Services Agreement once per Client/version. All three activation conditions remain mandatory: held independently verified deposit, fully signed Contractor Agreement, and signed current MSA.
+
+**Why:** On 2026-10-28 the owner explicitly separated the Talent/OnSpot contractor document from the Client MSA and moved funding before agreement preparation.
+
+**How to apply:** Do not add Client/Organization parties to a new-flow Contractor Agreement. Preserve historical and in-flight agreements on their old paths; never manufacture replacement signature evidence.
+
+For those historical paths, OnSpot must always sign before Hired/billing activation. OnSpot agreements require Talent and OnSpot. Client/Organization agreements additionally require the authenticated authorized Client/Organization representative, attributed to a real person.
 
 **Why:** The owner explicitly chose to retain OnSpot's required signature when adding Client/Organization signing, rather than replace the existing intermediary contract approval.
 

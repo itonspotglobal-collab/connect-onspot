@@ -60,6 +60,31 @@ function brandedClientTemplate(
 
 export const DEFAULT_TEMPLATES: TemplateRow[] = [
   brandedTemplate({
+    name:"Offer Accepted — Deposit Invoice",category:"hiring_acceptance_invoice",stage:null,isDefault:true,
+    subject:"{{talent_name}} accepted your offer for {{job_title}} — deposit invoice ready",
+    content:`<p>{{talent_name}} accepted your offer for <strong>{{job_title}}</strong>.</p><p>Your security deposit invoice is ready: <strong>{{payment_amount}}</strong>. Once your payment is independently verified, OnSpot will prepare the Contractor Agreement and request any required current Master Services Agreement.</p>${button("{{portal_url}}","View deposit invoice")}`,
+  }),
+  brandedTemplate({
+    name:"Talent Offer Acceptance Confirmation",category:"hiring_talent_accepted",stage:null,isDefault:true,
+    subject:"You accepted the offer for {{job_title}}",
+    content:`<p>You accepted the offer for <strong>{{job_title}}</strong>.</p><p>Next, OnSpot will send your agreement once the Client’s deposit is confirmed. Your engagement is not active yet.</p>${button("{{portal_url}}","View application")}`,
+  }),
+  brandedTemplate({
+    name:"Payment Verified — Prepare Agreement",category:"hiring_agreements_ready",stage:null,isDefault:true,
+    subject:"Payment verified — prepare agreement for {{talent_name}} / {{job_title}}",
+    content:`<p>The deposit payment for <strong>{{job_title}}</strong> has been independently verified.</p><p>Review, prepare and send the private Contractor Agreement. Activation still requires all contractor signatures and the Client’s signed current MSA.</p>${button("{{portal_url}}","Prepare Contractor Agreement")}`,
+  }),
+  brandedTemplate({
+    name:"Client MSA Signature Request",category:"hiring_msa_required",stage:null,isDefault:true,
+    subject:"Please review and sign the OnSpot Master Services Agreement",
+    content:`<p>Please review and sign the current OnSpot Master Services Agreement before your engagement can activate.</p><p>Your invitation checkbox acknowledgement does not sign this document.</p>${button("{{portal_url}}","Review and sign MSA")}`,
+  }),
+  brandedTemplate({
+    name:"Current MSA Missing",category:"hiring_msa_missing",stage:null,isDefault:true,
+    subject:"Activation blocked — approved current MSA missing",
+    content:`<p>The funded onboarding for <strong>{{job_title}}</strong> cannot activate because there is no active, effective MSA document.</p><p>A Super Admin must upload the approved private legal PDF, review it and activate its version. No legal text has been generated.</p>${button("{{portal_url}}","Manage MSA versions")}`,
+  }),
+  brandedTemplate({
     name:"Offer Accepted — Sign Contract",category:"hiring_offer_accepted",stage:null,isDefault:true,
     subject:"{{talent_name}} accepted your offer for {{job_title}}. Next: sign the contract.",
     content:`<p>{{talent_name}} accepted your offer for <strong>{{job_title}}</strong>.</p><p>Next: review and sign the contract when the prepared document is available.</p>${button("{{portal_url}}","Review contract")}`,

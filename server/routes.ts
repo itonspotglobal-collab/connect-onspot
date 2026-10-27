@@ -41,6 +41,8 @@ import { registerManualWiseRoutes } from "./routes/manualWise";
 import { ManualWiseService } from "./services/manualWiseService";
 import { preOfferPaymentRequired } from "./services/hiringPaymentService";
 import { queueHiringLifecycleEvent } from "./services/hiringLifecycleEvents";
+import { issueAcceptedOfferDeposit, requireHiringStage, lockOnboarding } from "./services/contractorOnboardingPolicy";
+import { contractorOnboardingRouter } from "./routes/contractorOnboarding";
 import { dispatchHiringLifecycleEvents } from "./services/hiringLifecycleDispatch";
 import { HiringPaymentService, requireVerifiedHiringPayment } from "./services/hiringPaymentService";
 import { registerInvestorRoutes } from "./routes/investors.js";
@@ -1532,6 +1534,7 @@ export async function registerRoutes(
       : authenticateJWT(req, res, next);
   };
   app.use("/api/contracts", contractDocumentRouter(contractAuth, pipelineMutationLimiter));
+  app.use(contractorOnboardingRouter(contractAuth,pipelineMutationLimiter));
   // Legacy API object lookup must never bypass contract-level authorization,
   // including the redundant objects/ prefix accepted by the generic route.
   app.use(["/objects/hiring-contract-documents", "/api/objects/hiring-contract-documents", "/api/objects/objects/hiring-contract-documents"], (_req, res) => {
@@ -9386,7 +9389,8 @@ export async function registerRoutes(
       if (!submission.talent_id) return res.status(409).json({ error: "A linked Talent account is required for scheduling" });
 
       const scheduleable = ["shortlisted", "reviewed", "under_review", "interviewing", "new", "in_review"];
-      if (!scheduleable.includes(submission.status)) {
+      const prerequisiteOverride=await requireHiringStage({query} as any,submissionId,"interview",userId,req.body.stageOverrideReason,false);
+      if (!scheduleable.includes(submission.status)&&!prerequisiteOverride) {
         return res.status(409).json({
           error: "cannot_schedule_interview",
           message: `Submission status '${submission.status}' does not allow scheduling an interview.`,
@@ -9407,7 +9411,8 @@ export async function registerRoutes(
             [submission.talent_id],
           );
           const lockedSubmission = await loadAdminFormalSubmission(submissionId, { txClient, forUpdate: true });
-          if (!lockedSubmission.ok || !scheduleable.includes(lockedSubmission.row.status)) {
+          const override=await requireHiringStage(txClient,submissionId,"interview",userId,req.body.stageOverrideReason);
+          if (!lockedSubmission.ok || (!scheduleable.includes(lockedSubmission.row.status)&&!override)) {
             throw new FindWorkCalendarError("interview_submission_changed", "The application is no longer eligible for interviewing.", 409);
           }
           // Conflict check inside the lock
@@ -9490,7 +9495,8 @@ export async function registerRoutes(
         try {
         await query("BEGIN");
         const lockedSubmission = await loadAdminFormalSubmission(submissionId, { txClient: proposalClient, forUpdate: true });
-        if (!lockedSubmission.ok || !scheduleable.includes(lockedSubmission.row.status)) {
+        const override=await requireHiringStage(proposalClient,submissionId,"interview",userId,req.body.stageOverrideReason);
+        if (!lockedSubmission.ok || (!scheduleable.includes(lockedSubmission.row.status)&&!override)) {
           throw new FindWorkCalendarError("interview_submission_changed", "The application is no longer eligible for interviewing.", 409);
         }
         // Talent-led: no confirmed slot yet — just insert proposed interview
@@ -9591,6 +9597,7 @@ export async function registerRoutes(
     } catch (err: any) {
       if (err instanceof FindWorkCalendarError) return res.status(err.status).json({ error: err.code, message: err.message });
       console.error("POST /api/admin/interviews error:", err);
+      if(hiringPaymentFailure(res,err))return;
       return res.status(500).json({ error: err.message });
     }
   });
@@ -15924,7 +15931,7 @@ export async function registerRoutes(
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
       const r = await query(
-        `SELECT msa_accepted_at, msa_version
+        `SELECT invitation_terms_accepted_at AS msa_accepted_at, invitation_terms_version AS msa_version
            FROM client_profiles
           WHERE user_id = $1
           LIMIT 1`,
@@ -15959,8 +15966,8 @@ export async function registerRoutes(
       if (existing.rows.length) {
         result = await query(
           `UPDATE client_profiles
-              SET msa_accepted_at = NOW(),
-                  msa_version = $1,
+              SET invitation_terms_accepted_at = NOW(),
+                  invitation_terms_version = $1,
                   updated_at = NOW()
             WHERE user_id = $2
             RETURNING *`,
@@ -15971,7 +15978,7 @@ export async function registerRoutes(
         const u = userRes.rows[0];
         result = await query(
           `INSERT INTO client_profiles
-             (id, user_id, company_name, contact_person, email, msa_accepted_at, msa_version, created_at, updated_at)
+             (id, user_id, company_name, contact_person, email, invitation_terms_accepted_at, invitation_terms_version, created_at, updated_at)
            VALUES ($1, $2, $3, $4, $5, NOW(), $6, NOW(), NOW())
            RETURNING *`,
           [
@@ -15986,8 +15993,8 @@ export async function registerRoutes(
       }
       return res.json({
         accepted: true,
-        acceptedAt: result.rows[0].msa_accepted_at,
-        version: result.rows[0].msa_version,
+        acceptedAt: result.rows[0].invitation_terms_accepted_at,
+        version: result.rows[0].invitation_terms_version,
         currentVersion: CURRENT_MSA_VERSION,
         termsUrl: CLIENT_TERMS_URL,
       });
@@ -16093,7 +16100,7 @@ export async function registerRoutes(
           [userId],
         ),
         query(
-          `SELECT msa_accepted_at, msa_version
+          `SELECT invitation_terms_accepted_at AS msa_accepted_at, invitation_terms_version AS msa_version
              FROM client_profiles
             WHERE user_id = $1
             LIMIT 1`,
@@ -17216,6 +17223,7 @@ export async function registerRoutes(
                 js.talent_id AS "talentId",
                 c.id AS "candidateId",
                 js.status,
+                js.invitation_pending,
                 j.title AS "jobTitle",
                 j.status AS "jobStatus",
                 j.approval_status AS "approvalStatus",
@@ -17575,7 +17583,7 @@ export async function registerRoutes(
           );
           if (firstInvite.rows[0]?.is_first) {
             const msa = await txClient.query(
-              `SELECT msa_accepted_at, msa_version FROM client_profiles WHERE user_id = $1 LIMIT 1`,
+              `SELECT invitation_terms_accepted_at AS msa_accepted_at, invitation_terms_version AS msa_version FROM client_profiles WHERE user_id = $1 LIMIT 1`,
               [clientId],
             );
             if (
@@ -17668,6 +17676,10 @@ export async function registerRoutes(
            );
          }
          if (normalizedTimes) {
+           await txClient.query("UPDATE job_submissions SET status='shortlisted',invitation_pending=true,updated_at=now() WHERE id=$1",[created.id]);
+           await txClient.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by)
+             VALUES($1,'invited','shortlisted','Client shortlisted Talent through an interview invitation',$2)`,[created.id,clientId]);
+           await requireHiringStage(txClient,created.id,"interview",clientId);
            const interviewResult = await txClient.query(
              `INSERT INTO interviews
                 (submission_id, round_number, interview_type, status, proposed_times,
@@ -17750,6 +17762,9 @@ export async function registerRoutes(
         `SELECT js.id,
                 js.job_id        AS "jobId",
                 js.status,
+                js.invitation_pending,
+                js.workflow_type,
+                js.initiated_by,
                 js.created_at    AS "createdAt",
                 j.title          AS "jobTitle",
                 j.category       AS "jobCategory",
@@ -17775,7 +17790,7 @@ export async function registerRoutes(
              LIMIT 1
           ) i ON true
          WHERE js.talent_id = $1
-           AND js.status = 'invited'
+           AND (js.status = 'invited' OR js.invitation_pending)
          ORDER BY js.created_at DESC`,
         [userId],
       );
@@ -17807,15 +17822,18 @@ export async function registerRoutes(
       if (!check.rows.length) return res.status(404).json({ error: "Invitation not found" });
 
       // Canonical DB values: accept → 'new' (display alias 'submitted'), decline → 'declined'
-      const newStatus = action === "accept" ? "new" : "declined";
+      let newStatus = action === "accept" ? "new" : "declined";
 
       if (action !== "accept") {
         // Atomic transition: only flips if still pending; concurrent accept/decline
         // requests cannot both win.
         const declined = await query(
-          `UPDATE job_submissions SET status = $1, updated_at = NOW()
-           WHERE id = $2 AND talent_id = $3 AND status = 'invited'
-           RETURNING id`,
+          `WITH declined AS (UPDATE job_submissions SET status = $1, invitation_pending=false, updated_at = NOW()
+           WHERE id = $2 AND talent_id = $3 AND (status = 'invited' OR invitation_pending)
+             AND initiated_by='client' AND workflow_type='client_invitation'
+           RETURNING id)
+           INSERT INTO job_application_status_history(application_id,new_status,note,changed_by)
+             SELECT id,'declined','Talent declined the Client invitation',$3 FROM declined RETURNING application_id AS id`,
           [newStatus, id, userId],
         );
         if (!declined.rows.length) {
@@ -17838,9 +17856,12 @@ export async function registerRoutes(
         // relationship — talent-initiated (legacy/malformed) 'invited' rows never
         // create a thread or reveal identities.
         const updated = await txClient.query(
-          `UPDATE job_submissions SET status = $1, updated_at = NOW()
-           WHERE id = $2 AND talent_id = $3 AND status = 'invited' AND initiated_by = 'client'
-           RETURNING client_id, job_id`,
+          `UPDATE job_submissions SET status = CASE WHEN invitation_pending THEN
+              CASE WHEN EXISTS(SELECT 1 FROM interviews WHERE submission_id=job_submissions.id) THEN 'interviewing' ELSE 'shortlisted' END
+              ELSE $1 END, invitation_pending=false,updated_at = NOW()
+           WHERE id = $2 AND talent_id = $3 AND (status = 'invited' OR invitation_pending) AND initiated_by = 'client'
+             AND workflow_type='client_invitation'
+           RETURNING client_id, job_id,status`,
           [newStatus, id, userId],
         );
         if (!updated.rows.length) {
@@ -17848,6 +17869,9 @@ export async function registerRoutes(
           return res.status(409).json({ error: "This invitation is no longer pending" });
         }
         const { client_id: clientId, job_id: jobId } = updated.rows[0];
+        newStatus=updated.rows[0].status;
+        await txClient.query(`INSERT INTO job_application_status_history(application_id,new_status,note,changed_by)
+          VALUES($1,$2,'Talent accepted the Client invitation',$3)`,[id,newStatus,userId]);
         const jobRow = jobId
           ? await txClient.query(
               `SELECT j.title,
@@ -17991,7 +18015,7 @@ export async function registerRoutes(
           WHERE js.talent_id = $1
             AND i.status IN ('proposed', 'rescheduled', 'confirmed', 'cancelled')
             AND NOT (
-              js.status = 'invited'
+              (js.status = 'invited' OR js.invitation_pending)
               AND (js.workflow_type = 'client_invitation' OR js.initiated_by = 'client')
             )
           GROUP BY i.id, js.status, js.id, j.title, j.company
@@ -20218,7 +20242,12 @@ export async function registerRoutes(
 
   // POST /api/client/interviews — schedule a new interview round
   app.post("/api/client/interviews", pipelineMutationLimiter, authenticateJWT, async (req: Request, res: Response) => {
+    let interviewTx:any;
+    let interviewCommitted=false;
     try {
+      interviewTx=await pool.connect();
+      const query=(sql:string,values?:any[])=>interviewTx.query(sql,values);
+      await query("BEGIN");
       const userId = (req as any).user?.id;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
@@ -20256,11 +20285,13 @@ export async function registerRoutes(
       const subGuard = await loadClientFormalSubmission(submissionId, userId, {
         extraCols: ", j.title AS job_title",
         joinClause: "JOIN jobs j ON j.id = js.job_id",
+        txClient:interviewTx,forUpdate:true,
       });
       if (!subGuard.ok) return res.status(subGuard.status).json({ error: subGuard.error });
       const submission = subGuard.row;
 
       // Guard: can only schedule interviews for submissions that are in a scheduleable state
+      await requireHiringStage(interviewTx,submissionId,"interview",userId,req.body.stageOverrideReason);
       const scheduleable = ["shortlisted", "reviewed", "under_review", "interviewing"];
       if (!scheduleable.includes(submission.status)) {
         return res.status(409).json({
@@ -20315,7 +20346,12 @@ export async function registerRoutes(
           [submissionId, submission.status,
            `Round ${roundNumber} interview scheduled (type: ${interviewType})`, userId],
         );
-        await notifyTalentOfApplicationStatusChange({
+         // Notifications below run only after the scheduling transaction commits.
+       }
+       await query("COMMIT");
+       interviewCommitted=true;
+       if(submission.status!=="interviewing") {
+         await notifyTalentOfApplicationStatusChange({
           submissionId,
           talentUserId: submission.talent_id,
           applicantEmail: submission.email,
@@ -20352,7 +20388,13 @@ export async function registerRoutes(
       return res.status(201).json(interview);
     } catch (err: any) {
       console.error("POST /api/client/interviews error:", err);
+      if(hiringPaymentFailure(res,err))return;
       return res.status(500).json({ error: err.message });
+    } finally {
+      if(interviewTx) {
+        if(!interviewCommitted)await interviewTx.query("ROLLBACK").catch(()=>{});
+        interviewTx.release();
+      }
     }
   });
 
@@ -21061,7 +21103,7 @@ export async function registerRoutes(
         const user=(req as any).user;
         if(!user?.id) return res.status(401).json({error:"Unauthorized"});
         if(expirationPath.startsWith("/api/admin") && user.role!=="admin") return res.status(403).json({error:"Forbidden"});
-        return res.json(await extendOfferExpiration(req.params.id,user.id,req.body?.expiresAt));
+        return res.json(await extendOfferExpiration(req.params.id,user.id,req.body?.expiresAt,req.body?.stageOverrideReason));
       } catch(error:any) {
         if(error instanceof ContractError) return res.status(error.status).json(error.body);
         if(hiringPaymentFailure(res,error)) return;
@@ -21085,17 +21127,23 @@ export async function registerRoutes(
         return res.status(400).json({ error: "rate must be a positive number" });
       }
       // Ownership + submission state (formal pipeline guard)
-      const subGuard = await loadClientFormalSubmission(submissionId, userId, {
+      const actor=(await query("SELECT role,admin_sub_role FROM users WHERE id=$1",[userId])).rows[0];
+      const superAdmin=actor?.role==="admin"&&actor.admin_sub_role===null;
+      const offerGuardOptions={
         extraCols: ", j.engagement_type AS job_engagement_type, j.billing_mode AS job_billing_mode",
         joinClause: "JOIN jobs j ON j.id = js.job_id",
-      });
+      };
+      const subGuard = superAdmin
+        ? await loadAdminFormalSubmission(submissionId,offerGuardOptions)
+        : await loadClientFormalSubmission(submissionId,userId,offerGuardOptions);
       if (!subGuard.ok) return res.status(subGuard.status).json({ error: subGuard.error });
       const submission = subGuard.row;
 
       // Guard: offer only from states where an offer makes sense.
       // offer_declined allows a re-offer (new row).
       const offerable = ["shortlisted", "reviewed", "under_review", "interviewing", "offer_declined"];
-      if (!offerable.includes(submission.status)) {
+      const prerequisiteOverride=await requireHiringStage({query} as any,submissionId,"offer",userId,req.body.stageOverrideReason,false);
+      if (!offerable.includes(submission.status)&&!prerequisiteOverride) {
         return res.status(409).json({
           error: "cannot_extend_offer",
           message: `Submission status '${submission.status}' does not allow extending an offer. ` +
@@ -21180,14 +21228,16 @@ export async function registerRoutes(
       let offer: any;
       try {
         await txClient.query("BEGIN");
-        const lockedSubmission = await loadClientFormalSubmission(submissionId, userId, {
-          forUpdate: true, txClient,
-        });
+        await lockOnboarding(txClient,submissionId);
+        const lockedSubmission = superAdmin
+          ? await loadAdminFormalSubmission(submissionId,{forUpdate:true,txClient})
+          : await loadClientFormalSubmission(submissionId,userId,{forUpdate:true,txClient});
         if (!lockedSubmission.ok) {
           await txClient.query("ROLLBACK");
           return res.status(lockedSubmission.status).json({ error: lockedSubmission.error });
         }
-        if (!offerable.includes(lockedSubmission.row.status)) {
+        const override=await requireHiringStage(txClient,submissionId,"offer",userId,req.body.stageOverrideReason);
+        if (!offerable.includes(lockedSubmission.row.status)&&!override) {
           await txClient.query("ROLLBACK");
           return res.status(409).json({ error: "cannot_extend_offer", message: "This application is no longer at an offer-eligible stage." });
         }
@@ -21412,7 +21462,9 @@ export async function registerRoutes(
       let responseOffer: any;
       try {
         await txClient.query("BEGIN");
+        await lockOnboarding(txClient,offer.submission_id);
         if (action === "counter") await requireVerifiedHiringPayment(txClient, offer.submission_id);
+        if (action === "counter") await requireHiringStage(txClient,offer.submission_id,"offer",clientId,req.body.stageOverrideReason);
         const locked = await txClient.query(
           `SELECT id, status, expires_at FROM offers WHERE id = $1 FOR UPDATE`,
           [offer.id],
@@ -21485,7 +21537,10 @@ export async function registerRoutes(
              `Client ${action === "accept" ? "accepted" : "declined"} the talent counter offer`, clientId],
           );
         }
-        if(action==="accept") await queueHiringLifecycleEvent(txClient,`offer-accepted:${offer.id}`,"offer_accepted",{submissionId:offer.js_id});
+        if(action==="accept") {
+          await issueAcceptedOfferDeposit(txClient,offer.id,offer.js_id);
+          await queueHiringLifecycleEvent(txClient,`offer-accepted:${offer.id}`,"offer_accepted",{submissionId:offer.js_id});
+        }
         await txClient.query("COMMIT");
       } catch (txErr) {
         await txClient.query("ROLLBACK").catch(() => {});
@@ -21728,6 +21783,7 @@ export async function registerRoutes(
       let respondedOffer: any;
       try {
         await txClient.query("BEGIN");
+        await lockOnboarding(txClient,offer.submission_id);
         const currentSubmission = await txClient.query(`SELECT js.status FROM job_submissions js
           WHERE js.id=$1 AND js.talent_id=$2 AND js.${FORMAL_PIPELINE_PREDICATE} FOR UPDATE OF js`,
           [offer.submission_id, linkedUserId]);
@@ -21736,6 +21792,10 @@ export async function registerRoutes(
           return res.status(409).json({error:"application_not_offer_pending"});
         }
         if (action === "counter") await requireVerifiedHiringPayment(txClient, offer.submission_id);
+        if (action === "counter") {
+          if(!linkedUserId)throw new Error("Linked Talent account required.");
+          await requireHiringStage(txClient,offer.submission_id,"offer",linkedUserId,req.body.stageOverrideReason);
+        }
         const updated = await txClient.query(
           `UPDATE offers
            SET status = $1, responded_at = NOW(), updated_at = NOW(),
@@ -21800,7 +21860,10 @@ export async function registerRoutes(
              linkedUserId],
           );
         }
-        if(action==="accept") await queueHiringLifecycleEvent(txClient,`offer-accepted:${offer.id}`,"offer_accepted",{submissionId:offer.js_id});
+        if(action==="accept") {
+          await issueAcceptedOfferDeposit(txClient,offer.id,offer.js_id);
+          await queueHiringLifecycleEvent(txClient,`offer-accepted:${offer.id}`,"offer_accepted",{submissionId:offer.js_id});
+        }
         await txClient.query("COMMIT");
       } catch (txErr: any) {
         await txClient.query("ROLLBACK").catch(() => {});

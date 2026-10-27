@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { Pool, PoolClient } from "pg";
 import { ManualWiseConfiguration } from "./manualWiseConfiguration";
-import { activateFundedEngagement, queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
+import { activateFundedEngagement, queueHiringLifecycleEvent, tryActivateEngagement } from "./hiringLifecycleEvents";
+import { isDepositFirst, lockOnboarding } from "./contractorOnboardingPolicy";
 
 const categories = ["inquiry","hiring_invoice","invoice","monthly_invoice","deposit","replenishment","payout"] as const;
 export type WiseCategory = typeof categories[number];
@@ -60,6 +61,11 @@ export class ManualWiseService {
   private async raw(db:PoolClient,c:WiseCategory,id:string) {
     z.string().uuid().parse(id);
     let contractStatus:string|undefined;
+    if(c==="deposit") {
+      const source=(await db.query(`SELECT coalesce(d.submission_id,hc.submission_id) AS submission_id
+        FROM security_deposits d LEFT JOIN hiring_contracts hc ON hc.id=d.hiring_contract_id WHERE d.id=$1`,[id])).rows[0];
+      if(source?.submission_id)await lockOnboarding(db,source.submission_id);
+    }
     // Match the existing hiring/contract locking order before taking ledger locks.
     if (c==="hiring_invoice") {
       await db.query(`SELECT id FROM job_submissions WHERE id=(SELECT submission_id FROM hiring_pre_offer_invoices WHERE id=$1) FOR UPDATE`,[id]);
@@ -78,7 +84,12 @@ export class ManualWiseService {
       r.amount_due=net<BigInt(0) ? "" : `${net/BigInt(100)}.${String(net%BigInt(100)).padStart(2,"0")}`;
     }
     if (c==="deposit" || c==="replenishment") {
-      r.client_id=(await db.query(`SELECT js.client_id FROM hiring_contracts hc JOIN job_submissions js ON js.id=hc.submission_id WHERE hc.id=$1`,[r.hiring_contract_id])).rows[0]?.client_id;
+      r.client_id=(await db.query(`SELECT js.client_id FROM job_submissions js WHERE js.id=coalesce($2::text,
+        (SELECT submission_id FROM hiring_contracts WHERE id=$1))`,[r.hiring_contract_id,c==="deposit"?r.submission_id:null])).rows[0]?.client_id;
+      if(c==="deposit"&&r.offer_id) {
+        r.deposit_first=await isDepositFirst(db,r.submission_id);
+        r.offer_status=(await db.query("SELECT status FROM offers WHERE id=$1",[r.offer_id])).rows[0]?.status;
+      }
     }
     return r;
   }
@@ -149,7 +160,10 @@ export class ManualWiseService {
     }
     if (["deposit","replenishment"].includes(c)) {
       if (!activeConfig?.deposit_funding_confirmed) blockedReason="Manual deposit funding requires explicit business/custody policy confirmation.";
-      if(r.contract_status!=="signed")blockedReason="Deposit funding requires an active signed contract; closed obligations need financial review.";
+      if(r.deposit_first) {
+        if(!["accepted","offer_accepted"].includes(r.offer_status)||["void","voided","terminated"].includes(r.contract_status))
+          blockedReason="This accepted offer is no longer eligible for deposit funding. Contact OnSpot for financial review.";
+      } else if(r.contract_status!=="signed")blockedReason="Deposit funding requires an active signed contract; closed obligations need financial review.";
     }
     if (c==="payout" && !binding.approved_destination) blockedReason="Independently approve the Talent payout destination before recording a transfer.";
     const latest=history[0];
@@ -195,6 +209,10 @@ export class ManualWiseService {
           amount:`-${credits/BigInt(100)}.${String(credits%BigInt(100)).padStart(2,"0")}`});
       }
     }
+    if(c==="deposit"&&r.offer_id&&!r.hiring_contract_id) {
+      const role=(await db.query("SELECT j.title FROM job_submissions js JOIN jobs j ON j.id=js.job_id WHERE js.id=$1",[r.submission_id])).rows[0]?.title;
+      if(role)lineItems[0].description=role;
+    }
     return {actor,r,binding,config,view:{
       category:c,id,reference:r.invoice_number ?? r.reference_number ?? id,
       amount,currency:curr,payerId,status:r.status,paymentStatus,
@@ -218,8 +236,8 @@ export class ManualWiseService {
           SELECT id::text,'invoice' AS category,created_at FROM invoices WHERE client_id=$1 AND status<>'draft'
           UNION ALL SELECT id::text,'hiring_invoice',created_at FROM hiring_pre_offer_invoices WHERE client_id=$1 AND status<>'draft'
           UNION ALL SELECT id::text,'monthly_invoice',created_at FROM client_monthly_invoices WHERE client_id=$1 AND status='sent'
-          UNION ALL SELECT d.id::text,'deposit',d.created_at FROM security_deposits d JOIN hiring_contracts hc ON hc.id=d.hiring_contract_id
-            JOIN job_submissions js ON js.id=hc.submission_id WHERE js.client_id=$1
+          UNION ALL SELECT d.id::text,'deposit',d.created_at FROM security_deposits d LEFT JOIN hiring_contracts hc ON hc.id=d.hiring_contract_id
+            JOIN job_submissions js ON js.id=coalesce(d.submission_id,hc.submission_id) WHERE js.client_id=$1
           UNION ALL SELECT r.id::text,'replenishment',r.created_at FROM security_deposit_replenishments r
             JOIN hiring_contracts hc ON hc.id=r.hiring_contract_id JOIN job_submissions js ON js.id=hc.submission_id WHERE js.client_id=$1
           UNION ALL SELECT id::text,'inquiry',created_at FROM inquiries WHERE lower(btrim(email))=lower(btrim($2))
@@ -389,7 +407,14 @@ export class ManualWiseService {
     if (c==="monthly_invoice") await db.query(`UPDATE client_monthly_invoices SET payment_status='paid',paid_at=now() WHERE id=$1`,[r.id]);
     if (c==="deposit") {
       await db.query(`UPDATE security_deposits SET status='held',held_at=now(),updated_at=now() WHERE id=$1`,[r.id]);
-      await activateFundedEngagement(db,r.hiring_contract_id,actor);
+      if(r.deposit_first) {
+        await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by,created_at)
+          SELECT id,status,status,'Security deposit independently verified; Contractor Agreement and current signed Client MSA still required',$2,clock_timestamp()
+          FROM job_submissions WHERE id=$1`,[r.submission_id,actor]);
+        await tryActivateEngagement(db,r.submission_id,actor);
+        await queueHiringLifecycleEvent(db,`deposit-verified:${r.id}`,"deposit_verified",
+          {submissionId:r.submission_id,offerId:r.offer_id,depositId:r.id,actorId:actor});
+      } else await activateFundedEngagement(db,r.hiring_contract_id,actor);
     }
     if (c==="replenishment") {
       const deposit=(await db.query("SELECT status FROM security_deposits WHERE hiring_contract_id=$1 FOR UPDATE",[r.hiring_contract_id])).rows[0];

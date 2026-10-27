@@ -219,6 +219,10 @@ export default function AdminSettings() {
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           Manage your admin identity and account security.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/msa-documents")}>Manage MSA documents</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/contractor-onboarding")}>Contractor onboarding</Button>
+        </div>
       </div>
 
       {/* ── 1. Account identity ─────────────────────────────────────────────── */}

@@ -3,6 +3,14 @@ name: Isolated server test boundaries
 description: Transitive imports can initialize external stores or auth services before pure unit assertions run.
 ---
 
+# Workflow cutover fixtures
+
+When a new workflow defaults on for unclassified records, historical-path regression fixtures must explicitly identify their intended legacy cohort. Keep new-path tests separate and exercise the real new guards.
+
+**Why:** Manufacturing accepted offers in an older fixture is not evidence that the new interview, funding or document prerequisites were met. Weakening guards for the test environment would hide application defects.
+
+**How to apply:** Use explicit test-only cohort setup inside the owned disposable database; never add application-wide auth or workflow bypasses. Extracted production-route harnesses must register newly introduced real dependencies rather than replacing authorization or stage checks with no-ops.
+
 Development module resolution and production bundling can select different
 extensions for an otherwise identical import.
 

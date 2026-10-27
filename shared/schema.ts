@@ -100,6 +100,8 @@ export const clientProfiles = pgTable("client_profiles", {
   timezone: text("timezone"),
   msaAcceptedAt: timestamp("msa_accepted_at"),
   msaVersion: text("msa_version"),
+  invitationTermsAcceptedAt: timestamp("invitation_terms_accepted_at", { withTimezone: true }),
+  invitationTermsVersion: text("invitation_terms_version"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -905,6 +907,7 @@ export const jobSubmissions = pgTable("job_submissions", {
   // Client invitations that include an initial interview keep identity masked
   // until the interview itself reaches confirmed.
   combinedInviteReveal: boolean("combined_invite_reveal").notNull().default(false),
+  invitationPending: boolean("invitation_pending").notNull().default(false),
   answers: jsonb("answers"), // [{ questionId, question, answer }]
   submittedAt: timestamp("submitted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -2404,7 +2407,9 @@ export const clientCreditApplications = pgTable("client_credit_applications", {
 export const securityDeposits = pgTable("security_deposits", {
   invoiceNumber: text("invoice_number"),
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  hiringContractId: uuid("hiring_contract_id").notNull().unique().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  hiringContractId: uuid("hiring_contract_id").unique().references(() => hiringContracts.id, { onDelete: "restrict" }),
+  offerId: uuid("offer_id").references(() => offers.id),
+  submissionId: text("submission_id").references(() => jobSubmissions.id),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   currency: text("currency").notNull().default("USD"),
   status: text("status").notNull().default("pending"),
@@ -2424,6 +2429,7 @@ export const securityDeposits = pgTable("security_deposits", {
 }, (table) => [
   index("idx_security_deposits_contract").on(table.hiringContractId),
   index("idx_security_deposits_status").on(table.status),
+  uniqueIndex("security_deposits_accepted_offer_unique").on(table.offerId).where(sql`${table.offerId} IS NOT NULL`),
   uniqueIndex("security_deposits_invoice_number_unique").on(table.invoiceNumber).where(sql`${table.invoiceNumber} IS NOT NULL`),
   check("security_deposits_status_check", sql`${table.status} IN ('pending', 'held', 'drawn', 'replenishment_pending', 'suspended', 'forfeited', 'applied', 'void')`),
 ]);

@@ -6,6 +6,7 @@ import { ContractError } from "./services/hiringContractService";
 import * as contracts from "./services/contractDocumentService";
 import { deliverContractEmails } from "./services/contractDeliveryService";
 import { MAX_CONTRACT_PDF_BYTES } from "./services/contractBlobStore";
+import { OnboardingError } from "./services/contractorOnboardingPolicy";
 
 export function contractDocumentRouter(authenticate: RequestHandler, limiter: RequestHandler) {
   const router = Router();
@@ -105,6 +106,7 @@ export function contractDocumentRouter(authenticate: RequestHandler, limiter: Re
     }));
   }
   router.use((error: any, _req: any, res: any, _next: any) => {
+    if (error instanceof OnboardingError) return res.status(error.status).json({error:error.code,code:error.code,message:error.message});
     if (error instanceof ContractError) return res.status(error.status).json(error.body);
     if (error instanceof multer.MulterError) return res.status(400).json({ error: "invalid_pdf_upload", message: "Upload one PDF no larger than 10 MB." });
     console.error("[contract-document] request failed:", error?.name ?? "Error");

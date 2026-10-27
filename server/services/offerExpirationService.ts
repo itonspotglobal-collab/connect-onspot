@@ -2,9 +2,10 @@ import { getClient } from "../db";
 import { FORMAL_PIPELINE_PREDICATE } from "./formalPipelineGuard";
 import { ContractError } from "./hiringContractService";
 import { requireVerifiedHiringPayment } from "./hiringPaymentService";
+import { requireHiringStage } from "./contractorOnboardingPolicy";
 
 /** Explicit renewal preserves the unchanged offer terms and the old deadline. */
-export async function extendOfferExpiration(offerId:string,actorId:string,expiresAt:unknown) {
+export async function extendOfferExpiration(offerId:string,actorId:string,expiresAt:unknown,stageOverrideReason?:unknown) {
   if(typeof expiresAt!=="string" || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt)<=Date.now()) {
     throw new ContractError(400,{error:"invalid_expiration",message:"Choose a future expiration date."});
   }
@@ -17,6 +18,7 @@ export async function extendOfferExpiration(offerId:string,actorId:string,expire
         AND js.${FORMAL_PIPELINE_PREDICATE} FOR UPDATE OF js`,[offerId,actorId])).rows[0];
     if(!row) throw new ContractError(404,{error:"offer_not_found"});
     await requireVerifiedHiringPayment(tx,row.submission_id);
+    await requireHiringStage(tx,row.submission_id,"offer",actorId,stageOverrideReason);
     row={...row,...(await tx.query("SELECT * FROM offers WHERE id=$1 FOR UPDATE",[offerId])).rows[0]};
     if(!["sent","expired"].includes(row.status) || row.proposer_role==="talent" ||
        !["offer_extended","offer_expired"].includes(row.submission_status)) {

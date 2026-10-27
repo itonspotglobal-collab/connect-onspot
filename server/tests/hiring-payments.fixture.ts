@@ -16,6 +16,7 @@ import * as documents from "../services/contractDocumentService";
 import type { ContractBlobProvider } from "../services/contractBlobStore";
 import { extendOfferExpiration } from "../services/offerExpirationService";
 import { queueHiringLifecycleEvent } from "../services/hiringLifecycleEvents";
+import {requireHiringStage,issueAcceptedOfferDeposit,lockOnboarding} from "../services/contractorOnboardingPolicy";
 import { dispatchHiringLifecycleEvents } from "../services/hiringLifecycleDispatch";
 import { DEFAULT_TEMPLATES } from "../seeds/seedEmailTemplates";
 
@@ -52,7 +53,7 @@ function handler(method: string,path: string) {
   }; visit(source);
   assert.ok(text,`Missing production handler ${path}`);
   const dependencies = {query,pool,storage,...guard,...currency,requireVerifiedHiringPayment,hiringPaymentFailure,
-    queueHiringLifecycleEvent,dispatchHiringLifecycleEvents:async()=>{},
+    queueHiringLifecycleEvent,requireHiringStage,issueAcceptedOfferDeposit,lockOnboarding,dispatchHiringLifecycleEvents:async()=>{},
     buildTalentApplicationsUrl:()=>"/my-applications",buildClientApplicationUrl:()=>"/client-dashboard",
     require:(name: string) => {
       if (name.includes("microsoftGraphEmailService")) return {isEmailServiceConfigured:()=>false};

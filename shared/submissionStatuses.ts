@@ -33,8 +33,8 @@ export const SUBMISSION_STATUSES = [
 
   // ── Contract + hire (Admin/OnSpot-driven) ─────────────────────────────────
   "contract_sent",  // Admin/OnSpot generated and sent the hiring contract
-  "contract_signed", // Required signatures complete; awaiting verified deposit
-  "hired",          // Signed contract and independently verified deposit
+   "contract_signed", // Required contractor signatures complete; activation prerequisites may remain
+   "hired",          // All workflow-version activation prerequisites satisfied
 ] as const;
 
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
@@ -55,7 +55,7 @@ export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   offer_accepted: "Offer Accepted",
   offer_declined: "Offer Declined",
   contract_sent: "Contract Sent",
-  contract_signed: "Contract Signed · Deposit Due",
+  contract_signed: "Contract Signed",
   hired: "Hired",
 };
 

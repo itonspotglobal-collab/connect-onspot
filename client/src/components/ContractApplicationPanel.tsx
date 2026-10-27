@@ -4,9 +4,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2 } from "lucide-react";
 import type { ContractRow } from "@/components/ContractWorkflow";
+import { useContractorOnboarding } from "@/components/ContractorOnboarding";
 
 export function ContractApplicationPanel({ submissionId, acceptedOfferId }: { submissionId: string; acceptedOfferId?: string | null }) {
   const [, navigate] = useLocation();
+  const onboarding = useContractorOnboarding(submissionId);
   const { data: contracts, isLoading, isError, refetch } = useQuery<ContractRow[]>({
     queryKey: ["/api/contracts", "application", submissionId],
     queryFn: async () => {
@@ -27,10 +29,17 @@ export function ContractApplicationPanel({ submissionId, acceptedOfferId }: { su
         : active ? <div className="mt-3 rounded-md border border-indigo-100 bg-white p-3">
           <p className="text-sm font-semibold capitalize text-slate-800">{active.title || active.job_title}</p>
           <p className="mt-1 text-xs capitalize text-slate-500">{active.status.replaceAll("_", " ")}{active.document_status ? ` · document ${active.document_status.replaceAll("_", " ")}` : ""}</p>
-          <Button size="sm" variant="outline" className="mt-3" onClick={() => navigate(`/contracts?id=${encodeURIComponent(active.id)}`)}>Open secure contract</Button>
+           <Button size="sm" variant="outline" className="mt-3" onClick={() => navigate(`/contracts?id=${encodeURIComponent(active.id)}`)}>{active.status === "draft" ? "Manage contract draft" : "Open secure contract"}</Button>
         </div> : acceptedOfferId ? <div className="mt-3">
-          <p className="text-xs text-slate-600">The accepted offer is ready for a private PDF agreement.</p>
-          <Button size="sm" className="mt-2 bg-[#474ead] text-white hover:bg-[#3d439c]" onClick={() => navigate(`/contracts?offerId=${encodeURIComponent(acceptedOfferId)}`)}><FileText className="mr-1.5 h-3.5 w-3.5" />Prepare Contract</Button>
+           {onboarding.isLoading ? <p className="text-xs text-slate-500">Checking payment and agreement readiness…</p>
+             : onboarding.isError ? <p role="alert" className="text-xs text-amber-800">Readiness could not be confirmed. Contract preparation is unavailable until the application status can be checked.</p>
+             : onboarding.data?.policy === "deposit_first" && !onboarding.data.canPrepareContract ? <>
+               <p className="text-xs text-slate-600">The agreement draft is available after the accepted-offer deposit is verified.</p>
+               {onboarding.data.missing?.length > 0 && <p className="mt-1 text-xs text-amber-800">Still needed: {onboarding.data.missing.join(" · ")}</p>}
+             </> : <>
+             <p className="text-xs text-slate-600">The accepted offer is ready for a private PDF agreement.</p>
+             <Button size="sm" className="mt-2 bg-[#474ead] text-white hover:bg-[#3d439c]" onClick={() => navigate(`/contracts?offerId=${encodeURIComponent(acceptedOfferId)}`)}><FileText className="mr-1.5 h-3.5 w-3.5" />Prepare Contract</Button>
+           </>}
         </div> : <p className="mt-3 text-xs text-slate-500">A contract can be prepared after an offer is accepted.</p>}
     </section>
   );

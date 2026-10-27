@@ -4,6 +4,7 @@ import { ContractError, createHiringContract, updateHiringContract, voidHiringCo
 import { dispatchHiringLifecycleEvents } from "./hiringLifecycleDispatch";
 import { FORMAL_PIPELINE_PREDICATE } from "./formalPipelineGuard";
 import { contractBlobProvider, executedContractPdf, pdfHash, validateContractPdf, type ContractBlobProvider } from "./contractBlobStore";
+import { isDepositFirst, requirePaidContract, lockOnboarding } from "./contractorOnboardingPolicy";
 
 export type ContractActor = { id: string };
 const deny = () => new ContractError(404, { error: "Contract not found or forbidden" });
@@ -51,6 +52,10 @@ export async function contractAuthority(tx: Pick<PoolClient, "query">, row: any,
     canDecline: talent && row.status === "sent", signerRole: slot };
 }
 async function load(tx: PoolClient, id: string, actor: ContractActor, lock = true) {
+  if(lock) {
+    const identity=(await tx.query("SELECT submission_id FROM hiring_contracts WHERE id=$1",[id])).rows[0];
+    if(identity)await lockOnboarding(tx,identity.submission_id);
+  }
   const row = (await tx.query(`${baseSelect} WHERE hc.id=$1 ${lock ? "FOR UPDATE OF hc,js" : ""}`, [id])).rows[0];
   if (!row) throw deny();
   const permissions = await contractAuthority(tx, row, actor);
@@ -87,6 +92,8 @@ async function event(tx: PoolClient, contractId: string, documentId: string | nu
 export async function contractOfferContext(offerId: string, actor: ContractActor, existing?: PoolClient) {
   const own = !existing, tx = existing ?? await getClient();
   try {
+    const source=(await tx.query("SELECT submission_id FROM offers WHERE id=$1",[offerId])).rows[0];
+    if(source)await lockOnboarding(tx,source.submission_id);
     const row = (await tx.query(
       `SELECT o.*,js.client_id,js.talent_id,js.status AS submission_status,j.title AS job_title,
        CONCAT(t.first_name,' ',t.last_name) AS talent_name,
@@ -101,6 +108,7 @@ export async function contractOfferContext(offerId: string, actor: ContractActor
              AND theirs.user_id=js.client_id AND theirs.status='active' AND org.delete_due_at IS NULL))))`,
       [offerId, actor.id])).rows[0];
     if (!row) throw deny();
+    await requirePaidContract(tx,offerId,row.submission_id);
     if (!["accepted", "offer_accepted"].includes(row.status) || row.submission_status !== "offer_accepted") throw new ContractError(409, { error: "accepted_offer_required" });
     const organizations = (await tx.query(
       `SELECT DISTINCT org.id,org.name FROM organizations org JOIN organization_members hiring_owner ON hiring_owner.organization_id=org.id
@@ -108,8 +116,9 @@ export async function contractOfferContext(offerId: string, actor: ContractActor
           AND ($2='admin' OR EXISTS(SELECT 1 FROM organization_members mine
             WHERE mine.organization_id=org.id AND mine.user_id=$3 AND mine.role='owner' AND mine.status='active'))`,
       [row.client_id, row.actor_role, actor.id])).rows;
-    const allowed = row.actor_role === "admin" || row.client_id === actor.id ? ["onspot", "client"] : [];
-    if (organizations.length) allowed.push("organization");
+    const depositFirst=await isDepositFirst(tx,row.submission_id);
+    const allowed = row.actor_role === "admin" || row.client_id === actor.id ? (depositFirst?["onspot"]:["onspot", "client"]) : [];
+    if (organizations.length && !depositFirst) allowed.push("organization");
     return { offerId, talentName: row.talent_name, jobTitle: row.job_title, clientName: row.client_name,
       rate: row.rate, currency: row.rate_currency, engagementType: row.engagement_type, startDate: row.proposed_start_date,
       allowedPartyTypes: allowed, organizations };
@@ -292,6 +301,7 @@ export async function contractPdf(id: string, actor: ContractActor, executed = f
 export async function sendContract(id: string, actor: ContractActor, blobs = contractBlobProvider) {
   return transaction(async tx => {
     const { row, permissions } = await load(tx, id, actor);
+    await requirePaidContract(tx,row.offer_id,row.submission_id);
     assertActive(row);
     if (row.status === "sent" && permissions.canManage) return { id, alreadySent: true };
     if (!permissions.canSend) throw deny();

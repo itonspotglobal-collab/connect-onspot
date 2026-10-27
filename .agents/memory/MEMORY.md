@@ -74,4 +74,4 @@
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — public signup overlays the mounted page; direct auth cancellation preserves origin independently of success redirects.
-- [Hiring activation policy](pre-offer-payment-policy.md) — signatures precede the deposit invoice; verified funding activates hiring; pre-offer fees default off; preserve historical charges.
+- [Hiring activation policy](pre-offer-payment-policy.md) — new acceptances issue deposits before agreements; activation needs held funds, signed contractor agreement and current signed MSA; preserve legacy paths.

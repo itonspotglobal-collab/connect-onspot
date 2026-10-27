@@ -90,7 +90,7 @@ before(async()=>{
     CREATE TABLE client_monthly_invoices(id uuid PRIMARY KEY,client_id varchar,subtotal numeric(12,2),
       currency text,status text,created_at timestamptz DEFAULT now());
     CREATE TABLE client_credit_applications(client_monthly_invoice_id uuid,amount numeric(12,2));
-    CREATE TABLE security_deposits(id uuid PRIMARY KEY,hiring_contract_id uuid,amount numeric(12,2),currency text,status text,
+    CREATE TABLE security_deposits(id uuid PRIMARY KEY,hiring_contract_id uuid,submission_id text,offer_id uuid,amount numeric(12,2),currency text,status text,
       held_at timestamptz,cure_deadline_at timestamptz,updated_at timestamptz,created_at timestamptz DEFAULT now());
     CREATE TABLE security_deposit_replenishments(id uuid PRIMARY KEY,hiring_contract_id uuid,amount numeric(12,2),
       currency text,reference text,created_at timestamptz DEFAULT now());

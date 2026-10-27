@@ -20,6 +20,13 @@ export interface TalentApplication {
     status?: string; // open | closed — for disabling "View Job" on closed roles
   };
   applicationStatus: string;
+  initiatedBy?: string | null;
+  initiated_by?: string | null;
+  invitationType?: string | null;
+  invitation_type?: string | null;
+  invitationPending?: boolean;
+  invitation_pending?: boolean;
+  combinedInviteReveal?: boolean;
   statusHistory?: Array<{status:string;at:string}>;
   currentOffer?: {id:string;status:string;expiresAt?:string|null}|null;
   submittedAt: string;

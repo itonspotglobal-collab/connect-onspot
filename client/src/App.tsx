@@ -79,6 +79,8 @@ import ClientInterviews from "@/pages/ClientInterviews";
 import AdminInterviews from "@/pages/AdminInterviews";
 import AdminEmailTemplates from "@/pages/AdminEmailTemplates";
 import AdminEmailTemplateEditor from "@/pages/AdminEmailTemplateEditor";
+import AdminMsaDocuments from "@/pages/AdminMsaDocuments";
+import AdminContractorOnboarding from "@/pages/AdminContractorOnboarding";
 import ManagedServicesPage from "@/pages/ManagedServicesPage";
 import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
 import EnterpriseServicesPage from "@/pages/EnterpriseServicesPage";
@@ -92,6 +94,7 @@ import TalentProfile from "@/pages/TalentProfile";
 import TalentApplications from "@/pages/TalentApplications";
 import Inbox from "@/pages/Inbox";
 import ClientProfile from "@/pages/ClientProfile";
+import ClientMsa from "@/pages/ClientMsa";
 import ClientJobPostings from "@/pages/client/JobPostings";
 import ClientJobSubmissions from "@/pages/client/JobSubmissions";
 import ClientTeamDashboard from "@/pages/ClientTeamDashboard";
@@ -321,6 +324,8 @@ function PublicRouter() {
           <Route path="/admin/find-work/jobs/:jobId/edit" component={() => <AdminProtectedRoute><JobFormPage /></AdminProtectedRoute>} />
           <Route path="/admin/find-work" component={() => <AdminProtectedRoute><AdminFindWork /></AdminProtectedRoute>} />
           <Route path="/admin/job-applications" component={() => <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
+          <Route path="/admin/contractor-onboarding" component={() => <AdminProtectedRoute><AdminContractorOnboarding /></AdminProtectedRoute>} />
+          <Route path="/admin/msa-documents" component={() => <AdminProtectedRoute><AdminMsaDocuments /></AdminProtectedRoute>} />
           <Route path="/admin/interviews" component={() => <AdminProtectedRoute><AdminInterviews /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates" component={() => <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/create" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />
@@ -420,6 +425,7 @@ function ClientRouter() {
           <Route path="/client/job-postings" component={ClientJobPostings} />
           <Route path="/client/job-submissions" component={ClientJobSubmissions} />
           <Route path="/client-profile" component={ClientProfile} />
+          <Route path="/client/msa" component={ClientMsa} />
           <Route path="/contracts" component={ContractsPage} />
           <Route path="/client/billing/invoices/:id" component={Billing} />
           <Route path="/client/billing" component={Billing} />

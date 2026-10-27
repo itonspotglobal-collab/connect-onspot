@@ -34,6 +34,8 @@ import {
 } from "@/lib/deepLinks";
 import { bucketTalentOffers, isTalentOfferExpired } from "@/components/talentOfferState";
 import { getTalentHistoryTimeline } from "@/components/talentApplicationHistory";
+import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
+import { isPendingClientInvitation } from "@/lib/talentInvitationState";
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
   AlertCircle, Loader2, ExternalLink, Clock,
@@ -275,6 +277,7 @@ function ApplicationCard({
   const [withdrawing, setWithdrawing] = useState(false);
   const [openingChat, setOpeningChat] = useState(false);
   const qc = useQueryClient();
+  const onboarding = useContractorOnboarding(app.id);
   const jobOpen = app.job.status === "open" || !app.job.status;
   const meta = getStatusMeta(app.applicationStatus);
   const canWithdraw = !meta.isTerminal;
@@ -444,6 +447,9 @@ function ApplicationCard({
         </div>
 
         {expanded && <StatusTimeline application={app} />}
+        <div className="mt-3">
+          <ContractorOnboardingTracker data={onboarding.data} isLoading={onboarding.isLoading} isError={onboarding.isError} onRetry={() => void onboarding.refetch()} compact />
+        </div>
       </CardContent>
     </Card>
   );
@@ -1423,6 +1429,12 @@ interface TalentInvitation {
   salaryDisplay: string | null;
   budgetCurrency: string | null;
   description: string | null;
+  initiatedBy?: string | null;
+  initiated_by?: string | null;
+  invitationType?: string | null;
+  invitation_type?: string | null;
+  invitationPending?: boolean;
+  invitation_pending?: boolean;
 }
 
 function InvitationsSection({
@@ -1449,7 +1461,8 @@ function InvitationsSection({
     },
     staleTime: 30_000,
   });
-  const requestedInvitation = invitations.find((invite) => invite.id === requestedInvitationId);
+  const pendingInvitations = invitations.filter(isPendingClientInvitation);
+  const requestedInvitation = pendingInvitations.find((invite) => invite.id === requestedInvitationId);
   useEffect(() => {
     if (!requestedInvitation) return;
     requestAnimationFrame(() => {
@@ -1499,7 +1512,7 @@ function InvitationsSection({
       </p>
     );
   }
-  if (invitations.length === 0) return null;
+  if (pendingInvitations.length === 0) return null;
 
   return (
     <div className="mb-8">
@@ -1509,7 +1522,7 @@ function InvitationsSection({
           Role Invitations
         </h2>
         <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-          {invitations.length}
+          {pendingInvitations.length}
         </span>
       </div>
       <p className="text-xs text-slate-400 mb-3">
@@ -1517,7 +1530,7 @@ function InvitationsSection({
       </p>
 
       <div className="space-y-3">
-        {invitations.map((invite) => (
+        {pendingInvitations.map((invite) => (
           <div
             key={invite.id}
             ref={requestedInvitation?.id === invite.id ? invitationCardRef : undefined}
@@ -1861,7 +1874,7 @@ export default function TalentApplications() {
         {/* Role Invitations — client-initiated invites the talent can accept/decline */}
         <InvitationsSection
           refetchApplications={refetch}
-          requestedInvitationId={requestedApplication?.applicationStatus === "invited" ? requestedApplicationId : null}
+          requestedInvitationId={requestedApplication && isPendingClientInvitation(requestedApplication) ? requestedApplicationId : null}
         />
 
         {/* Matched Jobs — scored matches for this talent */}

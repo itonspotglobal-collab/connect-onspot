@@ -281,6 +281,7 @@ export function ScheduleInterviewDialog({
   mode = "schedule",
   submissionId,
   onScheduled,
+  defaultInterviewType = "initial",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -288,9 +289,11 @@ export function ScheduleInterviewDialog({
   mode?: "schedule" | "view";
   submissionId?: string;
   onScheduled?: () => void;
+  defaultInterviewType?: string;
 }) {
   // Form state
-  const [interviewType, setInterviewType]     = useState("initial");
+  const [interviewType, setInterviewType]     = useState(defaultInterviewType);
+  const [stageOverrideReason, setStageOverrideReason] = useState("");
   const [selectedInterviewerId, setSelectedInterviewerId] = useState("");
   const [duration, setDuration]               = useState("30");
   const [timezone, setTimezone]               = useState(getBrowserTimezone);
@@ -326,7 +329,8 @@ export function ScheduleInterviewDialog({
   // Reset on open
   useEffect(() => {
     if (open) {
-      setInterviewType("initial");
+      setInterviewType(defaultInterviewType);
+      setStageOverrideReason("");
       setSelectedInterviewerId("");
       setDuration("30");
       setTimezone(getBrowserTimezone());
@@ -358,7 +362,7 @@ export function ScheduleInterviewDialog({
           .finally(() => setLoadingInterviewers(false));
       }
     }
-  }, [open, isViewOnly]);
+  }, [open, isViewOnly, defaultInterviewType]);
 
   // Selected interviewer object
   const selectedInterviewer = useMemo(
@@ -462,6 +466,7 @@ export function ScheduleInterviewDialog({
         durationMinutes: Number(duration),
         interviewerId: selectedInterviewerId || undefined,
       };
+      if (stageOverrideReason.trim()) body.stageOverrideReason = stageOverrideReason.trim();
       if (schedulingMethod === "admin" && confirmedTime) {
         body.confirmedTime = confirmedTime;
         body.confirmedTimeZone = timezone;
@@ -677,6 +682,10 @@ export function ScheduleInterviewDialog({
           </p>
         </div>
       )}
+      <div className="space-y-1.5 border-t border-slate-200 pt-3 dark:border-white/[0.08]">
+        <Label htmlFor="admin-stage-override" className="text-xs">Super Admin stage override reason</Label>
+        <Textarea id="admin-stage-override" value={stageOverrideReason} onChange={(event) => setStageOverrideReason(event.target.value)} placeholder="Leave blank for the standard flow. A Super Admin must provide a written reason to override a stage gate." rows={2} maxLength={1200} />
+      </div>
     </form>
   );
 
@@ -924,14 +933,16 @@ export function RequestInterviewDialog({
   context,
   submissionId,
   onScheduled,
+  defaultInterviewType = "initial",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   context: InterviewContext;
   submissionId?: string;
   onScheduled?: () => void;
+  defaultInterviewType?: string;
 }) {
-  const [interviewType, setInterviewType] = useState("initial");
+  const [interviewType, setInterviewType] = useState(defaultInterviewType);
   const [duration, setDuration]   = useState("60");
   const [date, setDate]           = useState("");
   const [time, setTime]           = useState("");
@@ -944,7 +955,7 @@ export function RequestInterviewDialog({
 
   useEffect(() => {
     if (open) {
-      setInterviewType("initial");
+      setInterviewType(defaultInterviewType);
       setDuration("60");
       setDate("");
       setTime("");
@@ -955,7 +966,7 @@ export function RequestInterviewDialog({
       setScheduleError(null);
       setScheduled(false);
     }
-  }, [open]);
+  }, [open, defaultInterviewType]);
 
   async function handleSchedule(e: React.FormEvent) {
     e.preventDefault();

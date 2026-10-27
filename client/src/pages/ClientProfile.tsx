@@ -75,6 +75,8 @@ import { JobRichText } from "@/components/JobRichText";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
 import { ClientHiringPaymentPanel, type HiringInvoice } from "@/components/hiring-payments/HiringPayments";
+import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
+import { isContractorOfferAllowed } from "@/lib/contractorOnboarding";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 export interface JobSubmission {
@@ -102,6 +104,8 @@ export interface JobSubmission {
   jobEngagementType: string | null;
   combinedInviteReveal?: boolean;
   combinedInterviewConfirmed?: boolean;
+  invitationPending?: boolean;
+  invitation_pending?: boolean;
   interviewId?: string | null;
   interviewStatus?: string | null;
   proposedTimes?: Array<{ start: string; end?: string; timezone?: string }>;
@@ -170,6 +174,8 @@ export function ViewSubmissionModal({
   nameRevealThreshold?: string;
 }) {
   const { toast } = useToast();
+  const onboarding = useContractorOnboarding(submission.id);
+  const [shortlisting, setShortlisting] = useState(false);
   const statusInfo = SUBMISSION_STATUS_LABELS[submission.status] ?? SUBMISSION_STATUS_LABELS.new;
 
   const [requestedStatus, setRequestedStatus] = useState<string>("");
@@ -251,7 +257,8 @@ export function ViewSubmissionModal({
   });
   const canRequestInterviewNow =
     canRequestInterview(submission.status) &&
-    !isPendingOrDeclinedInvite(submission.initiated_by, submission.status) &&
+    (onboarding.data?.policy !== "deposit_first" || onboarding.data.canScheduleInterview) &&
+    !isPendingOrDeclinedInvite(submission.initiated_by, submission.status, isInvitationPending(submission)) &&
     !submission.interviewId;
 
   const handleResumeDownload = () => {
@@ -259,6 +266,23 @@ export function ViewSubmissionModal({
     const resumeId = submission.resumeUrl.split("/").pop();
     window.open(`/api/job-resumes/${resumeId}`, "_blank");
   };
+  async function shortlistApplication() {
+    if (shortlisting) return;
+    setShortlisting(true);
+    try {
+      await apiRequest("PATCH", `/api/client/job-submissions/${submission.id}/status`, {
+        status: "shortlisted", expectedStatus: submission.status, expectedVersion: submission.statusVersion,
+        operationId: crypto.randomUUID(),
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/contractor-onboarding", submission.id] }),
+      ]);
+      toast({ title: "Applicant shortlisted", description: "Interview scheduling is now available." });
+    } catch (error) {
+      toast({ title: "Could not shortlist applicant", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setShortlisting(false); }
+  }
 
   return (
     <>
@@ -272,6 +296,13 @@ export function ViewSubmissionModal({
         </DialogHeader>
 
         <div className="space-y-5 py-2">
+          <ContractorOnboardingTracker
+            data={onboarding.data}
+            isLoading={onboarding.isLoading}
+            isError={onboarding.isError}
+            onRetry={() => void onboarding.refetch()}
+            onShortlist={onboarding.data?.policy === "deposit_first" && !onboarding.data.shortlistSatisfied && !shortlisting ? shortlistApplication : undefined}
+          />
           {/* Job info */}
           <div className="rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-800/40">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Position</p>
@@ -385,18 +416,18 @@ export function ViewSubmissionModal({
            ) : (
              <InterviewSection
                role="client"
-               applicantName={maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold)}
+               applicantName={maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold, isInvitationPending(submission))}
                position={submission.jobTitle}
                company={submission.jobCompany}
                currentStatus={submission.status}
                onAction={() => setRequestInterviewOpen(true)}
                actionDisabled={!canRequestInterviewNow || !submission.hiringPipelineEligible}
-               disabledReason={!submission.hiringPipelineEligible ? "This application is not eligible for formal hiring. A linked Talent account and a real approved job are required." : undefined}
+                disabledReason={!submission.hiringPipelineEligible ? "This application is not eligible for formal hiring. A linked Talent account and a real approved job are required." : onboarding.data?.policy === "deposit_first" && !onboarding.data.canScheduleInterview ? "Shortlist this applicant before scheduling an interview." : undefined}
              />
            )}
 
           {/* Applicant details */}
-          {isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
+          {isPendingOrDeclinedInvite(submission.initiated_by, submission.status, isInvitationPending(submission)) && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 dark:bg-amber-900/20 dark:border-amber-700/40">
               <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                 {submission.status === "declined"
@@ -409,17 +440,17 @@ export function ViewSubmissionModal({
             {[
               {
                 label: "Full Name",
-                value: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold),
+                value: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold, isInvitationPending(submission)),
               },
               {
                 label: "Email",
-                value: isPendingOrDeclinedInvite(submission.initiated_by, submission.status)
+                value: isPendingOrDeclinedInvite(submission.initiated_by, submission.status, isInvitationPending(submission))
                   ? null
                   : submission.email,
               },
               {
                 label: "Phone",
-                value: isPendingOrDeclinedInvite(submission.initiated_by, submission.status) ? null : submission.phone,
+                value: isPendingOrDeclinedInvite(submission.initiated_by, submission.status, isInvitationPending(submission)) ? null : submission.phone,
               },
               { label: "Location", value: submission.location },
               { label: "Expected Salary", value: submission.expectedSalary },
@@ -474,15 +505,17 @@ export function ViewSubmissionModal({
           )}
 
           {/* Extend Offer action */}
-          {submission.hiringPipelineEligible && OFFERABLE_STATUSES.has(submission.status) && !isPendingOrDeclinedInvite(submission.initiated_by, submission.status) && (
+          {submission.hiringPipelineEligible && OFFERABLE_STATUSES.has(submission.status) && !isPendingOrDeclinedInvite(submission.initiated_by, submission.status, isInvitationPending(submission)) && (
             <div className="border-t border-slate-100 dark:border-white/[0.08] pt-4">
               <Button
                 className="w-full gap-2 bg-[#474ead] hover:bg-[#3a3d8f] text-white"
+                disabled={onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer}
                 onClick={() => { onClose(); onExtendOffer(submission); }}
               >
                 <FileText className="h-4 w-4" />
-                Ready for Offer
+                {onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer ? "Final interview required" : "Ready for Offer"}
               </Button>
+              {onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer && <p className="mt-2 text-center text-xs text-amber-800">Offer unavailable: {onboarding.data.missing.join(", ") || "a passed final interview is required"}.</p>}
             </div>
           )}
         </div>
@@ -512,11 +545,12 @@ export function ViewSubmissionModal({
         queryClient.invalidateQueries({ queryKey: ["/api/client/job-submissions", submission.id, "status-change-request"] });
       }}
       context={{
-        applicantName: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold),
+        applicantName: maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold, isInvitationPending(submission)),
         position: submission.jobTitle,
         company: submission.jobCompany,
         currentStatus: submission.status,
       }}
+      defaultInterviewType={onboarding.data?.defaultInterviewType}
     />
     </>
   );
@@ -1242,7 +1276,7 @@ function ClientProfileOverview() {
           {submissionsError ? <div role="alert" className="text-sm text-slate-600">Applications could not be loaded. <Button variant="ghost" onClick={() => refetchSubmissions()}>Retry</Button></div> : submissionsLoading ? <div className="space-y-2">{[0, 1, 2].map((index) => <Skeleton key={index} className="h-14 w-full" />)}</div> : recentSubmissions.length ? (
             <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
               {recentSubmissions.map((submission) => <div key={submission.id} data-testid={`client-application-${submission.id}`} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
-                <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold)}</p><p className="truncate text-xs text-slate-500">{submission.jobTitle}</p></div>
+                <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{maskSubmissionName(submission.applicantName, submission.initiated_by, submission.status, nameRevealThreshold, isInvitationPending(submission))}</p><p className="truncate text-xs text-slate-500">{submission.jobTitle}</p></div>
                 <span className="text-xs text-slate-500">{SUBMISSION_STATUS_LABELS[submission.status]?.label ?? submission.status}</span>
               </div>)}
             </div>
@@ -1328,7 +1362,7 @@ export function JobSubmissionsSection({
   const filteredSubmissions = submissions
     .filter((sub) => {
       const query = searchText.trim().toLowerCase();
-      const maskedApplicant = maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status, nameRevealThreshold).toLowerCase();
+      const maskedApplicant = maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status, nameRevealThreshold, isInvitationPending(sub)).toLowerCase();
       const matchesSearch = !query || maskedApplicant.includes(query) || sub.jobTitle.toLowerCase().includes(query);
       const matchesJob = jobFilter === "all" || sub.jobId === jobFilter;
       const matchesStatus = statusFilter === "all" ||
@@ -1531,7 +1565,7 @@ export function JobSubmissionsSection({
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <p className="font-medium text-slate-900 dark:text-white">
-                          {maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status, nameRevealThreshold)}
+                          {maskSubmissionName(sub.applicantName, sub.initiated_by, sub.status, nameRevealThreshold, isInvitationPending(sub))}
                         </p>
                         {clientInvited && (
                           <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
@@ -1539,7 +1573,7 @@ export function JobSubmissionsSection({
                           </span>
                         )}
                       </div>
-                      {isPendingOrDeclinedInvite(sub.initiated_by, sub.status) ? (
+                        {isPendingOrDeclinedInvite(sub.initiated_by, sub.status, isInvitationPending(sub)) ? (
                         <p className="text-[10px] text-slate-400 italic">
                           {sub.status === "declined" ? "Invitation declined" : "Name and email reveal when talent accepts"}
                         </p>
@@ -1569,7 +1603,7 @@ export function JobSubmissionsSection({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {sub.hiringPipelineEligible && OFFERABLE_STATUSES.has(sub.status) && !isPendingOrDeclinedInvite(sub.initiated_by, sub.status) && (
+                        {sub.hiringPipelineEligible && OFFERABLE_STATUSES.has(sub.status) && !isPendingOrDeclinedInvite(sub.initiated_by, sub.status, isInvitationPending(sub)) && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -1646,11 +1680,15 @@ function maskSubmissionName(
   initiatedBy: string | null,
   status: string,
   threshold = "submitted",
+  invitationPending = false,
 ): string {
   // Older genuine applications may not have applicant_name populated. Keep
   // both rendering and masked-name search usable without revealing other data.
   if (!name?.trim()) return "Talent Profile";
-  if (initiatedBy !== "client") return name;
+  if (initiatedBy !== "client" && initiatedBy !== "client_invitation") return name;
+  if (invitationPending || status === "invited" || status === "declined") {
+    return name.toLowerCase().startsWith("invited ") ? "Talent Profile" : `${name.trim().split(/\s+/)[0]} ${name.trim().split(/\s+/)[1]?.[0] ?? ""}.`;
+  }
   // Reveal only once talent's status meets or exceeds the configured threshold
   if (revealedStatuses(threshold).has(status)) return name;
   // Mask for "invited" (pending), "declined" (rejected), or pre-threshold statuses
@@ -1665,11 +1703,15 @@ function maskSubmissionName(
  * Used to gate status-transition UI and identity field visibility — always based
  * on the actual invite state, never on the name-reveal threshold.
  */
-function isPendingOrDeclinedInvite(initiatedBy: string | null, status: string): boolean {
-  if (initiatedBy !== "client") return false;
-  // Only "invited" (pending) and "declined" are locked — all other statuses
-  // mean the talent has actively accepted and the client may advance them.
-  return status === "invited" || status === "declined";
+function isInvitationPending(submission: Pick<JobSubmission, "invitationPending" | "invitation_pending" | "combinedInviteReveal" | "status">): boolean {
+  return submission.invitationPending === true
+    || submission.invitation_pending === true
+    || (submission.combinedInviteReveal === true && submission.status === "shortlisted");
+}
+
+function isPendingOrDeclinedInvite(initiatedBy: string | null, status: string, invitationPending = false): boolean {
+  if (initiatedBy !== "client" && initiatedBy !== "client_invitation") return false;
+  return invitationPending || status === "invited" || status === "declined";
 }
 
 function revealedStatuses(threshold: string): Set<string> {
@@ -1686,11 +1728,14 @@ export function ExtendOfferDialog({
   onOfferSent: () => void;
 }) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const onboarding = useContractorOnboarding(submission.id);
   const [rate, setRate] = useState("");
   const rateCurrency = "USD";
   const [proposedStartDate, setProposedStartDate] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [notes, setNotes] = useState("");
+  const [stageOverrideReason, setStageOverrideReason] = useState("");
   const [lastResult, setLastResult] = useState<{ rate_below_expectation?: boolean | null; rate_delta?: string | null } | null>(null);
   const hiringSettings = useQuery<{ preOfferPaymentRequired: boolean }>({
     queryKey: ["/api/hiring-payment-settings"],
@@ -1711,6 +1756,7 @@ export function ExtendOfferDialog({
   const invoiceVerified = hiringInvoices.some((invoice) => invoice.submission_id === submission.id && invoice.status === "paid" && Boolean(invoice.verified_at));
   const offerPaymentGateReady = hiringSettingsLoaded
     && (!preOfferPaymentRequired || (!hiringInvoicesLoading && !hiringInvoicesError && invoiceVerified));
+  const onboardingOfferGateReady = isContractorOfferAllowed(onboarding.data);
 
   // Load prior offers for this submission
   const { data: priorOffers = [], isLoading: offersLoading } = useQuery<OfferRecord[]>({
@@ -1731,6 +1777,7 @@ export function ExtendOfferDialog({
       if (proposedStartDate) body.proposedStartDate = proposedStartDate;
       if (expiresAt) body.expiresAt = expiresAt;
       if (notes.trim()) body.notes = notes.trim();
+      if (user?.role === "admin" && stageOverrideReason.trim()) body.stageOverrideReason = stageOverrideReason.trim();
       const res = await apiRequest("POST", "/api/client/offers", body);
       if (!res.ok) {
         const data = await res.json();
@@ -1902,6 +1949,10 @@ export function ExtendOfferDialog({
               className="mt-1 resize-none"
             />
           </div>
+          {user?.role === "admin" && <div>
+            <Label htmlFor="offer-stage-override" className="text-xs font-semibold">Super Admin stage override reason</Label>
+            <Textarea id="offer-stage-override" rows={2} maxLength={1200} placeholder="Leave blank for the standard flow. A Super Admin must provide a written reason to override a stage gate." value={stageOverrideReason} onChange={(event) => setStageOverrideReason(event.target.value)} className="mt-1 resize-none" />
+          </div>}
 
           {/* Rate expectation result banner */}
           {lastResult && lastResult.rate_below_expectation !== null && lastResult.rate_below_expectation !== undefined && (
@@ -1990,11 +2041,12 @@ export function ExtendOfferDialog({
           </Button>
           <Button
             onClick={() => offerMutation.mutate()}
-            disabled={offerMutation.isPending || !rate || !offerPaymentGateReady}
+            disabled={offerMutation.isPending || !rate || !offerPaymentGateReady || onboarding.isLoading || !onboardingOfferGateReady}
             className="bg-[#474ead] hover:bg-[#3a3d8f] text-white"
           >
-            {offerMutation.isPending ? "Sending…" : !hiringSettingsLoaded ? "Checking payment policy…" : preOfferPaymentRequired && !invoiceVerified ? "Payment verification required" : "Send Offer"}
+            {offerMutation.isPending ? "Sending…" : !onboardingOfferGateReady ? "Final interview required" : !hiringSettingsLoaded ? "Checking payment policy…" : preOfferPaymentRequired && !invoiceVerified ? "Payment verification required" : "Send Offer"}
           </Button>
+          {onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer && <p role="status" className="text-xs text-amber-800">Offer sending is locked by the onboarding policy: {onboarding.data.missing.join(", ") || "a passed final interview is required"}.</p>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
