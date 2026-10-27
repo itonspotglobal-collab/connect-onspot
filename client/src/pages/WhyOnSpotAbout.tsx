@@ -3,7 +3,8 @@ import { Link } from "wouter";
 import { ArrowRight, ArrowUpRight, CheckCircle2, Menu, X, Mail, Phone, MapPin } from "lucide-react";
 import onspotLogo from "@assets/OnSpot_Logo_2026_1784298008227.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
-import valPhoto from "@assets/val_1780574815788.png";
+import valPhoto from "@assets/val.photo_1793095419044.jpg";
+import emmanuelPhoto from "@assets/Emmanuel-Rogel-SQ-q0s6ffiw7u0jzm1b71e6bbnjr4v828gbc89fummsnc_1793095503773.jpg";
 import { Footer } from "@/components/Footer";
 
 const nurPhoto = "/nur-ceo.jpeg";
@@ -103,6 +104,7 @@ const leaders: Array<{
   role: string;
   photo?: string;
   imgPos?: string;
+  photoAlt?: string;
   photoBg?: string;
   imgScale?: string;
   bio: string;
@@ -134,15 +136,17 @@ const leaders: Array<{
     name: "Val Legaspi",
     role: "Title pending approval",
     photo: valPhoto,
-    imgPos: "50% 45%",
-    imgScale: "scale(1.45)",
+    photoAlt: "Portrait of Val Legaspi",
+    imgPos: "50% 5%",
     bio: "Biography pending approval",
   },
   {
     name: "Emmanuel Rogel (Emman)",
     role: "Title pending approval",
+    photo: emmanuelPhoto,
+    photoAlt: "Portrait of Emmanuel Rogel (Emman)",
+    imgPos: "50% 15%",
     photoBg: "linear-gradient(145deg, #E9EAF4 0%, #D9DCEE 52%, #C9CDE3 100%)",
-    photoPending: true,
     bio: "Biography pending approval",
   },
 ];
@@ -673,7 +677,7 @@ export default function WhyOnSpotAbout() {
                     <div style={{ position: "absolute", inset: 0, transform: l.imgScale ?? "none", transformOrigin: "50% 42%" }}>
                       <img
                         src={l.photo}
-                        alt={l.name}
+                        alt={l.photoAlt ?? l.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: l.imgPos, transition: "transform 0.5s" }}
                       />
                     </div>

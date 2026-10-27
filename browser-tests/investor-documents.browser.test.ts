@@ -184,9 +184,22 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       assert.match(await cards.nth(index).innerText(), /pending approval/i);
       assert.doesNotMatch(await cards.nth(index).innerText(), /Co-Founder|CEO|COO|President|years of|years in/);
     }
-    assert.match(await cards.nth(4).innerText(), /photo.*pending|pending.*photo/i);
-    assert.equal(await cards.nth(4).locator("img").count(), 0);
-    assert.equal(await team.locator("img").count(), 4);
+    assert.doesNotMatch(await cards.nth(4).innerText(), /photo.*pending|pending.*photo/i);
+    const emmanuelPortrait = cards.nth(4).getByRole("img", { name: "Portrait of Emmanuel Rogel (Emman)", exact: true });
+    assert.equal(await emmanuelPortrait.count(), 1);
+    assert.match((await emmanuelPortrait.getAttribute("src"))!, /Emmanuel-Rogel-SQ-q0s6ffiw7u0jzm1b71e6bbnjr4v828gbc89fummsnc_1793095503773\.jpg/);
+    assert.deepEqual(await emmanuelPortrait.evaluate(el => {
+      const style = getComputedStyle(el);
+      return [style.objectFit, style.objectPosition];
+    }), ["cover", "50% 15%"]);
+    const valPortrait = cards.nth(3).getByRole("img", { name: "Portrait of Val Legaspi", exact: true });
+    assert.equal(await valPortrait.count(), 1);
+    assert.match((await valPortrait.getAttribute("src"))!, /val\.photo_1793095419044\.jpg/);
+    assert.deepEqual(await valPortrait.evaluate(el => {
+      const style = getComputedStyle(el);
+      return [style.objectFit, style.objectPosition, getComputedStyle(el.parentElement!).transform];
+    }), ["cover", "50% 5%", "none"]);
+    assert.equal(await team.locator("img").count(), 5);
     for (const image of await team.locator("img").all()) {
       assert.ok(await image.getAttribute("alt"));
       await image.evaluate((el: HTMLImageElement) => el.decode());
@@ -197,7 +210,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       const bounds = await card.boundingBox();
       assert.ok(bounds && bounds.x >= -1 && bounds.x + bounds.width <= width + 1);
     }
-    if (width === 390 || width === 1440) {
+    if (width === 390 || width === 768 || width === 1440) {
       await team.screenshot({ path: `/tmp/onspot-founding-team-${width}.png`, animations: "disabled" });
     }
     await page.close();
