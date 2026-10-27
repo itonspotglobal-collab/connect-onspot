@@ -3,6 +3,8 @@
   font-size: 15px;
   line-height: 1.75;
   color: #334155; /* slate-700 */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .profile-rich-text p {

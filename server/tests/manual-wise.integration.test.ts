@@ -65,8 +65,14 @@ before(async()=>{
       ('admin2','admin',null,'admin2@fixture.invalid','Admin','Two',now(),null,now()),
       ('limited','admin','client_success','limited@fixture.invalid','Limited','Admin',now(),null,now()),
       ('talent','talent',null,'talent@fixture.invalid','Talent','One',now(),null,now());
-    CREATE TABLE job_submissions(id varchar PRIMARY KEY,client_id varchar,talent_id varchar,job_id varchar);
-    CREATE TABLE hiring_contracts(id uuid PRIMARY KEY,submission_id varchar,status text DEFAULT 'signed');
+    CREATE TABLE job_submissions(id varchar PRIMARY KEY,client_id varchar,talent_id varchar,job_id varchar,
+      status text DEFAULT 'contract_signed',updated_at timestamptz);
+    CREATE TABLE jobs(id varchar PRIMARY KEY,title text);
+    INSERT INTO jobs VALUES('job','Fixture role');
+    CREATE TABLE job_application_status_history(id serial PRIMARY KEY,application_id varchar,
+      previous_status text,new_status text,note text,changed_by varchar);
+    CREATE TABLE hiring_contracts(id uuid PRIMARY KEY,submission_id varchar,status text DEFAULT 'signed',
+      billing_activated_at timestamptz,updated_at timestamptz);
     CREATE TABLE inquiries(id varchar PRIMARY KEY,email text,status text,payment_amount numeric(12,2),
       reference_number text,payment_status text,payment_reference_number text,payment_proof_url text,
       payment_confirmation_submitted_at timestamptz,payment_method text,updated_at timestamptz,
@@ -89,6 +95,7 @@ before(async()=>{
     CREATE TABLE security_deposit_replenishments(id uuid PRIMARY KEY,hiring_contract_id uuid,amount numeric(12,2),
       currency text,reference text,created_at timestamptz DEFAULT now());
     CREATE TABLE talent_invoices(id uuid PRIMARY KEY,status text,talent_id varchar,amount numeric(12,2),currency text);
+    CREATE TABLE client_monthly_invoice_lines(client_monthly_invoice_id uuid,talent_invoice_id uuid,client_amount numeric(12,2));
     CREATE TABLE payouts(id uuid PRIMARY KEY,hiring_contract_id uuid,talent_id varchar,talent_invoice_id uuid,
       amount numeric(12,2),currency text,status text,external_ref text,payout_method text,disbursed_at timestamptz,
       period_id uuid,updated_at timestamptz,created_at timestamptz DEFAULT now());
@@ -99,7 +106,9 @@ before(async()=>{
   await pool.query(migration); await pool.query(migration);
   const lifecycle=readFileSync("migrations/0041_manual_wise_configuration_lifecycle.sql","utf8");
   await pool.query(lifecycle); await pool.query(lifecycle);
-  await pool.query("INSERT INTO job_submissions VALUES($1,'client','talent','job')",[submission]);
+  await pool.query(readFileSync("migrations/0043_deposit_funded_activation.sql","utf8"));
+  await pool.query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
+  await pool.query("INSERT INTO job_submissions(id,client_id,talent_id,job_id) VALUES($1,'client','talent','job')",[submission]);
   await pool.query("INSERT INTO hiring_contracts(id,submission_id) VALUES($1,$2)",[contract,submission]);
   await pool.query("INSERT INTO inquiries(id,email,status,payment_amount,reference_number) VALUES($1,'payer@fixture.invalid','endorsed',100,'INQ-FIXTURE')",[ids.inquiry]);
   await pool.query("INSERT INTO hiring_payment_attempts VALUES($1,$2,'client','job','talent')",[attempt,submission]);
@@ -199,10 +208,23 @@ test("pending deposit proof does not establish held funding; policy confirmation
   await publish({...config,depositFundingConfirmed:false});
   assert.equal((await service.detail("client","deposit",ids.deposit)).payable,false);
   await publish(config);
-  const s=await service.submit("client","deposit",ids.deposit,"deposit-claim",await receipt());
+  let s=await service.submit("client","deposit",ids.deposit,"deposit-claim",await receipt());
   assert.equal((await pool.query("SELECT status FROM security_deposits WHERE id=$1",[ids.deposit])).rows[0].status,"pending");
+  assert.equal((await pool.query("SELECT status FROM job_submissions WHERE id=$1",[submission])).rows[0].status,"contract_signed");
+  assert.equal((await pool.query("SELECT billing_activated_at FROM hiring_contracts WHERE id=$1",[contract])).rows[0].billing_activated_at,null);
+  assert.equal((await pool.query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_type='proof_submitted' AND payload->>'proofId'=$1",[s.id])).rows[0].n,1);
+  await service.review("admin",s.id,{action:"reject",reason:"Fixture reference needs correction"});
+  assert.equal((await pool.query("SELECT status FROM job_submissions WHERE id=$1",[submission])).rows[0].status,"contract_signed");
+  assert.equal((await pool.query("SELECT status FROM security_deposits WHERE id=$1",[ids.deposit])).rows[0].status,"pending");
+  assert.equal((await pool.query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_type='proof_rejected' AND payload->>'proofId'=$1",[s.id])).rows[0].n,1);
+  s=await service.submit("client","deposit",ids.deposit,"corrected-deposit-claim",await receipt());
   await service.review("admin",s.id,review("deposit-settled",{verifiedAmount:"1000"}));
   assert.equal((await pool.query("SELECT status FROM security_deposits WHERE id=$1",[ids.deposit])).rows[0].status,"held");
+  assert.equal((await pool.query("SELECT status FROM job_submissions WHERE id=$1",[submission])).rows[0].status,"hired");
+  assert.ok((await pool.query("SELECT billing_activated_at FROM hiring_contracts WHERE id=$1",[contract])).rows[0].billing_activated_at);
+  await service.review("admin",s.id,review("deposit-settled",{verifiedAmount:"1000"}));
+  assert.equal((await pool.query("SELECT count(*)::int n FROM job_application_status_history WHERE application_id=$1 AND new_status='hired'",[submission])).rows[0].n,1);
+  assert.equal((await pool.query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_key=$1",[`engagement-active:${contract}`])).rows[0].n,1);
 });
 test("unverified replenishment does not add settled coverage",async()=>{
   const s=await service.submit("client","replenishment",ids.replenishment,"topup-claim",await receipt());

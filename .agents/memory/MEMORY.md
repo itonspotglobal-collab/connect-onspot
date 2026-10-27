@@ -22,7 +22,7 @@
 - [Direct client→talent messaging](direct-messaging.md) — pre-invite null-job_id thread, masking rules in thread list, graduation on invite-accept, DbStorage notification overrides.
 - [Hiring pipeline — Phase 1](hiring-pipeline-phase1.md) — canonical status constant, 3 new tables, CHECK constraint, interview endpoints; key decisions and gotchas for Phase 2/3.
 - [Hiring pipeline — Phase 2 (offers)](hiring-pipeline-phase2.md) — engagement snapshot from jobs, mismatch flag rules, talent expectation lives in candidates.preferences, ownership + race patterns.
-- [Hiring pipeline — Phase 3](hiring-pipeline-phase3.md) — contract endpoints (admin-only create/sign/void + talent view); OnSpot countersign triggers hired; FK delete order on cleanup.
+- [Hiring pipeline — Phase 3](hiring-pipeline-phase3.md) — historical contract/signature context; activation now follows the deposit-funded hiring policy.
 - [Contract signing parties](contract-signing-policy.md) — OnSpot remains mandatory; Client/Organization agreements also require their authorized representative.
 - [Status rename audit](status-rename-audit.md) — 'submitted' → 'new' canonical rename; all write paths, name_reveal system, test files, and platform_settings migration fully closed.
 - [Resume auto-fill pipeline](resume-autofill-pipeline.md) — shared applyResumeToCandidate.ts calls after every upload; parser extended with workHistory/education/certifications/languages; merge is non-destructive (summary preserves manual edits).
@@ -74,4 +74,4 @@
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — public signup overlays the mounted page; direct auth cancellation preserves origin independently of success redirects.
-- [Offer-to-deposit policy](pre-offer-payment-policy.md) — offer acceptance precedes deposit funding; verified funding precedes agreements; preserve historical pre-offer invoices.
+- [Hiring activation policy](pre-offer-payment-policy.md) — signatures precede the deposit invoice; verified funding activates hiring; pre-offer fees default off; preserve historical charges.

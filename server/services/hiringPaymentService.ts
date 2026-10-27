@@ -18,7 +18,15 @@ const moneyCents = (value: string) => {
 };
 export const PAYMENT_REQUIRED_MESSAGE = "Your hiring invoice must be paid and verified before you can send an offer to this talent.";
 
+export async function preOfferPaymentRequired(db: HiringPaymentDb): Promise<boolean> {
+  const result = await db.query(
+    "SELECT value::boolean AS required FROM platform_settings WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'",
+  );
+  return result.rows[0]?.required === true;
+}
+
 export async function requireVerifiedHiringPayment(db: HiringPaymentDb, submissionId: string) {
+  if (!await preOfferPaymentRequired(db)) return null;
   // Same lock ordering as issuance and review. Holds until caller's transaction ends.
   const { rows: [s] } = await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE", [submissionId]);
   if (!s) return fail(404, "APPLICATION_NOT_FOUND", "Application not found.");

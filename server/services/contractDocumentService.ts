@@ -1,6 +1,7 @@
 import { getClient, query } from "../db";
 import type { PoolClient } from "pg";
-import { ContractError, createHiringContract, updateHiringContract, voidHiringContract, dispatchHiringActivation } from "./hiringContractService";
+import { ContractError, createHiringContract, updateHiringContract, voidHiringContract } from "./hiringContractService";
+import { dispatchHiringLifecycleEvents } from "./hiringLifecycleDispatch";
 import { FORMAL_PIPELINE_PREDICATE } from "./formalPipelineGuard";
 import { contractBlobProvider, executedContractPdf, pdfHash, validateContractPdf, type ContractBlobProvider } from "./contractBlobStore";
 
@@ -365,8 +366,7 @@ export async function signContractPdf(id: string, actor: ContractActor, body: an
     });
   } catch (error) { if (executedKey) await blobs.remove(executedKey).catch(() => {}); throw error; }
   if (result.executed) {
-    const row = (await query("SELECT submission_id FROM hiring_contracts WHERE id=$1", [id])).rows[0];
-    await dispatchHiringActivation(row.submission_id);
+    void dispatchHiringLifecycleEvents();
   }
   return result;
 }

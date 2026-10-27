@@ -1,0 +1,138 @@
+import { query } from "../db";
+import { buildAppUrl, buildClientApplicationUrl, buildTalentApplicationsUrl } from "../lib/appUrl";
+import { renderApplicantEmail, type EmailVariableContext } from "./emailVariableResolver";
+import { isEmailServiceConfigured, sendApplicantEmail } from "./microsoftGraphEmailService";
+import { REVEAL_STATUS_ORDER, revealedStatusesForThreshold } from "../../shared/submissionStatuses";
+
+/**
+ * Transactional outbox consumer. Call after COMMIT; failures are retained for
+ * retry. Recipient-specific keys separately deduplicate bell and email work.
+ * No receipt bytes, bank details or provider response bodies are logged.
+ */
+export async function dispatchHiringLifecycleEvents(): Promise<void> {
+  try {
+    const events = (await query(`UPDATE hiring_lifecycle_events SET status='processing',
+        attempted_at=now(),attempts=attempts+1
+      WHERE event_key IN (SELECT event_key FROM hiring_lifecycle_events
+        WHERE status IN ('pending','failed') OR
+          (status='processing' AND attempted_at<now()-interval '10 minutes')
+        ORDER BY created_at LIMIT 30 FOR UPDATE SKIP LOCKED)
+      RETURNING *`)).rows;
+    for (const event of events) {
+      try {
+        await deliverEvent(event);
+        await query("UPDATE hiring_lifecycle_events SET status='sent' WHERE event_key=$1",[event.event_key]);
+      } catch {
+        await query("UPDATE hiring_lifecycle_events SET status='failed' WHERE event_key=$1",[event.event_key]);
+        console.warn("[hiring-lifecycle] event delivery deferred",{type:event.event_type});
+      }
+    }
+  } catch { console.warn("[hiring-lifecycle] outbox unavailable; no business transaction reversed"); }
+}
+
+async function notify(event:any,user:any,category:string,type:string,title:string,message:string,url:string,context:EmailVariableContext) {
+  if (!user?.id) throw new Error("Recipient unavailable");
+  const key=`${event.event_key}:${category}:${user.id}`;
+  await query(`INSERT INTO notifications(user_id,type,title,message,related_id,related_type,event_key)
+    VALUES($1,$2,$3,$4,$5,'url',$6) ON CONFLICT(event_key) DO NOTHING`,
+    [user.id,type,title,message,url,key]);
+  const template=(await query(`SELECT id,subject,body_html FROM applicant_email_templates
+    WHERE category=$1 AND is_published=true AND is_archived=false
+    ORDER BY is_default DESC,updated_at DESC LIMIT 1`,[category])).rows[0];
+  if (!template || !user.email || !isEmailServiceConfigured()) throw new Error("Email configuration unavailable");
+  const rendered=renderApplicantEmail({subject:template.subject,bodyHtml:template.body_html},{...context,portalUrl:buildAppUrl(url)});
+  if (rendered.unresolvedKeys.length) throw new Error("Template variables unresolved");
+  // Unlike legacy fail-open claims, failure to persist a claim prevents sending.
+  const claimed=(await query(`INSERT INTO email_notification_deliveries
+    (event_key,event_type,recipient_email,recipient_user_id,sender_email,template_category,
+      template_id,related_type,related_id,status,attempted_at,subject,body_html)
+    VALUES($1,$2,$3,$4,'hiretalent@onspotglobal.com',$2,$5,'hiring_lifecycle',$6,'processing',now(),$7,$8)
+    ON CONFLICT(event_key) DO UPDATE SET status='processing',attempted_at=now()
+      WHERE email_notification_deliveries.status='failed'
+    RETURNING id`,[key,category,user.email,user.id,template.id,event.event_key,rendered.subject,rendered.bodyHtml])).rows;
+  if (!claimed.length) {
+    const old=(await query("SELECT status FROM email_notification_deliveries WHERE event_key=$1",[key])).rows[0];
+    if (old?.status!=="sent") throw new Error("Delivery requires reconciliation");
+    return;
+  }
+  let success=false;
+  try {
+    const result=await sendApplicantEmail({to:user.email,subject:rendered.subject,bodyHtml:rendered.bodyHtml,senderEmail:"hiretalent@onspotglobal.com"});
+    success=result.success;
+  } catch { /* Persist safe failure below, never provider bodies. */ }
+  await query(`UPDATE email_notification_deliveries SET status=$2,
+    sent_at=CASE WHEN $2='sent' THEN now() ELSE NULL END,
+    error=CASE WHEN $2='failed' THEN 'Provider send failed' ELSE NULL END WHERE event_key=$1`,
+    [key,success?"sent":"failed"]);
+  if (!success) throw new Error("Email send failed");
+}
+
+async function deliverEvent(event:any) {
+  const p=event.payload;
+  const client = p.payerId
+    ? (await query("SELECT id,email,first_name,last_name FROM users WHERE id=$1",[p.payerId])).rows[0] : null;
+  const contextRow=p.submissionId ? (await query(`SELECT js.client_id,js.talent_id,j.title AS job_title,
+      o.proposed_start_date::text AS proposed_start_date,d.id AS deposit_id,d.amount,d.currency
+    FROM job_submissions js JOIN jobs j ON j.id=js.job_id
+    JOIN hiring_contracts hc ON hc.submission_id=js.id
+    JOIN offers o ON o.id=hc.offer_id
+    LEFT JOIN security_deposits d ON d.hiring_contract_id=hc.id
+    WHERE js.id=$1 AND ($2::text IS NULL OR hc.id::text=$2)
+    ORDER BY hc.created_at DESC LIMIT 1`,[p.submissionId,p.contractId??null])).rows[0] : null;
+  let row=contextRow;
+  if (!row && p.submissionId) row=(await query(`SELECT js.client_id,js.talent_id,j.title AS job_title
+    FROM job_submissions js JOIN jobs j ON j.id=js.job_id WHERE js.id=$1`,[p.submissionId])).rows[0];
+  const owner=client ?? (row ? (await query("SELECT id,email,first_name,last_name FROM users WHERE id=$1",[row.client_id])).rows[0] : null);
+  const talent=row ? (await query("SELECT id,email,first_name,last_name FROM users WHERE id=$1",[row.talent_id])).rows[0] : null;
+  // Do not bypass name reveal through invoices or companion emails.
+  const threshold=(await query("SELECT value FROM platform_settings WHERE key='name_reveal_threshold'")).rows[0]?.value??"hired";
+  const applicationStatus=p.submissionId?(await query("SELECT status FROM job_submissions WHERE id=$1",[p.submissionId])).rows[0]?.status:null;
+  const normalizedThreshold=threshold==="submitted"?"new":threshold;
+  const name=applicationStatus && REVEAL_STATUS_ORDER.some(status=>status===normalizedThreshold)
+    && revealedStatusesForThreshold(normalizedThreshold).has(applicationStatus)
+    ? [talent?.first_name,talent?.last_name].filter(Boolean).join(" ") || "Talent" : "Talent";
+  const ctx:EmailVariableContext={
+    logoUrl:buildAppUrl("/new-onspot.png"),
+    talentName:name,jobTitle:row?.job_title || await obligationJob(p) || "your payment",
+    clientName:[owner?.first_name,owner?.last_name].filter(Boolean).join(" ") || "Client",
+    paymentAmount:`${p.currency??row?.currency??""} ${p.amount??row?.amount??""}`.trim(),
+    paymentReference:p.reference??"",rejectionReason:p.reason??"",
+    startDate:row?.proposed_start_date ? new Date(row.proposed_start_date).toISOString().slice(0,10) : undefined,
+  };
+  const invoiceUrl=`/client/payments/${p.category??"deposit"}/${encodeURIComponent(p.obligationId??p.depositId??row?.deposit_id??"")}`;
+  if(event.event_type==="offer_accepted") {
+    const path=new URL(buildClientApplicationUrl({applicationId:p.submissionId})).pathname+new URL(buildClientApplicationUrl({applicationId:p.submissionId})).search;
+    await notify(event,owner,"hiring_offer_accepted","offer_accepted","Offer accepted",`${name} accepted your offer for ${ctx.jobTitle}. Next: sign the contract.`,path,ctx);
+  } else if(event.event_type==="deposit_issued") {
+    await notify(event,owner,"hiring_deposit_invoice","monthly_client_invoice","Deposit invoice ready",`Your deposit invoice for ${ctx.jobTitle} is ready.`,invoiceUrl,ctx);
+  } else if(event.event_type==="proof_submitted") {
+    const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
+    await Promise.all([
+      notify(event,owner,"hiring_payment_received","monthly_client_invoice","Payment received — verifying","Validation can take up to 24 hours.",invoiceUrl,ctx),
+      ...admins.map(admin=>notify(event,admin,"hiring_payment_review","hiring_payment_review",
+        "Payment submitted for verification",`${ctx.clientName} · ${ctx.jobTitle} · ${ctx.paymentAmount} · ${ctx.paymentReference}`,"/admin/ledger",ctx)),
+    ]);
+  } else if(event.event_type==="proof_rejected") {
+    await notify(event,owner,"hiring_payment_rejected","monthly_client_invoice","Payment proof rejected",p.reason,invoiceUrl,ctx);
+  } else if(event.event_type==="engagement_active") {
+    if (!ctx.startDate) throw new Error("Accepted offer start date required");
+    await Promise.all([
+      notify(event,owner,"hiring_client_active","talent_hired","Your engagement is now active",`${ctx.jobTitle} starts on ${ctx.startDate}.`,"/dashboard",ctx),
+      notify(event,talent,"hiring_talent_active","job_application_status_changed","Your engagement is now active",`${ctx.jobTitle} starts on ${ctx.startDate}.`,new URL(buildTalentApplicationsUrl()).pathname,ctx),
+    ]);
+  }
+}
+
+async function obligationJob(p:any):Promise<string|undefined> {
+  if(p.category==="hiring_invoice")return (await query(`SELECT j.title FROM hiring_pre_offer_invoices i
+    JOIN job_submissions js ON js.id=i.submission_id JOIN jobs j ON j.id=js.job_id WHERE i.id=$1`,[p.obligationId])).rows[0]?.title;
+  if(p.category==="monthly_invoice")return (await query(`SELECT string_agg(DISTINCT j.title,', ') AS title
+    FROM client_monthly_invoice_lines l JOIN talent_invoices ti ON ti.id=l.talent_invoice_id
+    JOIN hiring_contracts hc ON hc.id=ti.hiring_contract_id
+    JOIN job_submissions js ON js.id=hc.submission_id JOIN jobs j ON j.id=js.job_id
+    WHERE l.client_monthly_invoice_id=$1`,[p.obligationId])).rows[0]?.title;
+  if(!["deposit","replenishment","invoice"].includes(p.category)) return;
+  const table=p.category==="deposit"?"security_deposits":p.category==="invoice"?"invoices":"security_deposit_replenishments";
+  return (await query(`SELECT j.title FROM ${table} d JOIN hiring_contracts hc ON hc.id=d.hiring_contract_id
+    JOIN job_submissions js ON js.id=hc.submission_id JOIN jobs j ON j.id=js.job_id WHERE d.id=$1`,[p.obligationId])).rows[0]?.title;
+}

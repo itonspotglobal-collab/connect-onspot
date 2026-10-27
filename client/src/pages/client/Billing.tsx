@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authAPI } from "@/lib/api";
 import { ClientHiringInvoicesSection } from "@/components/hiring-payments/HiringPayments";
-import { ClientWiseObligations, ManualWisePaymentPanel } from "@/components/manual-wise/ManualWisePaymentPanel";
+import { ClientWiseObligations } from "@/components/manual-wise/ManualWisePaymentPanel";
 
 type Invoice = {
   id: string;
@@ -211,7 +211,17 @@ function InvoiceDetail({ invoiceId, onBack }: { invoiceId: string; onBack: () =>
       </div>
       <InvoiceDocument invoice={invoice} />
       {invoice.status !== "paid" && invoice.status !== "void" && (
-        <ManualWisePaymentPanel category="invoice" id={invoice.id} title="Invoice payment and receipt" />
+        <Card className="border-[#dfe2ee] bg-[#f7f8fc]">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div>
+              <p className="font-semibold">Ready to pay this invoice?</p>
+              <p className="mt-1 text-sm text-muted-foreground">Review the approved payment instructions and submit your transfer receipt on the secure checkout page.</p>
+            </div>
+            <Button asChild className="min-h-11 shrink-0">
+              <Link href={`/client/payments/invoice/${encodeURIComponent(invoice.id)}`}>Continue to secure checkout</Link>
+            </Button>
+          </CardContent>
+        </Card>
       )}
       <p className="text-center text-xs text-muted-foreground print:hidden">
         Use your browser&apos;s print dialog to print or save this invoice as a PDF.

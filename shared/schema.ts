@@ -725,6 +725,19 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const hiringLifecycleEvents = pgTable("hiring_lifecycle_events", {
+  eventKey: text("event_key").primaryKey(),
+  eventType: text("event_type").notNull(),
+  payload: jsonb("payload").notNull(),
+  status: text("status").notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  attemptedAt: timestamp("attempted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [
+  index("hiring_lifecycle_events_pending").on(table.status,table.createdAt),
+  check("hiring_lifecycle_events_status_check",sql`${table.status} IN ('pending','processing','sent','failed')`),
+]);
+
 // Blog Posts for Insights page
 export const posts = pgTable("posts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2389,6 +2402,7 @@ export const clientCreditApplications = pgTable("client_credit_applications", {
 ]);
 
 export const securityDeposits = pgTable("security_deposits", {
+  invoiceNumber: text("invoice_number"),
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   hiringContractId: uuid("hiring_contract_id").notNull().unique().references(() => hiringContracts.id, { onDelete: "restrict" }),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
@@ -2410,6 +2424,7 @@ export const securityDeposits = pgTable("security_deposits", {
 }, (table) => [
   index("idx_security_deposits_contract").on(table.hiringContractId),
   index("idx_security_deposits_status").on(table.status),
+  uniqueIndex("security_deposits_invoice_number_unique").on(table.invoiceNumber).where(sql`${table.invoiceNumber} IS NOT NULL`),
   check("security_deposits_status_check", sql`${table.status} IN ('pending', 'held', 'drawn', 'replenishment_pending', 'suspended', 'forfeited', 'applied', 'void')`),
 ]);
 

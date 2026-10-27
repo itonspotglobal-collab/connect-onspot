@@ -50,7 +50,7 @@ try {
   const isolatedApp = videoOnly || messagingOnly || clientStatusOnly;
   const workerEnv = { DATABASE_URL:url,HIRING_FLOW_TEST_DATABASE_URL:url,JWT_SECRET:"hiring-payment-fixture-only",DISABLE_AUTH:"false",
     ...(isolatedApp ? { REPLIT_DOMAINS: "127.0.0.1", NODE_ENV: "test" } : {}),
-    ...(clientStatusOnly ? { PUBLIC_APP_URL: "https://fixture.example.test" } : {}),
+    PUBLIC_APP_URL: "https://fixture.example.test",
     ...(messagingBaseline ? { MESSAGING_UAT_BASELINE: "true" } : {}),
     ...(videoOnly && process.argv.includes("--real-storage") ? {
       VIDEO_UAT_REAL_STORAGE: "true", PRIVATE_OBJECT_DIR: process.env.PRIVATE_OBJECT_DIR,
@@ -92,11 +92,14 @@ try {
   } catch(e) { await db.query("ROLLBACK"); throw e; } finally { await db.end(); }
   // Run the existing real signing/contract regression before adding the new gate.
   // Its fixture deliberately manufactures accepted offers, which are now forbidden.
-  if (!isolatedApp && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")) {
+  const hiringFlowOnly=process.argv.includes("--hiring-flow-only");
+  if(hiringFlowOnly) {
+    await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts"],workerEnv);
+  } else if (!isolatedApp && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")) {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts","contracts"],workerEnv);
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
-  const entries = clientStatusOnly ? [
+  const entries = hiringFlowOnly ? [] : clientStatusOnly ? [
     jobBillingOnly ? "server/tests/job-billing-classification.fixture.ts" :
       clientNavigationOnly ? "server/tests/client-account-navigation.fixture.ts" : "server/tests/client-application-status.fixture.ts",
     "server/tests/applicant-email-templates.test.ts",

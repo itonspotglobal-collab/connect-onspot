@@ -39,6 +39,9 @@ import { candidateVideoStorage, saveCandidateVideoFromFile } from "./services/ca
 import { registerHiringPaymentRoutes, hiringPaymentFailure } from "./routes/hiringPayments";
 import { registerManualWiseRoutes } from "./routes/manualWise";
 import { ManualWiseService } from "./services/manualWiseService";
+import { preOfferPaymentRequired } from "./services/hiringPaymentService";
+import { queueHiringLifecycleEvent } from "./services/hiringLifecycleEvents";
+import { dispatchHiringLifecycleEvents } from "./services/hiringLifecycleDispatch";
 import { HiringPaymentService, requireVerifiedHiringPayment } from "./services/hiringPaymentService";
 import { registerInvestorRoutes } from "./routes/investors.js";
 import { registerInvestorGoalRoutes, guardInvestorGoalUpdates, seedInvestorGoalSettings } from "./routes/investorGoals";
@@ -3480,7 +3483,32 @@ export async function registerRoutes(
   );
 
   registerInvestorRoutes(app);
-  registerManualWiseRoutes(app, { service: new ManualWiseService(pool), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
+  registerManualWiseRoutes(app, { service: new ManualWiseService(pool,dispatchHiringLifecycleEvents), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
+  app.get("/api/hiring-payment-settings", authenticateJWT, async (_req,res) => {
+    try { res.json({preOfferPaymentRequired:await preOfferPaymentRequired({query})}); }
+    catch { res.status(503).json({error:"Payment settings unavailable"}); }
+  });
+  app.patch("/api/admin/hiring-payment-settings", authenticateJWT, pipelineMutationLimiter, async (req:any,res) => {
+    try {
+      const actor=(await query("SELECT role,admin_sub_role FROM users WHERE id=$1",[req.user?.id])).rows[0];
+      if(actor?.role!=="admin" || actor.admin_sub_role!==null) return res.status(403).json({error:"Super Admin access required"});
+      if(typeof req.body?.preOfferPaymentRequired!=="boolean") return res.status(422).json({error:"preOfferPaymentRequired must be a boolean"});
+      await query(`INSERT INTO platform_settings(key,value,updated_at)
+        VALUES('HIRING_PRE_OFFER_PAYMENT_REQUIRED',$1,now())
+        ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()`,[String(req.body.preOfferPaymentRequired)]);
+      res.json({preOfferPaymentRequired:req.body.preOfferPaymentRequired});
+    } catch { res.status(503).json({error:"Payment settings unavailable; no change confirmed"}); }
+  });
+  app.post("/api/admin/hiring-lifecycle/retry", authenticateJWT, pipelineMutationLimiter, async (req:any,res) => {
+    try {
+      const actor=(await query("SELECT role,admin_sub_role FROM users WHERE id=$1",[req.user?.id])).rows[0];
+      if(actor?.role!=="admin" || actor.admin_sub_role!==null) return res.status(403).json({error:"Super Admin access required"});
+      void dispatchHiringLifecycleEvents();
+      res.status(202).json({queued:true});
+    } catch {
+      res.status(503).json({error:"Hiring email retry is temporarily unavailable"});
+    }
+  });
   registerHiringPaymentRoutes(app, { service: new HiringPaymentService(pool), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
   registerInvestorGoalRoutes(app, query);
 
@@ -19900,6 +19928,7 @@ export async function registerRoutes(
     "offer_accepted", // talent accepted offer
     "offer_declined", // talent declined offer — name still visible; relationship was active
     "contract_sent",  // contract sent (Phase 3)
+    "contract_signed", // signatures complete; deposit not yet verified
     "hired",          // terminal success
     "rejected",       // client or outcome rejected — name still visible; review already happened
     "withdrawn",      // talent withdrew — name still visible if post-acceptance
@@ -20960,7 +20989,7 @@ export async function registerRoutes(
       }
       const interview = interviewResult.rows[0];
 
-      if (["hired", "contract_sent", "offer_accepted"].includes(interview.submission_status)) {
+      if (["hired", "contract_sent", "contract_signed", "offer_accepted"].includes(interview.submission_status)) {
         await outcomeClient.query("ROLLBACK");
         return res.status(409).json({ error: "submission_not_interviewable", message: "This application has already moved beyond interviewing." });
       }
@@ -21456,6 +21485,7 @@ export async function registerRoutes(
              `Client ${action === "accept" ? "accepted" : "declined"} the talent counter offer`, clientId],
           );
         }
+        if(action==="accept") await queueHiringLifecycleEvent(txClient,`offer-accepted:${offer.id}`,"offer_accepted",{submissionId:offer.js_id});
         await txClient.query("COMMIT");
       } catch (txErr) {
         await txClient.query("ROLLBACK").catch(() => {});
@@ -21465,6 +21495,7 @@ export async function registerRoutes(
       }
 
       if (offer.talent_id) {
+        if(action==="accept") void dispatchHiringLifecycleEvents();
         const actionLabel = action === "accept" ? "accepted" : action === "counter" ? "countered" : "declined";
         storage.createNotification({
           userId: offer.talent_id,
@@ -21769,6 +21800,7 @@ export async function registerRoutes(
              linkedUserId],
           );
         }
+        if(action==="accept") await queueHiringLifecycleEvent(txClient,`offer-accepted:${offer.id}`,"offer_accepted",{submissionId:offer.js_id});
         await txClient.query("COMMIT");
       } catch (txErr: any) {
         await txClient.query("ROLLBACK").catch(() => {});
@@ -21780,7 +21812,8 @@ export async function registerRoutes(
       // Fire-and-forget: notify the client that the talent has responded to their offer.
       // offer.js_client_id is the client user's ID from job_submissions; no PII in message.
       const clientUserId = offer.js_client_id;
-      if (clientUserId) {
+      if(action==="accept") void dispatchHiringLifecycleEvents();
+      if (clientUserId && action !== "accept") {
         const actionLabel = action === "accept" ? "accepted" : action === "counter" ? "countered" : "declined";
         storage.createNotification({
           userId: clientUserId,

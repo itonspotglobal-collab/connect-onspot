@@ -121,6 +121,7 @@ import { buildLoginReturnUrl } from "@/lib/returnTo";
 // Scroll to the top of the page whenever the route changes
 import Messages from "@/pages/Messages";
 import Billing from "@/pages/client/Billing";
+import ClientPaymentPage from "@/pages/client/ClientPaymentPage";
 import Payouts from "@/pages/talent/Payouts";
 import Clock from "@/pages/talent/Clock";
 import AdminEmailDeliveries from "@/pages/AdminEmailDeliveries";
@@ -425,6 +426,7 @@ function ClientRouter() {
           <Route path="/client/timesheets" component={() => <Timesheets role="client" />} />
           <Route path="/client/monthly-invoices" component={() => <Invoicing role="client" />} />
           <Route path="/client/monthly-invoices/:id" component={() => <Invoicing role="client" />} />
+          <Route path="/client/payments/:category/:id" component={ClientPaymentPage} />
           <Route path="/client/contract-endings" component={() => <ContractEndings role="client" />} />
           <Route path="/organization/create" component={OrganizationCreate} />
           <Route path="/organization-invitations" component={OrganizationInvitations} />
@@ -680,6 +682,7 @@ function AppContent() {
       <Route path="/client/timesheets" component={ClientRouter} />
       <Route path="/client/monthly-invoices" component={ClientRouter} />
       <Route path="/client/monthly-invoices/:id" component={ClientRouter} />
+      <Route path="/client/payments/:category/:id" component={ClientRouter} />
       <Route path="/client/contract-endings" component={ClientRouter} />
       <Route path="/client/billing/invoices/:id" component={ClientRouter} />
       <Route path="/client/billing" component={ClientRouter} />

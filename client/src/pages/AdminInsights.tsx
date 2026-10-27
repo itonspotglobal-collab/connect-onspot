@@ -116,7 +116,7 @@ export default function AdminInsights() {
     <TooltipProvider>
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-4">
               <Link href="/insights">
                 <Button variant="ghost" size="icon" data-testid="button-back-to-insights">

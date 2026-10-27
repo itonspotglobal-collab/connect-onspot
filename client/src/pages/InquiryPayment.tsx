@@ -2,7 +2,6 @@ import { Link, useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { TopNavigation } from "@/components/TopNavigation";
-import { ManualWisePaymentPanel } from "@/components/manual-wise/ManualWisePaymentPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
@@ -46,7 +45,10 @@ export default function InquiryPayment() {
         <div><p className="text-xs text-muted-foreground">Service</p><p className="mt-1 font-medium">{inquiry.serviceNeeded || "—"}</p></div>
         <div><p className="text-xs text-muted-foreground">Original estimate</p><p className="mt-1 text-lg font-semibold">{amount(inquiry.estimatedBudget)}</p></div>
       </CardContent></Card>
-      <ManualWisePaymentPanel category="inquiry" id={id || ""} title="Inquiry payment" />
+       <Card><CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+         <div><p className="font-semibold">Continue to payment</p><p className="mt-1 max-w-lg text-sm text-muted-foreground">Review the authorized amount and transfer instructions, then submit your receipt for independent settlement review.</p></div>
+         <Button asChild className="min-h-11 shrink-0"><Link href={`/client/payments/inquiry/${encodeURIComponent(id || "")}`}>Open secure checkout</Link></Button>
+       </CardContent></Card>
       <div className="flex justify-start"><Button variant="ghost" onClick={() => navigate(`/inquiry/${id}/review`)}><ArrowLeft className="mr-2 h-4 w-4" />Back to review</Button></div>
     </main>
   </div>;

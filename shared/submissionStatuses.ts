@@ -33,7 +33,8 @@ export const SUBMISSION_STATUSES = [
 
   // ── Contract + hire (Admin/OnSpot-driven) ─────────────────────────────────
   "contract_sent",  // Admin/OnSpot generated and sent the hiring contract
-  "hired",          // Contract fully signed — terminal success state
+  "contract_signed", // Required signatures complete; awaiting verified deposit
+  "hired",          // Signed contract and independently verified deposit
 ] as const;
 
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
@@ -54,6 +55,7 @@ export const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   offer_accepted: "Offer Accepted",
   offer_declined: "Offer Declined",
   contract_sent: "Contract Sent",
+  contract_signed: "Contract Signed · Deposit Due",
   hired: "Hired",
 };
 
@@ -138,6 +140,7 @@ export const REVEAL_STATUS_ORDER = [
   "offer_accepted", // talent accepted offer
   "offer_declined", // talent declined offer — name still visible; relationship was active
   "contract_sent",  // contract sent
+  "contract_signed", // fully signed, funding pending
   "hired",          // terminal success
   "rejected",       // name still visible; review already happened
   "withdrawn",      // name still visible if post-acceptance

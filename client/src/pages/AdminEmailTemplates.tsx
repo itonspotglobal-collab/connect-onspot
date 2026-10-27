@@ -58,6 +58,13 @@ async function apiFetch(path: string, opts?: RequestInit) {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
+  hiring_offer_accepted: "Hiring: Offer Accepted",
+  hiring_deposit_invoice: "Hiring: Deposit Invoice",
+  hiring_payment_review: "Hiring: Payment Review",
+  hiring_payment_received: "Hiring: Proof Received",
+  hiring_payment_rejected: "Hiring: Proof Rejected",
+  hiring_client_active: "Hiring: Client Activation",
+  hiring_talent_active: "Hiring: Talent Activation",
   application_received: "Application Received",
   under_review: "Under Review",
   shortlisted: "Shortlisted",

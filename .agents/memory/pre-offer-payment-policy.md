@@ -3,11 +3,11 @@ name: Offer acceptance and security deposit policy
 description: Revised business sequence, independent settlement verification, and preserving historical pre-offer financial records.
 ---
 
-The approved target sequence is offer → applicant acceptance → security deposit obligation → independently verified deposit funding → MSA and Contractor Agreement → required signatures → activation. New offers must not require a pre-offer hiring fee or automatically issue a pre-offer invoice.
+The approved target sequence is offer → applicant acceptance → required contract signatures → security deposit invoice → proof pending verification → independently verified deposit funding → Hired and engagement/billing activation. Pre-offer payment is optional and off by default; explicitly enabling the persisted setting must restore the previous payment-before-offer guards, including counters and renewals.
 
-**Why:** The owner explicitly superseded the earlier payment-before-offer requirement with the team-approved offer-first sequence. Payment still never substitutes for signatures or independently marks Talent Hired.
+**Why:** On 2026-10-27 the owner explicitly chose signatures before the deposit invoice and moved activation from signing to independently verified deposit funding. This supersedes the earlier deposit-before-agreements target. Neither signatures alone nor a receipt alone establishes an active engagement.
 
-**How to apply:** Preserve original applications and existing eligibility; do not add an interview prerequisite. Preserve historical pre-offer invoices and settlements without automatically refunding, voiding, converting them to deposits, or charging the former fee at another stage. Accepted offers need recoverable, idempotent deposit creation. Missing approved legal templates or terms must block document generation for authorized review, not produce invented agreements.
+**How to apply:** Preserve original applications and existing eligibility; do not add an interview prerequisite. Preserve historical pre-offer invoices and settlements without automatically refunding, voiding, converting them to deposits, or charging the former fee at another stage. Signing must issue the existing deposit exactly once without activation. Preserve signed historical contracts; report unfunded ones for manual review rather than relabeling or rebilling them. Missing approved legal templates or terms must block document generation for authorized review, not produce invented agreements.
 
 Pricing, tax treatment, due terms, recipient and instructions must be explicitly authorized. Neither a zero amount nor an invented charge is an acceptable fallback. Keep the approved security-deposit formula and billing calculations unchanged. Manual references are unverified claims. Policy authorization and manual settlement verification remain restricted to database-confirmed Super Admins.
 

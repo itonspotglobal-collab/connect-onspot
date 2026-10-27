@@ -101,7 +101,7 @@ function Section({
     <Card
       id={id}
       className={[
-        "scroll-mt-28 rounded-2xl border bg-white",
+        "min-w-0 scroll-mt-28 rounded-2xl border bg-white",
         "transition-[border-color,box-shadow] duration-300 motion-reduce:transition-none",
         "dark:bg-white/[0.03]",
         highlighted
@@ -109,16 +109,16 @@ function Section({
           : "border-slate-200/70 shadow-sm dark:border-white/10",
       ].join(" ")}
     >
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-5">
-        <div className="flex items-center gap-3">
+      <CardHeader className="flex min-w-0 flex-row flex-wrap items-center justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
             <Icon className="h-4 w-4 text-[#474ead]" />
           </div>
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="min-w-0 break-words text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
         </div>
         {action}
       </CardHeader>
-      <CardContent className="px-6 pb-6">{children}</CardContent>
+      <CardContent className="min-w-0 px-5 pb-6 sm:px-6">{children}</CardContent>
     </Card>
   );
 }
@@ -134,11 +134,11 @@ function ProfileLongFormText({ value }: { value: string }) {
     .filter(Boolean);
   if (paragraphs.length === 0) return null;
   return (
-    <div className="max-w-prose space-y-4">
+    <div className="min-w-0 max-w-prose space-y-4">
       {paragraphs.map((paragraph, index) => (
         <p
           key={index}
-          className="text-left text-[15px] leading-7 text-slate-700 dark:text-slate-300 sm:text-justify"
+          className="break-words text-left text-[15px] leading-7 text-slate-700 dark:text-slate-300 sm:text-justify"
           style={{ textJustify: "inter-word" } as React.CSSProperties}
         >
           {paragraph}
@@ -221,7 +221,7 @@ function EditField({
             // Multi-paragraph rendering — split on blank lines, preserve intra-paragraph newlines
             <div className="space-y-3">
               {value.split(/\n[ \t]*\n/).map((para, i) => (
-                <p key={i} className="text-sm leading-7 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                <p key={i} className="break-words text-sm leading-7 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                   {para.trim()}
                 </p>
               ))}
@@ -1165,7 +1165,7 @@ export default function TalentProfile() {
   return (
     <>
     <TopNavigation />
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#060816] dark:text-white">
+    <div className="min-h-screen w-full min-w-0 bg-slate-50 text-slate-900 dark:bg-[#060816] dark:text-white">
 
       {/* ── Talent Login Modal ── */}
       {id && (
@@ -1240,7 +1240,7 @@ export default function TalentProfile() {
         </div>
 
         {/* Row 2: Name + meta + action buttons */}
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="mt-3 flex min-w-0 flex-wrap items-start justify-between gap-3">
           {/* Left: name, headline, location tags, badges */}
           <div className="min-w-0">
             {/* Display name — editable for owner, static otherwise */}
@@ -1322,7 +1322,7 @@ export default function TalentProfile() {
           </div>
 
           {/* Right: action buttons */}
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex max-w-full flex-wrap gap-2 pt-1">
               {isClientUser && id && (
                 <Button
                   variant="outline"
@@ -1478,9 +1478,9 @@ export default function TalentProfile() {
 
       {/* ── Body content ── */}
       <div className="mx-auto mt-6 max-w-4xl px-4 pb-20 md:px-8">
-        <div className="grid gap-5 md:grid-cols-[1fr_280px]">
+        <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,1fr)_280px]">
           {/* Left column — main sections */}
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
 
             {/* About */}
             <Section id="section-about" title="About" icon={User} highlighted={highlightedSectionId === "section-about"}>
@@ -2217,7 +2217,7 @@ function ApplicationsSection({ candidateId, talentToken, highlighted }: { candid
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.bgClass} ${meta.textClass} ${meta.borderClass}`}
+                  className={`max-w-[46%] whitespace-normal break-words text-right inline-flex shrink items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.bgClass} ${meta.textClass} ${meta.borderClass}`}
                 >
                   {meta.talentLabel}
                 </span>
@@ -2267,7 +2267,7 @@ function WorkEntryCard({
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
           <Briefcase className="h-4 w-4 text-[#474ead]" />
         </div>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">{entry.title}</p>
@@ -2335,7 +2335,7 @@ function EduEntryCard({ entry, onSave, onDelete, canEdit = true }: { entry: EduE
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
           <BookOpen className="h-4 w-4 text-[#474ead]" />
         </div>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">{entry.degree}</p>
@@ -2394,7 +2394,7 @@ function CertCard({ entry, onSave, onDelete, canEdit = true }: { entry: CertEntr
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#474ead]/10">
           <Award className="h-4 w-4 text-[#474ead]" />
         </div>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">{entry.name}</p>

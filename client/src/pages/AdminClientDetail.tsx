@@ -70,11 +70,12 @@ const STATUS_LABELS: Record<string, string> = {
   offer_accepted: 'Offer Accepted',
   offer_declined: 'Offer Declined',
   contract_sent: 'Contract Sent',
+  contract_signed: 'Contract signed · deposit due',
   hired: 'Hired',
 };
 
 function applicationStatusVariant(status: string): 'default' | 'secondary' | 'outline' {
-  if (['hired', 'offer_accepted', 'contract_sent'].includes(status)) return 'default';
+  if (['hired', 'offer_accepted', 'contract_sent', 'contract_signed'].includes(status)) return 'default';
   if (['shortlisted', 'interviewing', 'offer_extended'].includes(status)) return 'secondary';
   return 'outline';
 }

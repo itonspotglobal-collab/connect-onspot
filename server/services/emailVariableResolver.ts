@@ -9,6 +9,10 @@ import { htmlToPlainText } from "../lib/htmlToPlainText.js";
 import { buildAppUrl, buildTalentApplicationsUrl } from "../lib/appUrl";
 
 export interface EmailVariableContext {
+  talentName?: string;
+  startDate?: string;
+  paymentAmount?: string;
+  paymentReference?: string;
   applicantFirstName?: string;
   applicantLastName?: string;
   applicantFullName?: string;
@@ -41,6 +45,10 @@ export interface EmailVariableContext {
 export const getTalentApplicationsUrl = buildTalentApplicationsUrl;
 
 const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
+  talent_name: "talentName",
+  start_date: "startDate",
+  payment_amount: "paymentAmount",
+  payment_reference: "paymentReference",
   applicant_first_name: "applicantFirstName",
   applicant_last_name: "applicantLastName",
   applicant_full_name: "applicantFullName",
@@ -374,6 +382,10 @@ export function renderBrandedEmailLayout(contentHtml: string): string {
 
 /** Canonical variables shown in the editor and saved into default metadata. */
 export const SUPPORTED_VARIABLES: { key: string; label: string; description: string }[] = [
+  { key: "talent_name", label: "Talent", description: "Authorized talent display name or role" },
+  { key: "start_date", label: "Start date", description: "Accepted offer's agreed start date" },
+  { key: "payment_amount", label: "Payment amount", description: "Existing obligation amount and currency" },
+  { key: "payment_reference", label: "Transfer reference", description: "Customer's unverified transfer claim" },
   { key: "applicant_first_name", label: "First Name", description: "Applicant's first name" },
   { key: "applicant_last_name", label: "Last Name", description: "Applicant's last name" },
   { key: "applicant_full_name", label: "Full Name", description: "Applicant's full name" },

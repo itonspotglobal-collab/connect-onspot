@@ -331,7 +331,7 @@ export default function CandidateProfile() {
   const hasCultureComplete = candidate.cultureScore != null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen min-w-0 bg-slate-50 [overflow-wrap:anywhere]">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-200/80 bg-white">
         <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">

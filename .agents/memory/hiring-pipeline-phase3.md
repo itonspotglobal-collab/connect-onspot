@@ -23,7 +23,14 @@ Contract creation must validate both the persisted offer and the locked submissi
 
 **How to apply:** Any future contract, withdrawal, or terminal hiring transition must lock `job_submissions` and validate its current canonical status in the same transaction; never infer eligibility from the offer alone.
   offer_accepted → [POST contract] → contract_sent → [talent sign] → contract_sent
-  → [admin OnSpot countersign] → signed → submission: hired
+  → [admin OnSpot countersign] → signed → submission: contract_signed
+  → [independently verified deposit] → submission: hired
+
+**Current policy:** Follow [Hiring activation policy](pre-offer-payment-policy.md), not the historical assumption that signing alone activates hiring.
+
+**Why:** The owner explicitly moved Hired and billing activation to independently verified deposit funding on 2026-10-27.
+
+**How to apply:** Keep required signatures as a prerequisite, issue the existing deposit once after signing, and preserve historical signed records without relabeling or rebilling them.
   → [PATCH void] → voided (only when status='sent', not after signed)
 ```
 

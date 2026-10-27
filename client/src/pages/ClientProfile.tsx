@@ -128,6 +128,8 @@ const SUBMISSION_STATUS_LABELS: Record<string, { label: string; color: string }>
   interviewing:   { label: "Interviewing",    color: "bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400" },
   offer_extended: { label: "Offer Extended",  color: "bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-400" },
   offer_expired:  { label: "Offer Expired",   color: "bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400" },
+  contract_sent:  { label: "Contract Sent",   color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" },
+  contract_signed:{ label: "Contract signed · deposit due", color: "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300" },
   offer_declined: { label: "Offer Declined",  color: "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400" },
   rejected:       { label: "Rejected",        color: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400" },
   hired:          { label: "Hired",           color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400" },
@@ -186,7 +188,7 @@ export function ViewSubmissionModal({
   const { data: submissionOffers = [] } = useQuery<OfferRecord[]>({
     queryKey: ["/api/client/offers", submission.id],
     queryFn: async () => (await apiRequest("GET", `/api/client/offers?submissionId=${encodeURIComponent(submission.id)}`)).json(),
-    enabled: ["offer_accepted", "contract_sent", "hired"].includes(submission.status),
+    enabled: ["offer_accepted", "contract_sent", "contract_signed", "hired"].includes(submission.status),
   });
   const acceptedOfferId = submission.acceptedOfferId || submissionOffers.find((offer) => offer.status === "accepted")?.id || null;
   const [meetingLinkDraft, setMeetingLinkDraft] = useState("");
@@ -467,7 +469,7 @@ export function ViewSubmissionModal({
             </div>
           )}
 
-          {(["offer_accepted", "contract_sent", "hired"].includes(submission.status) || Boolean(acceptedOfferId)) && (
+          {(["offer_accepted", "contract_sent", "contract_signed", "hired"].includes(submission.status) || Boolean(acceptedOfferId)) && (
             <ContractApplicationPanel submissionId={submission.id} acceptedOfferId={acceptedOfferId} />
           )}
 
@@ -1421,7 +1423,10 @@ export function JobSubmissionsSection({
                 <SelectItem value="under_review">Under Review</SelectItem>
                 <SelectItem value="shortlisted">Shortlisted</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
-                {Object.entries(SUBMISSION_STATUS_LABELS).filter(([status]) => !["new", "reviewed", "under_review", "shortlisted", "rejected"].includes(status)).map(([status, info]) => <SelectItem key={status} value={status}>{info.label}</SelectItem>)}
+                <SelectItem value="contract_sent">Contract sent</SelectItem>
+                <SelectItem value="contract_signed">Contract signed · deposit due</SelectItem>
+                <SelectItem value="hired">Hired</SelectItem>
+                {Object.entries(SUBMISSION_STATUS_LABELS).filter(([status]) => !["new", "reviewed", "under_review", "shortlisted", "rejected", "contract_sent", "contract_signed", "hired"].includes(status)).map(([status, info]) => <SelectItem key={status} value={status}>{info.label}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={sortOrder} onValueChange={(value: "newest" | "oldest") => { setSortOrder(value); setPage(1); }}>
@@ -1687,12 +1692,25 @@ export function ExtendOfferDialog({
   const [expiresAt, setExpiresAt] = useState("");
   const [notes, setNotes] = useState("");
   const [lastResult, setLastResult] = useState<{ rate_below_expectation?: boolean | null; rate_delta?: string | null } | null>(null);
+  const hiringSettings = useQuery<{ preOfferPaymentRequired: boolean }>({
+    queryKey: ["/api/hiring-payment-settings"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/hiring-payment-settings");
+      if (!response.ok) throw new Error("Hiring payment settings unavailable");
+      return response.json();
+    },
+    retry: false,
+  });
+  const hiringSettingsLoaded = hiringSettings.data?.preOfferPaymentRequired !== undefined;
+  const preOfferPaymentRequired = !hiringSettingsLoaded || hiringSettings.data?.preOfferPaymentRequired !== false;
   const { data: hiringInvoices = [], isLoading: hiringInvoicesLoading, isError: hiringInvoicesError, refetch: refetchHiringInvoices } = useQuery<HiringInvoice[]>({
     queryKey: ["/api/client/hiring-invoices", submission.id],
     queryFn: async () => (await apiRequest("GET", `/api/client/hiring-invoices?submissionId=${encodeURIComponent(submission.id)}`)).json(),
     refetchInterval: 30_000,
   });
   const invoiceVerified = hiringInvoices.some((invoice) => invoice.submission_id === submission.id && invoice.status === "paid" && Boolean(invoice.verified_at));
+  const offerPaymentGateReady = hiringSettingsLoaded
+    && (!preOfferPaymentRequired || (!hiringInvoicesLoading && !hiringInvoicesError && invoiceVerified));
 
   // Load prior offers for this submission
   const { data: priorOffers = [], isLoading: offersLoading } = useQuery<OfferRecord[]>({
@@ -1813,8 +1831,10 @@ export function ExtendOfferDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-1">
-          <ClientHiringPaymentPanel submissionId={submission.id} />
-          {hiringInvoicesError && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Invoice payment status could not be confirmed. The offer action stays locked. <Button variant="outline" size="sm" onClick={() => refetchHiringInvoices()}>Retry</Button></div>}
+          {!hiringSettingsLoaded && <div role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Checking the current hiring-payment policy. Offer sending stays locked until that policy is confirmed.</div>}
+          {hiringSettings.isError && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Hiring-payment policy could not be confirmed. Offer sending remains unavailable. <Button variant="outline" size="sm" onClick={() => hiringSettings.refetch()}>Retry</Button></div>}
+          {preOfferPaymentRequired && <ClientHiringPaymentPanel submissionId={submission.id} />}
+          {preOfferPaymentRequired && hiringInvoicesError && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Invoice payment status could not be confirmed. The offer action stays locked. <Button variant="outline" size="sm" onClick={() => refetchHiringInvoices()}>Retry</Button></div>}
           {/* Rate row */}
           <div className="flex gap-3">
             <div className="flex-1">
@@ -1970,10 +1990,10 @@ export function ExtendOfferDialog({
           </Button>
           <Button
             onClick={() => offerMutation.mutate()}
-            disabled={offerMutation.isPending || !rate || !invoiceVerified || hiringInvoicesLoading || hiringInvoicesError}
+            disabled={offerMutation.isPending || !rate || !offerPaymentGateReady}
             className="bg-[#474ead] hover:bg-[#3a3d8f] text-white"
           >
-            {offerMutation.isPending ? "Sending…" : invoiceVerified ? "Send Offer" : "Payment verification required"}
+            {offerMutation.isPending ? "Sending…" : !hiringSettingsLoaded ? "Checking payment policy…" : preOfferPaymentRequired && !invoiceVerified ? "Payment verification required" : "Send Offer"}
           </Button>
         </DialogFooter>
       </DialogContent>

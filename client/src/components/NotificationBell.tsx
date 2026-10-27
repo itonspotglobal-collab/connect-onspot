@@ -34,6 +34,7 @@ import {
   clientNotificationModalKind,
   notificationTypesForRole,
   recentTalentInterviewProposalToasts,
+  safeInternalNotificationRoute,
   type ClientNotificationModalKind,
   notificationRouteForRole,
 } from "@/lib/notificationRouting";
@@ -440,6 +441,14 @@ export function NotificationBell() {
           description: "Please try again.",
           variant: "destructive",
         });
+        return;
+      }
+    }
+
+    if (n.relatedType === "url") {
+      const internalRoute = safeInternalNotificationRoute(n.relatedId, user?.role);
+      if (internalRoute) {
+        navigate(internalRoute);
         return;
       }
     }

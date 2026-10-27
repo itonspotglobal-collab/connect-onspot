@@ -25,14 +25,20 @@ const representativeContext: EmailVariableContext = {
   portalUrl: "https://talent.onspotglobal.com/my-applications",
   companyName: "OnSpot",
   logoUrl: "https://talent.onspotglobal.com/new-onspot.png",
+  talentName: "Fixture Talent",
+  clientName: "Fixture Client",
+  startDate: "2032-10-01",
+  paymentAmount: "USD 100.00",
+  paymentReference: "FIXTURE-REFERENCE",
+  rejectionReason: "Fixture review reason",
 };
 
 describe("default applicant email templates", () => {
-  it("renders all 14 templates with resolved subjects, branded HTML, and accurate metadata", () => {
+  it("renders all 21 applicant/hiring templates with resolved subjects, branded HTML, and accurate metadata", () => {
     const templates = DEFAULT_TEMPLATES.filter(
       (template) => !["job_approved", "job_rejected", "job_unapproved", "job_posted_on_behalf"].includes(template.category),
     );
-    assert.equal(templates.length, 14);
+    assert.equal(templates.length, 21);
 
     for (const template of templates) {
       const rendered = renderApplicantEmail(template, representativeContext);

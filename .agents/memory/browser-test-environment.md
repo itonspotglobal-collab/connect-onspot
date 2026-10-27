@@ -87,6 +87,18 @@ A documented specialized testing-agent kind may be unavailable in the current wo
 
 **How to apply:** Use the existing isolated Playwright suites directly when this happens, with credential-scrubbed processes and an owned fixture target. Do not substitute a production session, bypass authentication, or report an unsupported tester dispatch as a pass.
 
+For full-App route audits, a built-App static fixture is an alternative when the
+source-mode harness cannot load transitive CommonJS dependencies.
+
+**Why:** A source harness can fail on dependency export interop before the App
+renders. Its empty/error screen can misleadingly measure zero overflow. The
+production bundle can render the same populated fixture and expose genuine
+layout failures.
+
+**How to apply:** Serve only local built assets on an owned test server, retain
+API/auth fixtures, require the intended route and content markers, and assert
+document width. This is still mocked browser evidence, not real account UAT.
+
 Native-autofill verification must check the resulting session identity, not only the outgoing request.
 
 **Why:** A signup request contained the correct autofilled names while the persisted Talent session name was blank because a later step still used stale React state.

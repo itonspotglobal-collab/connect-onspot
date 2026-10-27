@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ClientHiringInvoicesSection } from "@/components/hiring-payments/HiringPayments";
+import { Link } from "wouter";
 
 interface Invoice {
   id: string;
@@ -187,6 +188,7 @@ export default function ClientInvoices() {
                   <TableHead>Status</TableHead>
                   <TableHead>Due</TableHead>
                   <TableHead>Paid</TableHead>
+                  <TableHead className="text-right">Payment</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -217,6 +219,13 @@ export default function ClientInvoices() {
                       {inv.paid_at ? (
                         <span className="text-green-600">{formatDate(inv.paid_at)}</span>
                       ) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!["paid", "void"].includes(inv.status) ? (
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/client/payments/monthly_invoice/${encodeURIComponent(inv.id)}`}>Pay invoice</Link>
+                        </Button>
+                      ) : <span className="text-xs text-muted-foreground">Historical</span>}
                     </TableCell>
                   </TableRow>
                 ))}

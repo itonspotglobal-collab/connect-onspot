@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Pool, PoolClient } from "pg";
 import { ManualWiseConfiguration } from "./manualWiseConfiguration";
+import { activateFundedEngagement, queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
 
 const categories = ["inquiry","hiring_invoice","invoice","monthly_invoice","deposit","replenishment","payout"] as const;
 export type WiseCategory = typeof categories[number];
@@ -35,7 +36,7 @@ export const wiseCents = (v:unknown):bigint => {
 const amountOf=(r:any,c:WiseCategory) => c==="monthly_invoice" ? r.amount_due : c==="inquiry" ? r.payment_amount : r.amount;
 
 export class ManualWiseService {
-  constructor(public pool:Pool) {}
+  constructor(public pool:Pool, private afterCommit?:()=>Promise<void>) {}
   get configurations() { return new ManualWiseConfiguration(this.pool,(db,id)=>this.actor(db,id,true),fail); }
   async tx<T>(fn:(db:PoolClient)=>Promise<T>) {
     const db=await this.pool.connect();
@@ -43,7 +44,7 @@ export class ManualWiseService {
     catch(e) { await db.query("ROLLBACK").catch(()=>{}); throw e; } finally { db.release(); }
   }
   async actor(db:Pick<PoolClient,"query">,id:string,admin=false) {
-    const a=(await db.query("SELECT id,role,admin_sub_role,email,email_verified_at,email_verified_email FROM users WHERE id=$1",[id])).rows[0];
+    const a=(await db.query("SELECT id,role,admin_sub_role,email,email_verified_at,email_verified_email,to_jsonb(users)->>'company_name' AS company_name FROM users WHERE id=$1",[id])).rows[0];
     if (!a || (admin ? a.role!=="admin" || a.admin_sub_role!==null : !["client","admin"].includes(a.role))) {
       return fail(403,"Only an authorized Super Admin may verify settlements or manage payment instructions.");
     }
@@ -156,9 +157,50 @@ export class ManualWiseService {
     if(config?.revoked_at)blockedReason="These receiving instructions have been revoked. Contact OnSpot billing support before sending funds.";
     const approvedQr=c!=="payout" && config?.currency===curr && allowed && !settled && !blockedReason
       ? config?.qr_file_id ?? null : null;
+    // Billing metadata only; never join applicant names into payment projections.
+    const payer=(await db.query("SELECT to_jsonb(users)->>'company_name' AS company_name FROM users WHERE id=$1",[payerId])).rows[0];
+    let lineItems=[{name:c==="deposit"?"Security deposit":c==="replenishment"?"Deposit replenishment":
+      c==="hiring_invoice"?"Hiring invoice":c==="monthly_invoice"?"Monthly statement":c==="inquiry"?"Inquiry payment":"Invoice",
+      description:r.fee_description??r.description??"",amount}];
+    const dateOnly=(value:any)=>value instanceof Date
+      ? `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,"0")}-${String(value.getDate()).padStart(2,"0")}`
+      : typeof value==="string"?value.slice(0,10):null;
+    let period=r.period_start&&r.period_end?`${dateOnly(r.period_start)} – ${dateOnly(r.period_end)}`:
+      r.invoice_month?dateOnly(r.invoice_month)?.slice(0,7):null;
+    if(c==="invoice" && r.period_id) {
+      const source=(await db.query("SELECT period_start::text,period_end::text FROM invoice_periods WHERE id=$1",[r.period_id])).rows[0];
+      if(source)period=`${source.period_start} – ${source.period_end}`;
+    }
+    if(c!=="payout" && r.hiring_contract_id) {
+      const role=(await db.query(`SELECT j.title FROM hiring_contracts hc
+        JOIN job_submissions js ON js.id=hc.submission_id JOIN jobs j ON j.id=js.job_id WHERE hc.id=$1`,
+        [r.hiring_contract_id])).rows[0]?.title;
+      if(role) lineItems[0].description=role;
+    }
+    if(c==="monthly_invoice") {
+      const lines=(await db.query(`SELECT j.title,l.client_amount,
+          to_jsonb(ti)->>'period_start' AS period_start,to_jsonb(ti)->>'period_end' AS period_end,
+          to_jsonb(ti)->>'hours' AS hours
+        FROM client_monthly_invoice_lines l JOIN talent_invoices ti ON ti.id=l.talent_invoice_id
+        JOIN hiring_contracts hc ON hc.id::text=to_jsonb(ti)->>'hiring_contract_id'
+        JOIN job_submissions js ON js.id=hc.submission_id JOIN jobs j ON j.id=js.job_id
+        WHERE l.client_monthly_invoice_id=$1 ORDER BY ti.id`,[id])).rows;
+      if(lines.length) {
+        lineItems=lines.map((line:any)=>({name:line.title||"Contracted role",
+          description:[line.period_start&&line.period_end?`${line.period_start} – ${line.period_end}`:"",
+            line.hours?`${line.hours} recorded hours`:""].filter(Boolean).join(" · "),
+          amount:String(line.client_amount)}));
+        const credits=wiseCents(r.subtotal)-wiseCents(amount);
+        if(credits>0)lineItems.push({name:"Applied credits",description:"Existing statement credits",
+          amount:`-${credits/BigInt(100)}.${String(credits%BigInt(100)).padStart(2,"0")}`});
+      }
+    }
     return {actor,r,binding,config,view:{
       category:c,id,reference:r.invoice_number ?? r.reference_number ?? id,
       amount,currency:curr,payerId,status:r.status,paymentStatus,
+      companyName:payer?.company_name??null,issuedAt:r.issued_at??r.created_at??null,
+      dueAt:r.due_date??r.due_at??null,period,
+      lineItems,verifiedAt:r.paid_at??r.held_at??history.find((s:any)=>s.status==="paid")?.verified_at??null,
       direction:c==="payout" ? "outgoing" : "incoming",
       payable:allowed && !settled && !blockedReason && !["verification_pending","paid"].includes(latest?.status),
       instructions:c==="payout" ? null : config ? {id:config.id,recipient:config.recipient,instructions:config.instructions,
@@ -228,7 +270,7 @@ export class ManualWiseService {
   }
   async submit(actorId:string,c:WiseCategory,id:string,reference:string,fileId:string) {
     text(500).parse(reference);
-    return this.tx(async db=>{
+    const result = await this.tx(async db=>{
       const o=await this.load(db,actorId,c,id);
       if (!o.view.payable) return fail(409,o.view.blockedReason ?? "A payment proof is already pending or this obligation is settled.");
       if (c==="payout") await this.actor(db,actorId,true);
@@ -247,8 +289,13 @@ export class ManualWiseService {
           VALUES($1,$2,'payment_receipt_submitted',$3,'verification_pending',$4)`,[id,actorId,o.r.status,JSON.stringify({submissionId:row.id})]);
       }
       await this.event(db,actorId,"proof_submitted",o.binding.id,row.id);
+      if(c!=="payout") await queueHiringLifecycleEvent(db,`wise-proof-submitted:${row.id}`,"proof_submitted",
+        {category:c,obligationId:id,proofId:row.id,payerId:o.binding.payer_id,amount:o.view.amount,
+          currency:o.view.currency,reference:reference.trim()});
       return row;
     });
+    void this.afterCommit?.().catch(()=>console.warn("[hiring-lifecycle] post-commit dispatch failed"));
+    return result;
   }
   async submissions(actorId:string,filters:Record<string,string>) {
     await this.actor(this.pool,actorId,true);
@@ -278,7 +325,7 @@ export class ManualWiseService {
   }
   async review(actorId:string,id:string,input:unknown) {
     const v=wiseReviewInput.parse(input);
-    return this.tx(async db=>{
+    const result = await this.tx(async db=>{
       await this.actor(db,actorId,true);
       const found=(await db.query(`SELECT o.category,coalesce(o.inquiry_id,o.hiring_invoice_id::text,o.invoice_id::text,
         o.monthly_invoice_id::text,o.deposit_id::text,o.replenishment_id::text,o.payout_id::text) AS target
@@ -302,6 +349,8 @@ export class ManualWiseService {
             VALUES($1,$2,'payment_rejected','verification_pending','payment_failed',$3)`,[found.target,actorId,JSON.stringify({reason:v.reason,submissionId:id})]);
         }
         await this.event(db,actorId,"proof_rejected",o.binding.id,id,{reason:v.reason});
+        if(c!=="payout") await queueHiringLifecycleEvent(db,`wise-proof-rejected:${id}`,"proof_rejected",
+          {category:c,obligationId:found.target,proofId:id,payerId:o.binding.payer_id,reason:v.reason});
         return {id,status:"rejected"};
       }
       if (o.view.paymentStatus==="paid" || o.view.blockedReason) return fail(409,o.view.blockedReason ?? "Obligation is already settled.");
@@ -329,6 +378,8 @@ export class ManualWiseService {
       await this.event(db,actorId,c==="payout" ? "payout_disbursed" : "payment_verified",o.binding.id,id,v);
       return result;
     });
+    void this.afterCommit?.().catch(()=>console.warn("[hiring-lifecycle] post-commit dispatch failed"));
+    return result;
   }
   private async settle(db:PoolClient,c:WiseCategory,r:any,amount:string,v:z.infer<typeof wiseReviewInput>,actor:string) {
     if (c==="inquiry") await db.query(`UPDATE inquiries SET status='paid',payment_status='verified',paid_at=now(),
@@ -336,7 +387,10 @@ export class ManualWiseService {
     if (c==="invoice") await db.query(`UPDATE invoices SET status='paid',paid_at=now(),payment_method='wire',
       external_ref=$2,updated_at=now() WHERE id=$1`,[r.id,v.verifiedReference]);
     if (c==="monthly_invoice") await db.query(`UPDATE client_monthly_invoices SET payment_status='paid',paid_at=now() WHERE id=$1`,[r.id]);
-    if (c==="deposit") await db.query(`UPDATE security_deposits SET status='held',held_at=now(),updated_at=now() WHERE id=$1`,[r.id]);
+    if (c==="deposit") {
+      await db.query(`UPDATE security_deposits SET status='held',held_at=now(),updated_at=now() WHERE id=$1`,[r.id]);
+      await activateFundedEngagement(db,r.hiring_contract_id,actor);
+    }
     if (c==="replenishment") {
       const deposit=(await db.query("SELECT status FROM security_deposits WHERE hiring_contract_id=$1 FOR UPDATE",[r.hiring_contract_id])).rows[0];
       if (!["held","suspended"].includes(deposit?.status)) return fail(409,"This deposit top-up needs lifecycle review before settlement.");

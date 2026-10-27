@@ -29,6 +29,7 @@ export const APPLICATION_STATUS_META: Record<string, StatusMeta> = {
   offer_declined:{ label: "Offer Declined", talentLabel: "Offer Declined", bgClass: "bg-slate-100", textClass: "text-slate-700", borderClass: "border-slate-200", isTerminal: false },
   offer_expired:{ label: "Offer Expired", talentLabel: "Offer Expired", bgClass: "bg-slate-100", textClass: "text-slate-700", borderClass: "border-slate-200", isTerminal: false },
   contract_sent:{ label: "Contract Sent", talentLabel: "Contract Sent", bgClass: "bg-emerald-100", textClass: "text-emerald-800", borderClass: "border-emerald-200", isTerminal: false },
+  contract_signed:{ label: "Contract signed · deposit due", talentLabel: "Contract signed · deposit due", bgClass: "bg-amber-100", textClass: "text-amber-900", borderClass: "border-amber-200", isTerminal: false },
   hired:        { label: "Hired",        talentLabel: "Hired",          bgClass: "bg-green-100",  textClass: "text-green-800",  borderClass: "border-green-200",  isTerminal: true  },
   rejected:     { label: "Rejected",     talentLabel: "Not Selected",   bgClass: "bg-red-100",    textClass: "text-red-800",    borderClass: "border-red-200",    isTerminal: true  },
   withdrawn:    { label: "Withdrawn",    talentLabel: "Withdrawn",      bgClass: "bg-slate-100",  textClass: "text-slate-700",  borderClass: "border-slate-200",  isTerminal: true  },
@@ -57,6 +58,7 @@ export const STATUS_PIPELINE = [
   "offer_extended",
   "offer_accepted",
   "contract_sent",
+  "contract_signed",
   "hired",
 ] as const;
 
@@ -65,7 +67,7 @@ export type PipelineStatus = typeof STATUS_PIPELINE[number];
 /** Active (non-terminal) statuses for filter grouping */
 export const ACTIVE_STATUSES = new Set([
   "submitted", "new", "under_review", "reviewed", "shortlisted", "interview",
-  "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent",
+  "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent", "contract_signed",
 ]);
 
 /** Terminal statuses for filter grouping */

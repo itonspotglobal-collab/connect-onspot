@@ -63,6 +63,8 @@ const APPLICATION_STATUSES = [
   { value: 'interviewing',   label: 'Interviewing' },
   { value: 'offer_extended', label: 'Offer Extended' },
   { value: 'offer_accepted', label: 'Offer Accepted' },
+  { value: 'contract_sent', label: 'Contract Sent' },
+  { value: 'contract_signed', label: 'Contract signed · deposit due' },
   { value: 'hired',          label: 'Hired' },
   { value: 'rejected',       label: 'Rejected' },
   { value: 'withdrawn',      label: 'Withdrawn' },

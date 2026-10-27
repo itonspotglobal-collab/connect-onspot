@@ -115,11 +115,11 @@ const STATUS_LABELS: Record<string, string> = {
   under_review: 'Under Review', reviewed: 'Reviewed', shortlisted: 'Shortlisted',
   rejected: 'Rejected', interviewing: 'Interviewing', offer_extended: 'Offer Extended',
   offer_expired: 'Offer Expired', offer_accepted: 'Offer Accepted',
-  offer_declined: 'Offer Declined', contract_sent: 'Contract Sent', hired: 'Hired',
+  offer_declined: 'Offer Declined', contract_sent: 'Contract Sent', contract_signed: 'Contract signed · deposit due', hired: 'Hired',
 };
 
 function applicationStatusVariant(s: string): 'default' | 'secondary' | 'outline' {
-  if (['hired', 'offer_accepted', 'contract_sent'].includes(s)) return 'default';
+  if (['hired', 'offer_accepted', 'contract_sent', 'contract_signed'].includes(s)) return 'default';
   if (['shortlisted', 'interviewing', 'offer_extended'].includes(s)) return 'secondary';
   return 'outline';
 }

@@ -55,8 +55,7 @@ function getPaginationPages(current: number, total: number): (number | "...")[] 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 // Canonical admin-settable statuses (mirrors ADMIN_SETTABLE_STATUSES in
-// shared/submissionStatuses.ts). 'contract_sent' and 'hired' are reached only
-// via the hiring-contract workflow, never by direct status change.
+// shared/submissionStatuses.ts). Contract lifecycle statuses are workflow-owned.
 const VALID_STATUSES = [
   "new", "under_review", "reviewed", "shortlisted", "interviewing",
   "offer_extended", "offer_accepted", "offer_declined", "rejected", "withdrawn",
@@ -64,7 +63,8 @@ const VALID_STATUSES = [
 const GENERIC_ADMIN_EMAIL_STATUSES = [
   "new", "under_review", "reviewed", "shortlisted", "rejected",
 ] as const;
-type AppStatus = typeof VALID_STATUSES[number] | "submitted" | "hired";
+type AppStatus = typeof VALID_STATUSES[number] | "submitted" | "contract_sent" | "contract_signed" | "hired";
+const FILTERABLE_STATUSES = [...VALID_STATUSES, "contract_sent", "contract_signed", "hired"] as const;
 
 const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   submitted:    { label: "Submitted",    cls: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -79,6 +79,7 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
   offer_accepted:{ label: "Offer Accepted", cls: "bg-teal-100 text-teal-800 border-teal-200" },
   offer_declined:{ label: "Offer Declined", cls: "bg-slate-100 text-slate-700 border-slate-200" },
   contract_sent:{ label: "Contract Sent", cls: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  contract_signed:{ label: "Contract signed · deposit due", cls: "bg-amber-100 text-amber-900 border-amber-200" },
   hired:        { label: "Hired",        cls: "bg-green-100 text-green-800 border-green-200" },
   rejected:     { label: "Rejected",     cls: "bg-red-100 text-red-800 border-red-200" },
   withdrawn:    { label: "Withdrawn",    cls: "bg-slate-100 text-slate-700 border-slate-200" },
@@ -612,7 +613,7 @@ function DetailDialog({
                disabledReason={!detail.hiringPipelineEligible ? "Hiring requires a linked Talent application to a real approved job, or an eligible Client invitation." : !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(detail.status) ? "This application is not at an interview scheduling stage." : undefined}
              />
 
-            {(detail.status === "offer_accepted" || detail.status === "contract_sent" || detail.status === "hired" || detail.acceptedOfferId) && (
+            {(detail.status === "offer_accepted" || detail.status === "contract_sent" || detail.status === "contract_signed" || detail.status === "hired" || detail.acceptedOfferId) && (
               <ContractApplicationPanel submissionId={detail.id} acceptedOfferId={detail.acceptedOfferId} />
             )}
 
@@ -906,10 +907,12 @@ function StatusDialog({
             {currentStatus !== "hired" && (
               <p className="text-xs text-slate-500">
                 {currentStatus === "offer_accepted"
-                  ? "Next, create the hiring contract. Hired is set automatically after OnSpot and the Talent both sign it."
+                  ? "Next, prepare and sign the hiring contract. Engagement activation follows verified deposit payment."
                   : currentStatus === "contract_sent"
-                    ? "Hired is set automatically after OnSpot and the Talent both sign the contract."
-                    : "Hired becomes available through the contract workflow after the Talent accepts an offer."}
+                    ? "Complete the required signatures. A deposit invoice follows the fully signed contract."
+                    : currentStatus === "contract_signed"
+                      ? "The contract is signed. Engagement activates only after the security deposit is independently verified."
+                      : "Hired becomes available through the contract and verified deposit workflow after the Talent accepts an offer."}
               </p>
             )}
           </div>
@@ -1323,7 +1326,7 @@ export default function AdminJobApplications() {
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="All statuses" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_all">All statuses</SelectItem>
-                    {VALID_STATUSES.map(s => <SelectItem key={s} value={s}>{STATUS_CFG[s].label}</SelectItem>)}
+                    {FILTERABLE_STATUSES.map(s => <SelectItem key={s} value={s}>{STATUS_CFG[s].label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

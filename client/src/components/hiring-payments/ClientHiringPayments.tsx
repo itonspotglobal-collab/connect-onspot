@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RefreshCw, ShieldCheck, ReceiptText, Eye } from "lucide-react";
-import { ManualWisePaymentPanel } from "@/components/manual-wise/ManualWisePaymentPanel";
+import { Link } from "wouter";
 import {
   formatPaymentAmount,
   formatPaymentDate,
@@ -48,7 +48,12 @@ function InvoiceDetail({ invoice, history, onClose, onRetry }: {
             </div>
           )}
           {invoice.status !== "paid" && (
-            <ManualWisePaymentPanel category="hiring_invoice" id={invoice.id} title="Hiring invoice payment and receipt" />
+            <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 p-4 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+              <p className="text-sm text-muted-foreground">Open the secure payment page to review the invoice, approved instructions, and receipt history.</p>
+              <Button asChild className="mt-3">
+                <Link href={`/client/payments/hiring_invoice/${encodeURIComponent(invoice.id)}`}>Continue to secure checkout</Link>
+              </Button>
+            </div>
           )}
           {history.length > 0 && (
             <div>

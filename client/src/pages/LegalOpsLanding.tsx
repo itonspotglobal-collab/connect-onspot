@@ -160,8 +160,8 @@ function GuaranteeCarousel() {
               idx === activeIndex
                 ? "opacity-100 translate-x-0 scale-100"
                 : idx < activeIndex
-                ? "opacity-0 -translate-x-8 scale-95 absolute inset-0"
-                : "opacity-0 translate-x-8 scale-95 absolute inset-0"
+                ? "opacity-0 sm:-translate-x-8 scale-95 absolute inset-0"
+                : "opacity-0 sm:translate-x-8 scale-95 absolute inset-0"
             }`}
           >
             <div className="w-full max-w-3xl mx-auto px-4">
@@ -897,7 +897,7 @@ export default function LegalOpsLanding() {
               <div className="hero-fade-up space-y-6 md:space-y-8 relative">
                 {/* Subtle Infrastructure Grid Texture with Radial Fade */}
                 <div 
-                  className="absolute -inset-8 sm:-inset-16 -z-10 pointer-events-none"
+                  className="absolute inset-0 sm:-inset-16 -z-10 pointer-events-none"
                   style={{
                     backgroundImage: `
                       linear-gradient(rgba(67, 83, 255, 0.4) 1px, transparent 1px),

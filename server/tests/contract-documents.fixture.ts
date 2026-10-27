@@ -38,6 +38,7 @@ before(async () => {
   await query(readFileSync("migrations/0035_private_contract_documents.sql", "utf8"));
   await query(readFileSync("migrations/0036_offer_response_contract_package.sql", "utf8"));
   await query(`CREATE TABLE IF NOT EXISTS platform_settings(key text PRIMARY KEY,value text)`);
+  await query(readFileSync("migrations/0043_deposit_funded_activation.sql", "utf8"));
   for (const [id, role] of [[client, "client"], [other, "client"], [admin, "admin"], [talent, "talent"], [otherTalent, "talent"], [owner, "client"], [member, "client"]]) {
     await query(`INSERT INTO users(id,email,role,password_hash,first_name,last_name) VALUES($1,$2,$3,'not-a-login-hash','Fixture','Person')`, [id, `${id}@fixture.example`, role]);
   }
@@ -92,9 +93,9 @@ for (const workflow of ["application", "client_invitation"] as const) {
         await assert.rejects(sign(prepared.id, client));
         await sign(prepared.id, admin);
       }
-      assert.equal(await status(prepared.submission), "hired");
+      assert.equal(await status(prepared.submission), "contract_signed");
       const contract = (await query("SELECT * FROM hiring_contracts WHERE id=$1", [prepared.id])).rows[0];
-      assert.equal(contract.status, "signed"); assert.ok(contract.billing_activated_at);
+      assert.equal(contract.status, "signed"); assert.equal(contract.billing_activated_at,null);
       assert.equal(await deposits(prepared.id), 1);
       const detail = await documents.contractDetail(prepared.id, actor(talent));
       assert.ok((await documents.listContracts(actor(talent))).some(row => row.id === prepared.id));

@@ -549,7 +549,7 @@ function SendConfirmDialog({
   isSending: boolean;
 }) {
   // Canonical admin-settable stages (mirrors ADMIN_SETTABLE_STATUSES).
-  // 'contract_sent' and 'hired' are reached only via the hiring-contract workflow.
+  // Contract lifecycle states are reached only via the hiring-contract workflow.
   const STAGES = [
     { value: "", label: "— No stage change —" },
     { value: "under_review",   label: "Under Review" },

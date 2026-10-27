@@ -193,7 +193,7 @@ export default function AdminInterviewers() {
   return (
     <div className="container mx-auto p-6 max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex min-w-0 flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"

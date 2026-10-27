@@ -44,6 +44,13 @@ async function apiFetch(path: string, opts?: RequestInit) {
 }
 
 const CATEGORIES = [
+  { value: "hiring_offer_accepted", label: "Hiring: Offer Accepted" },
+  { value: "hiring_deposit_invoice", label: "Hiring: Deposit Invoice" },
+  { value: "hiring_payment_review", label: "Hiring: Payment Review" },
+  { value: "hiring_payment_received", label: "Hiring: Proof Received" },
+  { value: "hiring_payment_rejected", label: "Hiring: Proof Rejected" },
+  { value: "hiring_client_active", label: "Hiring: Client Activation" },
+  { value: "hiring_talent_active", label: "Hiring: Talent Activation" },
   { value: "application_received",   label: "Application Received" },
   { value: "under_review",           label: "Under Review" },
   { value: "shortlisted",            label: "Shortlisted" },
@@ -67,12 +74,20 @@ const STAGES = [
   { value: "shortlisted",   label: "Shortlisted" },
   { value: "interview",     label: "Interview" },
   { value: "offered",       label: "Offered" },
+  { value: "offer_accepted", label: "Offer Accepted" },
+  { value: "contract_signed", label: "Contract Signed · Deposit Due" },
   { value: "hired",         label: "Hired" },
   { value: "rejected",      label: "Rejected" },
   { value: "withdrawn",     label: "Withdrawn" },
 ];
 
 const VARIABLES = [
+  { key: "talent_name", label: "Talent Name" },
+  { key: "client_name", label: "Client Name" },
+  { key: "start_date", label: "Accepted Start Date" },
+  { key: "payment_amount", label: "Payment Amount" },
+  { key: "payment_reference", label: "Payment Reference" },
+  { key: "rejection_reason", label: "Rejection Reason" },
   { key: "applicant_first_name", label: "First Name" },
   { key: "applicant_last_name",  label: "Last Name" },
   { key: "applicant_full_name",  label: "Full Name" },
@@ -193,7 +208,7 @@ export default function AdminEmailTemplateEditor() {
 
       {/* Sticky header */}
       <div className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-        <div className="mx-auto max-w-4xl px-4 py-3 flex items-center gap-3">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-4 py-3">
           <button
             onClick={() => navigate("/admin/email-templates")}
             className="text-slate-500 hover:text-slate-700 transition-colors"

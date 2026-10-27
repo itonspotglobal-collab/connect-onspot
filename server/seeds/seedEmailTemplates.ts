@@ -59,6 +59,41 @@ function brandedClientTemplate(
 }
 
 export const DEFAULT_TEMPLATES: TemplateRow[] = [
+  brandedTemplate({
+    name:"Offer Accepted — Sign Contract",category:"hiring_offer_accepted",stage:null,isDefault:true,
+    subject:"{{talent_name}} accepted your offer for {{job_title}}. Next: sign the contract.",
+    content:`<p>{{talent_name}} accepted your offer for <strong>{{job_title}}</strong>.</p><p>Next: review and sign the contract when the prepared document is available.</p>${button("{{portal_url}}","Review contract")}`,
+  }),
+  brandedTemplate({
+    name:"Deposit Invoice",category:"hiring_deposit_invoice",stage:null,isDefault:true,
+    subject:"Your deposit invoice for {{job_title}}",
+    content:`<p>The contract is fully signed. Your security deposit invoice is ready: <strong>{{payment_amount}}</strong>.</p><p>Your engagement activates only after independent payment verification.</p>${button("{{portal_url}}","View deposit invoice")}`,
+  }),
+  brandedTemplate({
+    name:"Payment Submitted for Verification",category:"hiring_payment_review",stage:null,isDefault:true,
+    subject:"Payment submitted for verification",
+    content:`<p>Client: {{client_name}}</p><p>Job: {{job_title}}</p><p>Amount: {{payment_amount}}</p><p>Claimed reference: {{payment_reference}}</p><p>A receipt does not establish settlement. Independently verify funds before approval.</p>${button("{{portal_url}}","Review payment")}`,
+  }),
+  brandedTemplate({
+    name:"Payment Receipt Acknowledgement",category:"hiring_payment_received",stage:null,isDefault:true,
+    subject:"We've received your payment submission",
+    content:`<p>We've received your payment submission. Validation can take up to 24 hours. We'll email you once it's confirmed.</p><p>Your receipt is pending independent verification, not confirmation that funds have settled.</p>${button("{{portal_url}}","View payment status")}`,
+  }),
+  brandedTemplate({
+    name:"Payment Proof Rejected",category:"hiring_payment_rejected",stage:null,isDefault:true,
+    subject:"Please resubmit your payment proof",
+    content:`<p>Your payment proof could not be approved.</p><p>Reason: {{rejection_reason}}</p>${button("{{portal_url}}","Submit proof again")}`,
+  }),
+  brandedTemplate({
+    name:"Client Engagement Active",category:"hiring_client_active",stage:null,isDefault:true,
+    subject:"Your engagement with {{talent_name}} is now active",
+    content:`<p>Your security deposit has been independently verified.</p><p>Your engagement for <strong>{{job_title}}</strong> starts on <strong>{{start_date}}</strong>.</p><section><h2>Onboarding next steps</h2><p>Review the signed agreement and coordinate onboarding with your OnSpot team before the agreed start date.</p></section>${button("{{portal_url}}","Open dashboard")}`,
+  }),
+  brandedTemplate({
+    name:"Talent Engagement Active",category:"hiring_talent_active",stage:null,isDefault:true,
+    subject:"Your engagement for {{job_title}} is now active",
+    content:`<p>Your engagement is now active. Your agreed start date is <strong>{{start_date}}</strong>.</p><section><h2>Onboarding next steps</h2><p>Review your signed agreement and coordinate onboarding with your OnSpot team before your agreed start date.</p></section>${button("{{portal_url}}","Open Talent Portal")}`,
+  }),
   brandedClientTemplate({
     name: "Job Posted on Your Behalf", category: "job_posted_on_behalf", stage: null, isDefault: true,
     subject: "A job post was created for you — {{job_title}}",

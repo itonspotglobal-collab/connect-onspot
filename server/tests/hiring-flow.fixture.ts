@@ -2,6 +2,9 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { queueHiringLifecycleEvent } from "../services/hiringLifecycleEvents";
+import { requireVerifiedHiringPayment } from "../services/hiringPaymentService";
+import { hiringPaymentFailure } from "../routes/hiringPayments";
 import ts from "typescript";
 import jwt from "jsonwebtoken";
 import { pool, query } from "./fixtures/hiring-db";
@@ -61,13 +64,15 @@ function handler(method: string, path: string): any {
   const dependencies: Record<string, any> = {
     pool, query, storage, jwt, escHtml, filterMessageContent, ...guard, ...times, ...calendar, ...emails, ...currency,
     ...applicationNotifications, sendClientNewApplicationEmail,
+    queueHiringLifecycleEvent,dispatchHiringLifecycleEvents:async()=>{},
+    requireVerifiedHiringPayment,hiringPaymentFailure,
     require: (name: string) => {
       if (name.includes("microsoftGraphEmailService")) return graphEmail;
       if (name.includes("emailVariableResolver")) return templates;
       throw new Error(`Unexpected dynamic dependency: ${name}`);
     },
   };
-  const script = `${declaration("normalizeMeetingLink")}\n${declaration("loadTalentOwnedOffer")}\n${declaration("fireAutoApplicationEmail")}\n${declaration("fireInvitationEmail")}\nreturn (${text});`;
+  const script = `${declaration("respondUsdOnly")}\n${declaration("normalizeMeetingLink")}\n${declaration("loadTalentOwnedOffer")}\n${declaration("fireAutoApplicationEmail")}\n${declaration("fireInvitationEmail")}\nreturn (${text});`;
   const compiled = ts.transpileModule(script, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
@@ -80,9 +85,10 @@ async function invoke(method: string, path: string, body: any, actor = client, p
     status(code: number) { this.statusCode = code; return this; },
     json(value: any) { this.body = value; return this; },
   };
-  const req = {
+  const req:any = {
     body, params, query: {}, headers: {}, user: { id: actor },
-    talentAuth: { candidateId: candidate }, protocol: "https", get: () => "fixture.test", ...extra,
+    talentAuth: { candidateId: candidate }, protocol: "https",
+    get: (name:string) => name.toLowerCase()==="host"?"fixture.test":req.headers[name.toLowerCase()], ...extra,
   };
   await handler(method, path)(req, response);
   return response;
@@ -161,6 +167,7 @@ before(async () => {
   await query(readFileSync("migrations/0036_offer_response_contract_package.sql", "utf8"));
   // This existing runtime-managed table is not represented in Drizzle schema.
   await query(`CREATE TABLE IF NOT EXISTS platform_settings (key text PRIMARY KEY, value text)`);
+  await query(readFileSync("migrations/0043_deposit_funded_activation.sql", "utf8"));
 });
 
 after(async () => {
@@ -284,10 +291,10 @@ for (const workflow of ["application", "client_invitation"] as const) {
     assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_sent");
     const signed = await updateHiringContract(contract.id, { actorRole: "admin", adminId: admin, onspotSigned: true });
     assert.equal(signed.status, "signed");
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "hired");
+    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_signed");
     const terminalOutcome = await invoke("patch", "/api/client/interviews/:id/outcome", { outcome: "reject" }, client, { id: interviewId });
     assert.equal(terminalOutcome.statusCode, 409);
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "hired");
+    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_signed");
     const blocked = await invoke("post", "/api/client/offers", { submissionId: id, rate: 1500 });
     assert.equal(blocked.statusCode, 409);
     await query(`UPDATE interviews SET status='rescheduled', current_proposal_owner='client' WHERE id=$1`, [interviewId]);
@@ -295,7 +302,7 @@ for (const workflow of ["application", "client_invitation"] as const) {
       { status: "confirmed", confirmedTime: instant, confirmedTimeZone: slot.timezone }, client, { id: interviewId });
     assert.equal(terminalInterview.statusCode, 409, JSON.stringify(terminalInterview.body));
     assert.equal(terminalInterview.body.error, "submission_not_interviewable");
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "hired");
+    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_signed");
   });
 }
 

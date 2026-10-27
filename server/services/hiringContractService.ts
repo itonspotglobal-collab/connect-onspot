@@ -7,7 +7,8 @@
  *
  * Status flow:
  *   contract created from an ACCEPTED offer → submission 'contract_sent'
- *   both signatures recorded               → submission 'hired' (terminal)
+ *   required signatures recorded           → 'contract_signed', deposit due
+ *   independently verified deposit         → 'hired' (settlement service)
  *
  * 'hired' and 'contract_sent' are never settable via the direct status PATCH
  * endpoints — this module is the only writer of those transitions.
@@ -25,11 +26,8 @@ import { loadAdminFormalSubmission } from "./formalPipelineGuard.js";
 import { computeDepositAmount } from "../lib/billing.js";
 import { query } from "../db.js";
 import { BILLING_CURRENCY, requireUsdCurrency } from "../../shared/currency";
-import {
-  notifyClientOfTalentHired,
-  notifyTalentOfApplicationStatusChange,
-} from "./applicationNotificationService.js";
-import { sendTalentHiredEmail } from "./emailCompanionService.js";
+import { queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
+import { dispatchHiringLifecycleEvents } from "./hiringLifecycleDispatch";
 
 export class ContractError extends Error {
   status: number;
@@ -198,7 +196,7 @@ export async function createHiringContract(params: {
 
 /**
  * Update document/template and/or record signatures.
- * When both signatures are set, contract → 'signed' and submission → 'hired'
+ * When required signatures are set, contract → 'signed' and submission → 'contract_signed'
  * in the same transaction.
  */
 export async function updateHiringContract(
@@ -315,7 +313,6 @@ export async function updateHiringContract(
 
     if (fullySigned && contract.status !== "signed") {
       sets.push(`status = 'signed'`);
-      sets.push(`billing_activated_at = NOW()`);
     }
     sets.push(`updated_at = NOW()`);
 
@@ -324,7 +321,7 @@ export async function updateHiringContract(
       [...params, contractId],
     );
 
-    // Terminal transition: both parties signed → submission 'hired'
+    // Signing issues the deposit; independent settlement alone activates hiring.
     if (fullySigned) {
       const sub = await client.query(
         `SELECT id, status FROM job_submissions WHERE id = $1 FOR UPDATE`,
@@ -342,7 +339,7 @@ export async function updateHiringContract(
         });
       }
       await client.query(
-        `UPDATE job_submissions SET status = 'hired', updated_at = NOW() WHERE id = $1`,
+        `UPDATE job_submissions SET status = 'contract_signed', updated_at = NOW() WHERE id = $1`,
         [contract.submission_id],
       );
       hiredTransition = {
@@ -352,13 +349,11 @@ export async function updateHiringContract(
       await client.query(
         `INSERT INTO job_application_status_history
            (application_id, previous_status, new_status, note, changed_by)
-         VALUES ($1, $2, 'hired', 'Hiring contract fully signed by OnSpot and talent', $3)`,
+          VALUES ($1, $2, 'contract_signed', 'Required contract signatures complete; security deposit awaiting verification', $3)`,
         [contract.submission_id, previousStatus, adminId ?? null],
       );
 
-      // Contract activation starts the deposit lifecycle. Keep this in the
-      // same transaction as the signing transition so an active contract
-      // cannot exist without its ledger deposit.
+      // Keep the existing deposit principal formula and canonical ledger row.
       const offerForDeposit = await client.query(
         `SELECT rate, rate_currency FROM offers WHERE id = $1`,
         [contract.offer_id],
@@ -367,81 +362,29 @@ export async function updateHiringContract(
       if (Number.isFinite(talentRate) && talentRate >= 0) {
         const depositCurrency = signingCurrency ?? BILLING_CURRENCY;
         await client.query(
-          `INSERT INTO security_deposits (hiring_contract_id, amount, currency, status)
-           VALUES ($1, $2, $3, 'pending')
+          `INSERT INTO security_deposits (hiring_contract_id, amount, currency, status, invoice_number)
+           VALUES ($1, $2, $3, 'pending', $4)
            ON CONFLICT (hiring_contract_id) DO NOTHING`,
           [
             contract.id,
             computeDepositAmount(talentRate).toFixed(2),
             depositCurrency,
+            `DEP-${contract.id}`,
           ],
         );
       }
+      const deposit = (await client.query("SELECT id FROM security_deposits WHERE hiring_contract_id=$1", [contract.id])).rows[0];
+      if (!deposit) throw new ContractError(409,{error:"deposit_amount_required",message:"A finalized accepted-offer rate is required to issue the deposit."});
+      await queueHiringLifecycleEvent(client,`deposit-issued:${contract.id}`,"deposit_issued",
+        {submissionId:contract.submission_id,contractId:contract.id,depositId:deposit.id});
     }
     return { contract: updated.rows[0], hiredTransition };
   }, options?.transactionClient);
 
   if (result.hiredTransition && !options?.transactionClient) {
-    const { submissionId, previousStatus } = result.hiredTransition;
-    await dispatchHiringActivation(submissionId, previousStatus);
+    void dispatchHiringLifecycleEvents();
   }
   return result.contract;
-}
-
-/** Called only after the owning signing transaction commits. */
-export async function dispatchHiringActivation(submissionId: string, previousStatus = "contract_sent"): Promise<void> {
-    try {
-      const contextResult = await query(
-        `SELECT js.talent_id, js.client_id, js.email, js.first_name, js.last_name,
-                js.applicant_name, js.job_id, j.title AS job_title, j.company AS company_name,
-                c.id AS candidate_id
-           FROM job_submissions js
-           JOIN jobs j ON j.id = js.job_id
-           LEFT JOIN candidates c ON c.user_id = js.talent_id
-          WHERE js.id = $1
-          LIMIT 1`,
-        [submissionId],
-      );
-      const context = contextResult.rows[0];
-      if (context) {
-        const talentName =
-          [context.first_name, context.last_name].filter(Boolean).join(" ")
-          || context.applicant_name
-          || "The Talent";
-        await Promise.all([
-          notifyTalentOfApplicationStatusChange({
-            submissionId,
-            talentUserId: context.talent_id,
-            candidateId: context.candidate_id,
-            applicantEmail: context.email,
-            jobTitle: context.job_title,
-            companyName: context.company_name,
-            previousStatus,
-            newStatus: "hired",
-            eventKey: `application-status:${submissionId}:${previousStatus}:hired`,
-          }),
-          notifyClientOfTalentHired({
-            submissionId,
-            clientUserId: context.client_id,
-            talentName,
-            jobTitle: context.job_title,
-          }),
-        ]);
-        void sendTalentHiredEmail({
-          submissionId,
-          talentUserId: context.talent_id,
-          recipientEmail: context.email,
-          firstName: context.first_name,
-          lastName: context.last_name,
-          applicantName: context.applicant_name,
-          jobId: context.job_id,
-          jobTitle: context.job_title,
-          companyName: context.company_name,
-        });
-      }
-    } catch (error) {
-      console.error(`[hiring-contract] committed Hired side effects failed for ${submissionId}:`, error);
-    }
 }
 
 /**

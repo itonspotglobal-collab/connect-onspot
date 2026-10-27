@@ -288,6 +288,7 @@ function ApplicationCard({
     "offer_extended",
     "offer_accepted",
     "contract_sent",
+    "contract_signed",
   ]).has(app.applicationStatus);
 
   const submittedDate = app.submittedAt
@@ -457,11 +458,11 @@ function filterApplications(apps: TalentApplication[], filter: FilterKey) {
     case "active":
       return apps.filter((a) =>
         ACTIVE_STATUSES.has(a.applicationStatus)
-        && !["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent"].includes(a.applicationStatus)
+        && !["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent", "contract_signed"].includes(a.applicationStatus)
       );
     case "interview":
       return apps.filter((a) =>
-        ["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent"].includes(a.applicationStatus)
+        ["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent", "contract_signed"].includes(a.applicationStatus)
       );
     case "completed":
       return apps.filter((a) => COMPLETED_STATUSES.has(a.applicationStatus));
@@ -1665,14 +1666,14 @@ export default function TalentApplications() {
   );
   const filtered = filterApplications(apps, filter);
   const appliedJobIds = new Set(apps.map((a) => a.job.id));
-  const contractApplications = apps.filter((app) => ["contract_sent", "hired"].includes(app.applicationStatus));
+  const contractApplications = apps.filter((app) => ["contract_sent", "contract_signed", "hired"].includes(app.applicationStatus));
 
   // Stats
   const totalCount       = apps.length;
   const underReviewCount = apps.filter((a) => a.applicationStatus === "under_review" || a.applicationStatus === "reviewed").length;
   const shortlistedCount = apps.filter((a) => a.applicationStatus === "shortlisted").length;
   const interviewCount   = apps.filter((a) =>
-    ["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent"].includes(a.applicationStatus)
+    ["interview", "interviewing", "offered", "offer_extended", "offer_accepted", "contract_sent", "contract_signed"].includes(a.applicationStatus)
   ).length;
 
   const filterTabs: { key: FilterKey; label: string; count: number }[] = [

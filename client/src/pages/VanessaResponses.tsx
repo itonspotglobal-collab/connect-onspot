@@ -203,9 +203,9 @@ export default function VanessaResponses() {
   }, [threads, selectedThreadId]);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen min-w-0 flex-col bg-background md:flex-row">
       {/* Left Sidebar - Thread List */}
-      <div className="w-80 border-r border-border flex flex-col bg-card">
+      <div className="flex max-h-[45vh] w-full shrink-0 flex-col border-b border-border bg-card md:max-h-none md:w-80 md:border-b-0 md:border-r">
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-3">
@@ -294,7 +294,7 @@ export default function VanessaResponses() {
       </div>
 
       {/* Main Panel - Chat Messages */}
-      <div className="flex-1 flex flex-col bg-background">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
         {selectedThreadId ? (
           <>
             {/* Chat Header */}
