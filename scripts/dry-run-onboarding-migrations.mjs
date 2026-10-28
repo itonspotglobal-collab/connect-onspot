@@ -1,7 +1,7 @@
 /**
  * No live connection support. Reads a read-only catalog export, then owns and
  * destroys an isolated local PostgreSQL cluster. Never reads DATABASE_URL.
- * Usage: node scripts/dry-run-onboarding-migrations.mjs /tmp/catalog.json
+ * Usage: node scripts/dry-run-onboarding-migrations.mjs /tmp/catalog.json [/tmp/publish-diff.json]
  */
 import { readFile, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -64,6 +64,25 @@ try {
     'triggers',(SELECT jsonb_agg(pg_get_triggerdef(t.oid) ORDER BY t.tgrelid::regclass::text,t.tgname) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid WHERE c.relnamespace='public'::regnamespace AND NOT t.tgisinternal)
     ) AS snapshot`)).rows[0].snapshot;
   const originalDefinitions=await definitions();
+  if(process.argv[3]) {
+    const diff=JSON.parse(await readFile(process.argv[3],"utf8"));
+    assert.equal(diff.success,true,"Publish diff must have been computed successfully");
+    assert.equal(diff.hasStructuralDataLoss,false,"Refusing destructive publish diff in this rehearsal");
+    await db.query("BEGIN");
+    for(const statement of diff.statementsToExecute)await db.query(statement);
+    const sourceCheck=(await db.query(`SELECT convalidated FROM pg_constraint
+      WHERE conrelid='security_deposits'::regclass AND conname='security_deposits_source_check'`)).rows[0];
+    assert.equal(sourceCheck?.convalidated,true,"Publish must create a validated source constraint");
+    for(const old of baseline) {
+      const current=(await db.query("SELECT to_jsonb(d) AS row FROM security_deposits d WHERE id=$1",[old.id])).rows[0]?.row;
+      assert.ok(current,`Missing original deposit ${old.id}`);
+      for(const [key,value] of Object.entries(old.row))assert.deepEqual(current[key],value,`${old.id}.${key}`);
+    }
+    assert.equal((await db.query("SELECT count(*)::int n FROM security_deposits")).rows[0].n,baseline.length);
+    await db.query("ROLLBACK");
+    assert.deepEqual(await definitions(),originalDefinitions);
+    console.log(`PASS: ${diff.statementsToExecute.length} generated Publish statements executed and rolled back; validated source check; original ledger unchanged`);
+  }
   const sqls=await Promise.all(["0044_contractor_onboarding.sql","0045_onboarding_billing_activation.sql"].map(n=>readFile(join("migrations",n),"utf8")));
   // Transactional rollback rehearsal.
   await db.query("BEGIN");

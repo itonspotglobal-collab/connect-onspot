@@ -2431,6 +2431,7 @@ export const securityDeposits = pgTable("security_deposits", {
   index("idx_security_deposits_status").on(table.status),
   uniqueIndex("security_deposits_accepted_offer_unique").on(table.offerId).where(sql`${table.offerId} IS NOT NULL`),
   uniqueIndex("security_deposits_invoice_number_unique").on(table.invoiceNumber).where(sql`${table.invoiceNumber} IS NOT NULL`),
+  check("security_deposits_source_check", sql`${table.hiringContractId} IS NOT NULL OR (${table.offerId} IS NOT NULL AND ${table.submissionId} IS NOT NULL)`),
   check("security_deposits_status_check", sql`${table.status} IN ('pending', 'held', 'drawn', 'replenishment_pending', 'suspended', 'forfeited', 'applied', 'void')`),
 ]);
 

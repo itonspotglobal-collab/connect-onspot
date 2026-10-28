@@ -31,7 +31,7 @@ ALTER TABLE security_deposits ADD CONSTRAINT security_deposits_status_check
 DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='security_deposits'::regclass AND conname='security_deposits_source_check') THEN
  ALTER TABLE security_deposits ADD CONSTRAINT security_deposits_source_check
-  CHECK (hiring_contract_id IS NOT NULL OR (offer_id IS NOT NULL AND submission_id IS NOT NULL)) NOT VALID;
+  CHECK (hiring_contract_id IS NOT NULL OR (offer_id IS NOT NULL AND submission_id IS NOT NULL));
  END IF;
 END $$;
 ALTER TABLE client_profiles ADD COLUMN IF NOT EXISTS invitation_terms_accepted_at timestamptz;
