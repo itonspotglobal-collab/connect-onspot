@@ -8,10 +8,10 @@ CREATE TABLE IF NOT EXISTS contractor_onboarding_cohorts (
   captured_at timestamptz NOT NULL DEFAULT now()
 );
 INSERT INTO contractor_onboarding_cohorts(submission_id,workflow_version,captured_status)
-SELECT js.id,1,js.status FROM job_submissions js
-WHERE js.status IN ('offer_accepted','contract_sent','contract_signed','hired')
+SELECT js.id,CASE WHEN js.status IN ('offer_accepted','contract_sent','contract_signed','hired')
  OR EXISTS(SELECT 1 FROM offers o WHERE o.submission_id=js.id AND o.status IN ('accepted','offer_accepted'))
  OR EXISTS(SELECT 1 FROM hiring_contracts hc WHERE hc.submission_id=js.id)
+ THEN 1 ELSE 2 END,js.status FROM job_submissions js
 ON CONFLICT DO NOTHING;
 
 ALTER TABLE security_deposits ALTER COLUMN hiring_contract_id DROP NOT NULL;
@@ -27,7 +27,7 @@ DO $$ DECLARE c record; BEGIN
  LOOP EXECUTE format('ALTER TABLE security_deposits DROP CONSTRAINT %I',c.conname); END LOOP;
 END $$;
 ALTER TABLE security_deposits ADD CONSTRAINT security_deposits_status_check
- CHECK (status IN ('pending','held','suspended','applied','forfeited','returned','void'));
+ CHECK (status IN ('pending','held','drawn','replenishment_pending','suspended','applied','forfeited','returned','void'));
 DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='security_deposits'::regclass AND conname='security_deposits_source_check') THEN
  ALTER TABLE security_deposits ADD CONSTRAINT security_deposits_source_check

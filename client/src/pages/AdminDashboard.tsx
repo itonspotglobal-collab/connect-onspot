@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AdminMsaWarning } from '@/components/AdminMsaWarning';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -443,6 +444,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl space-y-8" data-testid="admin-dashboard-page">
+      <AdminMsaWarning />
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">

@@ -5,6 +5,12 @@ description: Environment requirements for running repository Playwright regressi
 
 Browser regression tests can run against an isolated Vite frontend with API routes intercepted, but the host still needs a Playwright-compatible browser and its system libraries. The Replit cartographer plugin should be disabled for that isolated server.
 
+Vitest render/unit tests also need an isolated config without app plugins when Vitest's bundled Vite is newer than the app's Vite.
+
+**Why:** The older React plugin's esbuild JSX settings are ignored by the newer Oxc-based test runner, causing untransformed JSX parse failures; cartographer may independently fail traversal.
+
+**How to apply:** Use the isolated unit configuration and automatic JSX transform rather than changing the app's runtime Vite config to satisfy the test runner.
+
 **Why:** The repository's cached Playwright binaries may be present while the container lacks libraries such as libglib, and enabling cartographer outside the normal Replit runtime can fail during transforms.
 
 **How to apply:** Keep browser tests independent of live database data by mocking only the relevant API contracts. Only set `BROWSER_BASE_URL` to a dedicated fixture target, never a customer-facing deployment. Provide `PLAYWRIGHT_EXECUTABLE_PATH` only when the host supplies a compatible browser.

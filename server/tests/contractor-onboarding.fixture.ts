@@ -18,8 +18,12 @@ import * as documents from "../services/contractDocumentService";
 import {pdfHash,type ContractBlobProvider} from "../services/contractBlobStore";
 import {computeDepositAmount} from "../lib/billing";
 import {onboardingStatus} from "../services/contractorOnboardingStatus";
+import {extendOfferExpiration} from "../services/offerExpirationService";
+import {createHiringContract} from "../services/hiringContractService";
+import {offerHandler} from "./fixtures/onboarding-offer-handlers";
 
 const suffix=randomUUID(),client=`onboard-client-${suffix}`,talent=`onboard-talent-${suffix}`;
+const candidate=`onboard-candidate-${suffix}`;
 const admin=`onboard-admin-${suffix}`,limited=`onboard-limited-${suffix}`,other=`onboard-other-${suffix}`,job=`onboard-job-${suffix}`;
 const files=new Map<string,Buffer>();
 const blobs:ContractBlobProvider={
@@ -44,6 +48,8 @@ before(async()=>{
       VALUES($1,$2,$3,$4,'NOT_A_LOGIN_HASH','Disposable','Fixture')`,[id,`${id}@fixture.invalid`,role,sub]);
   await query(`INSERT INTO jobs(id,client_id,title,description,category,experience_level,status,approval_status,engagement_type,billing_mode)
     VALUES($1,$2,'Onboarding UAT only','No real engagement','Operations','Intermediate','open','approved','Standard','tracked')`,[job,client]);
+  await query("INSERT INTO candidates(id,user_id,email,first_name,last_name) VALUES($1,$2,$3,'Disposable','Fixture')",
+    [candidate,talent,`${talent}@fixture.invalid`]);
   const document=await PDFDocument.create();document.addPage();pdf=Buffer.from(await document.save());
   const qr=(await query(`INSERT INTO manual_wise_files(uploaded_by,purpose,object_key,filename,content_type,byte_size)
     VALUES($1,'qr','private-fixture/qr','UAT-ONLY.png','image/png',100) RETURNING id`,[admin])).rows[0].id;
@@ -114,6 +120,64 @@ test("D2: final completed+advance/passed is mandatory; initial/hold/reject are i
   await assert.rejects(tx(db=>requireHiringStage(db,id,"offer",client)),error("FINAL_INTERVIEW_REQUIRED"));
   await query("UPDATE interviews SET outcome='advance' WHERE id=$1",[i]);
   await tx(db=>requireHiringStage(db,id,"offer",client));
+});
+test("post-cutover acceptance is invoice-first for initial/admin offers, both counters and renewals, even on a legacy application",async()=>{
+  for(const variant of ["initial","admin-created","talent-counter","client-counter","renewed"] as const) {
+    const id=await application("interviewing");
+    // Stronger than the ordinary case: a previously grandfathered application
+    // receives a NEW acceptance. It must lose its signing-first waiver.
+    await query(`INSERT INTO contractor_onboarding_cohorts(submission_id,workflow_version,captured_status)
+      VALUES($1,1,'contract_sent')`,[id]);
+    const created=await offerHandler("post","/api/client/offers",variant==="admin-created"?admin:client,candidate,
+      {submissionId:id,rate:2500,rateCurrency:"USD",proposedStartDate:"2032-10-01",expiresAt:"2099-10-01T00:00:00Z"});
+    assert.equal(created.statusCode,201,JSON.stringify(created.body));
+    let offerId=created.body.id;
+    if(variant.includes("counter")) {
+      const counter=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,
+        {action:"counter",counterRate:2600,counterRateCurrency:"USD"},offerId);
+      assert.equal(counter.statusCode,200,JSON.stringify(counter.body));
+      offerId=counter.body.id;
+      if(variant==="client-counter") {
+        const clientCounter=await offerHandler("patch","/api/client/offers/:id/respond",client,candidate,
+          {action:"counter",counterRate:2700,counterRateCurrency:"USD"},offerId);
+        assert.equal(clientCounter.statusCode,200,JSON.stringify(clientCounter.body));
+        offerId=clientCounter.body.id;
+      }
+    }
+    if(variant==="renewed") {
+      await query("UPDATE offers SET status='expired' WHERE id=$1",[offerId]);
+      await query("UPDATE job_submissions SET status='offer_expired' WHERE id=$1",[id]);
+      await extendOfferExpiration(offerId,admin,"2099-11-01T00:00:00Z");
+    }
+    const acceptPath=variant==="talent-counter"?"/api/client/offers/:id/respond":"/api/talent/offers/:id/respond";
+    const accepted=await offerHandler("patch",acceptPath,variant==="talent-counter"?client:talent,candidate,{action:"accept"},offerId);
+    assert.equal(accepted.statusCode,200,JSON.stringify(accepted.body));
+    const deposit=(await query("SELECT * FROM security_deposits WHERE offer_id=$1",[offerId])).rows[0];
+    assert.ok(deposit,variant);
+    assert.equal(await isDepositFirst(pool,id),true,variant);
+    assert.equal(deposit.hiring_contract_id,null,variant);
+    assert.equal(deposit.offer_id,offerId,variant);
+    assert.equal(deposit.status,"pending",variant);
+    await assert.rejects(createHiringContract({offerId,adminId:admin}),
+      error("DEPOSIT_PAYMENT_REQUIRED"),variant);
+    assert.equal((await query("SELECT count(*)::int n FROM hiring_contracts WHERE offer_id=$1",[offerId])).rows[0].n,0,variant);
+    // Retry creates no second debt.
+    assert.equal((await tx(db=>issueAcceptedOfferDeposit(db,offerId,id))).id,deposit.id,variant);
+  }
+});
+test("both HTTP acceptance handlers use the invoice-first helper before committing; admin-created offers use the shared writer",()=>{
+  const routes=readFileSync("server/routes.ts","utf8");
+  for(const path of ["/api/client/offers/:id/respond","/api/talent/offers/:id/respond"]) {
+    const start=routes.indexOf(`app.patch("${path}"`);
+    assert.ok(start>=0,path);
+    const section=routes.slice(start,routes.indexOf('\n  app.',start+1));
+    const call=section.indexOf('await issueAcceptedOfferDeposit(txClient,offer.id,offer.js_id)');
+    assert.ok(call>=0,path);
+    assert.ok(section.indexOf('await txClient.query("COMMIT")',call)>call,path);
+    assert.match(section,/action==="accept"/);
+  }
+  const writer=routes.slice(routes.indexOf('app.post("/api/client/offers"'));
+  assert.match(writer.slice(0,13000),/loadAdminFormalSubmission/);
 });
 test("accepted offer issues one pre-contract deposit using existing math/currency; drafts blocked until funding",async()=>{
   const a=await accepted();

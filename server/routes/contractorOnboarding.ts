@@ -37,7 +37,8 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
     if(req.onboardingActor.role!=="admin")throw new OnboardingError(403,"FORBIDDEN","Admin access required.");
     const rows=(await query("SELECT id FROM job_submissions WHERE status IN ('offer_accepted','contract_sent','contract_signed') ORDER BY updated_at DESC LIMIT 200")).rows;
     const items=[];for(const r of rows)items.push(await onboardingStatus(pool,r.id,req.onboardingActor.id));
-    res.json({items});
+    const activeMsaExists=(await query("SELECT EXISTS(SELECT 1 FROM msa_documents WHERE active AND effective_at<=now()) AS present")).rows[0].present;
+    res.json({items,activeMsaExists});
   }));
   router.get("/api/client/msa",handle(async(req,res)=>res.json(await msa.status(req.onboardingActor.id))));
   router.get("/api/client/msa/:id/pdf",handle(async(req,res)=>{

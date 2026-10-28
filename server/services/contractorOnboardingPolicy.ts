@@ -40,11 +40,16 @@ export async function requirePaidContract(db:OnboardingDb,offerId:string,id:stri
 }
 /** Runs inside the offer acceptance transaction; the deposit is the only debt. */
 export async function issueAcceptedOfferDeposit(db:OnboardingDb,offerId:string,submissionId:string) {
-  if(!await isDepositFirst(db,submissionId))return null;
   await lockOnboarding(db,submissionId);
   const o=(await db.query(`SELECT o.*,js.client_id FROM offers o JOIN job_submissions js ON js.id=o.submission_id
     WHERE o.id=$1 AND o.submission_id=$2 AND o.status IN ('accepted','offer_accepted') FOR UPDATE OF o,js`,[offerId,submissionId])).rows[0];
   if(!o)throw new OnboardingError(409,"ACCEPTED_OFFER_REQUIRED","An accepted offer is required.");
+  // Only successful, fresh acceptance transactions call this helper. Historical
+  // accepted offers are not replayed at startup. A new acceptance (including a
+  // counter or renewed offer) must never inherit an application's legacy waiver.
+  await db.query(`INSERT INTO contractor_onboarding_cohorts(submission_id,workflow_version,captured_status)
+    VALUES($1,2,'offer_accepted') ON CONFLICT(submission_id) DO UPDATE
+    SET workflow_version=2,captured_status='offer_accepted'`,[submissionId]);
   const rate=Number(o.rate),amount=computeDepositAmount(rate);
   if(!Number.isFinite(rate)||rate<=0||!Number.isFinite(amount)||amount<=0)
     throw new OnboardingError(409,"DEPOSIT_AMOUNT_REQUIRED","The accepted offer needs a finalized positive rate.");
@@ -55,8 +60,6 @@ export async function issueAcceptedOfferDeposit(db:OnboardingDb,offerId:string,s
   await db.query(`INSERT INTO manual_wise_obligations(category,deposit_id,payer_id,config_id)
     VALUES('deposit',$1,$2,(SELECT id FROM manual_wise_config WHERE currency=$3 AND active))
     ON CONFLICT(deposit_id) DO NOTHING`,[d.id,o.client_id,d.currency]);
-  await db.query(`INSERT INTO contractor_onboarding_cohorts(submission_id,workflow_version,captured_status)
-    VALUES($1,2,'offer_accepted') ON CONFLICT DO NOTHING`,[submissionId]);
   const issued=await queueHiringLifecycleEvent(db,`deposit-issued-offer:${offerId}`,"deposit_issued",{submissionId,offerId,depositId:d.id});
   if(issued)await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,created_at)
     SELECT id,status,status,'Accepted-offer security deposit invoice issued; awaiting independent settlement verification',clock_timestamp()

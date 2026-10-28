@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { AdminMsaWarning } from "@/components/AdminMsaWarning";
 import { apiRequest } from "@/lib/queryClient";
 import { ContractorOnboarding, ContractorOnboardingTracker } from "@/components/ContractorOnboarding";
 import { TopNavigation } from "@/components/TopNavigation";
@@ -23,6 +24,7 @@ export default function AdminContractorOnboarding() {
   const legacyCount = records.filter((item) => item.policy === "legacy").length;
   return <div className="min-h-[100dvh] bg-[#f3f6f2]"><TopNavigation /><main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#557064]">Operations</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#20352a]">Contractor onboarding</h1><p className="mt-2 max-w-2xl text-sm text-slate-600">Review accepted offers, payment verification, and the three conditions required to activate each engagement.</p></div><Button variant="outline" onClick={() => refetch()}><RotateCw className="mr-2 h-4 w-4" />Refresh</Button></div>
+    <AdminMsaWarning />
     {isLoading ? <div className="space-y-3">{[1, 2, 3].map((n) => <div key={n} className="h-36 animate-pulse rounded-2xl bg-white" />)}</div>
       : isError ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><AlertCircle className="mr-2 inline h-4 w-4" />Could not load onboarding records. <button className="underline" onClick={() => refetch()}>Retry</button></div>
       : <>

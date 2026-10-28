@@ -937,3 +937,17 @@ mtime_ms = 1792919509722
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/cb7d5c31-a3cc-4aa6-9fde-cff9b859e98c/d3f6eb54-a00f-449f-8715-63c660418540"
 storage_version_token = "1792919518128952"
 content_type = "text/html"
+
+[[outputs]]
+id = "7hl0Zys75-dYPDX81omvE"
+uri = "file://docs/contractor-onboarding-prepublish-audit.md"
+type = "text"
+title = "Contractor onboarding pre-publish audit and UAT script"
+description = "Read-only production inventory, exact workflow classification, migration rehearsal and rollback, expected emails and published-app UAT steps."
+logical_id = "9aead4a2-2969-434e-bb4f-714ce88f802a"
+content_hash = "sha256:81b8f34354ff5cecba988bbf1724dc9c0400e7288e39a019b11a980c2c967c65"
+size = 25809
+mtime_ms = 1793172785810
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/9aead4a2-2969-434e-bb4f-714ce88f802a/3c775894-9bb6-4ce3-8141-16f557463b1f"
+storage_version_token = "1793172798069506"
+content_type = "text/markdown"

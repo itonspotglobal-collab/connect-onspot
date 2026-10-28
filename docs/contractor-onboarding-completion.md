@@ -31,7 +31,7 @@ The pre-invitation checkbox remains a separate acknowledgement. Its preserved fi
 
 `migrations/0044_contractor_onboarding.sql` adds the workflow cutover registry; nullable contract linkage and accepted-offer uniqueness for deposits; invoice void preservation; the invitation-pending marker; separate invitation acknowledgement fields; and private versioned MSA documents, requests, review receipts and signatures.
 
-It does not delete/reprice historical charges or change payout, monthly invoice, tax, rate or timesheet calculations. Existing past-offer records are classified as legacy, not moved to the new sequence. Reapplying the migration preserves explicit new-flow classifications.
+It does not delete/reprice historical charges or change payout, monthly invoice, tax, rate or timesheet calculations. Existing past-offer records are classified as legacy, not moved to the new sequence. Reapplying the migration preserves explicit new-flow classifications. A **fresh acceptance after cutover**, including a renewal or counter on a legacy application, promotes that application to invoice-first in the acceptance transaction. See `docs/contractor-onboarding-prepublish-audit.md` for the exact predicates, production read-only inventory, migration rehearsal, rollback and published-app UAT script.
 
 `migrations/0045_onboarding_billing_activation.sql` preserves the executed-contract immutability guard while allowing a new-flow signed agreement's initially-null billing activation timestamp to be set once, at the actual Hired transition, only with held funds and the signed current MSA. It never permits changes to an existing timestamp, effective start date or terminated contract. This is necessary when the MSA is signed after the Contractor Agreement.
 

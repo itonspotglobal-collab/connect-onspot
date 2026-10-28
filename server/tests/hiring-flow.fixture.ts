@@ -233,7 +233,7 @@ test("both entry paths qualify; silent, unlinked, forged, rejected and withdrawn
 });
 
 for (const workflow of ["application", "client_invitation"] as const) {
-  test(`${workflow}: Client interview → offer → Talent acceptance → contract; other Client cannot access`, async () => {
+  test(`${workflow}: Client interview → offer → fresh acceptance requires deposit before contract; other Client cannot access`, async () => {
     let id: string;
     if (workflow === "application") {
       const token = jwt.sign({ type: "candidate", candidateId: candidate, email: talentEmail }, process.env.JWT_SECRET!);
@@ -284,18 +284,16 @@ for (const workflow of ["application", "client_invitation"] as const) {
     assert.equal(result.statusCode, 409);
     result = await invoke("patch", "/api/talent/offers/:id/respond", { action: "accept" }, talent, { id: offerId });
     assert.equal(result.statusCode, 200, JSON.stringify(result.body));
-    const contract = await createHiringContract({ offerId, adminId: admin, templateRef: "fixture-agreement" });
-    assert.equal(contract.status, "sent");
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_sent");
-    await assert.rejects(updateHiringContract(contract.id, { actorRole: "admin", adminId: admin, talentSigned: true }), /talent_signature_forbidden/);
-    await updateHiringContract(contract.id, { actorRole: "talent", talentSigned: true });
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_sent");
-    const signed = await updateHiringContract(contract.id, { actorRole: "admin", adminId: admin, onspotSigned: true });
-    assert.equal(signed.status, "signed");
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_signed");
+    await assert.rejects(createHiringContract({ offerId, adminId: admin, templateRef: "fixture-agreement" }),
+      (e:any)=>e.code==="DEPOSIT_PAYMENT_REQUIRED");
+    const pending=(await query("SELECT * FROM security_deposits WHERE offer_id=$1",[offerId])).rows;
+    assert.equal(pending.length,1);
+    assert.equal(pending[0].status,"pending");
+    assert.equal(pending[0].hiring_contract_id,null);
+    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "offer_accepted");
     const terminalOutcome = await invoke("patch", "/api/client/interviews/:id/outcome", { outcome: "reject" }, client, { id: interviewId });
     assert.equal(terminalOutcome.statusCode, 409);
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_signed");
+    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "offer_accepted");
     const blocked = await invoke("post", "/api/client/offers", { submissionId: id, rate: 1500 });
     assert.equal(blocked.statusCode, 409);
     await query(`UPDATE interviews SET status='rescheduled', current_proposal_owner='client' WHERE id=$1`, [interviewId]);
@@ -303,7 +301,7 @@ for (const workflow of ["application", "client_invitation"] as const) {
       { status: "confirmed", confirmedTime: instant, confirmedTimeZone: slot.timezone }, client, { id: interviewId });
     assert.equal(terminalInterview.statusCode, 409, JSON.stringify(terminalInterview.body));
     assert.equal(terminalInterview.body.error, "submission_not_interviewable");
-    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "contract_signed");
+    assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "offer_accepted");
   });
 }
 
