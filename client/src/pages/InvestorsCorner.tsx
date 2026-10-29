@@ -7,7 +7,6 @@ import {
 } from "@/components/InvestorDocumentDialog";
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
-import phoneMockup from "@assets/iphone_mockup_transparent_1791189886936.png";
 import heroPhoto from "@assets/investors/1521737711867-e3b97375f902.webp";
 import letterPhoto from "@assets/investors/1522071820081-009f0129c71c.webp";
 import tractionPhotoOne from "@assets/investors/1600880292203-757bb62b4baf.webp";
@@ -147,7 +146,11 @@ export default function InvestorsCorner() {
               hire, pay, and manage vetted remote talent in one place — and talent
               earns more doing it.
             </h1>
-            <div className="investor-phone-stage">
+            <div
+              className="investor-phone-stage"
+              role="img"
+              aria-label="OnSpot mobile site shown on a phone"
+            >
               <div className="investor-phone-glow" aria-hidden="true" />
               <div className="investor-phone-ring" aria-hidden="true" />
               <div className="investor-orbit" aria-hidden="true">
@@ -168,12 +171,51 @@ export default function InvestorsCorner() {
               </span>
               <span className="investor-badge investor-badge-nur" aria-hidden="true" />
               <span className="investor-badge investor-badge-mark" aria-hidden="true" />
-              <div className="investor-phone-frame">
-                <img
-                  className="investor-phone-art"
-                  src={phoneMockup}
-                  alt="OnSpot shown on a smartphone"
-                />
+              <div className="investor-phone" aria-hidden="true">
+                <div className="investor-phone-island" />
+                <div className="investor-phone-screen">
+                  <div className="investor-phone-status">
+                    <span>6:23</span>
+                    <span className="investor-phone-system">
+                      <span className="investor-phone-bars">
+                        <span />
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                      <span className="investor-phone-network">5G</span>
+                      <span className="investor-phone-battery" />
+                    </span>
+                  </div>
+                  <div className="investor-phone-appbar">
+                    <span className="investor-phone-wordmark">
+                      <img src={onSpotWordmark} alt="" />
+                    </span>
+                    <span className="investor-phone-menu">
+                      <span />
+                    </span>
+                  </div>
+                  <div className="investor-phone-content">
+                    <span className="investor-phone-pill">ABOUT ONSPOT</span>
+                    <p className="investor-phone-headline">
+                      Built by people who <span>lived</span> the problem.
+                    </p>
+                    <p className="investor-phone-description">
+                      OnSpot exists because we ran the old model ourselves, and
+                      watched it fail the people it was supposed to serve.
+                    </p>
+                    <div className="investor-phone-actions">
+                      <span className="investor-phone-action investor-phone-action-primary">
+                        Our story
+                      </span>
+                      <span className="investor-phone-action investor-phone-action-secondary">
+                        Meet the team
+                      </span>
+                    </div>
+                  </div>
+                  <span className="investor-phone-chat" />
+                  <span className="investor-phone-home-indicator" />
+                </div>
               </div>
             </div>
           </div>

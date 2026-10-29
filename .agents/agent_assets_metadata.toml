@@ -993,3 +993,31 @@ mtime_ms = 1793257567932
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8c826a69-9c3d-4757-9707-a181d010ff7d/e7146493-a322-47e3-bf37-3bc49fc7ce40"
 storage_version_token = "1793257617616874"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "uzzwX8YK92cW08oTcSBsp"
+uri = "file://generated-artifacts/investors-phone-desktop-1440.jpg"
+type = "image"
+title = "Updated Investors hero — 1440px"
+description = "HTML/CSS phone at 326×660px, with the reference screen, metallic frame and surrounding badges."
+logical_id = "52e497aa-0a76-4360-a6cb-d64554997d00"
+content_hash = "sha256:8eac44ad03d35d561617ccdf53bfae002553afb34d0e61df2a16d2d553bc2a59"
+size = 156776
+mtime_ms = 1793258712324
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/52e497aa-0a76-4360-a6cb-d64554997d00/2da14ff2-9d9f-4af0-9e6c-9bc4835023cc"
+storage_version_token = "1793258802996835"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "KkRxrUd214fcy5rhmI_Ww"
+uri = "file://generated-artifacts/investors-phone-mobile-390.jpg"
+type = "image"
+title = "Updated Investors hero — 390px"
+description = "Mobile hero with the 280×570px phone and unchanged headline, header and trust bar."
+logical_id = "70b546c1-ad71-48de-9fce-0e0168ba5da6"
+content_hash = "sha256:339199e89b8d2b14fba64389c4d635f084176c68d4b9af370948745cc48fe3ff"
+size = 84855
+mtime_ms = 1793258714650
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/70b546c1-ad71-48de-9fce-0e0168ba5da6/bdfc112c-f689-4c6c-b5bf-92fa65f7d314"
+storage_version_token = "1793258804674892"
+content_type = "image/jpeg"
