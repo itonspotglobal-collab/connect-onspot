@@ -81,6 +81,8 @@ function ReadOnlyField({ label, value }: { label: string; value: string | null |
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
+import { HiringPaymentPolicyToggle } from "@/components/hiring-payments/HiringPaymentPolicyToggle";
+
 export default function AdminSettings() {
   const { user, logout, refreshAuth } = useAuth();
   const [, navigate] = useLocation();
@@ -225,6 +227,7 @@ export default function AdminSettings() {
         </div>
       </div>
 
+      <HiringPaymentPolicyToggle />
       {/* ── 1. Account identity ─────────────────────────────────────────────── */}
       <Card>
         <CardContent className="pt-6">

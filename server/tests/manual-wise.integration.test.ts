@@ -107,6 +107,8 @@ before(async()=>{
   const lifecycle=readFileSync("migrations/0041_manual_wise_configuration_lifecycle.sql","utf8");
   await pool.query(lifecycle); await pool.query(lifecycle);
   await pool.query(readFileSync("migrations/0043_deposit_funded_activation.sql","utf8"));
+  await pool.query(readFileSync("migrations/0046_hiring_payment_waivers.sql","utf8"));
+  await pool.query(readFileSync("migrations/0046_hiring_payment_waivers.sql","utf8"));
   await pool.query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
   await pool.query("INSERT INTO job_submissions(id,client_id,talent_id,job_id) VALUES($1,'client','talent','job')",[submission]);
   await pool.query("INSERT INTO hiring_contracts(id,submission_id) VALUES($1,$2)",[contract,submission]);

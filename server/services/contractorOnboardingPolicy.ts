@@ -1,7 +1,8 @@
 import type { PoolClient } from "pg";
 import { computeDepositAmount } from "../lib/billing";
 import { queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
-import { HiringPaymentError } from "./hiringPaymentService";
+import { lockAcceptedHiringWaiver, verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
+import { HiringPaymentError } from "./hiringPaymentErrors";
 
 export type OnboardingDb = Pick<PoolClient,"query">;
 export class OnboardingError extends HiringPaymentError {
@@ -34,6 +35,9 @@ export async function requireHiringStage(db:OnboardingDb,id:string,stage:"interv
       "Complete a Final round interview with an Advance/Passed outcome before sending an offer.");
 }
 export async function requirePaidContract(db:OnboardingDb,offerId:string,id:string) {
+  const s=(await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE",[id])).rows[0];
+  if(s&&!await verifiedDeferredHiringPayment(db,s))
+    throw new OnboardingError(409,"DEFERRED_HIRING_PAYMENT_REQUIRED","The deferred hiring invoice must be paid and independently verified before agreements are issued.");
   if(!await isDepositFirst(db,id))return;
   if(!(await db.query("SELECT id FROM security_deposits WHERE offer_id=$1 AND submission_id=$2 AND status='held' FOR UPDATE",[offerId,id])).rows.length)
     throw new OnboardingError(409,"DEPOSIT_PAYMENT_REQUIRED","The security deposit must be independently verified before preparing or sending an agreement.");
@@ -44,6 +48,8 @@ export async function issueAcceptedOfferDeposit(db:OnboardingDb,offerId:string,s
   const o=(await db.query(`SELECT o.*,js.client_id FROM offers o JOIN job_submissions js ON js.id=o.submission_id
     WHERE o.id=$1 AND o.submission_id=$2 AND o.status IN ('accepted','offer_accepted') FOR UPDATE OF o,js`,[offerId,submissionId])).rows[0];
   if(!o)throw new OnboardingError(409,"ACCEPTED_OFFER_REQUIRED","An accepted offer is required.");
+  const s=(await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE",[submissionId])).rows[0];
+  await lockAcceptedHiringWaiver(db,s);
   // Only successful, fresh acceptance transactions call this helper. Historical
   // accepted offers are not replayed at startup. A new acceptance (including a
   // counter or renewed offer) must never inherit an application's legacy waiver.

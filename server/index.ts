@@ -410,6 +410,11 @@ app.use((req, res, next) => {
   const runBgJobs = process.env.RUN_BACKGROUND_JOBS !== 'false';
 
   if (runBgJobs) {
+    // Durable recipient-specific delivery keys make concurrent instances safe.
+    const { dispatchHiringLifecycleEvents } = await import("./services/hiringLifecycleDispatch");
+    void dispatchHiringLifecycleEvents(true);
+    const hiringLifecycleTimer=setInterval(()=>void dispatchHiringLifecycleEvents(true),15*60*1000);
+    hiringLifecycleTimer.unref();
     // Start GHL sync service (automatic sync every 15 minutes)
     const { ghlSyncService } = await import('./services/ghlSyncService');
     ghlSyncService.startCronJob();

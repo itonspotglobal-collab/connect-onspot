@@ -45,6 +45,8 @@ import { issueAcceptedOfferDeposit, requireHiringStage, lockOnboarding } from ".
 import { contractorOnboardingRouter } from "./routes/contractorOnboarding";
 import { dispatchHiringLifecycleEvents } from "./services/hiringLifecycleDispatch";
 import { HiringPaymentService, requireVerifiedHiringPayment } from "./services/hiringPaymentService";
+import { HiringPaymentWaiverService } from "./services/hiringPaymentWaiverService";
+import { registerHiringPaymentWaiverRoutes } from "./routes/hiringPaymentWaivers";
 import { registerInvestorRoutes } from "./routes/investors.js";
 import { registerInvestorGoalRoutes, guardInvestorGoalUpdates, seedInvestorGoalSettings } from "./routes/investorGoals";
 import { INVESTOR_GOAL_PLACEHOLDERS, isInvestorGoalKey, isValidInvestorGoalSetting } from "../shared/investorGoals";
@@ -3487,8 +3489,11 @@ export async function registerRoutes(
 
   registerInvestorRoutes(app);
   registerManualWiseRoutes(app, { service: new ManualWiseService(pool,dispatchHiringLifecycleEvents), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
-  app.get("/api/hiring-payment-settings", authenticateJWT, async (_req,res) => {
-    try { res.json({preOfferPaymentRequired:await preOfferPaymentRequired({query})}); }
+  app.get("/api/hiring-payment-settings", authenticateJWT, async (req:any,res) => {
+    try {
+      const actor=(await query("SELECT role,admin_sub_role FROM users WHERE id=$1",[req.user?.id])).rows[0];
+      res.json({preOfferPaymentRequired:await preOfferPaymentRequired({query}),canManage:actor?.role==="admin"&&actor.admin_sub_role===null});
+    }
     catch { res.status(503).json({error:"Payment settings unavailable"}); }
   });
   app.patch("/api/admin/hiring-payment-settings", authenticateJWT, pipelineMutationLimiter, async (req:any,res) => {
@@ -3496,9 +3501,18 @@ export async function registerRoutes(
       const actor=(await query("SELECT role,admin_sub_role FROM users WHERE id=$1",[req.user?.id])).rows[0];
       if(actor?.role!=="admin" || actor.admin_sub_role!==null) return res.status(403).json({error:"Super Admin access required"});
       if(typeof req.body?.preOfferPaymentRequired!=="boolean") return res.status(422).json({error:"preOfferPaymentRequired must be a boolean"});
-      await query(`INSERT INTO platform_settings(key,value,updated_at)
+      const tx=await pool.connect();
+      try {
+      await tx.query("BEGIN");
+      await tx.query("SELECT pg_advisory_xact_lock(hashtext('hiring-payment-setting'))");
+      const old=(await tx.query("SELECT value FROM platform_settings WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED' FOR UPDATE")).rows[0]?.value??"false";
+      await tx.query(`INSERT INTO platform_settings(key,value,updated_at)
         VALUES('HIRING_PRE_OFFER_PAYMENT_REQUIRED',$1,now())
         ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()`,[String(req.body.preOfferPaymentRequired)]);
+      await tx.query("INSERT INTO manual_wise_audit(actor_id,event,details) VALUES($1,'hiring_payment_setting_changed',$2)",
+        [req.user.id,JSON.stringify({key:"HIRING_PRE_OFFER_PAYMENT_REQUIRED",previous:old,value:String(req.body.preOfferPaymentRequired)})]);
+      await tx.query("COMMIT");
+      }catch(e){await tx.query("ROLLBACK").catch(()=>{});throw e;}finally{tx.release();}
       res.json({preOfferPaymentRequired:req.body.preOfferPaymentRequired});
     } catch { res.status(503).json({error:"Payment settings unavailable; no change confirmed"}); }
   });
@@ -3513,6 +3527,8 @@ export async function registerRoutes(
     }
   });
   registerHiringPaymentRoutes(app, { service: new HiringPaymentService(pool), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
+  registerHiringPaymentWaiverRoutes(app,{service:new HiringPaymentWaiverService(pool,dispatchHiringLifecycleEvents),
+    invoices:new HiringPaymentService(pool),authenticate:authenticateJWT,limiter:pipelineMutationLimiter,afterCommit:dispatchHiringLifecycleEvents});
   registerInvestorGoalRoutes(app, query);
 
   registerTimesheetRoutes(app, {

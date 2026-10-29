@@ -2438,6 +2438,30 @@ export const securityDeposits = pgTable("security_deposits", {
 export const insertHiringContractSchema = createInsertSchema(hiringContracts).omit({
   id: true, createdAt: true, updatedAt: true,
 });
+
+// Per-application pre-offer exceptions; deposits and settlement stay independent.
+export const hiringPaymentWaivers = pgTable("hiring_payment_waivers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  submissionId: text("submission_id").notNull().references(()=>jobSubmissions.id),
+  clientId: text("client_id").notNull().references(()=>users.id),
+  jobId: text("job_id").notNull().references(()=>jobs.id),
+  talentId: text("talent_id").notNull().references(()=>users.id),
+  waiverType: text("waiver_type").notNull(),
+  reason: text("reason").notNull(),
+  arrangementNote: text("arrangement_note"),
+  grantedBy: text("granted_by").notNull().references(()=>users.id),
+  grantedAt: timestamp("granted_at",{withTimezone:true}).notNull().defaultNow(),
+  revokedBy: text("revoked_by").references(()=>users.id),
+  revokedAt: timestamp("revoked_at",{withTimezone:true}),
+  revokeReason: text("revoke_reason"),
+  lockedAt: timestamp("locked_at",{withTimezone:true}),
+  deferredPaymentRequired: boolean("deferred_payment_required").notNull().default(false),
+  deferredInvoiceId: uuid("deferred_invoice_id").references(()=>hiringPreOfferInvoices.id),
+}, t=>[
+  uniqueIndex("hiring_payment_waivers_active_submission").on(t.submissionId).where(sql`${t.revokedAt} IS NULL`),
+  check("hiring_payment_waivers_waiver_type_check",sql`${t.waiverType} IN ('defer','waive')`),
+  check("hiring_payment_waivers_reason_check",sql`length(btrim(${t.reason})) >= 10`),
+]);
 export type InsertHiringContract = z.infer<typeof insertHiringContractSchema>;
 export type HiringContract = typeof hiringContracts.$inferSelect;
 

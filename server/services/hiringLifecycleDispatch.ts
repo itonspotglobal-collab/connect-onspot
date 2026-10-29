@@ -8,14 +8,16 @@ import { preparePaidAgreements } from "./paidAgreementService";
 import { ClientMsaService } from "./clientMsaService";
 import { notifyClientOfTalentHired } from "./applicationNotificationService";
 import { sendTalentHiredEmail } from "./emailCompanionService";
+import { enqueueDeferredHiringReminders } from "./hiringPaymentWaiverService";
 
 /**
  * Transactional outbox consumer. Call after COMMIT; failures are retained for
  * retry. Recipient-specific keys separately deduplicate bell and email work.
  * No receipt bytes, bank details or provider response bodies are logged.
  */
-export async function dispatchHiringLifecycleEvents(): Promise<void> {
+export async function dispatchHiringLifecycleEvents(waiverEventsOnly=false): Promise<void> {
   try {
+    await enqueueDeferredHiringReminders({query});
     const attempted:string[]=[];
     for(let batch=0;batch<3;batch++) {
     const events = (await query(`UPDATE hiring_lifecycle_events SET status='processing',
@@ -24,8 +26,10 @@ export async function dispatchHiringLifecycleEvents(): Promise<void> {
          WHERE (status IN ('pending','failed') OR
            (status='processing' AND attempted_at<now()-interval '10 minutes'))
            AND NOT(event_key=ANY($1::text[]))
+           AND (NOT $2::boolean OR event_type IN ('hiring_skip_requested','hiring_skip_granted','hiring_skip_revoked',
+             'hiring_deferred_due','hiring_deferred_reminder','hiring_deferred_invoice_issued'))
          ORDER BY CASE WHEN status='pending' THEN 0 ELSE 1 END,created_at LIMIT 30 FOR UPDATE SKIP LOCKED)
-       RETURNING *`,[attempted])).rows;
+       RETURNING *`,[attempted,waiverEventsOnly])).rows;
     if(!events.length)break;
     for (const event of events) {
       attempted.push(event.event_key);
@@ -122,7 +126,27 @@ async function deliverEvent(event:any) {
     startDate:row?.proposed_start_date ? new Date(row.proposed_start_date).toISOString().slice(0,10) : undefined,
   };
   const invoiceUrl=`/client/payments/${p.category??"deposit"}/${encodeURIComponent(p.obligationId??p.depositId??row?.deposit_id??"")}`;
-  if(event.event_type==="offer_accepted") {
+  if(["hiring_skip_requested","hiring_skip_granted","hiring_skip_revoked","hiring_deferred_due","hiring_deferred_reminder"].includes(event.event_type)) {
+    const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
+    const waiver=p.waiverId?(await query("SELECT * FROM hiring_payment_waivers WHERE id=$1",[p.waiverId])).rows[0]:null;
+    const adminEvent=["hiring_skip_requested","hiring_deferred_due","hiring_deferred_reminder"].includes(event.event_type);
+    if(event.event_type==="hiring_deferred_reminder"&&(!waiver||waiver.deferred_invoice_id||waiver.revoked_at))return;
+    const title=event.event_type==="hiring_skip_requested"?"Payment skip requested":
+      event.event_type==="hiring_skip_granted"?"Payment verification skipped by OnSpot":
+      event.event_type==="hiring_skip_revoked"?"Payment skip revoked":
+      `Offer accepted for ${name}/${ctx.jobTitle} — send the deferred hiring invoice`;
+    const message=event.event_type==="hiring_skip_requested"?p.message:
+      event.event_type==="hiring_skip_granted"?`Payment verification skipped by OnSpot (${waiver?.waiver_type==="defer"?"deferred until acceptance":"special arrangement"}).`:
+      event.event_type==="hiring_skip_revoked"?"Payment verification is required again for new counters and renewals. Any existing sent offer remains unchanged.":
+      "Issue the deferred hiring invoice using the authorized fee policy. Agreements remain blocked until independent verification.";
+    const path=adminEvent?`/admin/contractor-onboarding?applicationId=${encodeURIComponent(p.submissionId)}`:
+      new URL(buildClientApplicationUrl({applicationId:p.submissionId})).pathname+new URL(buildClientApplicationUrl({applicationId:p.submissionId})).search;
+    await Promise.all((adminEvent?admins:[owner]).map(user=>notify(event,user,event.event_type,
+      adminEvent?"hiring_payment_review":"hiring_invoice",title,message,path,{...ctx,rejectionReason:message})));
+  } else if(event.event_type==="hiring_deferred_invoice_issued") {
+    await notify(event,owner,"hiring_deferred_invoice_issued","hiring_invoice","Hiring invoice ready",
+      "Your deferred hiring invoice is ready. Pay and submit proof for independent verification before agreements are issued.",invoiceUrl,ctx);
+  } else if(event.event_type==="offer_accepted") {
     if(await isDepositFirst({query} as any,p.submissionId))return; // new invoice event combines acceptance + payment next step
     const path=new URL(buildClientApplicationUrl({applicationId:p.submissionId})).pathname+new URL(buildClientApplicationUrl({applicationId:p.submissionId})).search;
     await notify(event,owner,"hiring_offer_accepted","offer_accepted","Offer accepted",`${name} accepted your offer for ${ctx.jobTitle}. Next: sign the contract.`,path,ctx);

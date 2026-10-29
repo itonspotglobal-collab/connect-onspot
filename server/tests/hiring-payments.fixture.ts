@@ -376,28 +376,32 @@ const blobProvider: ContractBlobProvider = {
   async read(id) { const bytes=blobs.get(id); if(!bytes) throw new Error("Missing fixture PDF"); return bytes; },
   async remove(id) { blobs.delete(id); },
 };
-test("Paid offer follows real acceptance and private PDF signing; partial signatures never hire and execution creates one deposit",async()=>{
+test("Paid offer follows fresh deposit-first acceptance and private PDF signing; partial signatures never hire and signing creates no second deposit",async()=>{
   const id=await submission(); await paid(id);
   const sent=await offer(id); assert.equal(sent.status,201);
   const accepted=await api("PATCH",`/api/talent/offers/${sent.body.id}/respond`,{action:"accept"},talent);
   assert.equal(accepted.status,200,JSON.stringify(accepted));
   const doc=await PDFDocument.create(); doc.addPage();
   const bytes=Buffer.from(await doc.save());
-  const contract=await documents.prepareContract({id:client},{offerId:sent.body.id,partyType:"client"});
-  await documents.uploadContractPdf(contract.id,{id:client},{buffer:bytes,mimetype:"application/pdf",originalname:"fixture.pdf"},blobProvider);
-  await documents.contractPdf(contract.id,{id:client},false,blobProvider);
-  await documents.sendContract(contract.id,{id:client},blobProvider);
+  await assert.rejects(documents.prepareContract({id:admin},{offerId:sent.body.id,partyType:"onspot"}),/deposit must be independently verified/);
+  // Synthetic ledger funding in this owned PostgreSQL fixture; the independent
+  // verification/proof boundary is covered by the Manual Wise suite.
+  await query("UPDATE security_deposits SET status='held',held_at=now() WHERE offer_id=$1",[sent.body.id]);
+  const contract=await documents.prepareContract({id:admin},{offerId:sent.body.id,partyType:"onspot"});
+  await documents.uploadContractPdf(contract.id,{id:admin},{buffer:bytes,mimetype:"application/pdf",originalname:"fixture.pdf"},blobProvider);
+  await documents.contractPdf(contract.id,{id:admin},false,blobProvider);
+  await documents.sendContract(contract.id,{id:admin},blobProvider);
   const sign=async(who:string)=>{
     const detail=await documents.contractDetail(contract.id,{id:who});
     await documents.contractPdf(contract.id,{id:who},false,blobProvider);
     return documents.signContractPdf(contract.id,{id:who},{documentId:detail.document!.id,sha256:detail.document!.sha256,legalName:"Fixture Signer",consent:true},{},blobProvider);
   };
-  await sign(talent); await sign(client);
+  await sign(talent);
   assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"contract_sent");
   await sign(admin);
   assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"contract_signed");
   assert.equal((await query("SELECT billing_activated_at FROM hiring_contracts WHERE id=$1",[contract.id])).rows[0].billing_activated_at,null);
-  assert.equal((await query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_key=$1",[`deposit-issued:${contract.id}`])).rows[0].n,1);
+  assert.equal((await query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_key=$1",[`deposit-issued-offer:${sent.body.id}`])).rows[0].n,1);
   await sign(admin).catch(()=>{}); // Idempotent replay or explicit already-signed conflict.
   assert.equal((await query("SELECT count(*)::int n FROM security_deposits WHERE hiring_contract_id=$1",[contract.id])).rows[0].n,1);
 });

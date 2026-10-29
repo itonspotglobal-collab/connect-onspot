@@ -432,6 +432,12 @@ export class ManualWiseService {
       [r.id,amount,v.verifiedCurrency,v.verifiedReference,v.verifiedRecipient,actor]);
       await db.query(`INSERT INTO hiring_payment_events(invoice_id,actor_id,event,previous_status,new_status,details)
         VALUES($1,$2,'payment_verify',$3,'paid',$4)`,[r.id,actor,r.status,JSON.stringify(v)]);
+      const waiver=(await db.query("SELECT submission_id FROM hiring_payment_waivers WHERE deferred_invoice_id=$1 AND revoked_at IS NULL",[r.id])).rows[0];
+      if(waiver) {
+        const deposit=(await db.query("SELECT id FROM security_deposits WHERE submission_id=$1 AND status='held' ORDER BY created_at DESC LIMIT 1",[waiver.submission_id])).rows[0];
+        if(deposit)await queueHiringLifecycleEvent(db,`deferred-hiring-verified:${r.id}`,"deposit_verified",
+          {submissionId:waiver.submission_id,depositId:deposit.id,actorId:actor});
+      }
     }
     if (c==="payout") {
       if (r.talent_invoice_id) {

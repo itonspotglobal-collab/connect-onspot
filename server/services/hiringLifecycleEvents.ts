@@ -1,10 +1,13 @@
 /** Pure transactional helpers; no application DB or provider initialization. */
 import type { PoolClient } from "pg";
 import { isDepositFirst, lockOnboarding } from "./contractorOnboardingPolicy";
+import type { HiringPaymentDb } from "./hiringPaymentService";
+import { verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
 
-export type HiringLifecycleType = "offer_accepted" | "deposit_issued" | "proof_submitted" | "proof_rejected" | "engagement_active" | "deposit_verified" | "msa_missing" | "msa_required" | "msa_signed" | "agreements_recheck";
+export type HiringLifecycleType = "offer_accepted" | "deposit_issued" | "proof_submitted" | "proof_rejected" | "engagement_active" | "deposit_verified" | "msa_missing" | "msa_required" | "msa_signed" | "agreements_recheck"
+  | "hiring_skip_requested" | "hiring_skip_granted" | "hiring_skip_revoked" | "hiring_deferred_due" | "hiring_deferred_reminder" | "hiring_deferred_invoice_issued";
 export async function queueHiringLifecycleEvent(
-  db: Pick<PoolClient, "query">, key: string, type: HiringLifecycleType, payload: Record<string, unknown>,
+  db: HiringPaymentDb, key: string, type: HiringLifecycleType, payload: Record<string, unknown>,
 ) {
   return (await db.query(`INSERT INTO hiring_lifecycle_events(event_key,event_type,payload)
     VALUES($1,$2,$3::jsonb) ON CONFLICT(event_key) DO NOTHING RETURNING event_key`, [key,type,JSON.stringify(payload)])).rows.length>0;
@@ -41,6 +44,7 @@ export async function tryActivateEngagement(db:Pick<PoolClient,"query">,submissi
   await lockOnboarding(db,submissionId);
   const s=(await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE",[submissionId])).rows[0];
   if(!s || s.status==="hired")return false;
+  if(!await verifiedDeferredHiringPayment(db,s))return false;
   if(!["offer_accepted","contract_sent","contract_signed"].includes(s.status))return false;
   const hc=(await db.query(`SELECT hc.* FROM hiring_contracts hc JOIN offers o ON o.id=hc.offer_id
     WHERE hc.submission_id=$1 AND o.status IN ('accepted','offer_accepted') AND hc.status='signed'

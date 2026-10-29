@@ -951,3 +951,17 @@ mtime_ms = 1793172785810
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/9aead4a2-2969-434e-bb4f-714ce88f802a/3c775894-9bb6-4ce3-8141-16f557463b1f"
 storage_version_token = "1793172798069506"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "L6pXu6FGINGSnCURpoymw"
+uri = "file://docs/hiring-payment-skips.md"
+type = "text"
+title = "Hiring payment skips — implementation and UAT report"
+description = "Step 0 settings and enforcement findings, changed files, migration details, automated test results, and Defer/Waive staging UAT scripts."
+logical_id = "50004199-9eac-4c12-a570-2323defb9fed"
+content_hash = "sha256:98475c23e1d499fd7a303dafcba403dcdd3db9fa846566f8edb35cd3c4a2c4f1"
+size = 12402
+mtime_ms = 1793256679864
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/50004199-9eac-4c12-a570-2323defb9fed/62e4138c-1c31-4bcf-a1ed-8febcf990d5d"
+storage_version_token = "1793256712999718"
+content_type = "text/markdown"

@@ -88,8 +88,8 @@ try {
     await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_sub_role text");
     for (const sql of migrations) await db.query(sql);
     for (const sql of deferredReferences) await db.query(sql);
-    await db.query("CREATE TABLE IF NOT EXISTS platform_settings(key text PRIMARY KEY,value text)");
-    for(const name of (await readdir("migrations")).filter(n=>n.endsWith(".sql")&&Number(n.slice(0,4))>=38&&Number(n.slice(0,4))<=45).sort())
+    await db.query("CREATE TABLE IF NOT EXISTS platform_settings(key text PRIMARY KEY,value text,updated_at timestamptz DEFAULT now())");
+    for(const name of (await readdir("migrations")).filter(n=>n.endsWith(".sql")&&Number(n.slice(0,4))>=38&&Number(n.slice(0,4))<=46).sort())
       await db.query(await readFile(join("migrations",name),"utf8"));
     // Existing regression suites intentionally exercise the preserved D7 workflow.
     // This test-only trigger exists exclusively in this owned disposable database.

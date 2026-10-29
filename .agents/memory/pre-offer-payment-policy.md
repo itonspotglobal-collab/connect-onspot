@@ -5,6 +5,12 @@ description: Revised business sequence, independent settlement verification, and
 
 For new-flow applications the approved sequence is shortlist → passed completed final interview → offer → acceptance/security-deposit invoice → independently verified funding → Contractor Agreement and current signed client MSA → activation. Pre-offer payment is optional and off by default; enabling it restores the existing fee guards, including counters and renewals.
 
+Per-application payment exceptions are explicitly authorized: only a database-confirmed Super Admin may defer or waive the optional hiring fee with a written reason. Clients may request but not grant exceptions. Acceptance locks the arrangement; a required deferred hiring fee and the ordinary deposit must both be independently verified before agreements are issued.
+
+**Why:** The owner authorized exceptions without weakening the global default, Manual Wise settlement, deposit funding or activation requirements. Skipping pre-offer verification is not proof of payment.
+
+**How to apply:** Do not waive deposits or invent pricing. An acceptance while the global hiring-fee policy is OFF must not acquire new deferred debt because an old exception exists; an already-deferred obligation must not disappear when the global switch later turns OFF. Existing issued charges require explicit financial review, not silent deletion.
+
 **Why:** On 2026-10-28 the owner explicitly superseded the signing-first sequence with payment before agreements and added shortlist/final-interview prerequisites. Neither a receipt, funded deposit, nor signatures alone establish an active new engagement.
 
 **How to apply:** Preserve original applications. Shortlist is required before interviews; completed final interview with Advance/Passed outcome is required before all offer writers. Only a database-confirmed Super Admin may override either with a written history reason. Already-accepted historical offers keep their old path; never move, rebill or recontract them merely for release. A genuinely fresh acceptance after cutover (including counters, renewals or Admin-created offers on a legacy application) must instead be invoice-first. Keep the invitation click-through checkbox separate from hash-bound versioned MSA signatures. No active MSA means activation is blocked. Do not invent legal documents or receiving instructions.

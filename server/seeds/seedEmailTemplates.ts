@@ -59,6 +59,15 @@ function brandedClientTemplate(
 }
 
 export const DEFAULT_TEMPLATES: TemplateRow[] = [
+  ...([
+    ["hiring_skip_requested","Payment Skip Requested","Payment skip requested for {{job_title}}","{{rejection_reason}}"],
+    ["hiring_skip_granted","Payment Skip Granted","Payment verification skipped for {{job_title}}","{{rejection_reason}}"],
+    ["hiring_skip_revoked","Payment Skip Revoked","Payment skip revoked for {{job_title}}","{{rejection_reason}}"],
+    ["hiring_deferred_due","Deferred Hiring Invoice Due","Offer accepted — send the deferred hiring invoice for {{job_title}}","Issue the deferred hiring invoice using the authorized fee policy. Agreements wait for independent verification."],
+    ["hiring_deferred_reminder","Deferred Hiring Invoice Reminder","Reminder: deferred hiring invoice for {{job_title}}","The deferred hiring invoice has not been issued within two business days. Review this application and issue the invoice."],
+    ["hiring_deferred_invoice_issued","Deferred Hiring Invoice Issued","Your hiring invoice for {{job_title}} is ready","Your deferred hiring invoice is ready. Pay and submit proof for independent verification before agreements are issued."],
+  ] as const).map(([category,name,subject,content])=>brandedTemplate({category,name,subject,stage:null,isDefault:true,
+    content:`<p>${content}</p>${button("{{portal_url}}","Review application")}`})),
   brandedTemplate({
     name:"Offer Accepted — Deposit Invoice",category:"hiring_acceptance_invoice",stage:null,isDefault:true,
     subject:"{{talent_name}} accepted your offer for {{job_title}} — deposit invoice ready",

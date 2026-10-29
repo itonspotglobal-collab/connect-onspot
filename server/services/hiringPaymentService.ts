@@ -1,5 +1,7 @@
 import { hiringFeePolicyInput, hiringPaymentReviewInput, OFFERABLE_PAYMENT_STAGES } from "../../shared/hiringPayments";
 import { FORMAL_PIPELINE_PREDICATE } from "../../shared/formalPipelineSql";
+import { activeHiringWaiver } from "./hiringPaymentWaiverService";
+import { queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
 
 // Inject the database so disposable PostgreSQL fixtures exercise the same service.
 export interface HiringPaymentDb {
@@ -8,9 +10,8 @@ export interface HiringPaymentDb {
 interface PaymentPool extends HiringPaymentDb {
   connect(): Promise<HiringPaymentDb & { release(): void }>;
 }
-export class HiringPaymentError extends Error {
-  constructor(public status: number, public code: string, message: string, public details?: Record<string, unknown>) { super(message); }
-}
+import { HiringPaymentError } from "./hiringPaymentErrors";
+export { HiringPaymentError } from "./hiringPaymentErrors";
 const fail = (status: number, code: string, message: string): never => { throw new HiringPaymentError(status, code, message); };
 const moneyCents = (value: string) => {
   const [whole, decimal = ""] = value.split(".");
@@ -30,6 +31,8 @@ export async function requireVerifiedHiringPayment(db: HiringPaymentDb, submissi
   // Same lock ordering as issuance and review. Holds until caller's transaction ends.
   const { rows: [s] } = await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE", [submissionId]);
   if (!s) return fail(404, "APPLICATION_NOT_FOUND", "Application not found.");
+  const waiver=await activeHiringWaiver(db,s);
+  if(waiver)return {waiverId:waiver.id,waiverType:waiver.waiver_type};
   const result = await db.query(`SELECT i.id FROM hiring_pre_offer_invoices i
     JOIN hiring_payment_attempts a ON a.id=i.attempt_id
     WHERE i.submission_id=$1 AND a.submission_id=$1
@@ -102,11 +105,19 @@ export class HiringPaymentService {
       ${admins ? "role='admin' AND admin_sub_role IS NULL" : "id=$5"}`,
     admins ? [type,title,message,invoice.id] : [type,title,message,invoice.id,invoice.client_id]);
   }
-  async ready(actorId: string, submissionId: string) {
+  async ready(actorId: string, submissionId: string, deferred = false) {
     return this.transaction(async db => {
-      const s = await this.ownedSubmission(db,actorId,submissionId);
+      if(deferred)await this.actor(db,actorId,true);
+      const s = deferred
+        ? (await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE",[submissionId])).rows[0]
+        : await this.ownedSubmission(db,actorId,submissionId);
+      if(!s)return fail(404,"APPLICATION_NOT_FOUND","Application not found.");
+      const waiver=await activeHiringWaiver(db,s);
+      if(deferred&&(!waiver||waiver.waiver_type!=="defer"||!waiver.locked_at||!waiver.deferred_payment_required))
+        return fail(409,"DEFERRED_INVOICE_NOT_DUE","An accepted deferred payment arrangement is required.");
+      if(!deferred&&waiver)return fail(409,"PAYMENT_SKIP_ACTIVE","OnSpot manages this application's payment arrangement.");
       const eligibility = await db.query(`SELECT js.id FROM job_submissions js WHERE js.id=$1 AND js.${FORMAL_PIPELINE_PREDICATE}`, [s.id]);
-      if (!OFFERABLE_PAYMENT_STAGES.includes(s.status as any) || !s.talent_id ||
+      if ((!deferred&&!OFFERABLE_PAYMENT_STAGES.includes(s.status as any)) || !s.talent_id ||
           !eligibility.rows.length) {
         return fail(409, "APPLICATION_NOT_OFFER_ELIGIBLE", "This original application is not eligible for an offer.");
       }
@@ -136,6 +147,7 @@ export class HiringPaymentService {
         if (i.client_id !== s.client_id || i.talent_id !== s.talent_id || i.job_id !== s.job_id) {
           return fail(409, "HIRING_ATTEMPT_IDENTITY_CHANGED", "The hiring identity changed. OnSpot must review this invoice before proceeding.");
         }
+        if(deferred)await db.query("UPDATE hiring_payment_waivers SET deferred_invoice_id=$2 WHERE id=$1",[waiver.id,i.id]);
         return this.clientInvoice(i);
       }
       const { rows: [policy] } = await db.query("SELECT * FROM hiring_fee_policies ORDER BY created_at DESC,id DESC LIMIT 1 FOR SHARE");
@@ -156,8 +168,14 @@ export class HiringPaymentService {
         policy.fee_basis,policy.tax_treatment,policy.tax_description,policy.due_days,policy.payment_method,
         policy.payment_recipient,policy.payment_instructions]);
       await this.event(db,invoice,actorId,"invoice_issued",null,{ policyId: policy.id });
+      if(deferred) {
+        await db.query("UPDATE hiring_payment_waivers SET deferred_invoice_id=$2 WHERE id=$1",[waiver.id,invoice.id]);
+        await queueHiringLifecycleEvent(db,`deferred-hiring-invoice-issued:${invoice.id}`,"hiring_deferred_invoice_issued",
+          {submissionId:s.id,obligationId:invoice.id,category:"hiring_invoice",payerId:s.client_id,amount:invoice.amount,currency:invoice.currency});
+      }
       await this.notify(db,invoice,"hiring_invoice","Hiring invoice issued",
-        "Your pre-offer hiring invoice is ready. Payment must be independently verified before an offer can be sent.");
+        deferred?"Your deferred hiring invoice is ready. Payment must be independently verified before agreements are issued.":
+          "Your pre-offer hiring invoice is ready. Payment must be independently verified before an offer can be sent.");
       return this.clientInvoice(invoice);
     });
   }
@@ -251,6 +269,14 @@ export class HiringPaymentService {
         WHERE id=$1 RETURNING *`,[id,newStatus,p.verifiedAmount ?? null,p.verifiedCurrency ?? null,
         p.verifiedReference ?? null,p.verifiedRecipient ?? null,actorId])).rows[0];
       await this.event(db,updated,actorId,`payment_${p.action}`,invoice.status,p);
+      if(newStatus==="paid") {
+        const waiver=(await db.query("SELECT submission_id FROM hiring_payment_waivers WHERE deferred_invoice_id=$1 AND revoked_at IS NULL",[id])).rows[0];
+        if(waiver) {
+          const deposit=(await db.query("SELECT id FROM security_deposits WHERE submission_id=$1 AND status='held' ORDER BY created_at DESC LIMIT 1",[waiver.submission_id])).rows[0];
+          if(deposit)await queueHiringLifecycleEvent(db,`deferred-hiring-verified:${id}`,"deposit_verified",
+            {submissionId:waiver.submission_id,depositId:deposit.id,actorId});
+        }
+      }
       if (["refund","invalidate"].includes(p.action)) {
         await db.query(`INSERT INTO hiring_payment_exceptions(submission_id,invoice_id,reason)
           VALUES($1,$2,$3)`,[invoice.submission_id,id,`${p.action}: ${p.reason}`]);

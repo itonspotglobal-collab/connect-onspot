@@ -21,6 +21,8 @@ import {onboardingStatus} from "../services/contractorOnboardingStatus";
 import {extendOfferExpiration} from "../services/offerExpirationService";
 import {createHiringContract} from "../services/hiringContractService";
 import {offerHandler} from "./fixtures/onboarding-offer-handlers";
+import {HiringPaymentWaiverService,enqueueDeferredHiringReminders,twoBusinessDaysAfter,verifiedDeferredHiringPayment} from "../services/hiringPaymentWaiverService";
+import {HiringPaymentService,requireVerifiedHiringPayment} from "../services/hiringPaymentService";
 
 const suffix=randomUUID(),client=`onboard-client-${suffix}`,talent=`onboard-talent-${suffix}`;
 const candidate=`onboard-candidate-${suffix}`;
@@ -34,6 +36,8 @@ const blobs:ContractBlobProvider={
 let pdf:Buffer;
 const msa=new ClientMsaService(pool,blobs);
 const wise=new ManualWiseService(pool);
+const skips=new HiringPaymentWaiverService(pool);
+const hiringPayments=new HiringPaymentService(pool);
 async function tx<T>(fn:(db:any)=>Promise<T>) {
   const db=await pool.connect();
   try{await db.query("BEGIN");const r=await fn(db);await db.query("COMMIT");return r;}
@@ -63,6 +67,190 @@ async function application(state="new") {
   return (await query(`INSERT INTO job_submissions(job_id,client_id,talent_id,email,applicant_name,workflow_type,initiated_by,registration_status,status)
     VALUES($1,$2,$3,$4,'Disposable Talent','application','talent','linked',$5) RETURNING id`,[job,client,talent,`${talent}@fixture.invalid`,state])).rows[0].id as string;
 }
+async function offerReadyApplication() {
+  const id=await application("interviewing");
+  await query(`INSERT INTO interviews(submission_id,round_number,interview_type,status,outcome,created_by)
+    VALUES($1,1,'final','completed','advance',$2)`,[id,admin]);
+  return id;
+}
+const sendOffer=(id:string)=>offerHandler("post","/api/client/offers",client,candidate,
+  {submissionId:id,rate:2500,rateCurrency:"USD",proposedStartDate:"2032-10-01",expiresAt:"2099-10-01T00:00:00Z"});
+test("payment skips preserve route/trigger enforcement, Super Admin authority and application isolation",async()=>{
+  await query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
+  try {
+    const id=await offerReadyApplication(),b=await offerReadyApplication();
+    assert.equal((await sendOffer(id)).statusCode,409);
+    await assert.rejects(query(`INSERT INTO offers(submission_id,status,rate,rate_currency,engagement_type,billing_mode)
+      VALUES($1,'sent',2500,'USD','Standard','tracked')`,[id]),/PRE_OFFER_PAYMENT_REQUIRED/);
+    for(const actor of [limited,client,talent])
+      await assert.rejects(skips.grant(actor,id,{waiverType:"waive",reason:"Synthetic restricted actor test"}),(e:any)=>e.status===403);
+    await assert.rejects(skips.grant(admin,id,{waiverType:"waive",reason:"short"}),(e:any)=>e.status===422);
+    await skips.request(client,id,{message:"Synthetic request; do not change payment status"});
+    await skips.request(client,id,{message:"Synthetic request; do not change payment status"});
+    assert.equal((await skips.status(client,id)).waiver,null);
+    assert.equal((await query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_type='hiring_skip_requested' AND payload->>'submissionId'=$1",[id])).rows[0].n,1);
+    await skips.grant(admin,id,{waiverType:"waive",reason:"Approved synthetic per-application arrangement"});
+    const authorization=await tx(db=>requireVerifiedHiringPayment(db,id));
+    assert.equal((authorization as any).waiverType,"waive");
+    const otherJob=`${job}-identity`;
+    await query(`INSERT INTO jobs(id,client_id,title,description,category,experience_level,status,approval_status,engagement_type,billing_mode)
+      VALUES($1,$2,'Synthetic identity-only job','UAT only','Operations','Intermediate','open','approved','Standard','tracked')`,[otherJob,client]);
+    for(const [column,value,original] of [["client_id",other,client],["job_id",otherJob,job],["talent_id",client,talent]]) {
+      // An identity mismatch cannot unlock the application even if a row exists.
+      // job_id uses an existing second job so foreign-key enforcement stays on.
+      await query(`UPDATE hiring_payment_waivers SET ${column}=$2 WHERE submission_id=$1`,[id,value]);
+      await assert.rejects(tx(db=>requireVerifiedHiringPayment(db,id)),/paid and verified/);
+      await query(`UPDATE hiring_payment_waivers SET ${column}=$2 WHERE submission_id=$1`,[id,original]);
+    }
+    assert.equal((await sendOffer(id)).statusCode,201);
+    assert.equal((await sendOffer(b)).statusCode,409);
+    await assert.rejects(skips.status(talent,id),(e:any)=>e.status===403);
+    for(const actor of [limited,client,talent])
+      await assert.rejects(skips.revoke(actor,id,{reason:"Synthetic unauthorized revoke"}),(e:any)=>e.status===403);
+    const sent=(await query("SELECT id FROM offers WHERE submission_id=$1 AND status='sent'",[id])).rows[0].id;
+    await skips.revoke(admin,id,{reason:"Synthetic arrangement withdrawn before acceptance"});
+    assert.equal((await query("SELECT status FROM offers WHERE id=$1",[sent])).rows[0].status,"sent");
+    const counter=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,
+      {action:"counter",counterRate:2700,counterRateCurrency:"USD"},sent);
+    assert.equal(counter.statusCode,409);
+    await assert.rejects(extendOfferExpiration(sent,client,"2099-11-01T00:00:00Z"),/paid and verified/);
+    assert.equal((await query("SELECT count(*)::int n FROM manual_wise_audit WHERE details->>'applicationId'=$1",[id])).rows[0].n,2);
+  } finally {await query("UPDATE platform_settings SET value='false' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");}
+});
+test("defer covers initial offers, both counter writers and renewal; acceptance locks; both payments gate agreements",async()=>{
+  await query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
+  try {
+    const id=await offerReadyApplication();
+    const w=await skips.grant(admin,id,{waiverType:"defer",reason:"Approved synthetic deferred payment arrangement"});
+    let response=await sendOffer(id);assert.equal(response.statusCode,201,JSON.stringify(response.body));
+    response=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,
+      {action:"counter",counterRate:2600,counterRateCurrency:"USD"},response.body.id);
+    assert.equal(response.statusCode,200,JSON.stringify(response.body));
+    response=await offerHandler("patch","/api/client/offers/:id/respond",client,candidate,
+      {action:"counter",counterRate:2700,counterRateCurrency:"USD"},response.body.id);
+    assert.equal(response.statusCode,200,JSON.stringify(response.body));
+    const offerId=response.body.id;
+    await extendOfferExpiration(offerId,client,"2099-12-01T00:00:00Z");
+    response=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,{action:"accept"},offerId);
+    assert.equal(response.statusCode,200,JSON.stringify(response.body));
+    const locked=(await skips.status(admin,id)).waiver;assert.ok(locked?.locked_at);
+    await assert.rejects(skips.revoke(admin,id,{reason:"Cannot revoke accepted arrangement"}),(e:any)=>e.code==="WAIVER_LOCKED");
+    assert.equal((await query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_key=$1",[`hiring-deferred-due:${w.id}`])).rows[0].n,1);
+    const deposit=(await query("SELECT * FROM security_deposits WHERE offer_id=$1",[offerId])).rows[0];
+    await query("UPDATE security_deposits SET status='held' WHERE id=$1",[deposit.id]);
+    assert.equal((await preparePaidAgreements(pool,{depositId:deposit.id,actorId:admin})).eligible,false);
+    assert.equal((await query("SELECT count(*)::int n FROM hiring_contracts WHERE submission_id=$1",[id])).rows[0].n,0);
+    await hiringPayments.configure(admin,{amount:"100.00",currency:"USD",feeBasis:"fixed_per_hiring_attempt",
+      feeDescription:"SYNTHETIC UAT fee only",taxTreatment:"exempt",taxDescription:"SYNTHETIC UAT only",dueDays:5,
+      paymentMethod:"manual_transfer",paymentRecipient:"UAT ONLY — NOT A RECEIVING ACCOUNT",paymentInstructions:"DO NOT PAY — isolated synthetic fixture"});
+    for(const actor of [client,talent,limited])
+      await assert.rejects(hiringPayments.ready(actor,id,true),(e:any)=>e.status===403);
+    const invoice=await hiringPayments.ready(admin,id,true);
+    assert.equal((await hiringPayments.ready(admin,id,true)).id,invoice.id);
+    assert.equal((await skips.status(admin,id)).waiver?.deferred_invoice_id,invoice.id);
+    assert.equal((await preparePaidAgreements(pool,{depositId:deposit.id,actorId:admin})).eligible,false);
+    const receipt=(await query(`INSERT INTO manual_wise_files(uploaded_by,purpose,object_key,filename,content_type,byte_size)
+      VALUES($1,'receipt',$2,'UAT-ONLY.pdf','application/pdf',100) RETURNING id`,[client,`private-fixture/${randomUUID()}`])).rows[0].id;
+    const proof=await wise.submit(client,"hiring_invoice",invoice.id,"UAT-DEFERRED",receipt);
+    assert.equal((await preparePaidAgreements(pool,{depositId:deposit.id,actorId:admin})).eligible,false);
+    await wise.review(admin,proof.id,{action:"verify",reason:"SIMULATED settlement in disposable PostgreSQL only",independentlyVerified:true,
+      verifiedAmount:"100.00",verifiedCurrency:"USD",verifiedReference:`UAT-DEFERRED-${randomUUID()}`,verifiedRecipient:"UAT ONLY — NOT A RECEIVING ACCOUNT",settledAt:"2026-10-01"});
+    const doc=await msa.upload(admin,{buffer:pdf,mimetype:"application/pdf",originalname:"UAT-deferred.pdf"} as any,`uat-deferred-${randomUUID()}`,"2026-01-01");
+    await msa.activate(admin,doc.id,{reviewed:true,reason:"Synthetic deferred fixture MSA"});
+    const prepared=await preparePaidAgreements(pool,{depositId:deposit.id,actorId:admin});
+    assert.equal(prepared.eligible,true);
+    assert.equal(await tx(db=>tryActivateEngagement(db,id,admin)),false,"unsigned agreements never activate");
+    // Terminal signing states are synthetic here; private document signing is
+    // independently exercised by the unchanged real-document fixture below.
+    await query("UPDATE hiring_contracts SET status='signed',onspot_signed_at=now(),talent_signed_at=now() WHERE id=$1",[prepared.contractId]);
+    await query("UPDATE job_submissions SET status='contract_signed' WHERE id=$1",[id]);
+    await msa.pdf(client,doc.id);
+    await msa.sign(client,{documentId:doc.id,documentSha256:pdfHash(pdf),consent:true,signerName:"Disposable Client"},
+      {ip:"127.0.0.1",userAgent:"isolated-deferred-fixture"});
+    await tx(db=>tryActivateEngagement(db,id,admin));
+    assert.equal(await status(id),"hired");
+    // Do not change the active-MSA baseline expected by later independent tests.
+    await query("UPDATE msa_documents SET active=false WHERE id=$1",[doc.id]);
+  }finally{await query("UPDATE platform_settings SET value='false' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");}
+});
+test("waive creates no hiring invoice and preserves the independently verified deposit gate",async()=>{
+  await query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
+  try {
+    const id=await offerReadyApplication();await skips.grant(admin,id,{waiverType:"waive",reason:"Approved synthetic fee-free special arrangement"});
+    const sent=await sendOffer(id);assert.equal(sent.statusCode,201);
+    const response=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,{action:"accept"},sent.body.id);
+    assert.equal(response.statusCode,200,JSON.stringify(response.body));
+    const d=(await query("SELECT * FROM security_deposits WHERE offer_id=$1",[sent.body.id])).rows[0];
+    assert.ok(d);assert.ok((await skips.status(admin,id)).waiver?.locked_at);
+    assert.equal((await query("SELECT count(*)::int n FROM hiring_pre_offer_invoices WHERE submission_id=$1",[id])).rows[0].n,0);
+    assert.equal((await preparePaidAgreements(pool,{depositId:d.id,actorId:admin})).eligible,false);
+    await query("UPDATE security_deposits SET status='held' WHERE id=$1",[d.id]);
+    const prepared=await preparePaidAgreements(pool,{depositId:d.id,actorId:admin});
+    assert.equal(prepared.eligible,true);
+    const doc=(await query("SELECT id,version,sha256 FROM msa_documents ORDER BY created_at DESC LIMIT 1")).rows[0];
+    await query("UPDATE msa_documents SET active=true WHERE id=$1",[doc.id]);
+    await query("UPDATE hiring_contracts SET status='signed',onspot_signed_at=now(),talent_signed_at=now() WHERE id=$1",[prepared.contractId]);
+    await query("UPDATE job_submissions SET status='contract_signed' WHERE id=$1",[id]);
+    await tx(db=>tryActivateEngagement(db,id,admin));
+    assert.equal(await status(id),"hired");
+    await query("UPDATE msa_documents SET active=false WHERE id=$1",[doc.id]);
+  }finally{await query("UPDATE platform_settings SET value='false' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");}
+});
+test("policy OFF ignores skip payment effects; reminders wait two UTC business days and deduplicate daily",async()=>{
+  const id=await offerReadyApplication();await skips.grant(admin,id,{waiverType:"defer",reason:"Synthetic exception while global policy is disabled"});
+  const sent=await sendOffer(id);assert.equal(sent.statusCode,201);
+  const accepted=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,{action:"accept"},sent.body.id);
+  assert.equal(accepted.statusCode,200);
+  const s=(await query("SELECT * FROM job_submissions WHERE id=$1",[id])).rows[0];
+  assert.equal(await verifiedDeferredHiringPayment(pool,s),true);
+  assert.equal((await skips.status(admin,id)).waiver?.deferred_payment_required,false);
+  assert.equal(twoBusinessDaysAfter(new Date("2026-10-30T10:00:00Z")).toISOString(),"2026-11-03T10:00:00.000Z");
+  const due=await application("offer_accepted");
+  const w=(await query(`INSERT INTO hiring_payment_waivers(submission_id,client_id,job_id,talent_id,waiver_type,reason,granted_by,locked_at,deferred_payment_required)
+    VALUES($1,$2,$3,$4,'defer','Synthetic reminder fixture',$5,'2026-10-30T10:00:00Z',true) RETURNING id`,[due,client,job,talent,admin])).rows[0];
+  await enqueueDeferredHiringReminders(pool,new Date("2026-11-02T10:00:00Z"));
+  assert.equal((await query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_key LIKE $1",[`hiring-deferred-reminder:${w.id}:%`])).rows[0].n,0);
+  await enqueueDeferredHiringReminders(pool,new Date("2026-11-03T10:00:00Z"));await enqueueDeferredHiringReminders(pool,new Date("2026-11-03T11:00:00Z"));
+  assert.equal((await query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_key LIKE $1",[`hiring-deferred-reminder:${w.id}:%`])).rows[0].n,1);
+});
+test("concurrent revocation and offer send serialize on the submission; a committed sent offer stays",async()=>{
+  await query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
+  try {
+    for(const revokeFirst of [true,false]) {
+      const id=await offerReadyApplication();
+      await skips.grant(admin,id,{waiverType:"waive",reason:"Synthetic concurrency test arrangement"});
+      const holder=await pool.connect();
+      await holder.query("BEGIN");
+      await holder.query("SELECT id FROM job_submissions WHERE id=$1 FOR UPDATE",[id]);
+      if(revokeFirst) {
+        // A revoke already holding the canonical lock wins before send validation.
+        await holder.query("UPDATE hiring_payment_waivers SET revoked_at=now(),revoked_by=$2,revoke_reason='Synthetic locked revoke' WHERE submission_id=$1",[id,admin]);
+        const send=sendOffer(id);
+        await holder.query("COMMIT");holder.release();
+        assert.equal((await send).statusCode,409);
+      }else {
+        await requireVerifiedHiringPayment(holder,id);
+        const revoke=skips.revoke(admin,id,{reason:"Synthetic revoke queued behind committed send"});
+        await holder.query(`INSERT INTO offers(submission_id,status,rate,rate_currency,engagement_type,billing_mode)
+          VALUES($1,'sent',2500,'USD','Standard','tracked')`,[id]);
+        await holder.query("COMMIT");holder.release();
+        await revoke;
+        assert.equal((await query("SELECT count(*)::int n FROM offers WHERE submission_id=$1 AND status='sent'",[id])).rows[0].n,1);
+        await assert.rejects(tx(db=>requireVerifiedHiringPayment(db,id)),/paid and verified/);
+      }
+    }
+  }finally{await query("UPDATE platform_settings SET value='false' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");}
+});
+test("payment policy changes use database Super Admin checks and the financial Admin audit log",async()=>{
+  for(const actor of [limited,client,talent]) {
+    const response=await offerHandler("patch","/api/admin/hiring-payment-settings",actor,candidate,{preOfferPaymentRequired:true});
+    assert.equal(response.statusCode,403);
+  }
+  const response=await offerHandler("patch","/api/admin/hiring-payment-settings",admin,candidate,{preOfferPaymentRequired:true});
+  assert.equal(response.statusCode,200,JSON.stringify(response.body));
+  assert.ok((await query("SELECT id FROM manual_wise_audit WHERE actor_id=$1 AND event='hiring_payment_setting_changed'",[admin])).rows.length);
+  await offerHandler("patch","/api/admin/hiring-payment-settings",admin,candidate,{preOfferPaymentRequired:false});
+});
 async function accepted() {
   const submissionId=await application("offer_accepted");
   const offerId=(await query(`INSERT INTO offers(submission_id,status,rate,rate_currency,engagement_type,billing_mode,proposed_start_date)
