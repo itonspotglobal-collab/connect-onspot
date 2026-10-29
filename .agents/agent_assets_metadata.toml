@@ -1021,3 +1021,17 @@ mtime_ms = 1793258714650
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/70b546c1-ad71-48de-9fce-0e0168ba5da6/bdfc112c-f689-4c6c-b5bf-92fa65f7d314"
 storage_version_token = "1793258804674892"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "hlC1z8yMNLqk5JYHv3YMB"
+uri = "file://docs/interview-workflow-recovery.md"
+type = "text"
+title = "Interview workflow recovery report"
+description = "Production read-only findings, the 17 application IDs and job titles, code locations, migration safeguards, verification results and published-app UAT script."
+logical_id = "fafd863a-67d1-455d-a685-05eb2138aa61"
+content_hash = "sha256:6f590e1cea2868c9d6108f710df1360d6c610b15e916d020643bdd8482ec3f28"
+size = 15497
+mtime_ms = 1793267486565
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/fafd863a-67d1-455d-a685-05eb2138aa61/ac91240b-1798-4f75-97ac-645beb0f3446"
+storage_version_token = "1793267498926368"
+content_type = "text/markdown"

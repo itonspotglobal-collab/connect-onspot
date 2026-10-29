@@ -47,8 +47,10 @@ try {
   const messagingBaseline = messagingOnly && process.argv.includes("--baseline");
   const baselineRef = process.argv.find(arg => arg.startsWith("--baseline-ref="))?.slice("--baseline-ref=".length);
   if (messagingBaseline && !baselineRef) throw new Error("--baseline requires --baseline-ref=<pre-fix git revision>");
-  const isolatedApp = videoOnly || messagingOnly || clientStatusOnly;
+  const interviewsOnly=process.argv.includes("--interviews-only");
+  const isolatedApp = videoOnly || messagingOnly || clientStatusOnly || interviewsOnly;
   const workerEnv = { DATABASE_URL:url,HIRING_FLOW_TEST_DATABASE_URL:url,JWT_SECRET:"hiring-payment-fixture-only",DISABLE_AUTH:"false",
+    RUN_BACKGROUND_JOBS:"false",
     ...(isolatedApp ? { REPLIT_DOMAINS: "127.0.0.1", NODE_ENV: "test" } : {}),
     PUBLIC_APP_URL: "https://fixture.example.test",
     ...(messagingBaseline ? { MESSAGING_UAT_BASELINE: "true" } : {}),
@@ -89,7 +91,7 @@ try {
     for (const sql of migrations) await db.query(sql);
     for (const sql of deferredReferences) await db.query(sql);
     await db.query("CREATE TABLE IF NOT EXISTS platform_settings(key text PRIMARY KEY,value text,updated_at timestamptz DEFAULT now())");
-    for(const name of (await readdir("migrations")).filter(n=>n.endsWith(".sql")&&Number(n.slice(0,4))>=38&&Number(n.slice(0,4))<=46).sort())
+    for(const name of (await readdir("migrations")).filter(n=>n.endsWith(".sql")&&Number(n.slice(0,4))>=38&&Number(n.slice(0,4))<=48).sort())
       await db.query(await readFile(join("migrations",name),"utf8"));
     // Existing regression suites intentionally exercise the preserved D7 workflow.
     // This test-only trigger exists exclusively in this owned disposable database.
@@ -113,7 +115,7 @@ try {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts","contracts"],workerEnv);
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
-  const entries = process.argv.includes("--onboarding-only") ? ["server/tests/contractor-onboarding.fixture.ts"] :
+  const entries = interviewsOnly?["server/tests/interview-scheduling-v1.test.ts"]:process.argv.includes("--onboarding-only") ? ["server/tests/contractor-onboarding.fixture.ts","server/tests/interview-workflow.fixture.ts"] :
     process.argv.includes("--contract-documents-only") ? ["server/tests/contract-documents.fixture.ts"] : hiringFlowOnly ? [] : clientStatusOnly ? [
     jobBillingOnly ? "server/tests/job-billing-classification.fixture.ts" :
       clientNavigationOnly ? "server/tests/client-account-navigation.fixture.ts" : "server/tests/client-application-status.fixture.ts",
@@ -171,7 +173,9 @@ try {
       });
     }}],
   });
-    await run(process.execPath,["--test","--test-concurrency=1",output],workerEnv);
+    // Full Express startup can interfere with Node 22 test-worker IPC framing.
+    // Direct node:test execution retains assertions/exit codes without that IPC.
+    await run(process.execPath,interviewsOnly?[output]:["--test","--test-concurrency=1",output],workerEnv);
   }
 } finally {
   if (postgres && postgres.exitCode===null) {

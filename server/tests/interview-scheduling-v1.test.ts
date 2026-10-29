@@ -105,9 +105,9 @@ before(async () => {
     [TALENT_ID, "talent"],
   ] as const) {
     await query(
-      `INSERT INTO users (id, email, role) VALUES ($1, $2, $3)
+      `INSERT INTO users (id, email, role,email_verified_at,email_verified_email) VALUES ($1, $2, $3,now(),$4)
        ON CONFLICT (id) DO NOTHING`,
-      [id, `${id}@test.local`, role],
+      [id, `${id}@test.local`, role,`${id}@test.local`],
     );
   }
 
@@ -121,8 +121,8 @@ before(async () => {
 
   // Job
   const jobRow = await query(
-    `INSERT INTO jobs (client_id, title, description, category, experience_level, status, engagement_type)
-     VALUES ($1, 'IV1 Test Job', 'scheduling test', 'Engineering', 'mid', 'open', 'Standard')
+    `INSERT INTO jobs (client_id, title, description, category, experience_level, status, engagement_type,approval_status)
+     VALUES ($1, 'IV1 Test Job', 'scheduling test', 'Engineering', 'mid', 'open', 'Standard','approved')
      RETURNING id`,
     [CLIENT_ID],
   );
@@ -159,6 +159,7 @@ after(async () => {
   );
   const ids = subRows.rows.map((r: { id: string }) => r.id);
   if (ids.length) {
+    await query("DELETE FROM contractor_onboarding_cohorts WHERE submission_id=ANY($1::text[])",[ids]);
     await query(`DELETE FROM interview_proposals WHERE interview_id IN (SELECT id FROM interviews WHERE submission_id = ANY($1::varchar[]))`, [ids]);
     await query(`DELETE FROM interviews WHERE submission_id = ANY($1::varchar[])`, [ids]);
     await query(`DELETE FROM job_application_status_history WHERE application_id = ANY($1::varchar[])`, [ids]);
@@ -173,6 +174,25 @@ after(async () => {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("Interview Scheduling V1", () => {
+  it("Super Admin and TA outcome/type routes work through JWT middleware; other roles are denied",async()=>{
+    const ta=`iv1-ta-${suffix}`,cs=`iv1-cs-${suffix}`;
+    for(const [id,sub] of [[ta,"talent_acquisition"],[cs,"client_success"]])
+      await query("INSERT INTO users(id,email,role,admin_sub_role) VALUES($1,$2,'admin',$3)",[id,`${id}@test.local`,sub]);
+    for(const actor of [ADMIN_ID,ta]) {
+      const id=(await query(`INSERT INTO job_submissions(job_id,talent_id,client_id,applicant_name,email,status,initiated_by,workflow_type)
+        VALUES($1,$2,$3,'Fixture',$4,'interviewing','client','client_invitation') RETURNING id`,
+        [jobId,TALENT_ID,CLIENT_ID,`${TALENT_ID}@test.local`])).rows[0].id;
+      const i=(await query(`INSERT INTO interviews(submission_id,round_number,interview_type,status,confirmed_time,created_by)
+        VALUES($1,1,'initial','confirmed',now()-interval '1 hour',$2) RETURNING id`,[id,CLIENT_ID])).rows[0].id;
+      const endpoint=`/api/admin/interviews/${i}`;
+      assert.equal((await request(srv,"PATCH",`${endpoint}/type`,tok(actor,"admin"),{interviewType:"final"})).status,200);
+      assert.equal((await request(srv,"PATCH",`${endpoint}/outcome`,tok(cs,"admin"),{outcome:"advance"})).status,403);
+      assert.equal((await request(srv,"PATCH",`${endpoint}/outcome`,clientTok,{outcome:"advance"})).status,403);
+      assert.equal((await request(srv,"PATCH",`${endpoint}/outcome`,tok(actor,"admin"),{outcome:"pending"})).status,200);
+      assert.equal((await request(srv,"PATCH",`${endpoint}/outcome`,tok(actor,"admin"),{outcome:"advance"})).status,200);
+      assert.equal((await request(srv,"PATCH",`${endpoint}/type`,tok(actor,"admin"),{interviewType:"initial"})).status,409);
+    }
+  });
 
   // ── Client POST ─────────────────────────────────────────────────────────
 
@@ -312,6 +332,7 @@ describe("Interview Scheduling V1", () => {
     });
 
     it("sets completed_at when recording outcome=advance", async () => {
+      await query("UPDATE interviews SET status='confirmed',confirmed_time=now()-interval '1 hour' WHERE id=$1",[interviewId]);
       const r = await request(srv, "PATCH", `/api/client/interviews/${interviewId}/outcome`, clientTok, {
         outcome: "advance",
         internalNotes: "Strong candidate",
@@ -532,6 +553,7 @@ describe("Interview Scheduling V1", () => {
         `DELETE FROM job_application_status_history WHERE application_id = $1`,
         [conflictSubId],
       );
+      await query("DELETE FROM contractor_onboarding_cohorts WHERE submission_id=$1",[conflictSubId]);
       await query(`DELETE FROM job_submissions WHERE id = $1`, [conflictSubId]);
     });
 
@@ -627,7 +649,8 @@ describe("Interview Scheduling V1", () => {
       assert.equal(create.status, 201, `Setup failed: ${JSON.stringify(create.json)}`);
       const completedId = create.json.id;
 
-      // Force the interview to 'completed' status directly in the DB.
+      await query("UPDATE interviews SET confirmed_time=now()-interval '1 hour' WHERE id=$1",[completedId]);
+      // Record the past confirmed interview through the actual outcome route.
       // (The outcome endpoint requires the submission to have a client, which it does,
       // but the route is /api/client/interviews/:id/outcome — use that.)
       const outcomeR = await request(

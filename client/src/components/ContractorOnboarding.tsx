@@ -27,6 +27,11 @@ export interface ContractorOnboarding {
   conditions: { depositHeld: boolean; contractSigned: boolean; msaSigned: boolean };
   canPrepareContract: boolean;
   missing: string[];
+  offerBlockers?: string[];
+  activationMissing?: string[];
+  stageMissing?: string[];
+  offerAccepted?: boolean;
+  msaUploadWarning?: string | null;
   nextActor: string | null;
   stages: OnboardingStage[];
 }
@@ -80,7 +85,8 @@ export function ContractorOnboardingTracker({
           ))}
         </ol>
       ) : <p className="mt-3 text-xs text-slate-500">Stage details have not been provided yet.</p>}
-      {!!data.missing?.length && <p className="mt-3 text-xs leading-relaxed text-amber-800">Still needed: {data.missing.join(" · ")}</p>}
+      {!!(data.stageMissing??data.missing)?.length && <p className="mt-3 text-xs leading-relaxed text-amber-800">Still needed: {(data.stageMissing??data.missing).join(" · ")}</p>}
+      {data.msaUploadWarning&&<p role="alert" className="mt-2 text-xs text-amber-800">{data.msaUploadWarning}</p>}
       {data.contract?.id && <Button size="sm" variant="outline" className="mt-3" onClick={() => navigate(`/contracts?id=${encodeURIComponent(data.contract!.id)}`)}>
         {data.contract.status === "draft" ? "Manage agreement draft" : "Open agreement"}
       </Button>}
@@ -90,8 +96,8 @@ export function ContractorOnboardingTracker({
           <Button size="sm" onClick={onShortlist} className="bg-[#405f4d] text-white hover:bg-[#344d3e]">Shortlist applicant</Button>
         </div>
       )}
-      {data.policy === "deposit_first" && !data.canSendOffer && data.missing?.length > 0 && (
-        <p className="mt-2 text-[11px] text-slate-500">Offer unavailable: {data.missing.join(", ")}.</p>
+      {!data.offerAccepted && data.policy === "deposit_first" && !data.canSendOffer && !!data.offerBlockers?.length && (
+        <p className="mt-2 text-[11px] text-slate-500">Offer unavailable: {data.offerBlockers.join(", ")}.</p>
       )}
     </section>
   );

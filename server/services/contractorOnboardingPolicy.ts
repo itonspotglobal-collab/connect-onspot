@@ -25,9 +25,9 @@ export async function requireHiringStage(db:OnboardingDb,id:string,stage:"interv
   if(passed)return false;
   const reason=typeof overrideReason==="string"?overrideReason.trim():"";
   const a=(await db.query("SELECT role,admin_sub_role FROM users WHERE id=$1",[actorId])).rows[0];
-  if(reason && reason.length<=2000 && a?.role==="admin" && a.admin_sub_role===null) {
+  if(reason && reason.length<=2000 && a?.role==="admin" && (a.admin_sub_role===null||a.admin_sub_role==="talent_acquisition")) {
     if(recordOverride)await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by)
-      VALUES($1,$2,$2,$3,$4)`,[id,s.status,`Super Admin ${stage} prerequisite override: ${reason}`,actorId]);
+      VALUES($1,$2,$2,$3,$4)`,[id,s.status,`Recruiting Admin ${stage} prerequisite override: ${reason}`,actorId]);
     return true;
   }
   throw new OnboardingError(409,stage==="interview"?"SHORTLIST_REQUIRED":"FINAL_INTERVIEW_REQUIRED",

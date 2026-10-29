@@ -49,7 +49,7 @@ export async function graphCalendarRequest(
     });
   } catch {
     throw new FindWorkCalendarError("calendar_event_failure",
-      "The Outlook calendar could not be reached. Retry the request; the interview was not confirmed.");
+      "The Outlook calendar could not be reached. The interview is saved; calendar synchronization can be retried.");
   }
   if (!response.ok) {
     // Never log/return raw provider errors: they can contain addresses and IDs.
@@ -67,7 +67,7 @@ export async function graphCalendarRequest(
 type CalendarDb = { query(sql: string, params?: any[]): Promise<{ rows: any[] }> };
 
 /**
- * Called inside the interview mutation transaction, before COMMIT/notifications.
+ * Called in a separate synchronization transaction after the interview commits.
  * Callers hold the interview/submission lock. Native proposal turns, authorization,
  * conflict checks, and state changes are not replaced by calendar logic.
  *
@@ -78,6 +78,11 @@ export async function synchronizeFindWorkInterview(
   tx: CalendarDb, interviewId: string, forceAdminCalendar = false,
   transport: typeof fetch = fetch,
 ): Promise<any> {
+  const header=(await tx.query(`SELECT i.*,u.role AS creator_role FROM interviews i
+    LEFT JOIN users u ON u.id=i.created_by WHERE i.id=$1`,[interviewId])).rows[0];
+  if(!header)throw new FindWorkCalendarError("calendar_applicant_missing","Interview not found.",404);
+  const managed=forceAdminCalendar||header.calendar_managed||header.creator_role==="admin"||Boolean(header.calendar_event_id);
+  if(!managed||header.status==="completed")return header;
   const result = await tx.query(
      `SELECT i.*, j.title AS job_title, js.applicant_name, js.first_name, js.last_name,
              js.status AS submission_status,
@@ -93,14 +98,11 @@ export async function synchronizeFindWorkInterview(
   const interview = result.rows[0];
   if (!interview) throw new FindWorkCalendarError("calendar_applicant_missing",
     "The interview must be linked to an authenticated Talent account.", 409);
-  const managed = forceAdminCalendar || interview.calendar_managed ||
-    interview.creator_role === "admin" || Boolean(interview.calendar_event_id);
   if (interview.status === "completed") return interview; // Keep completed calendar history.
    if (["proposed", "rescheduled", "confirmed"].includes(interview.status) &&
        !["new", "under_review", "reviewed", "shortlisted", "interviewing"].includes(interview.submission_status)) {
      throw new FindWorkCalendarError("submission_not_interviewable", "This application has already moved beyond interviewing.", 409);
    }
-   if (!managed) return interview; // Preserve Client-led proposals, not terminal-stage mutations.
   if (interview.status !== "confirmed" && !interview.calendar_event_id) return interview;
 
   const mailbox = findWorkMailbox();

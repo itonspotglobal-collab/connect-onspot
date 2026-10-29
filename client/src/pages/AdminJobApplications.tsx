@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InterviewSection, ScheduleInterviewDialog } from "@/components/InterviewWorkflowUi";
+import {InterviewOutcomeList} from "@/components/InterviewOutcomeControls";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
 import { isTalentOfferExpired } from "@/components/talentOfferState";
@@ -677,6 +678,7 @@ function DetailDialog({
                 </section>
               )}
 
+             <InterviewOutcomeList submissionId={detail.id} admin />
              <InterviewSection
                role="admin"
                applicantName={applicantName(detail)}
@@ -698,8 +700,8 @@ function DetailDialog({
                        <h3 className="text-sm font-semibold text-[#20352a]">Super Admin offer</h3>
                        <p className="mt-1 text-xs leading-relaxed text-slate-600">
                          Use only for a documented stage override. Server policy remains authoritative.
-                         {onboarding.data?.canSendOffer === false && onboarding.data.missing?.length
-                           ? ` Current blockers: ${onboarding.data.missing.join(", ")}.`
+                         {onboarding.data?.canSendOffer === false && onboarding.data.offerBlockers?.length
+                           ? ` Current blockers: ${onboarding.data.offerBlockers.join(", ")}.`
                            : ""}
                        </p>
                        <form className="mt-4 space-y-3" onSubmit={sendAdminOffer}>

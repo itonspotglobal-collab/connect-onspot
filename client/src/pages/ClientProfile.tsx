@@ -76,6 +76,7 @@ import { ContractApplicationPanel } from "@/components/ContractApplicationPanel"
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
 import { ClientHiringPaymentPanel, type HiringInvoice } from "@/components/hiring-payments/HiringPayments";
 import { PaymentVerificationCard, usePaymentSkip } from "@/components/hiring-payments/PaymentVerificationCard";
+import { InterviewOutcomeControls,InterviewOutcomeList } from "@/components/InterviewOutcomeControls";
 import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
 import { isContractorOfferAllowed } from "@/lib/contractorOnboarding";
 
@@ -382,6 +383,8 @@ export function ViewSubmissionModal({
                   Waiting for the talent to choose a time. {submission.proposalExchangeCount ? `${submission.proposalExchangeCount} time exchange${submission.proposalExchangeCount === 1 ? "" : "s"} so far.` : ""}
                 </p>
               )}
+              {currentInterview&&<InterviewOutcomeControls interview={currentInterview} />}
+              <InterviewOutcomeList submissionId={submission.id} excludeId={currentInterview?.id} />
               {(() => {
                 const interview = currentInterview;
                  const canRespond = interview && !requestedInterviewIsHistorical &&
@@ -514,9 +517,9 @@ export function ViewSubmissionModal({
                 onClick={() => { onClose(); onExtendOffer(submission); }}
               >
                 <FileText className="h-4 w-4" />
-                {onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer ? "Final interview required" : "Ready for Offer"}
+                {onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer ? onboarding.data.offerBlockers?.[0]??"Offer unavailable" : "Ready for Offer"}
               </Button>
-              {onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer && <p className="mt-2 text-center text-xs text-amber-800">Offer unavailable: {onboarding.data.missing.join(", ") || "a passed final interview is required"}.</p>}
+              {!onboarding.data?.offerAccepted&&onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer && <p className="mt-2 text-center text-xs text-amber-800">Offer unavailable: {onboarding.data.offerBlockers?.join(", ") || "a passed final interview is required"}.</p>}
             </div>
           )}
         </div>
@@ -2049,9 +2052,9 @@ export function ExtendOfferDialog({
             disabled={offerMutation.isPending || !rate || !offerPaymentGateReady || onboarding.isLoading || !onboardingOfferGateReady}
             className="bg-[#474ead] hover:bg-[#3a3d8f] text-white"
           >
-            {offerMutation.isPending ? "Sending…" : !onboardingOfferGateReady ? "Final interview required" : hiringSettings.isError ? "Couldn't check payment policy — Retry" : !hiringSettingsLoaded ? "Checking payment policy…" : preOfferPaymentRequired && !invoiceVerified && !hasPaymentSkip ? "Payment verification required" : "Send Offer"}
+            {offerMutation.isPending ? "Sending…" : !onboardingOfferGateReady ? onboarding.data?.offerBlockers?.[0]??"Offer unavailable" : hiringSettings.isError ? "Couldn't check payment policy — Retry" : !hiringSettingsLoaded ? "Checking payment policy…" : preOfferPaymentRequired && !invoiceVerified && !hasPaymentSkip ? "Payment verification required" : "Send Offer"}
           </Button>
-          {onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer && <p role="status" className="text-xs text-amber-800">Offer sending is locked by the onboarding policy: {onboarding.data.missing.join(", ") || "a passed final interview is required"}.</p>}
+          {!onboarding.data?.offerAccepted&&onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer && <p role="status" className="text-xs text-amber-800">Offer unavailable: {onboarding.data.offerBlockers?.join(", ") || "a passed final interview is required"}.</p>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

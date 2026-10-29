@@ -1196,6 +1196,11 @@ interface TalentInterview {
 }
 
 function InterviewsSection({ refetchApplications, requestedInterviewId }: { refetchApplications: () => void; requestedInterviewId: string | null }) {
+  const [interviewNow,setInterviewNow]=useState(Date.now);
+  useEffect(()=>{
+    const timer=setInterval(()=>setInterviewNow(Date.now()),15000);
+    return()=>clearInterval(timer);
+  },[]);
   const auth = loadTalentAuth();
   const authToken = auth?.token || "";
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -1229,7 +1234,10 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || data.error || "Unable to update interview");
+      if (!res.ok) {
+        if(res.status===409)await refetch();
+        throw new Error(data.message || data.error || "Unable to update interview");
+      }
       await refetch();
       refetchApplications();
     } catch (err: any) {
@@ -1332,8 +1340,9 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
               {pending && (
                 <>
                   <p className="mt-3 text-xs font-medium text-slate-600 dark:text-slate-300">Choose one of the client's proposed times:</p>
+                  {!interview.proposedTimes.some(slot=>new Date(slot.start).getTime()>interviewNow)&&<p role="status" className="mt-2 text-xs text-amber-800">These times have passed — propose new times</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {interview.proposedTimes.map((slot) => (
+                    {interview.proposedTimes.filter(slot=>new Date(slot.start).getTime()>interviewNow).map((slot) => (
                       <Button key={slot.start} size="sm" className="h-8 rounded-full bg-indigo-600 text-xs text-white hover:bg-indigo-700" disabled={respondingId === interview.id} onClick={() => respond(interview, "accept", slot.start)}>
                         <Check className="mr-1 h-3 w-3" /> {formatInterviewTime(slot.start, slot.timezone ?? "UTC")}
                       </Button>
@@ -1343,11 +1352,12 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
                     <input
                       aria-label="Alternative interview time"
                       type="datetime-local"
+                      min={new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16)}
                       value={counterTimes[interview.id] ?? ""}
                       onChange={(event) => setCounterTimes((current) => ({ ...current, [interview.id]: event.target.value }))}
                       className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
                     />
-                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" disabled={respondingId === interview.id || !counterTimes[interview.id]} onClick={() => respond(interview, "counter", counterTimes[interview.id])}>
+                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" disabled={respondingId === interview.id || !counterTimes[interview.id] || new Date(counterTimes[interview.id]).getTime()<=Date.now()} onClick={() => respond(interview, "counter", counterTimes[interview.id])}>
                       Suggest another time
                     </Button>
                     <Button size="sm" variant="outline" className="h-8 rounded-full text-xs text-slate-500" disabled={respondingId === interview.id} onClick={() => respond(interview, "decline")}>

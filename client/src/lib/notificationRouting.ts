@@ -26,6 +26,7 @@ export const CLIENT_NOTIFICATION_TYPES = [
   "monthly_client_invoice",
   "hiring_invoice",
   "hiring_payment_review",
+  "interview_calendar_sync_failed",
   "new_message",
 ] as const;
 

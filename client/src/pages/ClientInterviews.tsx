@@ -3,6 +3,7 @@
  * Shows upcoming and past interviews across all their submissions.
  */
 import { useState } from "react";
+import {InterviewOutcomeControls} from "@/components/InterviewOutcomeControls";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, Clock, CheckCircle2, XCircle, AlertCircle, Video, Loader2 } from "lucide-react";
@@ -193,6 +194,7 @@ function InterviewCard({
         </div>
       )}
 
+      <InterviewOutcomeControls interview={interview} />
       {interview.meeting_link && state === "confirmed" && (
         <div className="mt-2">
           <a

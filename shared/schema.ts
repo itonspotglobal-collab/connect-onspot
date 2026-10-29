@@ -1673,6 +1673,8 @@ export const interviews = pgTable("interviews", {
   meetingLink: text("meeting_link"),
   calendarEventId: text("calendar_event_id"),
   calendarManaged: boolean("calendar_managed").notNull().default(false),
+  calendarSyncStatus: text("calendar_sync_status"),
+  calendarSyncError: text("calendar_sync_error"),
   calendarInterviewerId: text("calendar_interviewer_id"),
   proposalExchangeCount: integer("proposal_exchange_count").notNull().default(0),
   // Client user who created this interview row (must match submission's client_id)

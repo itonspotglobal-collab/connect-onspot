@@ -19,6 +19,8 @@ import * as currency from "../../shared/currency";
 import { storage } from "../storage";
 import { escHtml } from "../lib/escHtml";
 import { filterMessageContent } from "../lib/piiPatterns";
+import {recordInterviewOutcome} from "../services/interviewOutcomeService";
+import {syncInterviewCalendarAfterCommit} from "../services/interviewCalendarSync";
 import { createHiringContract, updateHiringContract } from "../services/hiringContractService";
 import * as applicationNotifications from "../services/applicationNotificationService";
 import { sendClientNewApplicationEmail } from "../services/emailCompanionService";
@@ -63,7 +65,7 @@ function handler(method: string, path: string): any {
   visit(source);
   assert.ok(text, `Real handler missing: ${method} ${path}`);
   const dependencies: Record<string, any> = {
-    pool, query, storage, jwt, escHtml, filterMessageContent, ...guard, ...times, ...calendar, ...emails, ...currency,
+    pool, query, storage, jwt, escHtml, filterMessageContent, ...guard, ...times, ...calendar, ...emails, ...currency,recordInterviewOutcome,syncInterviewCalendarAfterCommit,
     ...applicationNotifications, sendClientNewApplicationEmail,
     queueHiringLifecycleEvent,requireHiringStage,issueAcceptedOfferDeposit,lockOnboarding,dispatchHiringLifecycleEvents:async()=>{},
     requireVerifiedHiringPayment,hiringPaymentFailure,
@@ -73,7 +75,7 @@ function handler(method: string, path: string): any {
       throw new Error(`Unexpected dynamic dependency: ${name}`);
     },
   };
-  const script = `${declaration("respondUsdOnly")}\n${declaration("normalizeMeetingLink")}\n${declaration("loadTalentOwnedOffer")}\n${declaration("fireAutoApplicationEmail")}\n${declaration("fireInvitationEmail")}\nreturn (${text});`;
+  const script = `${declaration("outcomeHandler")}\n${declaration("respondUsdOnly")}\n${declaration("normalizeMeetingLink")}\n${declaration("loadTalentOwnedOffer")}\n${declaration("fireAutoApplicationEmail")}\n${declaration("fireInvitationEmail")}\nreturn (${text});`;
   const compiled = ts.transpileModule(script, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
@@ -269,6 +271,7 @@ for (const workflow of ["application", "client_invitation"] as const) {
     assert.equal(result.statusCode, 404);
     result = await invoke("patch", "/api/client/interviews/:id", { status: "confirmed", confirmedTime: instant }, other, { id: interviewId });
     assert.equal(result.statusCode, 404);
+    await query("UPDATE interviews SET status='confirmed',confirmed_time=now()-interval '1 hour' WHERE id=$1",[interviewId]);
     const outcome = await invoke("patch", "/api/client/interviews/:id/outcome", { outcome: "advance" }, client, { id: interviewId });
     assert.equal(outcome.statusCode, 200, JSON.stringify(outcome.body));
     const repeatedOutcome = await invoke("patch", "/api/client/interviews/:id/outcome", { outcome: "advance" }, client, { id: interviewId });
@@ -325,22 +328,22 @@ test("Admin direct confirmation uses shared mailbox, real account attendee, UTC 
   assert.equal(remoteEvents.size, count);
 });
 
-test("Graph failure rolls back confirmation, proposal history and status; retry creates one event", async () => {
+test("Graph failure preserves confirmation, proposal history and status; Admin retry creates one event", async () => {
   const id = await submission("application");
   const later = { ...slot, start: "2032-08-23T09:00:00.000Z", end: "2032-08-23T10:00:00.000Z" };
   rejectCreation = true;
   let result = await invoke("post", "/api/admin/interviews", { submissionId: id, proposedTimes: [later], confirmedTime: later.start, durationMinutes: 60 }, admin);
-  assert.equal(result.statusCode, 502, JSON.stringify(result.body));
-  assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "reviewed");
-  assert.equal((await query("SELECT id FROM interviews WHERE submission_id=$1", [id])).rows.length, 0);
+  assert.equal(result.statusCode, 201, JSON.stringify(result.body));
+  assert.equal(result.body.calendar_sync_status,"failed");
+  assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1", [id])).rows[0].status, "interviewing");
+  assert.equal((await query("SELECT id FROM interviews WHERE submission_id=$1", [id])).rows.length, 1);
   const attempted = requests.filter(request => request.method === "POST" && request.url.endsWith("/events")).at(-1)!.body.transactionId;
   rejectCreation = false;
-  result = await invoke("post", "/api/admin/interviews", { submissionId: id, proposedTimes: [later], confirmedTime: later.start, durationMinutes: 60 }, admin);
-  assert.equal(result.statusCode, 201, JSON.stringify(result.body));
+  result.body = await syncInterviewCalendarAfterCommit(pool,result.body.id);
   assert.equal(requests.filter(request => request.method === "POST" && request.url.endsWith("/events")).at(-1)!.body.transactionId, attempted);
 });
 
-test("Talent chooses an Admin proposal; Graph failure leaves it pending and successful retry persists one calendar event", async () => {
+test("Talent acceptance stays confirmed after Graph failure; Admin retry persists one calendar event", async () => {
   const id = await submission("client_invitation");
   const later = { ...slot, start: "2032-08-24T09:00:00.000Z", end: "2032-08-24T10:00:00.000Z" };
   const created = await invoke("post", "/api/admin/interviews", { submissionId: id, proposedTimes: [later], durationMinutes: 60 }, admin);
@@ -349,11 +352,11 @@ test("Talent chooses an Admin proposal; Graph failure leaves it pending and succ
   assert.equal(created.body.calendar_event_id, null);
   rejectCreation = true;
   let result = await invoke("patch", "/api/talent/interviews/:id/respond", { action: "accept", selectedTime: later.start }, talent, { id: created.body.id });
-  assert.equal(result.statusCode, 502);
-  assert.equal((await query("SELECT status FROM interviews WHERE id=$1", [created.body.id])).rows[0].status, "proposed");
+  assert.equal(result.statusCode, 200,JSON.stringify(result.body));
+  assert.equal(result.body.calendar_sync_status,"failed");
+  assert.equal((await query("SELECT status FROM interviews WHERE id=$1", [created.body.id])).rows[0].status, "confirmed");
   rejectCreation = false;
-  result = await invoke("patch", "/api/talent/interviews/:id/respond", { action: "accept", selectedTime: later.start }, talent, { id: created.body.id });
-  assert.equal(result.statusCode, 200, JSON.stringify(result.body));
+  result.body = await syncInterviewCalendarAfterCommit(pool,created.body.id);
   assert.equal(result.body.status, "confirmed");
   assert.ok(result.body.calendar_event_id);
   assert.equal(result.body.confirmed_time_zone, slot.timezone);
@@ -363,19 +366,21 @@ test("Talent chooses an Admin proposal; Graph failure leaves it pending and succ
   assert.equal(remoteEvents.size, count);
 });
 
-test("calendar permission and shared-busy failures are explicit and never save confirmed interviews", async () => {
+test("calendar permission and shared-busy warnings retain confirmed interviews for Admin retry", async () => {
   const id = await submission("application");
   const later = { ...slot, start: "2032-08-25T09:00:00.000Z", end: "2032-08-25T10:00:00.000Z" };
   mailboxDenied = true;
   let result = await invoke("post", "/api/admin/interviews", { submissionId: id, proposedTimes: [later], confirmedTime: later.start }, admin);
-  assert.equal(result.body.error, "mailbox_inaccessible");
+  assert.equal(result.statusCode,201);
+  assert.equal(result.body.calendar_sync_error, "mailbox_inaccessible");
   mailboxDenied = false;
   remoteBusy = true;
-  result = await invoke("post", "/api/admin/interviews", { submissionId: id, proposedTimes: [later], confirmedTime: later.start }, admin);
-  assert.equal(result.statusCode, 409);
-  assert.equal(result.body.error, "calendar_time_conflict");
+  const busySlot={...later,start:"2032-09-23T09:00:00.000Z",end:"2032-09-23T10:00:00.000Z"};
+  result = await invoke("post", "/api/admin/interviews", { submissionId: id, proposedTimes: [busySlot], confirmedTime: busySlot.start }, admin);
+  assert.equal(result.statusCode, 201);
+  assert.equal(result.body.calendar_sync_error, "calendar_time_conflict");
   remoteBusy = false;
-  assert.equal((await query("SELECT id FROM interviews WHERE submission_id=$1", [id])).rows.length, 0);
+  assert.equal((await query("SELECT id FROM interviews WHERE submission_id=$1", [id])).rows.length, 2);
 });
 
 test("calendar configuration reuses existing FindWork sender, never generic Careers or personal Admin mail", () => {
@@ -391,12 +396,11 @@ test("a lost Outlook creation response is recovered on retry without a second in
   const before = remoteEvents.size;
   loseCreationResponse = true;
   let result = await invoke("post", "/api/admin/interviews", body, admin);
-  assert.equal(result.statusCode, 502);
+  assert.equal(result.statusCode, 201);
   assert.equal(remoteEvents.size, before + 1);
-  assert.equal((await query("SELECT id FROM interviews WHERE submission_id=$1", [id])).rows.length, 0);
+  assert.equal((await query("SELECT id FROM interviews WHERE submission_id=$1", [id])).rows.length, 1);
   loseCreationResponse = false;
-  result = await invoke("post", "/api/admin/interviews", body, admin);
-  assert.equal(result.statusCode, 201, JSON.stringify(result.body));
+  result.body = await syncInterviewCalendarAfterCommit(pool,result.body.id);
   assert.equal(remoteEvents.size, before + 1);
   assert.ok(result.body.calendar_event_id);
 });

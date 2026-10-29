@@ -128,6 +128,8 @@ import {
   nameRevealExistsSQL,
 } from "./services/formalPipelineGuard.js";
 import { FindWorkCalendarError, findWorkMailbox, synchronizeFindWorkInterview } from "./services/findWorkCalendarService";
+import { syncInterviewCalendarAfterCommit } from "./services/interviewCalendarSync";
+import { recordInterviewOutcome } from "./services/interviewOutcomeService";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import multer from "multer";
 import Papa from "papaparse";
@@ -9342,9 +9344,8 @@ export async function registerRoutes(
       if (normalizedProposedTimes.some(slot => parseInterviewTimestamp(slot.start) <= Date.now())) {
         return res.status(400).json({ error: "All proposed interview times must be in the future" });
       }
-      // Proposals also require a configured real organizer, but do not create an
-      // Outlook event until a time is confirmed.
-      findWorkMailbox();
+      // Mailbox access is checked by post-commit synchronization, never as a
+      // prerequisite for saving the interview or its proposal.
       if (interviewerId) {
         const { findInterviewerConfig } = await import("./services/microsoftGraphCalendarService");
         if (!await findInterviewerConfig(interviewerId)) {
@@ -9497,8 +9498,8 @@ export async function registerRoutes(
             `UPDATE interviews SET calendar_managed = TRUE, calendar_interviewer_id = $2 WHERE id = $1`,
             [interview.id, interviewerId || null],
           );
-          interview = await synchronizeFindWorkInterview(txClient, interview.id, true);
           await txClient.query("COMMIT");
+          interview = await syncInterviewCalendarAfterCommit(txClient, interview.id, true) ?? interview;
         } catch (txErr: any) {
           await txClient.query("ROLLBACK").catch(() => {});
           txClient.release();
@@ -9783,8 +9784,8 @@ export async function registerRoutes(
              VALUES ($1, $2, 'admin', 'accepted', $3, $4, $5)`,
             [id, userId, JSON.stringify(interview.proposed_times ?? []), confirmedIsoForTx, confirmedTzForTx],
           );
-          updated2.rows[0] = await synchronizeFindWorkInterview(txClient2, id, true);
           await txClient2.query("COMMIT");
+          updated2.rows[0] = await syncInterviewCalendarAfterCommit(txClient2, id, true) ?? updated2.rows[0];
           updatedRow = updated2.rows[0];
         } catch (txErr: any) {
           await txClient2.query("ROLLBACK").catch(() => {});
@@ -9806,8 +9807,8 @@ export async function registerRoutes(
              VALUES ($1, $2, 'admin', 'reschedule', $3)`,
             [id, userId, JSON.stringify(adminRescheduleTimes)],
           );
-          updatedRow = await synchronizeFindWorkInterview(editClient, id, true);
           await editClient.query("COMMIT");
+          updatedRow = await syncInterviewCalendarAfterCommit(editClient, id, true) ?? updatedRow;
         } catch (err) {
           await editClient.query("ROLLBACK").catch(() => {});
           throw err;
@@ -18300,11 +18301,11 @@ export async function registerRoutes(
         }
       }
       const updated = await txClient.query(`SELECT * FROM interviews WHERE id = $1`, [interview.id]);
+      await txClient.query("COMMIT");
       if (action === "accept") {
-        updated.rows[0] = await synchronizeFindWorkInterview(txClient, interview.id);
+        updated.rows[0] = await syncInterviewCalendarAfterCommit(txClient, interview.id) ?? updated.rows[0];
         if (confirmedEmailParams) confirmedEmailParams.meetingLink = updated.rows[0]?.meeting_link ?? confirmedEmailParams.meetingLink;
       }
-      await txClient.query("COMMIT");
 
       // Fire-and-forget confirmation emails when talent accepts — failure never rolls back the accept
       if (confirmedEmailParams) {
@@ -20901,9 +20902,9 @@ export async function registerRoutes(
          }
        }
 
-       await synchronizeFindWorkInterview(txClient, id);
        await txClient.query("COMMIT");
        transactionClosed = true;
+       await syncInterviewCalendarAfterCommit(txClient, id);
         const finalResult = await query(`SELECT * FROM interviews WHERE id = $1`, [id]);
 
        // ── Post-commit notifications (idempotent side effects) ──────────────
@@ -21011,93 +21012,38 @@ export async function registerRoutes(
     }
   });
 
+  const outcomeHandler = (adminRoute=false,typeOnly=false) => async(req:Request,res:Response) => {
+    try {
+      const id=(req as any).user?.id;
+      if(!id)return res.status(401).json({error:"Authentication required"});
+      return res.json(await recordInterviewOutcome(pool,id,req.params.id,req.body,typeOnly,adminRoute));
+    } catch(error:any) {
+      return res.status(error.status??500).json({error:error.code??"OUTCOME_FAILED",message:error.status?error.message:"Unable to save interview outcome."});
+    }
+  };
+  app.patch("/api/admin/interviews/:id/outcome",pipelineMutationLimiter,authenticateJWT,requireAdmin,outcomeHandler(true));
+  app.patch("/api/admin/interviews/:id/type",pipelineMutationLimiter,authenticateJWT,requireAdmin,outcomeHandler(true,true));
+  app.patch("/api/client/interviews/:id/type",pipelineMutationLimiter,authenticateJWT,outcomeHandler(false,true));
+  app.post("/api/admin/interviews/:id/calendar-sync",pipelineMutationLimiter,authenticateJWT,requireAdmin,async(req:Request,res:Response)=>{
+    try {
+    const actor=(await pool.query("SELECT role,admin_sub_role FROM users WHERE id=$1",[(req as any).user?.id])).rows[0];
+    if(actor?.role!=="admin"||!(actor.admin_sub_role===null||actor.admin_sub_role==="talent_acquisition"))
+      return res.status(403).json({error:"Interview permissions required"});
+    if(!/^[0-9a-f-]{36}$/i.test(req.params.id))return res.status(400).json({error:"Invalid interview identifier"});
+    if(!(await pool.query("SELECT id FROM interviews WHERE id=$1",[req.params.id])).rows.length)
+      return res.status(404).json({error:"Interview not found"});
+    const row=await syncInterviewCalendarAfterCommit(pool,req.params.id);
+    return row?res.json(row):res.status(503).json({error:"Calendar sync unavailable",message:"The saved interview is unchanged. Retry calendar sync."});
+    } catch {
+      return res.status(503).json({error:"Calendar sync unavailable",message:"The saved interview is unchanged. Retry calendar sync."});
+    }
+  });
+
   // PATCH /api/client/interviews/:id/outcome — record the outcome of a completed interview
   // Body: { outcome: 'advance' | 'reject' | 'pending', internalNotes? }
   // Sets interview.status = 'completed'. If outcome = 'reject', also sets
   // job_submissions.status = 'rejected' with an audit trail entry.
-  app.patch("/api/client/interviews/:id/outcome", authenticateJWT, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const { id } = req.params;
-      const { outcome, internalNotes } = req.body;
-
-      const validOutcomes = ["advance", "reject", "pending"];
-      if (!outcome || !validOutcomes.includes(outcome)) {
-        return res.status(400).json({ error: "outcome must be one of: " + validOutcomes.join(", ") });
-      }
-
-      const outcomeClient = await pool.connect();
-      try {
-      const query = (sql: string, args: any[]) => outcomeClient.query(sql, args);
-      await outcomeClient.query("BEGIN");
-      // Load interview + verify ownership (formal pipeline guard)
-      const interviewResult = await query(
-        `SELECT i.*, js.client_id, js.status AS submission_status, js.id AS js_id
-         FROM interviews i
-         JOIN job_submissions js ON js.id = i.submission_id
-         WHERE i.id = $1 AND js.client_id = $2
-           AND js.${FORMAL_PIPELINE_PREDICATE}
-         FOR UPDATE OF i, js`,
-        [id, userId],
-      );
-      if (interviewResult.rows.length === 0) {
-        await outcomeClient.query("ROLLBACK");
-        return res.status(404).json({ error: "Interview not found or forbidden" });
-      }
-      const interview = interviewResult.rows[0];
-
-      if (["hired", "contract_sent", "contract_signed", "offer_accepted"].includes(interview.submission_status)) {
-        await outcomeClient.query("ROLLBACK");
-        return res.status(409).json({ error: "submission_not_interviewable", message: "This application has already moved beyond interviewing." });
-      }
-      if (interview.status === "cancelled") {
-        await outcomeClient.query("ROLLBACK");
-        return res.status(409).json({ error: "Cannot record outcome for a cancelled interview" });
-      }
-      if (interview.status === "completed") {
-        await outcomeClient.query("ROLLBACK");
-        return res.status(409).json({ error: "Outcome already recorded for this interview" });
-      }
-
-      // Mark interview completed (completed_at records the instant it was logged)
-      const updatedInterview = await query(
-        `UPDATE interviews
-         SET status = 'completed', outcome = $1, internal_notes = COALESCE($2, internal_notes),
-             completed_at = NOW(), updated_at = NOW()
-         WHERE id = $3
-         RETURNING *`,
-        [outcome, internalNotes ?? null, id],
-      );
-
-      // Side-effect: if rejected, advance submission to 'rejected'
-      if (outcome === "reject" && interview.submission_status !== "rejected") {
-        await query(
-          `UPDATE job_submissions SET status = 'rejected', updated_at = NOW() WHERE id = $1`,
-          [interview.js_id],
-        );
-        await query(
-          `INSERT INTO job_application_status_history
-             (application_id, previous_status, new_status, note, changed_by)
-           VALUES ($1, $2, 'rejected', $3, $4)`,
-          [interview.js_id, interview.submission_status,
-           `Rejected after interview round ${interview.round_number}`, userId],
-        );
-      }
-
-      await outcomeClient.query("COMMIT");
-      return res.json(updatedInterview.rows[0]);
-      } catch (outcomeErr) {
-        await outcomeClient.query("ROLLBACK").catch(() => {});
-        throw outcomeErr;
-      } finally {
-        outcomeClient.release();
-      }
-    } catch (err: any) {
-      console.error("PATCH /api/client/interviews/:id/outcome error:", err);
-      return res.status(500).json({ error: err.message });
-    }
-  });
+  app.patch("/api/client/interviews/:id/outcome",pipelineMutationLimiter,authenticateJWT,outcomeHandler());
 
   // ── Phase 2: Offer Flow (client extends, talent responds) ────────────────────
   //

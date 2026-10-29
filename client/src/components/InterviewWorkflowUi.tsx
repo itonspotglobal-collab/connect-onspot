@@ -684,7 +684,7 @@ export function ScheduleInterviewDialog({
       )}
       <div className="space-y-1.5 border-t border-slate-200 pt-3 dark:border-white/[0.08]">
         <Label htmlFor="admin-stage-override" className="text-xs">Super Admin stage override reason</Label>
-        <Textarea id="admin-stage-override" value={stageOverrideReason} onChange={(event) => setStageOverrideReason(event.target.value)} placeholder="Leave blank for the standard flow. A Super Admin must provide a written reason to override a stage gate." rows={2} maxLength={1200} />
+        <Textarea id="admin-stage-override" value={stageOverrideReason} onChange={(event) => setStageOverrideReason(event.target.value)} placeholder="Leave blank for the standard flow. A Talent Acquisition or Super Admin must provide a written reason to override a stage gate." rows={2} maxLength={1200} />
       </div>
     </form>
   );
@@ -951,6 +951,7 @@ export function RequestInterviewDialog({
   const [notes, setNotes]         = useState("");
   const [scheduling, setScheduling] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [needsShortlist,setNeedsShortlist] = useState(false);
   const [scheduled, setScheduled] = useState(false);
 
   useEffect(() => {
@@ -987,14 +988,15 @@ export function RequestInterviewDialog({
           submissionId,
           interviewType,
           durationMinutes: Number(duration),
-          proposedTimes: [{ start: isoTime }],
+          proposedTimes: [{ start: isoTime,timezone }],
           candidateNotes: notes || undefined,
           meetingLink: meetingLink || undefined,
         }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? data.message ?? `HTTP ${res.status}`);
+        setNeedsShortlist(data.code==="SHORTLIST_REQUIRED"||data.error==="SHORTLIST_REQUIRED");
+        throw new Error(data.message ?? data.error ?? `HTTP ${res.status}`);
       }
       setScheduled(true);
       onScheduled?.();
@@ -1105,7 +1107,28 @@ export function RequestInterviewDialog({
               {scheduleError && (
                 <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50/60 p-3 text-sm text-red-800 dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-300">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{scheduleError}</span>
+                  <span>{needsShortlist?"Shortlist this applicant first":scheduleError}</span>
+                  {needsShortlist&&<Button type="button" size="sm" disabled={scheduling} onClick={async()=>{
+                    setScheduling(true);
+                    try {
+                      const token=localStorage.getItem("onspot_jwt_token");
+                      const headers={"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})};
+                      const list=await fetch("/api/client/job-submissions",{headers});
+                      if(!list.ok)throw new Error("Refresh the application before shortlisting.");
+                      const applications=await list.json();
+                      const app=applications.find((a:any)=>a.id===submissionId);
+                      if(!app)throw new Error("Application not found.");
+                      const result=await fetch(`/api/client/job-submissions/${submissionId}/status`,{
+                        method:"PATCH",headers,body:JSON.stringify({status:"shortlisted",expectedStatus:app.status,
+                          expectedVersion:app.statusVersion??app.status_version,operationId:crypto.randomUUID()}),
+                      });
+                      const body=await result.json();
+                      if(!result.ok)throw new Error(body.message??body.error??"Unable to shortlist the application.");
+                      setNeedsShortlist(false);
+                      await handleSchedule({preventDefault(){}} as React.FormEvent);
+                    } catch(error:any){setScheduleError(error.message);}
+                    finally{setScheduling(false);}
+                  }}>Shortlist</Button>}
                 </div>
               )}
             </form>

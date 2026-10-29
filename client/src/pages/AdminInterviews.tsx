@@ -3,6 +3,7 @@
  * Shows all interviews with filters for status, job, and date range.
  */
 import { useState } from "react";
+import {InterviewOutcomeControls} from "@/components/InterviewOutcomeControls";
 import { useQuery } from "@tanstack/react-query";
 import {
   Calendar, Clock, CheckCircle2, XCircle, Loader2,
@@ -113,6 +114,7 @@ function InterviewCard({ interview }: { interview: InterviewRow }) {
         <p className="mt-2 text-xs text-red-600">Reason: {interview.cancellation_reason}</p>
       )}
 
+      <InterviewOutcomeControls interview={interview} admin />
       {interview.internal_notes && (
         <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 dark:bg-white/[0.04] dark:text-slate-400">
           <strong className="font-semibold">Internal:</strong> {interview.internal_notes}

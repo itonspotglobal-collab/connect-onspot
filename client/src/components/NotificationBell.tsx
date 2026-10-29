@@ -226,6 +226,10 @@ const TYPE_CONFIG: Record<
     icon: FileText, color: "#4D55C7", bg: "#EEF2FF",
     label: "Pre-offer Hiring Invoice", route: "/client/billing",
   },
+  interview_calendar_sync_failed: {
+    icon: CalendarClock, color: "#A16207", bg: "#FEF3C7",
+    label: "Calendar sync needs attention", route: "/admin/interviews",
+  },
   hiring_payment_review: {
     icon: FileText, color: "#4D55C7", bg: "#EEF2FF",
     label: "Hiring Payment Review", route: "/admin/ledger",
