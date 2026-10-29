@@ -965,3 +965,31 @@ mtime_ms = 1793256679864
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/50004199-9eac-4c12-a570-2323defb9fed/62e4138c-1c31-4bcf-a1ed-8febcf990d5d"
 storage_version_token = "1793256712999718"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "1Bd0VNUtfunDgVnPT9nSM"
+uri = "file://generated-artifacts/investors-desktop-1440-full.jpg"
+type = "image"
+title = "Investors — desktop at 1440px"
+description = "Full-page screenshot of the redesigned Investors page using live development statistics."
+logical_id = "18eb7f5b-5591-46aa-ba10-6e462ec2b0b9"
+content_hash = "sha256:5587af6fd4522e77d0ab51bddfd2d6984f37c855c8a9936c6e6594c7e0f0a142"
+size = 505753
+mtime_ms = 1793257598204
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/18eb7f5b-5591-46aa-ba10-6e462ec2b0b9/051919e1-8be9-4e07-8629-8ac054e81b6b"
+storage_version_token = "1793257615297035"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "28KEc-sow7zK5FYPuF3n9"
+uri = "file://generated-artifacts/investors-mobile-390-full.jpg"
+type = "image"
+title = "Investors — mobile at 390px"
+description = "Full-page mobile screenshot, including all redesigned sections and locally stored decorative images."
+logical_id = "8c826a69-9c3d-4757-9707-a181d010ff7d"
+content_hash = "sha256:a79f9b443a2d1a11a863c79960042af1ff8f35ad9863ed69ea674be3d0d50bb5"
+size = 318787
+mtime_ms = 1793257567932
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8c826a69-9c3d-4757-9707-a181d010ff7d/e7146493-a322-47e3-bf37-3bc49fc7ce40"
+storage_version_token = "1793257617616874"
+content_type = "image/jpeg"
