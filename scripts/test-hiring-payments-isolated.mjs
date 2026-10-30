@@ -28,7 +28,15 @@ function run(command,args,extra = {}) {
 }
 try {
   await run("initdb",["-D",data,"-U","hiring_fixture","-A","trust","--no-locale"]);
-  postgres = spawn("postgres",["-D",data,"-h","127.0.0.1","-p",String(port),"-k",root],{env,stdio:["ignore","ignore","inherit"]});
+  const tlsArgs=[];
+  if(process.argv.includes("--investors-production")) {
+    // The real production startup requires TLS even on an owned local DB.
+    // Give the disposable server its own one-day certificate; do not weaken app TLS.
+    await run("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-days","1","-subj","/CN=localhost",
+      "-keyout",join(root,"server.key"),"-out",join(root,"server.crt")]);
+    tlsArgs.push("-c","ssl=on","-c",`ssl_cert_file=${join(root,"server.crt")}`,"-c",`ssl_key_file=${join(root,"server.key")}`);
+  }
+  postgres = spawn("postgres",["-D",data,"-h","127.0.0.1","-p",String(port),"-k",root,...tlsArgs],{env,stdio:["ignore","ignore","inherit"]});
   const admin = `postgresql://hiring_fixture@127.0.0.1:${port}/postgres`;
   let ready = false;
   for (let i=0;i<60;i++) {
@@ -106,6 +114,11 @@ try {
         FOR EACH ROW EXECUTE FUNCTION fixture_legacy_onboarding();`);
     await db.query("COMMIT");
   } catch(e) { await db.query("ROLLBACK"); throw e; } finally { await db.end(); }
+  if(process.argv.includes("--investors-production")) {
+    await run(process.execPath,["scripts/verify-investors-production.mjs"],{
+      ...workerEnv,INVESTOR_CAPTURE_LABEL:process.argv.includes("--before")?"before":"after",
+    });
+  } else {
   // Run the existing real signing/contract regression before adding the new gate.
   // Its fixture deliberately manufactures accepted offers, which are now forbidden.
   const hiringFlowOnly=process.argv.includes("--hiring-flow-only");
@@ -176,6 +189,7 @@ try {
     // Full Express startup can interfere with Node 22 test-worker IPC framing.
     // Direct node:test execution retains assertions/exit codes without that IPC.
     await run(process.execPath,interviewsOnly?[output]:["--test","--test-concurrency=1",output],workerEnv);
+  }
   }
 } finally {
   if (postgres && postgres.exitCode===null) {

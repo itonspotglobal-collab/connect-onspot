@@ -6,10 +6,14 @@ import {
   type InvestorDocument,
 } from "@/components/InvestorDocumentDialog";
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
-import jakePhoto from "@assets/Jake_1775039278985.png";
-import phoneMockup from "@assets/iphone_mockup_transparent_1791189886936.png";
-import tractionNetwork from "@assets/generated_images/Business_network_illustration_d2c6527c.png";
-import visionPhoto from "@assets/investors/1451187580459-43490279c0fa.webp";
+import heroPhoto from "@/assets/investors/hero-team.webp";
+import tractionTeamPhoto from "@/assets/investors/traction-team.webp";
+import tractionPlanningPhoto from "@/assets/investors/traction-planning.webp";
+import founderLetterPhoto from "@/assets/investors/founder-letter.webp";
+import founderInsetPhoto from "@/assets/investors/founder-inset.webp";
+import visionPhoto from "@/assets/investors/earth-at-night.webp";
+import investPhoto from "@/assets/investors/invest-office.webp";
+import jakePhoto from "@/assets/investors/jake-wainberg.webp";
 import "./InvestorsCorner.css";
 
 type InvestorStats = {
@@ -136,7 +140,13 @@ export default function InvestorsCorner() {
       </header>
 
       <main>
-        <section className="investor-open" aria-labelledby="investor-open-title">
+        <section
+          className="investor-open"
+          aria-labelledby="investor-open-title"
+          style={{
+            backgroundImage: `linear-gradient(110deg, rgba(19, 23, 106, .97) 0%, rgba(30, 40, 148, .9) 48%, rgba(37, 51, 162, .6) 100%), url(${heroPhoto})`,
+          }}
+        >
           <div className="investor-hero-grid" aria-hidden="true" />
           <div className="investor-wrap investor-hero-inner">
             <h1 id="investor-open-title">
@@ -144,22 +154,61 @@ export default function InvestorsCorner() {
               <span className="investor-hero-accent">
                 find, hire, pay, and manage
               </span>{" "}
-              vetted remote talent in one place, and{" "}
+              vetted remote talent in one place — and{" "}
               <span className="investor-hero-accent">talent earns more</span>{" "}
               doing it.
             </h1>
-            <div
-              className="investor-phone-stage"
-            >
-              <img
-                className="investor-phone-art"
-                src={phoneMockup}
-                alt="OnSpot mobile About page mockup with the message, Built by people who lived the problem"
-                width={1920}
-                height={1080}
-                loading="eager"
-                decoding="async"
-              />
+            <div className="investor-phone-stage" aria-hidden="true">
+              <span className="investor-phone-ring" />
+              <span className="investor-phone-glow" />
+              <span className="investor-orbit"><i /><i /><i /></span>
+              <span className="investor-badge investor-badge-globe">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z" />
+                </svg>
+              </span>
+              <span className="investor-badge investor-badge-check">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m5 12.5 4.5 4.5L19 7.5" />
+                </svg>
+              </span>
+              <span className="investor-badge investor-badge-nur" />
+              <span className="investor-badge investor-badge-mark" />
+              <div className="investor-phone">
+                <span className="investor-phone-island" />
+                <div className="investor-phone-screen">
+                  <div className="investor-phone-status">
+                    <span>6:23</span>
+                    <span className="investor-phone-system">
+                      <span className="investor-phone-bars"><span /><span /><span /><span /></span>
+                      <span className="investor-phone-network">5G</span>
+                      <span className="investor-phone-battery" />
+                    </span>
+                  </div>
+                  <div className="investor-phone-appbar">
+                    <span className="investor-phone-wordmark">
+                      <img src={onSpotWordmark} alt="" width={1013} height={319} />
+                    </span>
+                    <span className="investor-phone-menu"><span /></span>
+                  </div>
+                  <div className="investor-phone-content">
+                    <span className="investor-phone-pill">ABOUT ONSPOT</span>
+                    <div className="investor-phone-headline">
+                      Built by people who <span>lived</span> the problem.
+                    </div>
+                    <p className="investor-phone-description">
+                      OnSpot exists because we ran the old model ourselves, and watched it fail the people it was supposed to serve.
+                    </p>
+                    <div className="investor-phone-actions">
+                      <span className="investor-phone-action investor-phone-action-primary">Our story</span>
+                      <span className="investor-phone-action investor-phone-action-secondary">Meet the team</span>
+                    </div>
+                  </div>
+                  <span className="investor-phone-chat" />
+                  <span className="investor-phone-home-indicator" />
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -311,16 +360,20 @@ export default function InvestorsCorner() {
               </div>
             </div>
             <div className="investor-collage">
-              <img
-                className="investor-collage-network"
-                src={tractionNetwork}
-                alt="Abstract network of connected businesses and professionals"
-                width={1280}
-                height={896}
-                loading="lazy"
-                decoding="async"
+              <span
+                className="investor-collage-photo investor-collage-primary"
+                aria-hidden="true"
+                style={{
+                  backgroundImage: `linear-gradient(0deg, rgba(19, 23, 106, .25), transparent), url(${tractionTeamPhoto})`,
+                }}
+              />
+              <span
+                className="investor-collage-photo investor-collage-secondary"
+                aria-hidden="true"
+                style={{ backgroundImage: `url(${tractionPlanningPhoto})` }}
               />
               <span className="investor-collage-shape investor-collage-circle" aria-hidden="true" />
+              <span className="investor-collage-shape investor-collage-square" aria-hidden="true" />
               <span className="investor-dots investor-collage-dots" aria-hidden="true" />
             </div>
           </div>
@@ -332,16 +385,25 @@ export default function InvestorsCorner() {
         >
           <span className="investor-letter-blob" aria-hidden="true" />
           <div className="investor-wrap investor-letter-grid">
-            <div className="investor-letter-visual">
-              <div className="investor-letter-clip" />
-              <span className="investor-letter-inset" aria-hidden="true" />
-              <span className="investor-dots investor-letter-dots" aria-hidden="true" />
-              <div className="investor-visual-note">
-                <h2 id="investor-letter-title">A letter from the founders.</h2>
-                <p>The Founders of OnSpot</p>
+              <div
+                className="investor-letter-visual"
+                style={{
+                  backgroundImage: `linear-gradient(0deg, rgba(19, 23, 106, .45), rgba(19, 23, 106, .05)), url(${founderLetterPhoto})`,
+                }}
+              >
+                <div className="investor-letter-clip" />
+                <span
+                  className="investor-letter-inset"
+                  aria-hidden="true"
+                  style={{ backgroundImage: `url(${founderInsetPhoto})` }}
+                />
+                <span className="investor-dots investor-letter-dots" aria-hidden="true" />
+                <div className="investor-visual-note">
+                  <h2 id="investor-letter-title">A letter from the founders.</h2>
+                  <p>The Founders of OnSpot</p>
+                </div>
               </div>
-            </div>
-            <div className="investor-letter-body">
+              <div className="investor-letter-body">
               <p className="investor-letter-first">
                 We built a system for small and medium businesses to solve the
                 broken choice between freelance chaos and enterprise BPO overhead.
@@ -388,8 +450,8 @@ export default function InvestorsCorner() {
             className="investor-vision-photo"
             src={visionPhoto}
             alt="Earth illuminated at night, representing work across borders and time zones"
-            width={2000}
-            height={1331}
+            width={1800}
+            height={1198}
             loading="lazy"
             decoding="async"
           />
@@ -418,13 +480,15 @@ export default function InvestorsCorner() {
                   <div><b>Jake Wainberg</b><span>Co-Founder &amp; President</span></div>
                 </div>
                 <div className="investor-sign">
-                  <span
-                    className="investor-monogram investor-initials"
-                    role="img"
-                    aria-label="Mark Apostol initials"
-                  >
-                    MA
-                  </span>
+                  <img
+                    className="investor-monogram"
+                    src="/mark-apostol.png"
+                    alt="Mark Apostol, OnSpot co-founder and COO"
+                    width={220}
+                    height={283}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div><b>Mark Apostol</b><span>Co-Founder &amp; COO</span></div>
                 </div>
               </div>
@@ -437,7 +501,12 @@ export default function InvestorsCorner() {
           aria-labelledby="investor-invest-title"
         >
           <div className="investor-wrap">
-            <div className="investor-cta-panel">
+            <div
+              className="investor-cta-panel"
+              style={{
+                backgroundImage: `linear-gradient(110deg, rgba(37, 51, 162, .96), rgba(19, 23, 106, .9)), url(${investPhoto})`,
+              }}
+            >
               <span className="investor-cta-rings" aria-hidden="true" />
               <div className="investor-invest-head">
                 <h2 id="investor-invest-title">

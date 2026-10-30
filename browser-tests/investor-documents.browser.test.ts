@@ -90,7 +90,7 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   assert.equal(await page.locator(".investor-top a").getAttribute("href"), "/");
   const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
   const actual = normalize(await page.locator(".onspot-investors-page").innerText());
-  const headline = "OnSpot is the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place, and talent earns more doing it.";
+  const headline = "OnSpot is the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it.";
   assert.equal(normalize(await page.locator("h1").innerText()), headline);
   assert.equal(await page.locator("h1 .investor-hero-accent").allTextContents().then(v => v.map(normalize).join("|")),
     "find, hire, pay, and manage|talent earns more");
@@ -126,21 +126,22 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   assert.match(await founders.innerText(), /Mark Apostol/);
   assert.deepEqual(await founders.locator(".investor-sign b").allTextContents(), ["Nur Laminero", "Jake Wainberg", "Mark Apostol"]);
   assert.deepEqual(await founders.locator(".investor-sign span:not([role='img'])").allTextContents(), ["Co-Founder & CEO", "Co-Founder & President", "Co-Founder & COO"]);
-  assert.equal(await founders.locator("img").count(), 2);
+  assert.equal(await founders.locator("img").count(), 3);
   for (const image of await founders.locator("img").all()) {
     assert.ok(await image.getAttribute("alt"));
     await image.evaluate((el: HTMLImageElement) => el.decode());
     assert.ok(await image.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
   }
-  assert.equal(await founders.getByRole("img", { name: "Mark Apostol initials" }).innerText(), "MA");
+  assert.equal(await founders.locator(".investor-sign img").count(), 3);
+  assert.equal(await founders.locator('img[src="/mark-apostol.png"]').count(), 1);
   const phone = page.locator(".investor-open img");
   assert.equal(await phone.count(), 1);
   await phone.evaluate((el: HTMLImageElement) => el.decode());
   assert.ok(await phone.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
-  assert.equal(await phone.getAttribute("width"), "1920");
-  assert.equal(await phone.getAttribute("height"), "1080");
+  assert.equal(await page.locator(".investor-phone").count(), 1);
   for (const image of await page.locator(".onspot-investors-page img").all()) {
-    assert.ok((await image.getAttribute("alt"))?.trim());
+    const decorative=await image.evaluate(el=>!!el.closest('[aria-hidden="true"]'));
+    assert.ok(decorative ? await image.getAttribute("alt")!==null : (await image.getAttribute("alt"))?.trim());
     assert.ok(Number(await image.getAttribute("width")) > 0);
     assert.ok(Number(await image.getAttribute("height")) > 0);
   }
@@ -164,34 +165,9 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     const headline = await page.locator("#investor-open-title").boundingBox();
     const stage = await page.locator(".investor-phone-stage").boundingBox();
     assert.ok(headline && stage);
-    const actualPhone = await page.locator(".investor-phone-art").evaluate(async (image: HTMLImageElement) => {
-      await image.decode();
-      const canvas = document.createElement("canvas");
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      const context = canvas.getContext("2d", { willReadFrequently: true })!;
-      context.drawImage(image, 0, 0);
-      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-      let left = canvas.width;
-      let top = canvas.height;
-      let right = 0;
-      let bottom = 0;
-      for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          if (pixels[(y * canvas.width + x) * 4 + 3] < 20) continue;
-          left = Math.min(left, x);
-          top = Math.min(top, y);
-          right = Math.max(right, x + 1);
-          bottom = Math.max(bottom, y + 1);
-        }
-      }
-      const imageRect = image.getBoundingClientRect();
-      return {
-        left: imageRect.left + (left / canvas.width) * imageRect.width,
-        top: imageRect.top + (top / canvas.height) * imageRect.height,
-        right: imageRect.left + (right / canvas.width) * imageRect.width,
-        bottom: imageRect.top + (bottom / canvas.height) * imageRect.height,
-      };
+    const actualPhone = await page.locator(".investor-phone").evaluate(el => {
+      const r=el.getBoundingClientRect();
+      return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};
     });
     assert.ok(actualPhone.left >= stage.x - 2 && actualPhone.right <= stage.x + stage.width + 2,
       "visible phone pixels must fit inside the responsive stage");
