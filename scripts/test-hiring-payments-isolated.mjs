@@ -91,11 +91,11 @@ try {
     for (const sql of migrations) await db.query(sql);
     for (const sql of deferredReferences) await db.query(sql);
     await db.query("CREATE TABLE IF NOT EXISTS platform_settings(key text PRIMARY KEY,value text,updated_at timestamptz DEFAULT now())");
-    for(const name of (await readdir("migrations")).filter(n=>n.endsWith(".sql")&&Number(n.slice(0,4))>=38&&Number(n.slice(0,4))<=48).sort())
+    for(const name of (await readdir("migrations")).filter(n=>n.endsWith(".sql")&&Number(n.slice(0,4))>=38).sort())
       await db.query(await readFile(join("migrations",name),"utf8"));
     // Existing regression suites intentionally exercise the preserved D7 workflow.
     // This test-only trigger exists exclusively in this owned disposable database.
-    if(!process.argv.includes("--onboarding-only"))await db.query(`
+    if(!process.argv.includes("--onboarding-only")&&!process.argv.includes("--interview-workflow-only"))await db.query(`
       CREATE FUNCTION fixture_legacy_onboarding() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN
         INSERT INTO contractor_onboarding_cohorts(submission_id,workflow_version,captured_status)
@@ -111,11 +111,11 @@ try {
   const hiringFlowOnly=process.argv.includes("--hiring-flow-only");
   if(hiringFlowOnly) {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts"],workerEnv);
-  } else if (!isolatedApp && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")&&!process.argv.includes("--onboarding-only")&&!process.argv.includes("--contract-documents-only")) {
+  } else if (!isolatedApp && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")&&!process.argv.includes("--onboarding-only")&&!process.argv.includes("--interview-workflow-only")&&!process.argv.includes("--contract-documents-only")) {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts","contracts"],workerEnv);
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
-  const entries = interviewsOnly?["server/tests/interview-scheduling-v1.test.ts"]:process.argv.includes("--onboarding-only") ? ["server/tests/contractor-onboarding.fixture.ts","server/tests/interview-workflow.fixture.ts"] :
+  const entries = process.argv.includes("--interview-workflow-only")?["server/tests/interview-workflow.fixture.ts"]:interviewsOnly?["server/tests/interview-scheduling-v1.test.ts"]:process.argv.includes("--onboarding-only") ? ["server/tests/contractor-onboarding.fixture.ts","server/tests/interview-workflow.fixture.ts"] :
     process.argv.includes("--contract-documents-only") ? ["server/tests/contract-documents.fixture.ts"] : hiringFlowOnly ? [] : clientStatusOnly ? [
     jobBillingOnly ? "server/tests/job-billing-classification.fixture.ts" :
       clientNavigationOnly ? "server/tests/client-account-navigation.fixture.ts" : "server/tests/client-application-status.fixture.ts",

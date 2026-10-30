@@ -12,7 +12,7 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
   const router=Router();
   const msa=new ClientMsaService(pool,undefined,dispatchHiringLifecycleEvents);
   router.use((req,_res,next)=>{
-    if(!/^\/api\/(?:contractor-onboarding(?:\/|$)|admin\/(?:contractor-onboarding|msa-documents)(?:\/|$)|client\/msa(?:\/|$))/.test(req.path))return next("router");
+    if(!/^\/api\/(?:contractor-onboarding(?:\/|$)|admin\/(?:contractor-onboarding|msa-documents)(?:\/|$)|client\/(?:msa|pending-deposits)(?:\/|$))/.test(req.path))return next("router");
     next();
   });
   router.use(authenticate);
@@ -33,6 +33,16 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
     next();
   });
   router.get("/api/contractor-onboarding/:submissionId",handle(async(req,res)=>res.json(await onboardingStatus(pool,req.params.submissionId,req.onboardingActor.id))));
+  router.get("/api/client/pending-deposits",handle(async(req,res)=>{
+    if(req.onboardingActor.role!=="client")throw new OnboardingError(403,"FORBIDDEN","Client account required.");
+    const items=(await query(`SELECT d.id,d.amount,d.currency,j.title AS job_title,
+      coalesce(d.submission_id,h.submission_id) AS submission_id FROM security_deposits d
+      LEFT JOIN hiring_contracts h ON h.id=d.hiring_contract_id
+      JOIN job_submissions js ON js.id=coalesce(d.submission_id,h.submission_id)
+      JOIN jobs j ON j.id=js.job_id WHERE js.client_id=$1 AND d.status='pending'
+      ORDER BY d.created_at DESC`,[req.onboardingActor.id])).rows;
+    res.json(items);
+  }));
   router.get("/api/admin/contractor-onboarding",handle(async(req,res)=>{
     if(req.onboardingActor.role!=="admin")throw new OnboardingError(403,"FORBIDDEN","Admin access required.");
     const rows=(await query("SELECT id FROM job_submissions WHERE status IN ('offer_accepted','contract_sent','contract_signed') ORDER BY updated_at DESC LIMIT 200")).rows;

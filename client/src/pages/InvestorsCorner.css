@@ -1,3 +1,7 @@
+.investor-traction-content { display: flex; flex-direction: column; }
+.investor-traction-heading { order: 0; }
+.investor-total-progress { order: 1; }
+.investor-traction-grid, .investor-traction-unavailable { order: 2; }
 .onspot-investors-page,
 .onspot-investors-page *,
 .onspot-investors-page *::before,
@@ -387,9 +391,7 @@
   overflow: hidden;
   padding: 0;
   color: var(--white);
-  background:
-    linear-gradient(110deg, rgba(19, 23, 106, .97) 0%, rgba(30, 40, 148, .9) 48%, rgba(37, 51, 162, .6) 100%),
-    var(--investor-hero-photo) center / cover no-repeat;
+  background: linear-gradient(110deg, rgba(19, 23, 106, .97) 0%, rgba(30, 40, 148, .9) 48%, rgba(37, 51, 162, .6) 100%);
 }
 
 .onspot-investors-page .investor-open::before {
@@ -438,13 +440,20 @@
 }
 
 .onspot-investors-page .investor-open h1 {
-  max-width: 15em;
+  max-width: 14em;
   color: #fff;
   font-size: clamp(34px, 4.1vw, 54px);
   font-weight: 800;
-  line-height: 1.08;
+  line-height: 1.02;
   letter-spacing: -.035em;
   text-wrap: balance;
+}
+
+.onspot-investors-page .investor-hero-accent {
+  color: transparent;
+  background: linear-gradient(105deg, #d9d5ff 4%, #9ba4ff 52%, #f0bd55 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
 }
 
 .onspot-investors-page .investor-phone-stage {
@@ -455,6 +464,17 @@
   align-items: center;
   justify-content: center;
   isolation: isolate;
+  overflow: hidden;
+}
+
+.onspot-investors-page .investor-phone-art {
+  display: block;
+  width: min(1230px, 225%);
+  max-width: none;
+  height: auto;
+  flex: 0 0 auto;
+  transform: translateX(-27%);
+  animation: investor-rise 1s cubic-bezier(.2, .7, .2, 1) both;
 }
 
 .onspot-investors-page .investor-phone {
@@ -823,14 +843,12 @@
 .onspot-investors-page .investor-badge-nur {
   top: 250px;
   left: 7%;
-  background-image: url("/nur-ceo.jpeg");
   animation-delay: -4s;
 }
 
 .onspot-investors-page .investor-badge-mark {
   right: 9%;
   bottom: 90px;
-  background-image: url("/mark-apostol.png");
   animation-delay: -3s;
 }
 
@@ -954,6 +972,8 @@
 
 .onspot-investors-page .investor-traction-content {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .onspot-investors-page .investor-traction-heading {
@@ -1004,9 +1024,115 @@
 }
 
 .onspot-investors-page .investor-traction-grid {
+  order: 2;
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+}
+
+.onspot-investors-page .investor-total-progress {
+  order: 1;
+  margin: 0 0 24px;
+  padding: 22px 24px 24px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(20, 26, 94, .045);
+}
+
+.onspot-investors-page .investor-total-progress-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.onspot-investors-page .investor-total-progress-heading h3 {
+  color: var(--deep);
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.onspot-investors-page .investor-total-progress-heading p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.onspot-investors-page .investor-total-progress-percent {
+  flex: 0 0 auto;
+  color: var(--royal);
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.onspot-investors-page .investor-total-progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e9ebf8;
+}
+
+.onspot-investors-page .investor-total-progress-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #303cba 0%, #6b63d8 62%, #eeae49 100%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1s cubic-bezier(.2, .7, .2, 1);
+}
+
+.onspot-investors-page .investor-total-progress-message {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.onspot-investors-page .investor-total-progress-message button {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1px solid var(--royal);
+  border-radius: 8px;
+  color: var(--royal);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.onspot-investors-page .investor-total-progress-message button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.onspot-investors-page .investor-total-progress-loading {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e9ebf8;
+}
+
+.onspot-investors-page .investor-total-progress-loading > span[aria-hidden="true"] {
+  display: block;
+  width: 36%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c7cbed, #e4e6f6);
+  animation: investor-skeleton-pulse 1.3s ease-in-out infinite alternate;
+}
+
+.onspot-investors-page .investor-total-progress-unavailable {
+  order: 2;
 }
 
 .onspot-investors-page .investor-traction-card {
@@ -1148,9 +1274,27 @@
   box-shadow: 0 26px 60px rgba(19, 23, 106, .22);
 }
 
+.onspot-investors-page .investor-collage-network {
+  position: absolute;
+  inset: 0 90px 70px 0;
+  display: block;
+  width: calc(100% - 90px);
+  height: calc(100% - 70px);
+  border-radius: 22px;
+  object-fit: cover;
+  box-shadow: 0 26px 60px rgba(19, 23, 106, .22);
+}
+
+.onspot-investors-page .investor-collage {
+  order: 3;
+}
+
+.onspot-investors-page .investor-traction-unavailable {
+  order: 2;
+}
+
 .onspot-investors-page .investor-collage-primary {
   inset: 0 90px 70px 0;
-  background-image: linear-gradient(0deg, rgba(19, 23, 106, .25), transparent), var(--lazy-photo, none);
 }
 
 .onspot-investors-page .investor-collage-secondary {
@@ -1159,7 +1303,6 @@
   width: 58%;
   height: 52%;
   border: 6px solid var(--paper);
-  background-image: var(--lazy-photo, none);
 }
 
 .onspot-investors-page .investor-collage-shape {
@@ -1225,7 +1368,9 @@
   min-height: 520px;
   border-radius: 20px;
   background-color: #d9def3;
-  background-image: linear-gradient(0deg, rgba(19, 23, 106, .45), rgba(19, 23, 106, .05)), var(--lazy-photo, none);
+  background-image:
+    radial-gradient(ellipse at 75% 22%, rgba(114, 126, 225, .34), transparent 42%),
+    linear-gradient(145deg, #202b89, #151a64 65%, #0e124b);
   background-position: center;
   background-size: cover;
   overflow: visible;
@@ -1247,10 +1392,7 @@
   height: 180px;
   border: 6px solid #fff;
   border-radius: 16px;
-  background-color: #d9def3;
-  background-image: var(--lazy-photo, none);
-  background-position: center;
-  background-size: cover;
+  background: linear-gradient(135deg, #f3c856, #e2e8ff 48%, #6975d5);
   box-shadow: 0 18px 40px rgba(19, 23, 106, .2);
 }
 
@@ -1412,11 +1554,9 @@
 
 .onspot-investors-page .investor-vision-photo {
   inset: 0;
-  background-color: var(--deep);
-  background-image: var(--lazy-photo, none);
-  background-position: center;
-  background-size: cover;
-  background-attachment: fixed;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   opacity: .14;
 }
 
@@ -1528,6 +1668,15 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, .15);
 }
 
+.onspot-investors-page .investor-sign .investor-initials {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
 .onspot-investors-page .investor-sign b,
 .onspot-investors-page .investor-sign span {
   display: block;
@@ -1564,7 +1713,7 @@
   border-radius: 24px;
   color: #fff;
   background-color: var(--deep);
-  background-image: linear-gradient(110deg, rgba(37, 51, 162, .96), rgba(19, 23, 106, .9)), var(--lazy-photo, none);
+  background-image: linear-gradient(110deg, #2533a2, #13176a 78%);
   background-position: center;
   background-size: cover;
 }
@@ -1796,7 +1945,11 @@
   }
 
   .onspot-investors-page .investor-phone-stage {
-    min-height: 690px;
+    min-height: clamp(570px, 115vw, 700px);
+  }
+
+  .onspot-investors-page .investor-phone-art {
+    width: min(1230px, 225vw);
   }
 
   .onspot-investors-page .investor-badge-nur,
@@ -1816,6 +1969,12 @@
 
   .onspot-investors-page .investor-collage {
     height: 400px;
+  }
+
+  .onspot-investors-page .investor-collage-network {
+    inset: 0 50px 50px 0;
+    width: calc(100% - 50px);
+    height: calc(100% - 50px);
   }
 
   .onspot-investors-page .investor-letter-grid {
@@ -1842,9 +2001,6 @@
     padding: 40px;
   }
 
-  .onspot-investors-page .investor-vision-photo {
-    background-attachment: scroll;
-  }
 }
 
 @media (max-width: 600px) {
@@ -1862,6 +2018,15 @@
 
   .onspot-investors-page .investor-open h1 {
     font-size: clamp(34px, 9vw, 46px);
+  }
+
+  .onspot-investors-page .investor-phone-stage {
+    min-height: clamp(510px, 180vw, 700px);
+  }
+
+  .onspot-investors-page .investor-phone-art {
+    width: min(1050px, 250vw);
+    transform: translateX(-25.15%);
   }
 
   .onspot-investors-page .investor-traction,
@@ -1883,6 +2048,12 @@
 
   .onspot-investors-page .investor-collage {
     height: 320px;
+  }
+
+  .onspot-investors-page .investor-collage-network {
+    inset: 0 42px 42px 0;
+    width: calc(100% - 42px);
+    height: calc(100% - 42px);
   }
 
   .onspot-investors-page .investor-collage-primary {
@@ -1935,7 +2106,12 @@
 
 @media (max-width: 420px) {
   .onspot-investors-page .investor-phone-stage {
-    min-height: 600px;
+    min-height: clamp(510px, 180vw, 700px);
+  }
+
+  .onspot-investors-page .investor-phone-art {
+    width: min(1092px, 260vw);
+    transform: translateX(-25.15%);
   }
 
   .onspot-investors-page .investor-phone {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import HeadSEO from "@/components/HeadSEO";
 import {
@@ -7,19 +7,19 @@ import {
 } from "@/components/InvestorDocumentDialog";
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
 import jakePhoto from "@assets/Jake_1775039278985.png";
-import heroPhoto from "@assets/investors/1521737711867-e3b97375f902.webp";
-import letterPhoto from "@assets/investors/1522071820081-009f0129c71c.webp";
-import tractionPhotoOne from "@assets/investors/1600880292203-757bb62b4baf.webp";
-import tractionPhotoTwo from "@assets/investors/1552664730-d307ca884978.webp";
-import letterInsetPhoto from "@assets/investors/1556761175-b413da4baf72.webp";
+import phoneMockup from "@assets/iphone_mockup_transparent_1791189886936.png";
+import tractionNetwork from "@assets/generated_images/Business_network_illustration_d2c6527c.png";
 import visionPhoto from "@assets/investors/1451187580459-43490279c0fa.webp";
-import investPhoto from "@assets/investors/1497366216548-37526070297c.webp";
 import "./InvestorsCorner.css";
 
 type InvestorStats = {
   contractorAccounts: number;
   clientAccounts: number;
   asOf: string;
+};
+
+type InvestorGoals = {
+  totalGoal: number | null;
 };
 
 function parseInvestorStats(value: unknown): InvestorStats {
@@ -51,6 +51,22 @@ function parseInvestorStats(value: unknown): InvestorStats {
   };
 }
 
+function parseInvestorGoals(value: unknown): InvestorGoals {
+  if (!value || typeof value !== "object") {
+    throw new Error("Investor goals are unavailable.");
+  }
+  const totalGoal = (value as Record<string, unknown>).totalGoal;
+  if (
+    totalGoal !== null &&
+    (typeof totalGoal !== "number" ||
+      !Number.isSafeInteger(totalGoal) ||
+      totalGoal <= 0)
+  ) {
+    throw new Error("Investor goals are unavailable.");
+  }
+  return { totalGoal: totalGoal as number | null };
+}
+
 async function fetchInvestorStats(): Promise<InvestorStats> {
   const response = await fetch("/api/public/investor-stats", {
     credentials: "include",
@@ -61,8 +77,17 @@ async function fetchInvestorStats(): Promise<InvestorStats> {
   return parseInvestorStats(await response.json());
 }
 
+async function fetchInvestorGoals(): Promise<InvestorGoals> {
+  const response = await fetch("/api/public/investor-goals", {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Investor goals are unavailable.");
+  }
+  return parseInvestorGoals(await response.json());
+}
+
 export default function InvestorsCorner() {
-  const pageRef = useRef<HTMLDivElement | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [requestedDocument, setRequestedDocument] =
     useState<InvestorDocument>("deck");
@@ -75,37 +100,14 @@ export default function InvestorsCorner() {
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
-
-  useEffect(() => {
-    const root = pageRef.current;
-    if (!root) return;
-    const deferredBackgrounds =
-      root.querySelectorAll<HTMLElement>("[data-lazy-bg]");
-    const loadBackground = (element: HTMLElement) => {
-      const image = element.dataset.lazyBg;
-      if (!image) return;
-      element.style.setProperty("--lazy-photo", `url("${image}")`);
-      delete element.dataset.lazyBg;
-    };
-
-    if (!("IntersectionObserver" in window)) {
-      deferredBackgrounds.forEach(loadBackground);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          loadBackground(entry.target as HTMLElement);
-          observer.unobserve(entry.target);
-        });
-      },
-      { rootMargin: "320px 0px" },
-    );
-    deferredBackgrounds.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, []);
+  const investorGoalsQuery = useQuery({
+    queryKey: ["/api/public/investor-goals"],
+    queryFn: fetchInvestorGoals,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+  });
 
   const openDocumentRequest = (
     document: InvestorDocument,
@@ -117,11 +119,7 @@ export default function InvestorsCorner() {
   };
 
   return (
-    <div
-      ref={pageRef}
-      className="onspot-investors-page"
-      style={{ "--investor-hero-photo": `url("${heroPhoto}")` } as CSSProperties}
-    >
+    <div className="onspot-investors-page">
       <HeadSEO
         title="Invest in OnSpot — A Letter From Our CEO"
         description="A letter from Nur Laminero, Co-Founder and CEO of OnSpot. Get the pitch deck, view the Wefunder opportunity profile, or download the valuation summary."
@@ -131,7 +129,7 @@ export default function InvestorsCorner() {
       <header className="investor-top">
         <div className="investor-wrap investor-nav">
           <a className="investor-logo" href="/" aria-label="OnSpot home">
-            <img src={onSpotWordmark} alt="OnSpot" />
+            <img src={onSpotWordmark} alt="OnSpot" width={1013} height={319} />
           </a>
           <span aria-current="page">Investors</span>
         </div>
@@ -142,81 +140,26 @@ export default function InvestorsCorner() {
           <div className="investor-hero-grid" aria-hidden="true" />
           <div className="investor-wrap investor-hero-inner">
             <h1 id="investor-open-title">
-              OnSpot is the unified outsourcing system where businesses find,
-              hire, pay, and manage vetted remote talent in one place — and talent
-              earns more doing it.
+              OnSpot is the unified outsourcing system where businesses{" "}
+              <span className="investor-hero-accent">
+                find, hire, pay, and manage
+              </span>{" "}
+              vetted remote talent in one place, and{" "}
+              <span className="investor-hero-accent">talent earns more</span>{" "}
+              doing it.
             </h1>
             <div
               className="investor-phone-stage"
-              role="img"
-              aria-label="OnSpot mobile site shown on a phone"
             >
-              <div className="investor-phone-glow" aria-hidden="true" />
-              <div className="investor-phone-ring" aria-hidden="true" />
-              <div className="investor-orbit" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </div>
-              <span className="investor-badge investor-badge-globe" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z" />
-                </svg>
-              </span>
-              <span className="investor-badge investor-badge-check" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="m5 12.5 4.5 4.5L19 7.5" />
-                </svg>
-              </span>
-              <span className="investor-badge investor-badge-nur" aria-hidden="true" />
-              <span className="investor-badge investor-badge-mark" aria-hidden="true" />
-              <div className="investor-phone" aria-hidden="true">
-                <div className="investor-phone-island" />
-                <div className="investor-phone-screen">
-                  <div className="investor-phone-status">
-                    <span>6:23</span>
-                    <span className="investor-phone-system">
-                      <span className="investor-phone-bars">
-                        <span />
-                        <span />
-                        <span />
-                        <span />
-                      </span>
-                      <span className="investor-phone-network">5G</span>
-                      <span className="investor-phone-battery" />
-                    </span>
-                  </div>
-                  <div className="investor-phone-appbar">
-                    <span className="investor-phone-wordmark">
-                      <img src={onSpotWordmark} alt="" />
-                    </span>
-                    <span className="investor-phone-menu">
-                      <span />
-                    </span>
-                  </div>
-                  <div className="investor-phone-content">
-                    <span className="investor-phone-pill">ABOUT ONSPOT</span>
-                    <p className="investor-phone-headline">
-                      Built by people who <span>lived</span> the problem.
-                    </p>
-                    <p className="investor-phone-description">
-                      OnSpot exists because we ran the old model ourselves, and
-                      watched it fail the people it was supposed to serve.
-                    </p>
-                    <div className="investor-phone-actions">
-                      <span className="investor-phone-action investor-phone-action-primary">
-                        Our story
-                      </span>
-                      <span className="investor-phone-action investor-phone-action-secondary">
-                        Meet the team
-                      </span>
-                    </div>
-                  </div>
-                  <span className="investor-phone-chat" />
-                  <span className="investor-phone-home-indicator" />
-                </div>
-              </div>
+              <img
+                className="investor-phone-art"
+                src={phoneMockup}
+                alt="OnSpot mobile About page mockup with the message, Built by people who lived the problem"
+                width={1920}
+                height={1080}
+                loading="eager"
+                decoding="async"
+              />
             </div>
           </div>
         </section>
@@ -307,13 +250,79 @@ export default function InvestorsCorner() {
                   </div>
                 </div>
               )}
+              <div className="investor-total-progress" aria-live="polite">
+                <div className="investor-total-progress-heading">
+                  <div>
+                    <h3 id="investor-total-progress-title">Total registered accounts</h3>
+                    {investorStatsQuery.data && investorGoalsQuery.data?.totalGoal && (
+                      <p>
+                        {(
+                          investorStatsQuery.data.contractorAccounts +
+                          investorStatsQuery.data.clientAccounts
+                        ).toLocaleString()}{" "}
+                        of {investorGoalsQuery.data.totalGoal.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  {investorStatsQuery.data && investorGoalsQuery.data?.totalGoal && (
+                    <strong className="investor-total-progress-percent">
+                      {(
+                        ((investorStatsQuery.data.contractorAccounts +
+                          investorStatsQuery.data.clientAccounts) /
+                          investorGoalsQuery.data.totalGoal) *
+                        100
+                      ).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                      %
+                    </strong>
+                  )}
+                </div>
+                {investorStatsQuery.isLoading || investorGoalsQuery.isLoading ? (
+                  <div className="investor-total-progress-loading" role="status">
+                    <span aria-hidden="true" />
+                    <span className="sr-only">Loading account goal progress.</span>
+                  </div>
+                ) : investorStatsQuery.isError || !investorStatsQuery.data ? (
+                  <div className="investor-total-progress-message" role="status">
+                    Account progress is unavailable.
+                  </div>
+                ) : investorGoalsQuery.isError || !investorGoalsQuery.data ? (
+                  <div className="investor-total-progress-message" role="status">
+                    <span>Account goal is temporarily unavailable.</span>
+                    <button
+                      type="button"
+                      onClick={() => void investorGoalsQuery.refetch()}
+                      disabled={investorGoalsQuery.isFetching}
+                    >
+                      {investorGoalsQuery.isFetching ? "Checking…" : "Try again"}
+                    </button>
+                  </div>
+                ) : investorGoalsQuery.data.totalGoal === null ? (
+                  <div className="investor-total-progress-message" role="status">
+                    Account goal has not been set.
+                  </div>
+                ) : (
+                  <InvestorTotalProgress
+                    count={
+                      investorStatsQuery.data.contractorAccounts +
+                      investorStatsQuery.data.clientAccounts
+                    }
+                    goal={investorGoalsQuery.data.totalGoal}
+                  />
+                )}
+              </div>
             </div>
-            <div className="investor-collage" aria-hidden="true">
-              <div className="investor-collage-photo investor-collage-primary" data-lazy-bg={tractionPhotoOne} />
-              <div className="investor-collage-photo investor-collage-secondary" data-lazy-bg={tractionPhotoTwo} />
-              <span className="investor-collage-shape investor-collage-circle" />
-              <span className="investor-collage-shape investor-collage-square" />
-              <span className="investor-dots investor-collage-dots" />
+            <div className="investor-collage">
+              <img
+                className="investor-collage-network"
+                src={tractionNetwork}
+                alt="Abstract network of connected businesses and professionals"
+                width={1280}
+                height={896}
+                loading="lazy"
+                decoding="async"
+              />
+              <span className="investor-collage-shape investor-collage-circle" aria-hidden="true" />
+              <span className="investor-dots investor-collage-dots" aria-hidden="true" />
             </div>
           </div>
         </section>
@@ -324,9 +333,9 @@ export default function InvestorsCorner() {
         >
           <span className="investor-letter-blob" aria-hidden="true" />
           <div className="investor-wrap investor-letter-grid">
-            <div className="investor-letter-visual" data-lazy-bg={letterPhoto}>
+            <div className="investor-letter-visual">
               <div className="investor-letter-clip" />
-              <span className="investor-letter-inset" data-lazy-bg={letterInsetPhoto} aria-hidden="true" />
+              <span className="investor-letter-inset" aria-hidden="true" />
               <span className="investor-dots investor-letter-dots" aria-hidden="true" />
               <div className="investor-visual-note">
                 <h2 id="investor-letter-title">A letter from the founders.</h2>
@@ -376,7 +385,15 @@ export default function InvestorsCorner() {
         </section>
 
         <section className="investor-vision-section" aria-label="Our vision and founders">
-          <div className="investor-vision-photo" data-lazy-bg={visionPhoto} aria-hidden="true" />
+          <img
+            className="investor-vision-photo"
+            src={visionPhoto}
+            alt="Earth illuminated at night, representing work across borders and time zones"
+            width={2000}
+            height={1331}
+            loading="lazy"
+            decoding="async"
+          />
           <div className="investor-vision-glow investor-vision-glow-one" aria-hidden="true" />
           <div className="investor-vision-glow investor-vision-glow-two" aria-hidden="true" />
           <div className="investor-wrap investor-vision-content">
@@ -394,15 +411,21 @@ export default function InvestorsCorner() {
               <h3>The Founders of OnSpot</h3>
               <div className="investor-signature-list">
                 <div className="investor-sign">
-                  <img className="investor-monogram" src="/nur-ceo.jpeg" alt="Nur Laminero" loading="lazy" />
+                  <img className="investor-monogram" src="/nur-ceo.jpeg" alt="Nur Laminero, OnSpot co-founder and CEO" width={512} height={512} loading="lazy" decoding="async" />
                   <div><b>Nur Laminero</b><span>Co-Founder &amp; CEO</span></div>
                 </div>
                 <div className="investor-sign">
-                  <img className="investor-monogram" src={jakePhoto} alt="Jake Wainberg" loading="lazy" />
+                  <img className="investor-monogram" src={jakePhoto} alt="Jake Wainberg, OnSpot co-founder and President" width={428} height={570} loading="lazy" decoding="async" />
                   <div><b>Jake Wainberg</b><span>Co-Founder &amp; President</span></div>
                 </div>
                 <div className="investor-sign">
-                  <img className="investor-monogram" src="/mark-apostol.png" alt="Mark Apostol" loading="lazy" />
+                  <span
+                    className="investor-monogram investor-initials"
+                    role="img"
+                    aria-label="Mark Apostol initials"
+                  >
+                    MA
+                  </span>
                   <div><b>Mark Apostol</b><span>Co-Founder &amp; COO</span></div>
                 </div>
               </div>
@@ -415,7 +438,7 @@ export default function InvestorsCorner() {
           aria-labelledby="investor-invest-title"
         >
           <div className="investor-wrap">
-            <div className="investor-cta-panel" data-lazy-bg={investPhoto}>
+            <div className="investor-cta-panel">
               <span className="investor-cta-rings" aria-hidden="true" />
               <div className="investor-invest-head">
                 <h2 id="investor-invest-title">
@@ -506,7 +529,14 @@ export default function InvestorsCorner() {
       <footer className="investor-footer">
         <div className="investor-wrap investor-footer-inner">
           <a className="investor-logo" href="/" aria-label="OnSpot home">
-            <img src={onSpotWordmark} alt="OnSpot" />
+            <img
+              src={onSpotWordmark}
+              alt="OnSpot"
+              width={1013}
+              height={319}
+              loading="lazy"
+              decoding="async"
+            />
           </a>
           <p>
             © 2026 OnSpot. All rights reserved. This page is for information only
@@ -520,6 +550,46 @@ export default function InvestorsCorner() {
         document={requestedDocument}
         onOpenChange={setDialogOpen}
         returnFocusRef={requestTriggerRef}
+      />
+    </div>
+  );
+}
+
+function InvestorTotalProgress({ count, goal }: { count: number; goal: number }) {
+  const validCount = Number.isSafeInteger(count) && count >= 0;
+  const cappedCount = validCount ? Math.min(count, goal) : 0;
+  const barPercent = validCount ? Math.min((count / goal) * 100, 100) : 0;
+  const percentage = validCount
+    ? ((count / goal) * 100).toLocaleString(undefined, { maximumFractionDigits: 1 })
+    : "0";
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+
+  useEffect(() => {
+    setAnimatedProgress(barPercent / 100);
+  }, [barPercent]);
+
+  if (!validCount) {
+    return (
+      <div className="investor-total-progress-message" role="status">
+        Account total is temporarily unavailable.
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="investor-total-progress-track"
+      role="progressbar"
+      aria-labelledby="investor-total-progress-title"
+      aria-valuemin={0}
+      aria-valuemax={goal}
+      aria-valuenow={cappedCount}
+      aria-valuetext={`${count.toLocaleString()} of ${goal.toLocaleString()} registered accounts, ${percentage}%${count > goal ? ", goal exceeded" : ""}`}
+    >
+      <span
+        className="investor-total-progress-fill"
+        style={{ transform: `scaleX(${animatedProgress})` }}
+        aria-hidden="true"
       />
     </div>
   );

@@ -60,7 +60,7 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
     defaultInterviewType:interviews.some(i=>i.status==="completed")?"final":"initial",
     offerId:offer?.id??null,deposit:deposit?(s.actor_role==="talent"
       ?{status:conditions.depositHeld?"held":"pending",paymentStatus:conditions.depositHeld?"paid":"awaiting_payment",invoiceUrl:null}
-      :{id:deposit.id,status:deposit.status,paymentStatus:deposit.status==="held"?"paid":deposit.proof_status??"awaiting_payment",
+      :{id:deposit.id,status:deposit.status,amount:deposit.amount,currency:deposit.currency,paymentStatus:deposit.status==="held"?"paid":deposit.proof_status??"awaiting_payment",
         invoiceUrl:`/client/payments/deposit/${deposit.id}`}):null,
     contract:contract?{id:contract.id,status:contract.status,url:`/contracts?id=${contract.id}`}:null,
     msa:{version:msa?.version??null,signed:msaSigned,available:!!msa,url:"/client/msa"},

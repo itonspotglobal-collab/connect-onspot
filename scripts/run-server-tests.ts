@@ -130,6 +130,11 @@ async function stopChild(child: ChildProcess): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  // Never start the historical all-server runner against a shared workspace DB.
+  // These tests contain writes, and startup runs migrations/backfills.
+  if (!process.env.ONSPOT_DISPOSABLE_TEST_DATABASE) {
+    throw new Error("Full npm test requires an owned disposable database (ONSPOT_DISPOSABLE_TEST_DATABASE=1). Use scripts/test-hiring-payments-isolated.mjs for isolated financial/HTTP coverage. No shared database was touched.");
+  }
   const port = await findAvailablePort();
   const baseUrl = `http://127.0.0.1:${port}`;
   const serverEnvironment = {

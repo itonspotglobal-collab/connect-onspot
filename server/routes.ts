@@ -3502,20 +3502,7 @@ export async function registerRoutes(
     try {
       const actor=(await query("SELECT role,admin_sub_role FROM users WHERE id=$1",[req.user?.id])).rows[0];
       if(actor?.role!=="admin" || actor.admin_sub_role!==null) return res.status(403).json({error:"Super Admin access required"});
-      if(typeof req.body?.preOfferPaymentRequired!=="boolean") return res.status(422).json({error:"preOfferPaymentRequired must be a boolean"});
-      const tx=await pool.connect();
-      try {
-      await tx.query("BEGIN");
-      await tx.query("SELECT pg_advisory_xact_lock(hashtext('hiring-payment-setting'))");
-      const old=(await tx.query("SELECT value FROM platform_settings WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED' FOR UPDATE")).rows[0]?.value??"false";
-      await tx.query(`INSERT INTO platform_settings(key,value,updated_at)
-        VALUES('HIRING_PRE_OFFER_PAYMENT_REQUIRED',$1,now())
-        ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()`,[String(req.body.preOfferPaymentRequired)]);
-      await tx.query("INSERT INTO manual_wise_audit(actor_id,event,details) VALUES($1,'hiring_payment_setting_changed',$2)",
-        [req.user.id,JSON.stringify({key:"HIRING_PRE_OFFER_PAYMENT_REQUIRED",previous:old,value:String(req.body.preOfferPaymentRequired)})]);
-      await tx.query("COMMIT");
-      }catch(e){await tx.query("ROLLBACK").catch(()=>{});throw e;}finally{tx.release();}
-      res.json({preOfferPaymentRequired:req.body.preOfferPaymentRequired});
+      return res.status(410).json({error:"PRE_OFFER_PAYMENT_RETIRED",message:"Pre-offer payment is permanently retired.",preOfferPaymentRequired:false});
     } catch { res.status(503).json({error:"Payment settings unavailable; no change confirmed"}); }
   });
   app.post("/api/admin/hiring-lifecycle/retry", authenticateJWT, pipelineMutationLimiter, async (req:any,res) => {

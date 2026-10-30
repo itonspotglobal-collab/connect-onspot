@@ -20,10 +20,11 @@ export function registerInvestorGoalRoutes(app: Express, query: SettingsQuery): 
     try {
       const result = await query(
         `SELECT key, value FROM platform_settings
-         WHERE key IN ('investor_goal_contractors_2027', 'investor_goal_clients_2027')`,
+         WHERE key IN ('investor_goal_contractors_2027', 'investor_goal_clients_2027', 'investor_goal_total')`,
       );
       const values = Object.fromEntries(result.rows.map((row) => [row.key, row.value]));
       res.json({
+        totalGoal: parseInvestorGoal(values.investor_goal_total),
         contractorGoal2027: parseInvestorGoal(values.investor_goal_contractors_2027),
         clientGoal2027: parseInvestorGoal(values.investor_goal_clients_2027),
       });

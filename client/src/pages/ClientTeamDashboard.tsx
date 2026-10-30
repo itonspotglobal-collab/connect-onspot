@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { PendingDeposits } from "@/components/PendingDeposits";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -395,6 +396,7 @@ export default function ClientTeamDashboard() {
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-7 pb-8">
       <TeamHeader data={data} />
+      <PendingDeposits />
       <section>
         <SectionHeading eyebrow="This week at a glance" title="Your team, in focus" detail="Current reporting period" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">{metrics.map((metric) => <SummaryMetricCard key={metric.label} metric={metric} />)}</div>

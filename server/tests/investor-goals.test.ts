@@ -36,7 +36,7 @@ describe("investor goal configuration", () => {
       rows = data;
       const response = await fetch(`${base}/api/public/investor-goals`);
       assert.equal(response.headers.get("cache-control"), "no-store");
-      assert.deepEqual(await response.json(), { contractorGoal2027: null, clientGoal2027: null });
+      assert.deepEqual(await response.json(), { contractorGoal2027: null, clientGoal2027: null,totalGoal:data.length?10000:null });
     }
   });
   it("seeds the owner's targets once and preserves Super Admin changes, including clears", async () => {
@@ -52,7 +52,8 @@ describe("investor goal configuration", () => {
     assert.equal(values.get("investor_goal_contractors_2027"), "10000");
     assert.equal(values.get("investor_goal_clients_2027"), "5000");
     await seed();
-    assert.equal(values.size, 2);
+    assert.equal(values.size, 3);
+    assert.equal(values.get("investor_goal_total"),"10000");
     values.set("investor_goal_contractors_2027", "12000");
     values.set("investor_goal_clients_2027", "");
     await seed();
@@ -63,14 +64,15 @@ describe("investor goal configuration", () => {
     rows = [
       { key: "investor_goal_contractors_2027", value: "2500" },
       { key: "investor_goal_clients_2027", value: "400" },
+      { key: "investor_goal_total", value: "10000" },
       { key: "unrelated_private_setting", value: "not public" },
     ];
     assert.deepEqual(await (await fetch(`${base}/api/public/investor-goals`)).json(),
-      { contractorGoal2027: 2500, clientGoal2027: 400 });
+       { contractorGoal2027: 2500, clientGoal2027: 400,totalGoal:10000 });
     rows[0].value = "5000";
     rows[1].value = "";
     assert.deepEqual(await (await fetch(`${base}/api/public/investor-goals`)).json(),
-      { contractorGoal2027: 5000, clientGoal2027: null });
+       { contractorGoal2027: 5000, clientGoal2027: null,totalGoal:10000 });
   });
   it("rejects zero, negative, fractional, exponent, formatted and unsafe targets", () => {
     for (const value of ["0", "-1", "1.5", "1e3", "1,000", "Infinity", "9007199254740992", "garbage"]) {
@@ -86,6 +88,7 @@ describe("investor goal configuration", () => {
     for (const body of [
       { investor_goal_clients_2027: "100" },
       { investor_goal_contractors_2027: "200" },
+      { investor_goal_total: "10000" },
       { investor_goal_clients_2027: "100", name_reveal_threshold: "new" },
     ]) {
       const request = { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
@@ -94,14 +97,14 @@ describe("investor goal configuration", () => {
         ...request, headers: { ...request.headers, "x-fixture-admin": "super" },
       })).status, 204);
     }
-    assert.equal(authorizationCalls, 6);
+    assert.equal(authorizationCalls, 8);
   });
   it("does not change authorization for existing settings", async () => {
     assert.equal((await fetch(`${base}/settings`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name_reveal_threshold: "new" }),
     })).status, 204);
-    assert.equal(authorizationCalls, 6);
+    assert.equal(authorizationCalls, 8);
   });
   it("fails explicitly when configuration cannot be read", async () => {
     fail = true;

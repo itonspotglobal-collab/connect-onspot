@@ -10,6 +10,7 @@ import {FindWorkCalendarError,synchronizeFindWorkInterview} from "../services/fi
 import {onboardingStatus} from "../services/contractorOnboardingStatus";
 import {requireHiringStage} from "../services/contractorOnboardingPolicy";
 import {offerHandler} from "./fixtures/onboarding-offer-handlers";
+import {preOfferPaymentRequired,requireVerifiedHiringPayment} from "../services/hiringPaymentService";
 
 const client=`interview-client-${randomUUID()}`,talent=`interview-talent-${randomUUID()}`;
 const admin=`interview-admin-${randomUUID()}`,ta=`interview-ta-${randomUUID()}`,cs=`interview-cs-${randomUUID()}`;
@@ -45,6 +46,24 @@ test("Client and recruiting Admin can record past Final Advance, unlock onboardi
     assert.deepEqual(ready.activationMissing,[]);
     assert.equal((await send(id)).statusCode,201);
   }
+});
+test("Retired pre-offer policy cannot block a final interview or offer, even with a stale true setting",async()=>{
+  await query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
+  try {
+    const id=await app("shortlisted"),db=await pool.connect();
+    try {await db.query("BEGIN");await requireHiringStage(db,id,"interview",client);await db.query("COMMIT");}
+    finally {db.release();}
+    const round=await interview(id);
+    await recordInterviewOutcome(pool,client,round.id,{outcome:"advance"});
+    assert.equal(await preOfferPaymentRequired(pool),false);
+    assert.equal(await requireVerifiedHiringPayment(pool,id),null);
+    assert.deepEqual((await onboardingStatus(pool,id,client)).missing,[]);
+    const sent=await send(id);assert.equal(sent.statusCode,201);
+    assert.equal((await query("SELECT count(*)::int n FROM security_deposits WHERE submission_id=$1",[id])).rows[0].n,0);
+    const accepted=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,{action:"accept"},sent.body.id);
+    assert.equal(accepted.statusCode,200);
+    assert.equal((await query("SELECT count(*)::int n FROM security_deposits WHERE submission_id=$1",[id])).rows[0].n,1);
+  } finally {await query("UPDATE platform_settings SET value='false' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");}
 });
 test("Initial Advance keeps Final blocker; type edits lock; Pending can resolve once; role and future guards hold",async()=>{
   const id=await app(),i=await interview(id,"initial");

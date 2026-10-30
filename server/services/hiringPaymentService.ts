@@ -20,10 +20,8 @@ const moneyCents = (value: string) => {
 export const PAYMENT_REQUIRED_MESSAGE = "Your hiring invoice must be paid and verified before you can send an offer to this talent.";
 
 export async function preOfferPaymentRequired(db: HiringPaymentDb): Promise<boolean> {
-  const result = await db.query(
-    "SELECT value::boolean AS required FROM platform_settings WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'",
-  );
-  return result.rows[0]?.required === true;
+  // Permanently retired. Historical invoices do not authorize recruiting.
+  return false;
 }
 
 export async function requireVerifiedHiringPayment(db: HiringPaymentDb, submissionId: string) {
@@ -106,6 +104,7 @@ export class HiringPaymentService {
     admins ? [type,title,message,invoice.id] : [type,title,message,invoice.id,invoice.client_id]);
   }
   async ready(actorId: string, submissionId: string, deferred = false) {
+    if (!deferred) return fail(410, "PRE_OFFER_INVOICING_RETIRED", "Pre-offer invoicing is retired. Send an eligible offer without payment.");
     return this.transaction(async db => {
       if(deferred)await this.actor(db,actorId,true);
       const s = deferred

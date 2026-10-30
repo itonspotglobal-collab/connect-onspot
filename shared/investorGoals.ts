@@ -1,10 +1,12 @@
 export const INVESTOR_GOAL_PLACEHOLDERS = {
+  investor_goal_total: "10000",
   investor_goal_contractors_2027: "{CONTRACTOR_GOAL}",
   investor_goal_clients_2027: "{CLIENT_GOAL}",
 } as const;
 
 /** Owner-supplied 2027 targets, seeded only when a setting does not exist. */
 export const INVESTOR_GOAL_DEFAULTS = {
+  investor_goal_total: "10000",
   investor_goal_contractors_2027: "10000",
   investor_goal_clients_2027: "5000",
 } as const;
@@ -23,6 +25,7 @@ export function parseInvestorGoal(value: unknown): number | null {
 }
 
 export function isValidInvestorGoalSetting(key: InvestorGoalKey, value: string): boolean {
+  if(key==="investor_goal_total")return parseInvestorGoal(value)!==null;
   return value.trim() === "" || value.trim() === INVESTOR_GOAL_PLACEHOLDERS[key] ||
     parseInvestorGoal(value) !== null;
 }

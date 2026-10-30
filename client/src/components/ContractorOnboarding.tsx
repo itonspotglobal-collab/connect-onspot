@@ -21,7 +21,7 @@ export interface ContractorOnboarding {
   canSendOffer: boolean;
   defaultInterviewType: string;
   offerId: string | null;
-  deposit: { id: string; status: string; paymentStatus: string; invoiceUrl: string | null } | null;
+  deposit: { id: string; status: string; amount?: string; currency?: string; paymentStatus: string; invoiceUrl: string | null } | null;
   contract: { id: string; status: string; url: string | null } | null;
   msa: { version: string | null; signed: boolean; available: boolean; url: string | null };
   conditions: { depositHeld: boolean; contractSigned: boolean; msaSigned: boolean };
@@ -86,6 +86,13 @@ export function ContractorOnboardingTracker({
         </ol>
       ) : <p className="mt-3 text-xs text-slate-500">Stage details have not been provided yet.</p>}
       {!!(data.stageMissing??data.missing)?.length && <p className="mt-3 text-xs leading-relaxed text-amber-800">Still needed: {(data.stageMissing??data.missing).join(" · ")}</p>}
+      {data.offerAccepted && data.deposit?.status==="pending" && data.deposit.invoiceUrl && (
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-sm font-semibold">Deposit required · {data.deposit.currency} {data.deposit.amount}</p>
+          <p className="mt-1 text-xs">Agreements can be prepared once OnSpot independently verifies the deposit.</p>
+          <Button size="sm" className="mt-2" onClick={()=>navigate(data.deposit!.invoiceUrl!)}>View deposit invoice</Button>
+        </div>
+      )}
       {data.msaUploadWarning&&<p role="alert" className="mt-2 text-xs text-amber-800">{data.msaUploadWarning}</p>}
       {data.contract?.id && <Button size="sm" variant="outline" className="mt-3" onClick={() => navigate(`/contracts?id=${encodeURIComponent(data.contract!.id)}`)}>
         {data.contract.status === "draft" ? "Manage agreement draft" : "Open agreement"}

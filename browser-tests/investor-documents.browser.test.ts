@@ -32,7 +32,7 @@ before(async () => {
           import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
           import {InvestorGoalSettings} from '/src/components/InvestorGoalSettings.tsx';
           import '/src/index.css';
-          const settings={investor_goal_contractors_2027:'{CONTRACTOR_GOAL}',investor_goal_clients_2027:'{CLIENT_GOAL}'};
+          const settings={investor_goal_total:'10000',investor_goal_contractors_2027:'{CONTRACTOR_GOAL}',investor_goal_clients_2027:'{CLIENT_GOAL}'};
           createRoot(document.getElementById('root')).render(location.pathname==='/settings'
             ? <QueryClientProvider client={new QueryClient()}><InvestorGoalSettings settings={settings}/></QueryClientProvider>
             : <QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>
@@ -63,13 +63,16 @@ before(async () => {
 });
 after(async () => { await browser?.close(); await vite?.close(); rmSync(cacheDir, { recursive: true, force: true }); });
 
-async function openPage(width = 1280, height = 900, statsHandler?: Parameters<Page["route"]>[1], clock = false) {
+async function openPage(width = 1280, height = 900, statsHandler?: Parameters<Page["route"]>[1], clock = false,
+  goalsHandler?: Parameters<Page["route"]>[1]) {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: "reduce" });
   if (clock) await page.clock.install();
   await page.bringToFront();
   await page.addInitScript(() => { (window as any).__name = (fn: unknown) => fn; });
   await page.route("**/api/public/investor-stats", statsHandler ?? (route =>
     route.fulfill({ json: { contractorAccounts: 1234, clientAccounts: 56, asOf: "2026-10-16T08:00:00.000Z" } })));
+  await page.route("**/api/public/investor-goals", goalsHandler ?? (route =>
+    route.fulfill({ json: { totalGoal: 10_000 } })));
   await page.goto(`${base}/investors`);
   await page.locator("h1").waitFor();
   return page;
@@ -87,8 +90,10 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   assert.equal(await page.locator(".investor-top a").getAttribute("href"), "/");
   const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
   const actual = normalize(await page.locator(".onspot-investors-page").innerText());
-  const headline = "OnSpot is the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it.";
+  const headline = "OnSpot is the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place, and talent earns more doing it.";
   assert.equal(normalize(await page.locator("h1").innerText()), headline);
+  assert.equal(await page.locator("h1 .investor-hero-accent").allTextContents().then(v => v.map(normalize).join("|")),
+    "find, hire, pay, and manage|talent earns more");
   assert.equal(actual.split(headline).length - 1, 1);
   assert.doesNotMatch(await page.locator(".investor-open").innerText(), /Hi, I.m Nur Laminero/);
   assert.equal(normalize(await page.locator(".investor-fact").first().innerText()),
@@ -106,6 +111,7 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   for (const line of expected.split("\n").map(normalize).filter(Boolean)) {
     // The approved update supersedes these reference passages only.
     if (line === "A letter from Nur Laminero" ||
+      /^OnSpot is the unified outsourcing system/.test(line) ||
       /^(Hi, I.m Nur Laminero|We.re the unified outsourcing|As fast as 7 days|My co-founders Jake|Invest in OnSpot today|Co-Founder and CEO)/.test(line) ||
       ["NL", "J", "M", "Macky"].includes(line)) continue;
     assert.ok(actual.includes(line), `Missing reference text: ${line}`);
@@ -120,16 +126,27 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   assert.match(await founders.innerText(), /Mark Apostol/);
   assert.deepEqual(await founders.locator(".investor-sign b").allTextContents(), ["Nur Laminero", "Jake Wainberg", "Mark Apostol"]);
   assert.deepEqual(await founders.locator(".investor-sign span").allTextContents(), ["Co-Founder & CEO", "Co-Founder & President", "Co-Founder & COO"]);
-  assert.equal(await founders.locator("img").count(), 3);
+  assert.equal(await founders.locator("img").count(), 2);
   for (const image of await founders.locator("img").all()) {
     assert.ok(await image.getAttribute("alt"));
     await image.evaluate((el: HTMLImageElement) => el.decode());
     assert.ok(await image.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
   }
+  assert.equal(await founders.getByRole("img", { name: "Mark Apostol initials" }).innerText(), "MA");
   const phone = page.locator(".investor-open img");
   assert.equal(await phone.count(), 1);
   await phone.evaluate((el: HTMLImageElement) => el.decode());
   assert.ok(await phone.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
+  assert.equal(await phone.getAttribute("width"), "1920");
+  assert.equal(await phone.getAttribute("height"), "1080");
+  for (const image of await page.locator(".onspot-investors-page img").all()) {
+    assert.ok((await image.getAttribute("alt"))?.trim());
+    assert.ok(Number(await image.getAttribute("width")) > 0);
+    assert.ok(Number(await image.getAttribute("height")) > 0);
+  }
+  for (const image of await page.locator(".investor-signatures img, .investor-collage img, .investor-vision-section img").all()) {
+    assert.equal(await image.getAttribute("loading"), "lazy");
+  }
   const wefunder = page.getByRole("link", { name: /WeFunder/ });
   assert.equal(await wefunder.getAttribute("href"), "https://wefunder.com/onspot");
   assert.equal(await wefunder.getAttribute("target"), "_blank");
@@ -139,6 +156,23 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   await reference.close();
   await page.close();
 });
+
+for (const width of [320, 390, 768, 1024, 1440]) {
+  test(`Investors hero phone canvas fits without scroll or headline overlap at ${width}px`, async () => {
+    const page = await openPage(width, 900);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    const headline = await page.locator("#investor-open-title").boundingBox();
+    const stage = await page.locator(".investor-phone-stage").boundingBox();
+    assert.ok(headline && stage);
+    const separated =
+      headline.y + headline.height <= stage.y + 2 ||
+      stage.y + stage.height <= headline.y + 2 ||
+      headline.x + headline.width <= stage.x + 2 ||
+      stage.x + stage.width <= headline.x + 2;
+    assert.equal(separated, true, "hero headline and phone canvas must not overlap");
+    await page.close();
+  });
+}
 
 test("traction refresh behavior is preserved and page and portaled dialog use homepage Inter", async () => {
   let loads = 0;
@@ -152,6 +186,10 @@ test("traction refresh behavior is preserved and page and portaled dialog use ho
   }, true);
   await page.getByText("1,234", { exact: true }).waitFor();
   assert.equal(await page.locator(".investor-traction-card b").allTextContents().then(v => v.join("|")), "1,234|56");
+  const progress = page.getByRole("progressbar", { name: "Total registered accounts" });
+  await progress.waitFor();
+  assert.equal(await progress.getAttribute("aria-valuenow"), "1290");
+  assert.equal(await progress.getAttribute("aria-valuemax"), "10000");
   await page.clock.fastForward(60_001);
   await page.getByText("1,235", { exact: true }).waitFor();
   assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["1,235", "55"]);
@@ -216,6 +254,42 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     await page.close();
   });
 }
+
+test("total account progress shows the true over-goal total and caps its bar", async () => {
+  const page = await openPage(390, 844, route => route.fulfill({ json: {
+    contractorAccounts: 12_000,
+    clientAccounts: 345,
+    asOf: "2026-10-16T08:00:00.000Z",
+  } }));
+  const progress = page.getByRole("progressbar", { name: "Total registered accounts" });
+  await progress.waitFor();
+  assert.equal(await page.locator(".investor-total-progress-heading p").innerText(), "12,345 of 10,000");
+  assert.equal(await page.locator(".investor-total-progress-percent").innerText(), "123.5%");
+  assert.equal(await progress.getAttribute("aria-valuenow"), "10000");
+  assert.match((await progress.getAttribute("aria-valuetext"))!, /12,345 of 10,000.*goal exceeded/);
+  assert.equal(await progress.locator(".investor-total-progress-fill").evaluate(el => getComputedStyle(el).transitionDuration), "0s");
+  await page.waitForFunction(() =>
+    getComputedStyle(document.querySelector(".investor-total-progress-fill")!).transform === "matrix(1, 0, 0, 1, 0, 0)");
+  assert.equal(await progress.locator(".investor-total-progress-fill").evaluate(el => getComputedStyle(el).transform),
+    "matrix(1, 0, 0, 1, 0, 0)");
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.close();
+});
+
+test("investor goal errors offer a retry without hiding account cards", async () => {
+  let calls = 0;
+  const page = await openPage(390, 844, undefined, false, route => {
+    calls++;
+    return calls === 1
+      ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
+      : route.fulfill({ json: { totalGoal: 10_000 } });
+  });
+  await page.getByText("Account goal is temporarily unavailable.").waitFor();
+  assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["1,234", "56"]);
+  await page.getByRole("button", { name: "Try again" }).last().click();
+  await page.getByRole("progressbar", { name: "Total registered accounts" }).waitFor();
+  await page.close();
+});
 
 test("traction loading and unavailable states never fabricate zero and can retry", async () => {
   let release: (() => void) | undefined;
@@ -351,9 +425,14 @@ test("existing Platform Settings form saves positive goals and can clear them", 
   await page.goto(`${base}/settings`);
   await page.locator("#investor_goal_contractors_2027").fill("12000");
   await page.locator("#investor_goal_clients_2027").fill("1500");
+  await page.locator("#investor_goal_total").fill("15000");
   await page.getByRole("button", { name: "Save Investor Goals" }).click();
   await page.waitForFunction(() => !(document.querySelector("button") as HTMLButtonElement)?.textContent?.includes("Saving"));
-  assert.deepEqual(saved[0], { investor_goal_contractors_2027: "12000", investor_goal_clients_2027: "1500" });
+  assert.deepEqual(saved[0], {
+    investor_goal_total: "15000",
+    investor_goal_contractors_2027: "12000",
+    investor_goal_clients_2027: "1500",
+  });
   await page.locator("#investor_goal_clients_2027").fill("0");
   assert.equal(await page.getByRole("button", { name: "Save Investor Goals" }).isDisabled(), true);
   await page.locator("#investor_goal_clients_2027").fill("");

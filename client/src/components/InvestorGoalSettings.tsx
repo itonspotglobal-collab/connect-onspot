@@ -31,12 +31,17 @@ export function InvestorGoalSettings({ settings }: { settings: Record<string, st
       <h3 id="investor-goal-settings-title" className="font-semibold">Investor account goals for 2027</h3>
       <p className="text-[13px] text-muted-foreground">
         Only Super Admins can save these goals. Enter positive whole account counts without commas.
-        Leave a placeholder or clear a field to show the live count without a ring or goal line.
+        Contractor and client goals may be left blank or use their placeholder; the total account
+        goal must remain a positive whole number.
       </p>
       {entries.map(([key, placeholder]) => (
         <div className="space-y-1" key={key}>
           <label htmlFor={key} className="text-sm font-medium">
-            {key === "investor_goal_contractors_2027" ? "Contractor goal" : "Client goal"}
+            {key === "investor_goal_contractors_2027"
+              ? "Contractor goal"
+              : key === "investor_goal_clients_2027"
+                ? "Client goal"
+                : "Total registered accounts goal"}
           </label>
           <Input id={key} inputMode="numeric" placeholder={placeholder}
             value={values[key]} disabled={save.isPending}

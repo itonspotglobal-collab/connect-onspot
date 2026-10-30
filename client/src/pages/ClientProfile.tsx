@@ -74,7 +74,6 @@ import {
 import { JobRichText } from "@/components/JobRichText";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
-import { ClientHiringPaymentPanel, type HiringInvoice } from "@/components/hiring-payments/HiringPayments";
 import { PaymentVerificationCard, usePaymentSkip } from "@/components/hiring-payments/PaymentVerificationCard";
 import { InterviewOutcomeControls,InterviewOutcomeList } from "@/components/InterviewOutcomeControls";
 import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
@@ -1741,27 +1740,6 @@ export function ExtendOfferDialog({
   const [notes, setNotes] = useState("");
   const [stageOverrideReason, setStageOverrideReason] = useState("");
   const [lastResult, setLastResult] = useState<{ rate_below_expectation?: boolean | null; rate_delta?: string | null } | null>(null);
-  const hiringSettings = useQuery<{ preOfferPaymentRequired: boolean }>({
-    queryKey: ["/api/hiring-payment-settings"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/hiring-payment-settings");
-      if (!response.ok) throw new Error("Hiring payment settings unavailable");
-      return response.json();
-    },
-    retry: false,
-  });
-  const hiringSettingsLoaded = !hiringSettings.isError && hiringSettings.data?.preOfferPaymentRequired !== undefined;
-  const paymentSkip=usePaymentSkip(submission.id);
-  const hasPaymentSkip=!!paymentSkip.data?.waiver;
-  const preOfferPaymentRequired = !hiringSettingsLoaded || hiringSettings.data?.preOfferPaymentRequired !== false;
-  const { data: hiringInvoices = [], isLoading: hiringInvoicesLoading, isError: hiringInvoicesError, refetch: refetchHiringInvoices } = useQuery<HiringInvoice[]>({
-    queryKey: ["/api/client/hiring-invoices", submission.id],
-    queryFn: async () => (await apiRequest("GET", `/api/client/hiring-invoices?submissionId=${encodeURIComponent(submission.id)}`)).json(),
-    refetchInterval: 30_000,
-  });
-  const invoiceVerified = hiringInvoices.some((invoice) => invoice.submission_id === submission.id && invoice.status === "paid" && Boolean(invoice.verified_at));
-  const offerPaymentGateReady = hiringSettingsLoaded
-    && (!preOfferPaymentRequired || hasPaymentSkip || (!hiringInvoicesLoading && !hiringInvoicesError && invoiceVerified));
   const onboardingOfferGateReady = isContractorOfferAllowed(onboarding.data);
 
   // Load prior offers for this submission
@@ -1806,12 +1784,9 @@ export function ExtendOfferDialog({
     },
     onError: (err: any) => {
       const detail = String(err?.message || "");
-      const description = detail.includes("PRE_OFFER_PAYMENT_REQUIRED")
-        ? "Payment verification is no longer current for this hiring attempt. Refresh the invoice status and verify the matching invoice before sending."
-        : detail.includes("409")
-          ? "The offer could not be sent because the application or payment state changed. Refresh and review the current hiring invoice status."
-          : detail;
-      refetchHiringInvoices();
+      const description = detail.includes("409")
+        ? "The application stage changed. Refresh and review its current interview and offer status."
+        : detail;
       toast({ title: "Could not send offer", description: description || "Please try again.", variant: "destructive" });
     },
   });
@@ -1884,12 +1859,7 @@ export function ExtendOfferDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-1">
-          {!hiringSettingsLoaded && <div role="status" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Checking the current hiring-payment policy. Offer sending stays locked until that policy is confirmed.</div>}
-          {hiringSettings.isError && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Hiring-payment policy could not be confirmed. Offer sending remains unavailable. <Button variant="outline" size="sm" onClick={() => hiringSettings.refetch()}>Retry</Button></div>}
-          {hiringSettings.isError&&<p role="alert" className="rounded border border-amber-200 p-3 text-sm">Couldn't check payment policy — <button className="underline" onClick={()=>hiringSettings.refetch()}>Retry</button></p>}
-          {preOfferPaymentRequired&&!hasPaymentSkip && <ClientHiringPaymentPanel submissionId={submission.id} />}
           <PaymentVerificationCard submissionId={submission.id} client />
-          {preOfferPaymentRequired && hiringInvoicesError && <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">Invoice payment status could not be confirmed. The offer action stays locked. <Button variant="outline" size="sm" onClick={() => refetchHiringInvoices()}>Retry</Button></div>}
           {/* Rate row */}
           <div className="flex gap-3">
             <div className="flex-1">
@@ -2049,10 +2019,10 @@ export function ExtendOfferDialog({
           </Button>
           <Button
             onClick={() => offerMutation.mutate()}
-            disabled={offerMutation.isPending || !rate || !offerPaymentGateReady || onboarding.isLoading || !onboardingOfferGateReady}
+            disabled={offerMutation.isPending || !rate || onboarding.isLoading || !onboardingOfferGateReady}
             className="bg-[#474ead] hover:bg-[#3a3d8f] text-white"
           >
-            {offerMutation.isPending ? "Sending…" : !onboardingOfferGateReady ? onboarding.data?.offerBlockers?.[0]??"Offer unavailable" : hiringSettings.isError ? "Couldn't check payment policy — Retry" : !hiringSettingsLoaded ? "Checking payment policy…" : preOfferPaymentRequired && !invoiceVerified && !hasPaymentSkip ? "Payment verification required" : "Send Offer"}
+            {offerMutation.isPending ? "Sending…" : !onboardingOfferGateReady ? onboarding.data?.offerBlockers?.[0]??"Offer unavailable" : "Send Offer"}
           </Button>
           {!onboarding.data?.offerAccepted&&onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer && <p role="status" className="text-xs text-amber-800">Offer unavailable: {onboarding.data.offerBlockers?.join(", ") || "a passed final interview is required"}.</p>}
         </DialogFooter>

@@ -78,6 +78,10 @@ function InvoiceDetail({ invoice, history, onClose, onRetry }: {
 }
 
 export function ClientHiringPaymentPanel({ submissionId }: { submissionId: string }) {
+  return null;
+}
+
+function RetiredHiringPaymentPanel({ submissionId }: { submissionId: string }) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<HiringInvoice | null>(null);
   const [readyError, setReadyError] = useState<HiringPaymentErrorInfo | null>(null);
@@ -171,9 +175,10 @@ export function ClientHiringInvoicesSection() {
     queryFn: () => hiringPaymentRequest("GET", `/api/client/hiring-invoices/${selected}`),
     enabled: Boolean(selected),
   });
+  if (!isLoading && !isError && data.length===0) return null;
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Separate from engagement billing</p><h2 className="mt-1 text-xl font-semibold">Pre-offer hiring invoices</h2><p className="text-sm text-muted-foreground">One-time invoice and payment verification required before a formal offer.</p></div><Button variant="outline" onClick={() => refetch()} disabled={isFetching}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button></div>
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Historical records</p><h2 className="mt-1 text-xl font-semibold">Historical hiring invoices</h2><p className="text-sm text-muted-foreground">These records do not block interviews or offers.</p></div><Button variant="outline" onClick={() => refetch()} disabled={isFetching}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button></div>
       <Card><CardContent className="p-0">
         {isLoading ? <div className="space-y-3 p-5"><div className="h-8 animate-pulse rounded bg-muted" /><div className="h-8 animate-pulse rounded bg-muted" /></div>
           : isError ? <div role="alert" className="p-6 text-sm text-rose-700">Pre-offer invoices could not be loaded. <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button></div>
