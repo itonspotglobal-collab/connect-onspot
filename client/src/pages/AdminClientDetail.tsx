@@ -15,6 +15,7 @@ import {
   Briefcase,
   Shield,
 } from 'lucide-react';
+import { DirectPlacementDialog } from '@/components/admin-hiring-overrides/OverrideControls';
 
 interface Application {
   applicationId: string;
@@ -225,9 +226,12 @@ export default function AdminClientDetail() {
 
         {/* Right: Jobs + cross-reference applications */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-base font-semibold">
-            Jobs {jobs.length > 0 && <span className="text-muted-foreground font-normal">({jobs.length})</span>}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold">
+              Jobs {jobs.length > 0 && <span className="text-muted-foreground font-normal">({jobs.length})</span>}
+            </h2>
+            <DirectPlacementDialog clientId={client.id} jobs={jobs} />
+          </div>
 
           {jobs.length === 0 ? (
             <Card>

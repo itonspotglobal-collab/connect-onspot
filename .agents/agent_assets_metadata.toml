@@ -1035,3 +1035,17 @@ mtime_ms = 1793267486565
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/fafd863a-67d1-455d-a685-05eb2138aa61/ac91240b-1798-4f75-97ac-645beb0f3446"
 storage_version_token = "1793267498926368"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "peqThJmwz9QU1trxyYZ4f"
+uri = "file://docs/hiring-investor-change-report.md"
+type = "text"
+title = "Hiring and Investors implementation report"
+description = "Complete file-by-file changes, settings, schema additions, verification results and remaining staging checks."
+logical_id = "79826f8c-0cac-4c44-80c4-6a5be3270c1b"
+content_hash = "sha256:be3daf4d09d26d1acbac078be8ccdfd556904c15657bc52e79917ff206d97860"
+size = 12618
+mtime_ms = 1793343127340
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/79826f8c-0cac-4c44-80c4-6a5be3270c1b/31697e8b-99cc-44ba-9af0-a2d89cb5a3ff"
+storage_version_token = "1793343155184637"
+content_type = "text/markdown"

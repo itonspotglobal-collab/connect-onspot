@@ -3,13 +3,14 @@ import { prepareContract } from "./contractDocumentService";
 import { lockOnboarding, OnboardingError } from "./contractorOnboardingPolicy";
 import { queueHiringLifecycleEvent, tryActivateEngagement } from "./hiringLifecycleEvents";
 import { verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
+import {hiringOverrideState} from "./adminHiringOverrideState";
 
 /** Post-commit outbox work: idempotent drafts and MSA issuance, never sending PDFs automatically. */
 export async function preparePaidAgreements(pool:Pool,p:any) {
   const source=(await pool.query(`SELECT d.*,o.status AS offer_status,js.client_id FROM security_deposits d
     JOIN offers o ON o.id=d.offer_id JOIN job_submissions js ON js.id=d.submission_id
     WHERE d.id=$1`,[p.depositId])).rows[0];
-  if(!source||source.status!=="held"||!["accepted","offer_accepted"].includes(source.offer_status))
+  if(!source||!["held","waived"].includes(source.status)||!["accepted","offer_accepted"].includes(source.offer_status))
     return {contractId:null,eligible:false};
   const submission=(await pool.query("SELECT * FROM job_submissions WHERE id=$1",[source.submission_id])).rows[0];
   if(!submission||!await verifiedDeferredHiringPayment(pool,submission))return {contractId:null,eligible:false};
@@ -28,7 +29,7 @@ export async function preparePaidAgreements(pool:Pool,p:any) {
     await lockOnboarding(db,source.submission_id);
     const current=(await db.query(`SELECT d.status,o.status AS offer_status FROM security_deposits d JOIN offers o ON o.id=d.offer_id
       WHERE d.id=$1 FOR UPDATE OF d,o`,[source.id])).rows[0];
-    if(current?.status!=="held"||!["accepted","offer_accepted"].includes(current?.offer_status)) {
+    if(!["held","waived"].includes(current?.status)||!["accepted","offer_accepted"].includes(current?.offer_status)) {
       await db.query("COMMIT");
       return {contractId:null,eligible:false};
     }
@@ -37,9 +38,10 @@ export async function preparePaidAgreements(pool:Pool,p:any) {
       await db.query("COMMIT");
       return {contractId:null,eligible:false};
     }
+    const override=await hiringOverrideState(db,source.submission_id);
     const msa=(await db.query("SELECT id,version,sha256 FROM msa_documents WHERE active AND effective_at<=now() FOR SHARE")).rows[0];
-    if(!msa)await queueHiringLifecycleEvent(db,`msa-missing:${source.submission_id}`,"msa_missing",{submissionId:source.submission_id});
-    else {
+    if(!msa&&!override.skipMsa)await queueHiringLifecycleEvent(db,`msa-missing:${source.submission_id}`,"msa_missing",{submissionId:source.submission_id});
+    else if(msa&&!override.skipMsa) {
       const signed=!!(await db.query(`SELECT 1 FROM client_msa_signatures WHERE client_id=$1 AND document_id=$2
         AND document_sha256=$3 AND msa_version=$4`,[source.client_id,msa.id,msa.sha256,msa.version])).rows.length;
       if(!signed) {

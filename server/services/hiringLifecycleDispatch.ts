@@ -9,6 +9,7 @@ import { ClientMsaService } from "./clientMsaService";
 import { notifyClientOfTalentHired } from "./applicationNotificationService";
 import { sendTalentHiredEmail } from "./emailCompanionService";
 import { enqueueDeferredHiringReminders } from "./hiringPaymentWaiverService";
+import { enqueueDepositReminders } from "./depositReminders";
 
 /**
  * Transactional outbox consumer. Call after COMMIT; failures are retained for
@@ -18,6 +19,7 @@ import { enqueueDeferredHiringReminders } from "./hiringPaymentWaiverService";
 export async function dispatchHiringLifecycleEvents(waiverEventsOnly=false): Promise<void> {
   try {
     await enqueueDeferredHiringReminders({query});
+    await enqueueDepositReminders({query});
     const attempted:string[]=[];
     for(let batch=0;batch<3;batch++) {
     const events = (await query(`UPDATE hiring_lifecycle_events SET status='processing',
@@ -27,7 +29,7 @@ export async function dispatchHiringLifecycleEvents(waiverEventsOnly=false): Pro
            (status='processing' AND attempted_at<now()-interval '10 minutes'))
            AND NOT(event_key=ANY($1::text[]))
            AND (NOT $2::boolean OR event_type IN ('hiring_skip_requested','hiring_skip_granted','hiring_skip_revoked',
-             'hiring_deferred_due','hiring_deferred_reminder','hiring_deferred_invoice_issued'))
+             'hiring_deferred_due','hiring_deferred_reminder','hiring_deferred_invoice_issued','deposit_reminder'))
          ORDER BY CASE WHEN status='pending' THEN 0 ELSE 1 END,created_at LIMIT 30 FOR UPDATE SKIP LOCKED)
        RETURNING *`,[attempted,waiverEventsOnly])).rows;
     if(!events.length)break;
@@ -84,6 +86,14 @@ async function notify(event:any,user:any,category:string,type:string,title:strin
 
 async function deliverEvent(event:any) {
   const p=event.payload;
+  // Recheck at delivery, not just enqueue: an outbox retry may follow payment
+  // or an offer withdrawal. A receipt alone does not suppress reminders.
+  if(event.event_type==="deposit_reminder"&&!(await query(`SELECT d.id FROM security_deposits d
+    LEFT JOIN hiring_contracts hc ON hc.id=d.hiring_contract_id
+    JOIN offers o ON o.id=coalesce(d.offer_id,hc.offer_id)
+    JOIN job_submissions js ON js.id=o.submission_id
+    WHERE d.id=$1 AND d.status='pending' AND o.status IN ('accepted','offer_accepted')
+      AND js.status NOT IN ('withdrawn','rejected','declined')`,[p.depositId])).rows.length)return;
   if(event.event_type==="agreements_recheck") {
     await preparePaidAgreements(pool,p);
     return;
@@ -126,6 +136,8 @@ async function deliverEvent(event:any) {
     startDate:row?.proposed_start_date ? new Date(row.proposed_start_date).toISOString().slice(0,10) : undefined,
   };
   const invoiceUrl=`/client/payments/${p.category??"deposit"}/${encodeURIComponent(p.obligationId??p.depositId??row?.deposit_id??"")}`;
+  ctx.depositUrl=buildAppUrl(invoiceUrl);
+  ctx.dueDate=p.dueDate?String(p.dueDate):"See the deposit invoice for any applicable due date.";
   if(["hiring_skip_requested","hiring_skip_granted","hiring_skip_revoked","hiring_deferred_due","hiring_deferred_reminder"].includes(event.event_type)) {
     const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
     const waiver=p.waiverId?(await query("SELECT * FROM hiring_payment_waivers WHERE id=$1",[p.waiverId])).rows[0]:null;
@@ -147,22 +159,32 @@ async function deliverEvent(event:any) {
     await notify(event,owner,"hiring_deferred_invoice_issued","hiring_invoice","Hiring invoice ready",
       "Your deferred hiring invoice is ready. Pay and submit proof for independent verification before agreements are issued.",invoiceUrl,ctx);
   } else if(event.event_type==="offer_accepted") {
-    if(await isDepositFirst({query} as any,p.submissionId))return; // new invoice event combines acceptance + payment next step
+    if(!ctx.startDate)ctx.startDate="To be confirmed in the accepted offer";
     const path=new URL(buildClientApplicationUrl({applicationId:p.submissionId})).pathname+new URL(buildClientApplicationUrl({applicationId:p.submissionId})).search;
-    await notify(event,owner,"hiring_offer_accepted","offer_accepted","Offer accepted",`${name} accepted your offer for ${ctx.jobTitle}. Next: sign the contract.`,path,ctx);
-  } else if(event.event_type==="deposit_issued") {
-    if(await isDepositFirst({query} as any,p.submissionId))await Promise.all([
-      notify(event,owner,"hiring_acceptance_invoice","monthly_client_invoice","Offer accepted — deposit invoice ready",
-        `${name} accepted your offer for ${ctx.jobTitle}. Your deposit invoice is ready.`,invoiceUrl,ctx),
+    await Promise.all([
+      notify(event,owner,"hiring_offer_accepted","offer_accepted","Offer accepted",`${name} accepted your offer for ${ctx.jobTitle}.`,path,ctx),
       notify(event,talent,"hiring_talent_accepted","job_application_status_changed","Offer accepted",
-        "Next, OnSpot will send your agreement once the Client's deposit is confirmed.",new URL(buildTalentApplicationsUrl()).pathname,ctx),
+        "Your offer acceptance is recorded. Your engagement is not active yet.",new URL(buildTalentApplicationsUrl()).pathname,ctx),
     ]);
-    else await notify(event,owner,"hiring_deposit_invoice","monthly_client_invoice","Deposit invoice ready",`Your deposit invoice for ${ctx.jobTitle} is ready.`,invoiceUrl,ctx);
+  } else if(event.event_type==="deposit_issued") {
+    await notify(event,owner,"hiring_deposit_required","monthly_client_invoice","Deposit required",
+      `Your deposit invoice for ${ctx.jobTitle} is ready. Agreements follow deposit verification.`,invoiceUrl,ctx);
+  } else if(event.event_type==="deposit_reminder") {
+    await notify(event,owner,"hiring_deposit_reminder","monthly_client_invoice","Deposit reminder",
+      `Your deposit for ${ctx.jobTitle} is awaiting independent verification.`,invoiceUrl,ctx);
   } else if(event.event_type==="deposit_verified") {
     const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
-    await Promise.all(admins.map(admin=>notify(event,admin,"hiring_agreements_ready","hiring_payment_review",
-      "Payment verified — prepare Contractor Agreement",`Prepare and send the Contractor Agreement for ${name} / ${ctx.jobTitle}.`,
+    await Promise.all(admins.map(admin=>notify(event,admin,p.waived?"hiring_agreements_waived":"hiring_agreements_ready","hiring_payment_review",
+      p.waived?"Deposit waived — review agreement requirements":"Payment verified — prepare Contractor Agreement",`Review the Contractor Agreement requirements for ${name} / ${ctx.jobTitle}.`,
       `/contracts?id=${agreements!.contractId}`,ctx)));
+  } else if(event.event_type==="admin_hiring_override") {
+    const path=new URL(buildClientApplicationUrl({applicationId:p.submissionId}));
+    await Promise.all([
+      notify(event,owner,"hiring_admin_override","monthly_client_invoice","OnSpot updated your hiring workflow",
+        "An authorized Super Admin applied an audited hiring exception. Review the current application.",path.pathname+path.search,ctx),
+      notify(event,talent,"hiring_admin_override","job_application_status_changed","OnSpot updated your hiring workflow",
+        "An authorized Super Admin applied an audited hiring exception. Review the current application.",new URL(buildTalentApplicationsUrl()).pathname,ctx),
+    ]);
   } else if(event.event_type==="msa_required") {
     await notify(event,owner,"hiring_msa_required","monthly_client_invoice","Please review and sign the OnSpot Master Services Agreement",
       "Your verified payment allows agreement preparation. Review and sign the current MSA.","/client/msa",ctx);

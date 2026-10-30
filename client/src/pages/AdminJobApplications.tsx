@@ -37,6 +37,7 @@ import {
 import { lazy, Suspense } from "react";
 import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
+import { OverrideControls } from "@/components/admin-hiring-overrides/OverrideControls";
 
 const ApplicantEmailComposer = lazy(() => import("@/components/ApplicantEmailComposer"));
 
@@ -644,6 +645,7 @@ function DetailDialog({
               )}
             </section>
             <ContractorOnboardingTracker data={onboarding.data} isLoading={onboarding.isLoading} isError={onboarding.isError} onRetry={() => void onboarding.refetch()} />
+            <OverrideControls submissionId={detail.id} depositId={onboarding.data?.deposit?.id} />
 
             {detail.hiringPipelineEligible === true
               && detail.latestOffer

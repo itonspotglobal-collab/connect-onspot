@@ -1,4 +1,5 @@
 import type { Express, RequestHandler } from "express";
+import {EXECUTED_HIRING_CONTRACT_SQL,hasActiveHiringOverride} from "../services/timesheetEligibility";
 import { getClient, query } from "../db.ts";
 import { BILLING_CURRENCY, isUsdCurrency, requireUsdCurrency } from "../../shared/currency.ts";
 
@@ -521,14 +522,14 @@ export async function rebuildDraftInvoicesForTermination(
   effectiveEndDate: string,
 ) {
   const contractResult = await client.query(
-    `SELECT hc.id, hc.status, hc.billing_mode, hc.effective_start_date,
+    `SELECT hc.id, hc.status, hc.activation_override_id,hc.billing_mode, hc.effective_start_date,
             hc.billing_activated_at, o.rate, o.rate_currency, o.engagement_type
        FROM hiring_contracts hc JOIN offers o ON o.id = hc.offer_id
       WHERE hc.id = $1`,
     [contractId],
   );
   const contract = contractResult.rows[0];
-  if (!contract || contract.status !== "signed"
+  if (!contract || (contract.status !== "signed"&&!hasActiveHiringOverride(contract))
     || !["tracked", "guaranteed"].includes(contract.billing_mode)) {
     throw Object.assign(new Error("The signed contract is not eligible for draft invoice rebuilding"), { code: "terminationDraftInvalidContract" });
   }
@@ -794,7 +795,7 @@ async function readyClientsForMonth(monthStart: string) {
             hc.effective_end_date, js.client_id
        FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
-      WHERE hc.status IN ('signed', 'terminated') AND hc.billing_mode IN ('tracked', 'guaranteed')
+      WHERE ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.billing_mode IN ('tracked', 'guaranteed')
         AND hc.effective_start_date IS NOT NULL AND hc.billing_activated_at IS NOT NULL
       ORDER BY js.client_id, hc.id`,
   );
@@ -1013,7 +1014,7 @@ async function catchUpClientMonthlyInvoices(now: Date) {
         (hc.billing_activated_at AT TIME ZONE '${BILLING_TIME_ZONE}')::date
       )) AS first_billable_date
        FROM hiring_contracts hc
-      WHERE hc.status IN ('signed', 'terminated') AND hc.billing_mode IN ('tracked', 'guaranteed')
+      WHERE ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.billing_mode IN ('tracked', 'guaranteed')
         AND hc.effective_start_date IS NOT NULL AND hc.billing_activated_at IS NOT NULL`,
   );
   if (!earliest.rows[0]?.first_billable_date) return;
@@ -1042,7 +1043,7 @@ export async function runTalentInvoiceAutomation(now = new Date()) {
        JOIN offers o ON o.id = hc.offer_id
        JOIN job_submissions js ON js.id = hc.submission_id
        JOIN jobs j ON j.id = js.job_id
-      WHERE hc.status IN ('signed', 'terminated') AND hc.billing_mode IN ('tracked', 'guaranteed')
+      WHERE ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.billing_mode IN ('tracked', 'guaranteed')
       ORDER BY hc.created_at`,
   );
   for (const contract of contracts.rows) {
@@ -1239,7 +1240,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
            FROM hiring_contracts hc
            JOIN offers o ON o.id = hc.offer_id
           JOIN job_submissions js ON js.id = hc.submission_id
-         WHERE hc.id = $1 AND js.client_id = $2 AND hc.status = 'signed'
+         WHERE hc.id = $1 AND js.client_id = $2 AND ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.status<>'terminated'
            AND hc.billing_mode = 'guaranteed' FOR UPDATE OF hc`,
         [hiringContractId, req.user.id],
       );
@@ -1582,7 +1583,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
            FROM hiring_contracts hc
            JOIN job_submissions js ON js.id = hc.submission_id
            JOIN jobs j ON j.id = js.job_id
-          WHERE js.client_id = $1 AND hc.status = 'signed'
+          WHERE js.client_id = $1 AND ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.status<>'terminated'
             AND hc.billing_mode = 'guaranteed'
             AND hc.effective_start_date IS NOT NULL
           ORDER BY j.title, hc.id`,
@@ -1681,7 +1682,7 @@ export function registerTalentInvoiceRoutes(app: Express, options: Options) {
            FROM hiring_contracts hc
            JOIN offers o ON o.id = hc.offer_id
            JOIN job_submissions js ON js.id = hc.submission_id
-          WHERE hc.status = 'signed'
+          WHERE ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.status<>'terminated'
             AND (hc.billing_mode IS NULL OR hc.billing_mode NOT IN ('tracked', 'guaranteed')
               OR hc.effective_start_date IS NULL OR hc.billing_activated_at IS NULL
               OR o.rate IS NULL OR o.rate_currency IS NULL

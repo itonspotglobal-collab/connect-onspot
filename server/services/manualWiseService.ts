@@ -147,6 +147,10 @@ export class ManualWiseService {
       : c==="replenishment" ? r.payment_status==="unpaid"
       : ["pending","scheduled"].includes(r.status);
     let blockedReason:string|undefined;
+    const historicalHiringInvoice=c==="hiring_invoice"&&!(await db.query("SELECT id FROM hiring_payment_waivers WHERE deferred_invoice_id=$1",[id])).rows.length;
+    if(historicalHiringInvoice)blockedReason="Retired pre-offer invoices are read-only financial history; do not send payment.";
+    if(binding.cancelled_at)blockedReason="This payment obligation was cancelled by OnSpot. Do not send funds.";
+    if(c==="deposit"&&r.status==="waived")blockedReason="Deposit waived by Super Admin. No payment is due; no settlement has been recorded.";
     let amount=String(amountOf(r,c)??"");
     try { if (wiseCents(amount)<=BigInt(0)) blockedReason="No finalized positive amount is due."; }
     catch { blockedReason="A finalized payable amount is required. Contact OnSpot for a formal quote."; amount=""; }
@@ -167,7 +171,7 @@ export class ManualWiseService {
     }
     if (c==="payout" && !binding.approved_destination) blockedReason="Independently approve the Talent payout destination before recording a transfer.";
     const latest=history[0];
-    const paymentStatus=settled ? "paid" : latest?.status ?? "awaiting_payment";
+    const paymentStatus=c==="deposit"&&r.status==="waived"?"waived":settled ? "paid" : latest?.status ?? "awaiting_payment";
     if(config?.revoked_at)blockedReason="These receiving instructions have been revoked. Contact OnSpot billing support before sending funds.";
     const approvedQr=c!=="payout" && config?.currency===curr && allowed && !settled && !blockedReason
       ? config?.qr_file_id ?? null : null;
@@ -220,8 +224,8 @@ export class ManualWiseService {
       dueAt:r.due_date??r.due_at??null,period,
       lineItems,verifiedAt:r.paid_at??r.held_at??history.find((s:any)=>s.status==="paid")?.verified_at??null,
       direction:c==="payout" ? "outgoing" : "incoming",
-      payable:allowed && !settled && !blockedReason && !["verification_pending","paid"].includes(latest?.status),
-      instructions:c==="payout" ? null : config ? {id:config.id,recipient:config.recipient,instructions:config.instructions,
+      payable:allowed && !settled && !binding.cancelled_at && !blockedReason && !["verification_pending","paid"].includes(latest?.status),
+      instructions:c==="payout"||historicalHiringInvoice||binding.cancelled_at||(c==="deposit"&&r.status==="waived") ? null : config ? {id:config.id,recipient:config.recipient,instructions:config.instructions,
         referenceInstructions:config.reference_instructions,qrFileId:approvedQr,currency:config.currency} : null,
       approvedDestination:binding.approved_destination,blockedReason,history,
     }};
@@ -351,6 +355,9 @@ export class ManualWiseService {
       if (!found) return fail(404,"Payment submission not found.");
       const c:WiseCategory=found.category;
       const o=await this.load(db,actorId,c,found.target,true);
+      if(c==="hiring_invoice"&&!(await db.query("SELECT id FROM hiring_payment_waivers WHERE deferred_invoice_id=$1",[found.target])).rows.length)
+        return fail(410,"Retired pre-offer invoices are read-only financial history.");
+      if(o.binding.cancelled_at||(c==="deposit"&&o.r.status==="waived"))return fail(409,"This obligation was cancelled or waived; receipt approval cannot mark it paid.");
       const s=(await db.query("SELECT * FROM manual_wise_submissions WHERE id=$1 FOR UPDATE",[id])).rows[0];
       if (s.status==="paid" && v.action==="verify") {
         if (s.verified_reference===v.verifiedReference && wiseCents(s.amount)===wiseCents(v.verifiedAmount!) &&

@@ -10,6 +10,7 @@ export interface OnboardingStage {
   complete: boolean;
   current: boolean;
   actor: string | null;
+  overridden?: boolean;
 }
 export interface ContractorOnboarding {
   policy: "legacy" | "deposit_first";
@@ -77,8 +78,11 @@ export function ContractorOnboardingTracker({
             <li key={stage.key} className={`relative min-w-0 rounded-lg border px-2.5 py-2 ${stage.current ? "border-[#709081] bg-[#e8f0eb]" : stage.complete ? "border-[#d5e2d9] bg-white" : "border-slate-200 bg-white/60"}`}>
               <div className="flex items-center gap-1.5">
                 {stage.complete ? <Check className="h-3.5 w-3.5 shrink-0 text-[#417052]" /> : stage.current ? <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#557064]" /> : <Circle className="h-3 w-3 shrink-0 text-slate-300" />}
-                <span className={`truncate text-[11px] font-semibold ${stage.current ? "text-[#344f40]" : stage.complete ? "text-slate-700" : "text-slate-500"}`}>{stage.label}</span>
+                <span className={`truncate text-[11px] font-semibold ${stage.current ? "text-[#344f40]" : stage.complete ? "text-slate-700" : "text-slate-500"}`}>
+                  {data.deposit && (data.deposit.status === "waived" || data.deposit.paymentStatus === "waived") && stage.label.toLowerCase() === "payment verified" ? "Payment waived" : stage.label}
+                </span>
               </div>
+              {stage.overridden && <span className="mt-1 block pl-5 text-[9px] font-semibold leading-tight text-amber-800">Overridden by Super Admin</span>}
               {stage.actor && <p className="mt-1 truncate pl-5 text-[9px] text-slate-400">{stage.actor}</p>}
               {index < stages.length - 1 && <span className="sr-only">followed by</span>}
             </li>

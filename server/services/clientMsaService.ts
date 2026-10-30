@@ -60,7 +60,7 @@ export class ClientMsaService {
         JOIN job_submissions js ON js.id=e.payload->>'submissionId'
         JOIN security_deposits d ON d.id::text=e.payload->>'depositId'
         JOIN contractor_onboarding_cohorts c ON c.submission_id=js.id AND c.workflow_version=2
-        WHERE e.event_type='deposit_verified' AND d.status='held'
+        WHERE e.event_type='deposit_verified' AND d.status IN ('held','waived')
           AND js.status IN ('offer_accepted','contract_sent','contract_signed')`)).rows;
       for(const p of pending)await queueHiringLifecycleEvent(db,`msa-recheck:${d.id}:${p.id}`,"agreements_recheck",p.payload);
       return {id:d.id,active:true};

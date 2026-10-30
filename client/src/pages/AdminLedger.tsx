@@ -6,6 +6,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { AdminHiringPaymentsSection } from "@/components/hiring-payments/HiringPayments";
 import { AdminWisePayments } from "@/components/manual-wise/AdminWisePayments";
+import { WaiveDepositButton } from "@/components/admin-hiring-overrides/OverrideControls";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -517,6 +518,7 @@ export default function AdminLedger() {
                       Request deposit funding
                     </Button>
                   ) : null}
+                      {contract.deposit_id && contract.deposit_status === "pending" ? <WaiveDepositButton depositId={contract.deposit_id} /> : null}
                 </div>
               ))}
             </div>
@@ -645,9 +647,10 @@ export default function AdminLedger() {
                               </div>
                             ) : null}
                             {row.deposit_status === "pending" ? (
-                              <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>
-                                Request deposit funding
-                              </Button>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>Request deposit funding</Button>
+                                <WaiveDepositButton depositId={row.deposit_id} />
+                              </div>
                             ) : null}
                             {row.deposit_status === "drawn" ? (
                               <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "replenishment_pending")} disabled={mutation.isPending}>

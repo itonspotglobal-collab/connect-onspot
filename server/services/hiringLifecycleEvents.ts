@@ -3,9 +3,10 @@ import type { PoolClient } from "pg";
 import { isDepositFirst, lockOnboarding } from "./contractorOnboardingPolicy";
 import type { HiringPaymentDb } from "./hiringPaymentService";
 import { verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
+import {hiringOverrideState} from "./adminHiringOverrideState";
 
-export type HiringLifecycleType = "offer_accepted" | "deposit_issued" | "proof_submitted" | "proof_rejected" | "engagement_active" | "deposit_verified" | "msa_missing" | "msa_required" | "msa_signed" | "agreements_recheck"
-  | "hiring_skip_requested" | "hiring_skip_granted" | "hiring_skip_revoked" | "hiring_deferred_due" | "hiring_deferred_reminder" | "hiring_deferred_invoice_issued";
+export type HiringLifecycleType = "offer_accepted" | "deposit_issued" | "deposit_reminder" | "proof_submitted" | "proof_rejected" | "engagement_active" | "deposit_verified" | "msa_missing" | "msa_required" | "msa_signed" | "agreements_recheck"
+  | "admin_hiring_override" | "hiring_skip_requested" | "hiring_skip_granted" | "hiring_skip_revoked" | "hiring_deferred_due" | "hiring_deferred_reminder" | "hiring_deferred_invoice_issued";
 export async function queueHiringLifecycleEvent(
   db: HiringPaymentDb, key: string, type: HiringLifecycleType, payload: Record<string, unknown>,
 ) {
@@ -23,7 +24,7 @@ export async function activateFundedEngagement(db: Pick<PoolClient, "query">, co
     FROM hiring_contracts hc JOIN job_submissions js ON js.id=hc.submission_id
     JOIN security_deposits d ON d.hiring_contract_id=hc.id
     WHERE hc.id=$1 FOR UPDATE OF hc,js,d`, [contractId])).rows[0];
-  if (!row || row.status !== "signed" || row.deposit_status !== "held") {
+  if (!row || row.status !== "signed" || !["held","waived"].includes(row.deposit_status)) {
     throw new Error("A signed contract and verified held deposit are required for activation.");
   }
   if (row.application_status === "hired") return;
@@ -33,7 +34,7 @@ export async function activateFundedEngagement(db: Pick<PoolClient, "query">, co
   await db.query("UPDATE job_submissions SET status='hired',updated_at=now() WHERE id=$1", [row.submission_id]);
   await db.query("UPDATE hiring_contracts SET billing_activated_at=now(),updated_at=now() WHERE id=$1", [contractId]);
   await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by)
-    VALUES($1,'contract_signed','hired','Security deposit independently verified',$2)`, [row.submission_id,actor]);
+    VALUES($1,'contract_signed','hired',$3,$2)`, [row.submission_id,actor,row.deposit_status==="waived"?"Security deposit explicitly waived by Super Admin; no settlement claimed":"Security deposit independently verified"]);
   await queueHiringLifecycleEvent(db,`engagement-active:${contractId}`,"engagement_active",
     {submissionId:row.submission_id,contractId});
 }
@@ -46,27 +47,32 @@ export async function tryActivateEngagement(db:Pick<PoolClient,"query">,submissi
   if(!s || s.status==="hired")return false;
   if(!await verifiedDeferredHiringPayment(db,s))return false;
   if(!["offer_accepted","contract_sent","contract_signed"].includes(s.status))return false;
+  const override=await hiringOverrideState(db,submissionId);
   const hc=(await db.query(`SELECT hc.* FROM hiring_contracts hc JOIN offers o ON o.id=hc.offer_id
-    WHERE hc.submission_id=$1 AND o.status IN ('accepted','offer_accepted') AND hc.status='signed'
-      AND hc.onspot_signed_at IS NOT NULL AND hc.talent_signed_at IS NOT NULL
-    ORDER BY hc.created_at DESC LIMIT 1 FOR UPDATE OF hc`,[submissionId])).rows[0];
+    WHERE hc.submission_id=$1 AND o.status IN ('accepted','offer_accepted') AND hc.status NOT IN ('void','voided','terminated')
+      AND ($2::boolean OR (hc.status='signed' AND hc.onspot_signed_at IS NOT NULL AND hc.talent_signed_at IS NOT NULL))
+    ORDER BY hc.created_at DESC LIMIT 1 FOR UPDATE OF hc`,[submissionId,override.skipContractorAgreement])).rows[0];
   if(!hc)return false;
   const d=(await db.query(`SELECT * FROM security_deposits WHERE offer_id=$1 AND submission_id=$2
-    AND hiring_contract_id=$3 AND status='held' FOR UPDATE`,[hc.offer_id,submissionId,hc.id])).rows[0];
+    AND hiring_contract_id=$3 AND status IN ('held','waived') FOR UPDATE`,[hc.offer_id,submissionId,hc.id])).rows[0];
   if(!d)return false;
   const msa=(await db.query("SELECT id,version,sha256 FROM msa_documents WHERE active AND effective_at<=now() FOR SHARE")).rows[0];
-  if(!msa) {
+  if(!msa&&!override.skipMsa) {
     await queueHiringLifecycleEvent(db,`msa-missing:${submissionId}`,"msa_missing",{submissionId});
     return false;
   }
-  const signature=(await db.query(`SELECT id FROM client_msa_signatures WHERE client_id=$1
-    AND document_id=$2 AND msa_version=$3 AND document_sha256=$4`,[s.client_id,msa.id,msa.version,msa.sha256])).rows[0];
-  if(!signature)return false;
+  const signature=msa?(await db.query(`SELECT id FROM client_msa_signatures WHERE client_id=$1
+    AND document_id=$2 AND msa_version=$3 AND document_sha256=$4`,[s.client_id,msa.id,msa.version,msa.sha256])).rows[0]:null;
+  if(!signature&&!override.skipMsa)return false;
   await db.query("UPDATE job_submissions SET status='hired',updated_at=now() WHERE id=$1",[submissionId]);
-  await db.query("UPDATE hiring_contracts SET billing_activated_at=coalesce(billing_activated_at,now()),updated_at=now() WHERE id=$1",[hc.id]);
+  const audit=(override.skipContractorAgreement||override.skipMsa)?(await db.query(`SELECT id FROM admin_hiring_overrides
+    WHERE submission_id=$1 AND reverted_at IS NULL AND (new_state->>'skipContractorAgreement'='true' OR new_state->>'skipMsa'='true')
+    ORDER BY created_at DESC,id DESC LIMIT 1`,[submissionId])).rows[0]:null;
+  await db.query(`UPDATE hiring_contracts SET billing_activated_at=coalesce(billing_activated_at,now()),
+    activation_override_id=coalesce($2::uuid,activation_override_id),updated_at=now() WHERE id=$1`,[hc.id,audit?.id??null]);
   await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by)
-    VALUES($1,$2,'hired','Deposit independently verified; Contractor Agreement and current client MSA fully signed',$3)`,
-    [submissionId,s.status,actor]);
+    VALUES($1,$2,'hired',$4,$3)`,
+    [submissionId,s.status,actor,audit||d.status==="waived"?"Activated under audited Super Admin hiring exceptions; no absent signatures or settlement were fabricated":"Deposit independently verified; Contractor Agreement and current client MSA fully signed"]);
   await queueHiringLifecycleEvent(db,`engagement-active:${hc.id}`,"engagement_active",{submissionId,contractId:hc.id});
   return true;
 }

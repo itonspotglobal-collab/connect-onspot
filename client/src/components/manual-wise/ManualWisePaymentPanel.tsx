@@ -16,7 +16,7 @@ export type WiseObligation = {
   currency: string;
   payerId: string;
   status: string;
-  paymentStatus: "awaiting_payment" | "verification_pending" | "paid" | "rejected";
+  paymentStatus: "awaiting_payment" | "verification_pending" | "paid" | "rejected" | "waived";
   payable: boolean;
   direction: "incoming" | "outgoing";
   companyName?: string | null;
@@ -82,6 +82,7 @@ function StatusNotice({ status, lifecycleStatus = "" }: { status: WiseObligation
     awaiting_payment: ["Payment not submitted", "bg-slate-100 text-slate-700", Landmark],
     verification_pending: ["Pending verification", "bg-amber-100 text-amber-900", Clock3],
     paid: ["Paid — independently verified", "bg-emerald-100 text-emerald-900", CheckCircle2],
+    waived: ["Waived — no settlement claimed", "bg-violet-100 text-violet-900", ShieldCheck],
     rejected: ["Proof rejected — resubmission available", "bg-rose-100 text-rose-900", AlertCircle],
   } as const;
   const [statusLabel, style, Icon] = map[status];

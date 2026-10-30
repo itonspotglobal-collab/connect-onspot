@@ -1,5 +1,13 @@
 import type { Request, RequestHandler, Response } from "express";
 import { TIMESHEET_HIRE_SQL } from "../services/timesheetEligibility";
+import {REVEAL_STATUS_ORDER,revealedStatusesForThreshold} from "../../shared/submissionStatuses";
+
+const teamIdentityVisibleSql=`(coalesce(cardinality(ge.legacy_contract_ids),0)>0 OR EXISTS(
+  SELECT 1 FROM job_submissions identity_app WHERE identity_app.talent_id=ge.talent_id
+    AND identity_app.client_id IN (SELECT user_id FROM authorized_clients)
+    AND CASE coalesce((SELECT value FROM platform_settings WHERE key='name_reveal_threshold'),'hired')
+      ${REVEAL_STATUS_ORDER.map(threshold=>`WHEN '${threshold}' THEN identity_app.status IN (${Array.from(revealedStatusesForThreshold(threshold)).map(s=>`'${s}'`).join(",")})`).join("\n")}
+      ELSE identity_app.status='hired' END))`;
 import {
   calculateModernDashboardActivity,
   getDashboardHoursTracking,
@@ -63,7 +71,9 @@ const MEMBERS_SQL = `WITH authorized_clients AS (
     INNER JOIN job_submissions js ON js.id = hc.submission_id
     INNER JOIN jobs j ON j.id = js.job_id
     INNER JOIN authorized_clients ac ON ac.user_id = js.client_id
-   WHERE hc.onspot_signed_at IS NOT NULL AND hc.status NOT IN ('void', 'voided')
+   WHERE (hc.onspot_signed_at IS NOT NULL OR
+      (hc.activation_override_id IS NOT NULL AND hc.billing_activated_at IS NOT NULL) OR js.admin_direct_placement)
+     AND hc.status NOT IN ('void', 'voided','terminated')
      AND js.talent_id IS NOT NULL
 ), ranked_engagements AS (
   SELECT e.*,
@@ -101,7 +111,9 @@ const MEMBERS_SQL = `WITH authorized_clients AS (
    GROUP BY talent_id
 )
 SELECT ge.talent_id,
-       COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email, 'Team member') AS name,
+       CASE WHEN ${teamIdentityVisibleSql}
+         THEN COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''),'Team member')
+         ELSE 'Talent' END AS name,
        COALESCE(NULLIF(TRIM(p.title), ''), NULLIF(TRIM(ge.project), ''), 'Team member') AS role,
        ge.team, ge.project, ge.project_count, ge.project_ids,
        COALESCE(NULLIF(TRIM(p.availability), ''), 'offline') AS availability,

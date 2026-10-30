@@ -11,7 +11,7 @@ type Options = {
   getClient: () => Promise<{ query: Query; release: () => void }>;
 };
 
-const activeContract = `${TIMESHEET_HIRE_SQL} AND hc.status = 'signed'
+const activeContract = `${TIMESHEET_HIRE_SQL} AND hc.status NOT IN ('void','voided','terminated')
   AND hc.billing_mode = 'tracked'
   AND (hc.effective_start_date IS NULL OR hc.effective_start_date <= (now() AT TIME ZONE 'America/New_York')::date)
   AND (hc.effective_end_date IS NULL OR hc.effective_end_date >= (now() AT TIME ZONE 'America/New_York')::date)`;

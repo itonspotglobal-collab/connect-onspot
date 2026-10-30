@@ -40,6 +40,9 @@ import { registerHiringPaymentRoutes, hiringPaymentFailure } from "./routes/hiri
 import { registerManualWiseRoutes } from "./routes/manualWise";
 import { ManualWiseService } from "./services/manualWiseService";
 import { preOfferPaymentRequired } from "./services/hiringPaymentService";
+import {parseDepositReminderHours} from "./services/depositReminders";
+import {registerAdminHiringOverrideRoutes} from "./routes/adminHiringOverrides";
+import {AdminHiringOverrideService} from "./services/adminHiringOverrideService";
 import { queueHiringLifecycleEvent } from "./services/hiringLifecycleEvents";
 import { issueAcceptedOfferDeposit, requireHiringStage, lockOnboarding } from "./services/contractorOnboardingPolicy";
 import { contractorOnboardingRouter } from "./routes/contractorOnboarding";
@@ -52,7 +55,7 @@ import { registerInvestorGoalRoutes, guardInvestorGoalUpdates, seedInvestorGoalS
 import { INVESTOR_GOAL_PLACEHOLDERS, isInvestorGoalKey, isValidInvestorGoalSetting } from "../shared/investorGoals";
 import { registerTimesheetRoutes } from "./routes/timesheets.js";
 import { registerClockRoutes } from "./routes/clock.js";
-import { TIMESHEET_HIRE_SQL } from "./services/timesheetEligibility.js";
+import { TIMESHEET_HIRE_SQL,EXECUTED_HIRING_CONTRACT_SQL,hasActiveHiringOverride } from "./services/timesheetEligibility.js";
 import { registerTalentInvoiceRoutes } from "./routes/talentInvoices.js";
 import { registerContractTerminationRoutes } from "./routes/contractTerminations.js";
 import { parsePagination, pageSlice } from "./lib/paginate";
@@ -3490,6 +3493,8 @@ export async function registerRoutes(
   );
 
   registerInvestorRoutes(app);
+  registerAdminHiringOverrideRoutes(app,new AdminHiringOverrideService(pool,dispatchHiringLifecycleEvents),
+    authenticateAdminFlexible,requireSuperAdmin,pipelineMutationLimiter);
   registerManualWiseRoutes(app, { service: new ManualWiseService(pool,dispatchHiringLifecycleEvents), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
   app.get("/api/hiring-payment-settings", authenticateJWT, async (req:any,res) => {
     try {
@@ -8868,12 +8873,15 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, guardInvestorGoalUpdates(requireSuperAdmin), async (req: Request, res: Response) => {
+  app.patch("/api/admin/platform-settings", authenticateJWT, requireAdmin, guardInvestorGoalUpdates(requireSuperAdmin),
+    (req:Request,res:Response,next:NextFunction)=>Object.hasOwn(req.body??{},"deposit_reminder_hours")?requireSuperAdmin(req,res,next):next(),
+    async (req: Request, res: Response) => {
     try {
       const ALLOWED_KEYS = new Set([
         'name_reveal_threshold',
         'search_suggestion_threshold',
         'vetted_auto_hire_threshold',
+        'deposit_reminder_hours',
         ...Object.keys(INVESTOR_GOAL_PLACEHOLDERS),
       ]);
       const VALID_THRESHOLDS = new Set(['new', 'reviewed', 'shortlisted', 'hired']);
@@ -8885,6 +8893,10 @@ export async function registerRoutes(
         }
         if (typeof value !== 'string') {
           return res.status(400).json({ error: `Value for ${key} must be a string` });
+        }
+        if(key==="deposit_reminder_hours") {
+          try {parseDepositReminderHours(value);}
+          catch {return res.status(400).json({error:"deposit_reminder_hours must contain 1–12 comma-separated positive whole hours (maximum 8760)."});}
         }
         if (isInvestorGoalKey(key) && !isValidInvestorGoalSetting(key, value)) {
           return res.status(400).json({ error: `${key} must be a positive whole account count, its placeholder, or blank to hide the goal` });
@@ -16228,9 +16240,8 @@ export async function registerRoutes(
           WHERE js.client_id = $1
             AND js.${FORMAL_PIPELINE_PREDICATE}
             AND js.status = 'hired'
-            AND hc.status = 'signed'
-            AND hc.talent_signed_at IS NOT NULL
-            AND hc.onspot_signed_at IS NOT NULL
+            AND ${EXECUTED_HIRING_CONTRACT_SQL}
+            AND hc.status NOT IN ('void','voided','terminated')
           ORDER BY js.id, GREATEST(hc.talent_signed_at, hc.onspot_signed_at) DESC, hc.id DESC`,
         [clientId],
       );
@@ -21925,7 +21936,7 @@ export async function registerRoutes(
            LEFT JOIN users talent ON talent.id = js.talent_id
            LEFT JOIN invoice_periods ip ON ip.hiring_contract_id = hc.id
            LEFT JOIN security_deposits sd ON sd.hiring_contract_id = hc.id
-          WHERE hc.status = 'signed'
+          WHERE ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.status<>'terminated'
           GROUP BY hc.id, o.id, client.id, talent.id, j.id, sd.id
           ORDER BY hc.onspot_signed_at DESC NULLS LAST, hc.created_at DESC`,
       );
@@ -21955,7 +21966,7 @@ export async function registerRoutes(
       }
 
       const contract = await query(
-        `SELECT hc.id, hc.offer_id, hc.status AS contract_status,
+        `SELECT hc.id, hc.offer_id, hc.status AS contract_status,hc.activation_override_id,hc.billing_activated_at,
                 o.rate, o.rate_currency, o.engagement_type
            FROM hiring_contracts hc
            JOIN offers o ON o.id = hc.offer_id
@@ -21964,7 +21975,7 @@ export async function registerRoutes(
       );
       if (contract.rows.length === 0) return res.status(404).json({ error: "Hiring contract not found" });
       const linked = contract.rows[0];
-      if (linked.contract_status !== "signed") {
+      if (linked.contract_status !== "signed"&&!hasActiveHiringOverride(linked)) {
         return res.status(409).json({ error: "contract_not_active", message: "Billing periods can only be created for signed contracts." });
       }
       const billingCurrency = requireUsdCurrency(linked.rate_currency);

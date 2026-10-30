@@ -267,10 +267,9 @@ export default function InvestorsCorner() {
                   {investorStatsQuery.data && investorGoalsQuery.data?.totalGoal && (
                     <strong className="investor-total-progress-percent">
                       {(
-                        ((investorStatsQuery.data.contractorAccounts +
-                          investorStatsQuery.data.clientAccounts) /
-                          investorGoalsQuery.data.totalGoal) *
-                        100
+                        Math.round((investorStatsQuery.data.contractorAccounts +
+                          investorStatsQuery.data.clientAccounts) * 1000 /
+                          investorGoalsQuery.data.totalGoal) / 10
                       ).toLocaleString(undefined, { maximumFractionDigits: 1 })}
                       %
                     </strong>

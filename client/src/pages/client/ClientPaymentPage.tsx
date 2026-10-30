@@ -42,6 +42,7 @@ function money(amount: string | number, currency: string) {
 }
 
 function getDueState(obligation: WiseObligation) {
+  if(obligation.paymentStatus==="waived"||obligation.status==="waived")return {label:"Waived",className:"bg-violet-100 text-violet-900 dark:bg-violet-900/40 dark:text-violet-200"};
   if (obligation.paymentStatus === "paid" && !["void","refunded","invalidated"].includes(obligation.status)) {
     return { label: "Paid", className: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200" };
   }

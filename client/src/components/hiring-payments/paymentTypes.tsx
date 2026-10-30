@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 
 export interface HiringInvoice {
+  historical_read_only?: boolean;
   id: string;
   invoice_type: string;
   attempt_id: string;

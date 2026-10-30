@@ -1,6 +1,7 @@
 import type { Express, RequestHandler } from "express";
 import { getClient, query } from "../db.ts";
 import { rebuildDraftInvoicesForTermination } from "./talentInvoices.js";
+import {EXECUTED_HIRING_CONTRACT_SQL,hasActiveHiringOverride} from "../services/timesheetEligibility";
 
 type Middleware = RequestHandler;
 type Options = {
@@ -63,7 +64,7 @@ async function submitTerminationRequest(
     await client.query("BEGIN");
     const contract = await client.query(
       `SELECT hc.id, hc.status, hc.billing_mode, hc.effective_start_date,
-              hc.effective_end_date, hc.billing_activated_at
+              hc.effective_end_date, hc.billing_activated_at,hc.activation_override_id
          FROM hiring_contracts hc
          JOIN job_submissions js ON js.id = hc.submission_id
         WHERE hc.id = $1
@@ -76,7 +77,7 @@ async function submitTerminationRequest(
       await client.query("ROLLBACK");
       return { status: 404, body: { error: "Signed contract not found" } };
     }
-    if (row.status !== "signed" || !BILLING_MODES.includes(row.billing_mode)) {
+    if ((row.status !== "signed"&&!hasActiveHiringOverride(row)) || !BILLING_MODES.includes(row.billing_mode)) {
       await client.query("ROLLBACK");
       return { status: 409, body: { error: "Only signed Tracked or Guaranteed contracts can be ended" } };
     }
@@ -179,7 +180,7 @@ export function registerContractTerminationRoutes(app: Express, options: Options
              JOIN job_submissions js ON js.id = hc.submission_id
              JOIN jobs j ON j.id = js.job_id
             WHERE js.${role === "client" ? "client_id" : "talent_id"} = $1
-              AND hc.status = 'signed'
+              AND ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.status<>'terminated'
               AND hc.billing_mode IN ('tracked', 'guaranteed')
               AND (hc.effective_end_date IS NULL
                 OR hc.effective_end_date >= (now() AT TIME ZONE '${ET}')::date)
@@ -220,7 +221,7 @@ export function registerContractTerminationRoutes(app: Express, options: Options
            JOIN users client ON client.id = js.client_id
            JOIN users talent ON talent.id = js.talent_id
            LEFT JOIN client_profiles cp ON cp.user_id = js.client_id
-          WHERE hc.status = 'signed'
+          WHERE ${EXECUTED_HIRING_CONTRACT_SQL} AND hc.status<>'terminated'
             AND hc.billing_mode IN ('tracked', 'guaranteed')
             AND (hc.effective_end_date IS NULL
               OR hc.effective_end_date >= (now() AT TIME ZONE '${ET}')::date)
@@ -268,7 +269,7 @@ export function registerContractTerminationRoutes(app: Express, options: Options
     effectiveEndDate: string,
     reason: string,
   ) => {
-    if (contract.status !== "signed" || !BILLING_MODES.includes(contract.billing_mode)) {
+    if ((contract.status !== "signed"&&!hasActiveHiringOverride(contract)) || !BILLING_MODES.includes(contract.billing_mode)) {
       return { status: 409, body: { error: "Only signed Tracked or Guaranteed contracts can be ended" } };
     }
     if (contract.effective_end_date) {
@@ -308,7 +309,7 @@ export function registerContractTerminationRoutes(app: Express, options: Options
       await client.query("BEGIN");
       const found = await client.query(
         `SELECT r.*, hc.status AS contract_status, hc.billing_mode,
-                hc.effective_start_date, hc.effective_end_date, hc.billing_activated_at
+                hc.effective_start_date, hc.effective_end_date, hc.billing_activated_at,hc.activation_override_id
            FROM hiring_contract_termination_requests r
            JOIN hiring_contracts hc ON hc.id = r.hiring_contract_id
           WHERE r.id = $1 FOR UPDATE OF r, hc`,
@@ -385,7 +386,7 @@ export function registerContractTerminationRoutes(app: Express, options: Options
     try {
       await client.query("BEGIN");
       const found = await client.query(
-        `SELECT id, status, billing_mode, effective_start_date, effective_end_date, billing_activated_at
+        `SELECT id, status, billing_mode, effective_start_date, effective_end_date, billing_activated_at,activation_override_id
            FROM hiring_contracts WHERE id = $1 FOR UPDATE`,
         [req.params.id],
       );

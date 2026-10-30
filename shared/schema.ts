@@ -908,6 +908,7 @@ export const jobSubmissions = pgTable("job_submissions", {
   // until the interview itself reaches confirmed.
   combinedInviteReveal: boolean("combined_invite_reveal").notNull().default(false),
   invitationPending: boolean("invitation_pending").notNull().default(false),
+  adminDirectPlacement: boolean("admin_direct_placement").notNull().default(false),
   answers: jsonb("answers"), // [{ questionId, question, answer }]
   submittedAt: timestamp("submitted_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -1805,6 +1806,7 @@ export const hiringContracts = pgTable("hiring_contracts", {
   terminatedBy: varchar("terminated_by").references(() => users.id, { onDelete: "restrict" }),
   terminatedAt: timestamp("terminated_at", { withTimezone: true }),
   billingActivatedAt: timestamp("billing_activated_at", { withTimezone: true }),
+  activationOverrideId: uuid("activation_override_id").references(():AnyPgColumn=>adminHiringOverrides.id),
   // Reserved for a future e-signature provider; current signing remains admin-controlled.
   signatureProvider: text("signature_provider"),
   signatureEnvelopeId: text("signature_envelope_id"),
@@ -2406,6 +2408,25 @@ export const clientCreditApplications = pgTable("client_credit_applications", {
   check("client_credit_applications_amount_check", sql`${table.amount} > 0`),
 ]);
 
+export const adminHiringOverrides = pgTable("admin_hiring_overrides", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorId: varchar("actor_id").notNull().references(()=>users.id),
+  submissionId: text("submission_id").references(()=>jobSubmissions.id),
+  clientId: varchar("client_id").notNull().references(()=>users.id),
+  talentId: varchar("talent_id").notNull().references(()=>users.id),
+  action: text("action").notNull(),
+  previousState: jsonb("previous_state").notNull(),
+  newState: jsonb("new_state").notNull(),
+  reason: text("reason").notNull(),
+  notifyParties: boolean("notify_parties").notNull().default(false),
+  createdAt: timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+  revertedAt: timestamp("reverted_at",{withTimezone:true}),
+  revertedBy: varchar("reverted_by").references(()=>users.id),
+},table=>[
+  index("admin_hiring_overrides_submission_idx").on(table.submissionId,table.createdAt),
+  check("admin_hiring_overrides_reason_check",sql`length(btrim(${table.reason})) BETWEEN 10 AND 2000`),
+]);
+
 export const securityDeposits = pgTable("security_deposits", {
   invoiceNumber: text("invoice_number"),
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2416,6 +2437,9 @@ export const securityDeposits = pgTable("security_deposits", {
   currency: text("currency").notNull().default("USD"),
   status: text("status").notNull().default("pending"),
   heldAt: timestamp("held_at", { withTimezone: true }),
+  waivedBy: varchar("waived_by").references(() => users.id),
+  waivedAt: timestamp("waived_at", { withTimezone: true }),
+  waiverReason: text("waiver_reason"),
   drawnAt: timestamp("drawn_at", { withTimezone: true }),
   drawnReason: text("drawn_reason"),
   replenishmentDueAt: timestamp("replenishment_due_at", { withTimezone: true }),
@@ -2434,7 +2458,7 @@ export const securityDeposits = pgTable("security_deposits", {
   uniqueIndex("security_deposits_accepted_offer_unique").on(table.offerId).where(sql`${table.offerId} IS NOT NULL`),
   uniqueIndex("security_deposits_invoice_number_unique").on(table.invoiceNumber).where(sql`${table.invoiceNumber} IS NOT NULL`),
   check("security_deposits_source_check", sql`${table.hiringContractId} IS NOT NULL OR (${table.offerId} IS NOT NULL AND ${table.submissionId} IS NOT NULL)`),
-  check("security_deposits_status_check", sql`${table.status} IN ('pending', 'held', 'drawn', 'replenishment_pending', 'suspended', 'forfeited', 'applied', 'void')`),
+  check("security_deposits_status_check", sql`${table.status} IN ('pending', 'held', 'waived', 'drawn', 'replenishment_pending', 'suspended', 'forfeited', 'applied', 'void')`),
 ]);
 
 export const insertHiringContractSchema = createInsertSchema(hiringContracts).omit({
@@ -2624,6 +2648,8 @@ export const manualWiseConfig = pgTable("manual_wise_config", {
   check("manual_wise_config_status_check",sql`${t.configStatus} IN ('draft','active','inactive','reviewed')`),
   check("manual_wise_config_active_status_check",sql`${t.active}=(${t.configStatus}='active')`)]);
 export const manualWiseObligations = pgTable("manual_wise_obligations", {
+  cancelledAt: timestamp("cancelled_at", {withTimezone:true}),
+  cancellationReason: text("cancellation_reason"),
   id: uuid("id").primaryKey().defaultRandom(),
   category: text("category").notNull(),
   inquiryId: varchar("inquiry_id").unique().references(() => inquiries.id,{onDelete:"restrict"}),

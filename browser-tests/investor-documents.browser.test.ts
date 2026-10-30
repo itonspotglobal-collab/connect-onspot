@@ -73,14 +73,14 @@ async function openPage(width = 1280, height = 900, statsHandler?: Parameters<Pa
     route.fulfill({ json: { contractorAccounts: 1234, clientAccounts: 56, asOf: "2026-10-16T08:00:00.000Z" } })));
   await page.route("**/api/public/investor-goals", goalsHandler ?? (route =>
     route.fulfill({ json: { totalGoal: 10_000 } })));
-  await page.goto(`${base}/investors`);
+  await page.goto(`${base}/investors`,{waitUntil:"domcontentloaded"});
   await page.locator("h1").waitFor();
   return page;
 }
 
 test("direct URL, refreshed content and unchanged reference narrative preserve investment links", async () => {
   const page = await openPage();
-  await page.reload();
+  await page.reload({waitUntil:"domcontentloaded"});
   await page.locator("h1").waitFor();
   assert.equal(await page.locator("h1").count(), 1);
   assert.equal(await page.title(), "Invest in OnSpot — A Letter From Our CEO");
@@ -125,7 +125,7 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   assert.match(await founders.innerText(), /Jake Wainberg/);
   assert.match(await founders.innerText(), /Mark Apostol/);
   assert.deepEqual(await founders.locator(".investor-sign b").allTextContents(), ["Nur Laminero", "Jake Wainberg", "Mark Apostol"]);
-  assert.deepEqual(await founders.locator(".investor-sign span").allTextContents(), ["Co-Founder & CEO", "Co-Founder & President", "Co-Founder & COO"]);
+  assert.deepEqual(await founders.locator(".investor-sign span:not([role='img'])").allTextContents(), ["Co-Founder & CEO", "Co-Founder & President", "Co-Founder & COO"]);
   assert.equal(await founders.locator("img").count(), 2);
   for (const image of await founders.locator("img").all()) {
     assert.ok(await image.getAttribute("alt"));
@@ -164,12 +164,45 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     const headline = await page.locator("#investor-open-title").boundingBox();
     const stage = await page.locator(".investor-phone-stage").boundingBox();
     assert.ok(headline && stage);
+    const actualPhone = await page.locator(".investor-phone-art").evaluate(async (image: HTMLImageElement) => {
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { willReadFrequently: true })!;
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let left = canvas.width;
+      let top = canvas.height;
+      let right = 0;
+      let bottom = 0;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] < 20) continue;
+          left = Math.min(left, x);
+          top = Math.min(top, y);
+          right = Math.max(right, x + 1);
+          bottom = Math.max(bottom, y + 1);
+        }
+      }
+      const imageRect = image.getBoundingClientRect();
+      return {
+        left: imageRect.left + (left / canvas.width) * imageRect.width,
+        top: imageRect.top + (top / canvas.height) * imageRect.height,
+        right: imageRect.left + (right / canvas.width) * imageRect.width,
+        bottom: imageRect.top + (bottom / canvas.height) * imageRect.height,
+      };
+    });
+    assert.ok(actualPhone.left >= stage.x - 2 && actualPhone.right <= stage.x + stage.width + 2,
+      "visible phone pixels must fit inside the responsive stage");
+    assert.ok(actualPhone.top >= stage.y - 2 && actualPhone.bottom <= stage.y + stage.height + 2,
+      "visible phone pixels must not be cropped vertically");
     const separated =
-      headline.y + headline.height <= stage.y + 2 ||
-      stage.y + stage.height <= headline.y + 2 ||
-      headline.x + headline.width <= stage.x + 2 ||
-      stage.x + stage.width <= headline.x + 2;
-    assert.equal(separated, true, "hero headline and phone canvas must not overlap");
+      actualPhone.bottom <= headline.y + 2 ||
+      actualPhone.top >= headline.y + headline.height - 2 ||
+      actualPhone.right <= headline.x + 2 ||
+      actualPhone.left >= headline.x + headline.width - 2;
+    assert.equal(separated, true, "visible phone pixels and headline must not overlap");
     await page.close();
   });
 }

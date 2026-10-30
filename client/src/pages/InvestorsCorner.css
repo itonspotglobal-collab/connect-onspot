@@ -474,7 +474,12 @@
   height: auto;
   flex: 0 0 auto;
   transform: translateX(-27%);
-  animation: investor-rise 1s cubic-bezier(.2, .7, .2, 1) both;
+  animation: investor-phone-fade 1s ease-out both;
+}
+
+@keyframes investor-phone-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .onspot-investors-page .investor-phone {
@@ -2021,7 +2026,9 @@
   }
 
   .onspot-investors-page .investor-phone-stage {
+    width: 100vw;
     min-height: clamp(510px, 180vw, 700px);
+    margin-left: calc(50% - 50vw);
   }
 
   .onspot-investors-page .investor-phone-art {

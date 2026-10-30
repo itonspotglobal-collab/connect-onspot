@@ -183,7 +183,7 @@ export class HiringPaymentService {
     const fields = ["id","invoice_type","attempt_id","submission_id","job_id","invoice_number","fee_description",
       "amount","currency","fee_basis","tax_treatment","tax_description","status","issued_at","due_date",
       "payment_method","payment_recipient","payment_instructions","payment_reference","verified_at","created_at","updated_at",
-      "job_title","ready_at"];
+      "job_title","ready_at","historical_read_only"];
     return Object.fromEntries(fields.filter(k => k in i).map(k => [k,i[k]]));
   }
   async list(actorId: string, admin: boolean, filters: Record<string,string> = {}) {
@@ -195,7 +195,7 @@ export class HiringPaymentService {
     for (const [key,column] of Object.entries({ submissionId:"i.submission_id", status:"i.status", clientId:"i.client_id", talentId:"i.talent_id", jobId:"i.job_id" })) {
       if (filters[key] && (admin || key === "submissionId")) add(column,filters[key]);
     }
-    const items = (await this.pool.query(`SELECT i.*,j.title AS job_title,js.applicant_name AS talent_name,
+    const items = (await this.pool.query(`SELECT i.*,NOT EXISTS(SELECT 1 FROM hiring_payment_waivers w WHERE w.deferred_invoice_id=i.id) AS historical_read_only,j.title AS job_title,js.applicant_name AS talent_name,
       u.company AS client_name,a.ready_at,
       (i.status IN ('issued','payment_failed') AND i.due_date<now()) AS is_overdue
       FROM hiring_pre_offer_invoices i JOIN job_submissions js ON js.id=i.submission_id
@@ -207,7 +207,7 @@ export class HiringPaymentService {
   }
   async detail(actorId: string, id: string, admin: boolean) {
     await this.actor(this.pool,actorId,admin);
-    const { rows: [invoice] } = await this.pool.query(`SELECT * FROM hiring_pre_offer_invoices
+    const { rows: [invoice] } = await this.pool.query(`SELECT *,NOT EXISTS(SELECT 1 FROM hiring_payment_waivers w WHERE w.deferred_invoice_id=hiring_pre_offer_invoices.id) AS historical_read_only FROM hiring_pre_offer_invoices
       WHERE id=$1 ${admin ? "" : "AND client_id=$2"}`,admin ? [id] : [id,actorId]);
     if (!invoice) return fail(404,"INVOICE_NOT_FOUND","Invoice not found.");
     const history = (await this.pool.query(`SELECT ${admin ? "*" : "id,event,previous_status,new_status,created_at"}
@@ -222,6 +222,8 @@ export class HiringPaymentService {
       if (!found) return fail(404,"INVOICE_NOT_FOUND","Invoice not found.");
       await this.ownedSubmission(db,actorId,found.submission_id);
       const { rows: [invoice] } = await db.query("SELECT * FROM hiring_pre_offer_invoices WHERE id=$1 FOR UPDATE",[id]);
+      if(!(await db.query("SELECT id FROM hiring_payment_waivers WHERE deferred_invoice_id=$1",[id])).rows.length)
+        return fail(410,"HISTORICAL_INVOICE_READ_ONLY","Retired pre-offer invoices are read-only financial history.");
       if (!["issued","overdue","payment_failed"].includes(invoice.status)) return fail(409,"PAYMENT_REFERENCE_NOT_ALLOWED","This invoice is not awaiting a payment reference.");
       const updated = (await db.query(`UPDATE hiring_pre_offer_invoices SET status='verification_pending',
         payment_reference=$2,updated_at=now() WHERE id=$1 RETURNING *`,[id,reference.trim()])).rows[0];
@@ -240,6 +242,8 @@ export class HiringPaymentService {
       if (!found) return fail(404,"INVOICE_NOT_FOUND","Invoice not found.");
       await db.query("SELECT id FROM job_submissions WHERE id=$1 FOR UPDATE",[found.submission_id]);
       const { rows: [invoice] } = await db.query("SELECT * FROM hiring_pre_offer_invoices WHERE id=$1 FOR UPDATE",[id]);
+      if(!(await db.query("SELECT id FROM hiring_payment_waivers WHERE deferred_invoice_id=$1",[id])).rows.length)
+        return fail(410,"HISTORICAL_INVOICE_READ_ONLY","Retired pre-offer invoices are read-only financial history.");
       const p = parsed.data;
       const newStatus = { verify:"paid",reject:"payment_failed",void:"void",refund:"refunded",invalidate:"invalidated" }[p.action];
       if (p.action === "verify" && invoice.status === "paid") {

@@ -90,7 +90,7 @@ export function AdminHiringPaymentsSection() {
   };
   const updateFilter = (key: keyof typeof filters, value: string) =>
     setFilters((current) => ({ ...current, [key]: value }));
-  const allowedActions = selected?.status === "paid" ? ["refund", "invalidate"]
+  const allowedActions = selected?.historical_read_only ? [] : selected?.status === "paid" ? ["refund", "invalidate"]
     : selected?.status === "verification_pending" ? ["void"]
       : selected && ["issued", "overdue", "payment_failed", "draft"].includes(selected.status) ? ["void"] : [];
 

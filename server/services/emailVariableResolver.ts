@@ -13,6 +13,8 @@ export interface EmailVariableContext {
   startDate?: string;
   paymentAmount?: string;
   paymentReference?: string;
+  dueDate?: string;
+  depositUrl?: string;
   applicantFirstName?: string;
   applicantLastName?: string;
   applicantFullName?: string;
@@ -45,6 +47,10 @@ export interface EmailVariableContext {
 export const getTalentApplicationsUrl = buildTalentApplicationsUrl;
 
 const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
+  due_date: "dueDate",
+  dueDate: "dueDate",
+  deposit_url: "depositUrl",
+  depositUrl: "depositUrl",
   talent_name: "talentName",
   start_date: "startDate",
   payment_amount: "paymentAmount",
@@ -87,7 +93,7 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
 
 const TOKEN_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/g;
 const UNRESOLVED_TOKEN_PATTERN = /\{\{\s*[^}]+\s*\}\}/g;
-const URL_VARIABLES = new Set<keyof EmailVariableContext>(["portalUrl", "logoUrl", "jobUrl"]);
+const URL_VARIABLES = new Set<keyof EmailVariableContext>(["portalUrl", "logoUrl", "jobUrl", "depositUrl"]);
 const MULTILINE_TEXT_VARIABLES = new Set<keyof EmailVariableContext>(["jobDescription"]);
 const OPTIONAL_BLOCK_PATTERN = /\{\{#\s*([a-z0-9_]+)\s*\}\}([\s\S]*?)\{\{\/\s*\1\s*\}\}/gi;
 
@@ -384,6 +390,8 @@ export function renderBrandedEmailLayout(contentHtml: string): string {
 export const SUPPORTED_VARIABLES: { key: string; label: string; description: string }[] = [
   { key: "talent_name", label: "Talent", description: "Authorized talent display name or role" },
   { key: "start_date", label: "Start date", description: "Accepted offer's agreed start date" },
+  { key: "due_date", label: "Deposit due date", description: "Invoice due date, or a direction to review its applicable terms" },
+  { key: "deposit_url", label: "Deposit invoice", description: "Authorized Client deposit payment page" },
   { key: "payment_amount", label: "Payment amount", description: "Existing obligation amount and currency" },
   { key: "payment_reference", label: "Transfer reference", description: "Customer's unverified transfer claim" },
   { key: "applicant_first_name", label: "First Name", description: "Applicant's first name" },

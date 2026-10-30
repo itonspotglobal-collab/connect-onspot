@@ -59,6 +59,16 @@ function brandedClientTemplate(
 }
 
 export const DEFAULT_TEMPLATES: TemplateRow[] = [
+  brandedTemplate({
+    name:"Hiring Exception Applied",category:"hiring_admin_override",stage:null,isDefault:true,
+    subject:"OnSpot updated the hiring workflow for {{job_title}}",
+    content:`<p>An authorized Super Admin applied an audited exception to the hiring workflow for {{job_title}}.</p><p>Review the application for its current requirements. No missing signatures or payment receipts were fabricated by this action.</p>${button("{{portal_url}}","Review application")}`,
+  }),
+  brandedTemplate({
+    name:"Deposit Waived — Agreement Review",category:"hiring_agreements_waived",stage:null,isDefault:true,
+    subject:"Deposit waived — review agreement requirements for {{job_title}}",
+    content:`<p>A Super Admin explicitly waived the security deposit for {{job_title}}. This is not evidence of payment or settlement.</p><p>Review the remaining agreement requirements and any separate audited exceptions.</p>${button("{{portal_url}}","Review agreement")}`,
+  }),
   ...([
     ["hiring_skip_requested","Payment Skip Requested","Payment skip requested for {{job_title}}","{{rejection_reason}}"],
     ["hiring_skip_granted","Payment Skip Granted","Payment verification skipped for {{job_title}}","{{rejection_reason}}"],
@@ -69,7 +79,7 @@ export const DEFAULT_TEMPLATES: TemplateRow[] = [
   ] as const).map(([category,name,subject,content])=>brandedTemplate({category,name,subject,stage:null,isDefault:true,
     content:`<p>${content}</p>${button("{{portal_url}}","Review application")}`})),
   brandedTemplate({
-    name:"Offer Accepted — Deposit Invoice",category:"hiring_acceptance_invoice",stage:null,isDefault:true,
+    name:"Offer Accepted — Deposit Invoice",category:"hiring_acceptance_invoice",stage:null,isDefault:false,
     subject:"{{talent_name}} accepted your offer for {{job_title}} — deposit invoice ready",
     content:`<p>{{talent_name}} accepted your offer for <strong>{{job_title}}</strong>.</p><p>Your security deposit invoice is ready: <strong>{{payment_amount}}</strong>. Once your payment is independently verified, OnSpot will prepare the Contractor Agreement and request any required current Master Services Agreement.</p>${button("{{portal_url}}","View deposit invoice")}`,
   }),
@@ -94,9 +104,19 @@ export const DEFAULT_TEMPLATES: TemplateRow[] = [
     content:`<p>The funded onboarding for <strong>{{job_title}}</strong> cannot activate because there is no active, effective MSA document.</p><p>A Super Admin must upload the approved private legal PDF, review it and activate its version. No legal text has been generated.</p>${button("{{portal_url}}","Manage MSA versions")}`,
   }),
   brandedTemplate({
-    name:"Offer Accepted — Sign Contract",category:"hiring_offer_accepted",stage:null,isDefault:true,
-    subject:"{{talent_name}} accepted your offer for {{job_title}}. Next: sign the contract.",
-    content:`<p>{{talent_name}} accepted your offer for <strong>{{job_title}}</strong>.</p><p>Next: review and sign the contract when the prepared document is available.</p>${button("{{portal_url}}","Review contract")}`,
+    name:"Offer Accepted",category:"hiring_offer_accepted",stage:null,isDefault:true,
+    subject:"{{talent_name}} accepted your offer for {{job_title}}",
+    content:`<p>{{talent_name}} accepted your offer for <strong>{{job_title}}</strong>.</p><p>Proposed start date: {{start_date}}.</p><p>Review the application for the next onboarding step. Acceptance alone does not activate the engagement.</p>${button("{{portal_url}}","View application")}`,
+  }),
+  brandedTemplate({
+    name:"Deposit Required",category:"hiring_deposit_required",stage:null,isDefault:true,
+    subject:"Deposit payment required to continue hiring {{talent_name}}",
+    content:`<p>Your deposit for <strong>{{job_title}}</strong> is ready: <strong>{{payment_amount}}</strong>.</p><p>Due: {{due_date}}</p><p>After the deposit is independently verified, OnSpot prepares the agreement. A receipt is not confirmation of settlement.</p>${button("{{deposit_url}}","View deposit invoice")}`,
+  }),
+  brandedTemplate({
+    name:"Deposit Reminder",category:"hiring_deposit_reminder",stage:null,isDefault:true,
+    subject:"Reminder: deposit required for {{job_title}}",
+    content:`<p>Your deposit of <strong>{{payment_amount}}</strong> for {{job_title}} is awaiting independent verification.</p><p>Due: {{due_date}}</p><p>If you have submitted proof, OnSpot still needs to verify settlement before preparing the agreement.</p>${button("{{deposit_url}}","Review deposit")}`,
   }),
   brandedTemplate({
     name:"Deposit Invoice",category:"hiring_deposit_invoice",stage:null,isDefault:true,

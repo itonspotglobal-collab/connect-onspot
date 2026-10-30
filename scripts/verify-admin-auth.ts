@@ -6,10 +6,12 @@
  * removed (e.g. by a stale-snapshot task merge).
  *
  * Run: npx tsx scripts/verify-admin-auth.ts
- * Requires the dev server to be running on localhost:5000.
+ * Requires the configured development server to be running.
  */
 
-const BASE = "http://localhost:5000";
+const BASE = process.env.REPLIT_DEV_DOMAIN
+  ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+  : "http://127.0.0.1:5000";
 
 const PROBES: { method: string; path: string }[] = [
   { method: "GET",    path: "/api/admin/jobs" },

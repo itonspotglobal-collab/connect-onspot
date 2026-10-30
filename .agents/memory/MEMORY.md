@@ -74,7 +74,7 @@
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — public signup overlays the mounted page; direct auth cancellation preserves origin independently of success redirects.
-- [Hiring activation policy](pre-offer-payment-policy.md) — new acceptances issue deposits before agreements; activation needs held funds, signed contractor agreement and current signed MSA; preserve legacy paths.
+- [Hiring activation policy](pre-offer-payment-policy.md) — permanently retire pre-offer fees; deposit-first defaults allow audited Super Admin exceptions, never fabricated funds or signatures.
 - [Workflow port exclusivity](workflow-port-exclusivity.md) — a managed restart can leave an orphaned app process; sharing the preview port masks duplicates and repeats scheduled work.
 - [Interview workflow policy](interview-workflow-policy.md) — recruiting exceptions, immutable outcomes, non-blocking calendars and pre-offer-only cohort repairs.
 - [Native HTTP test harness](native-http-test-environment.md) — distinguish Node test-worker IPC corruption from endpoint failures without weakening auth or assertions.

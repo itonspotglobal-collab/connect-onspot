@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import { isDepositFirst, OnboardingError } from "./contractorOnboardingPolicy";
+import {hiringOverrideState} from "./adminHiringOverrideState";
 
 export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,actorId:string) {
   const s=(await db.query(`SELECT js.*,u.role AS actor_role,u.admin_sub_role AS actor_sub_role FROM job_submissions js JOIN users u ON u.id=$2
@@ -7,7 +8,8 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
   if(!s)throw new OnboardingError(404,"APPLICATION_NOT_FOUND","Application not found.");
   const depositFirst=await isDepositFirst(db,id);
   const interviews=(await db.query("SELECT interview_type,status,outcome FROM interviews WHERE submission_id=$1",[id])).rows;
-  const final=interviews.some(i=>i.interview_type==="final"&&i.status==="completed"&&["advance","passed"].includes(String(i.outcome).trim().toLowerCase()));
+  const overrides=await hiringOverrideState(db,id);
+  const final=overrides.finalInterviewPassed||interviews.some(i=>i.interview_type==="final"&&i.status==="completed"&&["advance","passed"].includes(String(i.outcome).trim().toLowerCase()));
   const shortlisted=["shortlisted","interviewing"].includes(s.status)||!!(await db.query(
     "SELECT 1 FROM job_application_status_history WHERE application_id=$1 AND new_status='shortlisted' LIMIT 1",[id])).rows.length;
   const offer=(await db.query(`SELECT id,status FROM offers WHERE submission_id=$1
@@ -20,11 +22,11 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
   const msa=(await db.query("SELECT id,version,sha256 FROM msa_documents WHERE active AND effective_at<=now()")).rows[0];
   const msaSigned=!!msa&&!!(await db.query("SELECT 1 FROM client_msa_signatures WHERE client_id=$1 AND document_id=$2 AND document_sha256=$3 AND msa_version=$4",
     [s.client_id,msa.id,msa.sha256,msa.version])).rows.length;
-  const conditions={depositHeld:deposit?.status==="held",contractSigned:contract?.status==="signed",msaSigned};
+  const conditions={depositHeld:["held","waived"].includes(deposit?.status),contractSigned:contract?.status==="signed"||overrides.skipContractorAgreement,msaSigned:msaSigned||overrides.skipMsa};
   const missing=depositFirst?[
     ...(!conditions.depositHeld?["Deposit payment must be independently verified"]:[]),
     ...(!conditions.contractSigned?["Contractor Agreement must be fully signed"]:[]),
-    ...(!msa?["The current service agreement is being prepared by OnSpot"]:!msaSigned?["Client must sign the current MSA"]:[]),
+    ...(!overrides.skipMsa?(!msa?["The current service agreement is being prepared by OnSpot"]:!msaSigned?["Client must sign the current MSA"]:[]):[]),
   ]:[];
   const accepted=offer&&["accepted","offer_accepted"].includes(offer.status);
   const offerBlockers:string[]=[];
@@ -38,19 +40,19 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
   const activationMissing=accepted?missing:[];
   const stageMissing=accepted?(!conditions.depositHeld?activationMissing.slice(0,1):activationMissing):
     depositFirst&&!shortlisted?["Shortlist this application"]:
-      depositFirst&&!interviews.length?["Schedule an interview"]:offerBlockers;
-  const flags=[true,shortlisted,interviews.length>0,final,!!accepted,!!deposit,conditions.depositHeld,
-    conditions.contractSigned&&(!depositFirst||msaSigned),s.status==="hired"];
+      depositFirst&&!interviews.length&&!final&&!overrides.overriddenStages.includes("interviewing")?["Schedule an interview"]:offerBlockers;
+  const flags=[true,shortlisted,interviews.length>0||final||overrides.overriddenStages.includes("interviewing"),final,!!accepted,!!deposit,conditions.depositHeld,
+    conditions.contractSigned&&(!depositFirst||conditions.msaSigned),s.status==="hired"];
   const labels=["Application","Shortlisted","Interview","Final interview","Offer","Invoice","Payment verified","Agreements","Active"];
   const keys=["application","shortlisted","interview","final_interview","offer","invoice","payment_verified","agreements","active"];
   const actors=["Talent","Client","Client / Talent","Client / Admin","Talent","Client","Super Admin","Client / Talent / OnSpot","OnSpot"];
   const current=s.status==="hired"?-1:accepted
-    ?(!deposit?5:!conditions.depositHeld?6:!conditions.contractSigned||!msaSigned?7:8)
+    ?(!deposit?5:!conditions.depositHeld?6:!conditions.contractSigned||!conditions.msaSigned?7:8)
     :final?4:interviews.length?3:flags.findIndex(done=>!done);
   let nextActor=current<0?"None":actors[current];
   if(accepted&&!conditions.depositHeld)nextActor=deposit?.proof_status==="verification_pending"?"Super Admin":"Client";
   if(conditions.depositHeld&&!conditions.contractSigned)nextActor=contract?.status==="sent"?"Talent / OnSpot":"OnSpot";
-  if(conditions.contractSigned&&!msaSigned)nextActor=msa?"Client":"Super Admin";
+  if(conditions.contractSigned&&!conditions.msaSigned)nextActor=msa?"Client":"Super Admin";
   return {policy:depositFirst?"deposit_first":"legacy",submissionId:id,status:s.status,
     shortlistSatisfied:shortlisted,finalInterviewPassed:final,
     canScheduleInterview:depositFirst?["shortlisted","interviewing"].includes(s.status):["new","under_review","reviewed","shortlisted","interviewing"].includes(s.status),
@@ -59,12 +61,15 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
     msaUploadWarning:s.actor_role==="admin"&&s.actor_sub_role===null&&!msa?"New engagements cannot be activated until an MSA is uploaded":null,
     defaultInterviewType:interviews.some(i=>i.status==="completed")?"final":"initial",
     offerId:offer?.id??null,deposit:deposit?(s.actor_role==="talent"
-      ?{status:conditions.depositHeld?"held":"pending",paymentStatus:conditions.depositHeld?"paid":"awaiting_payment",invoiceUrl:null}
-      :{id:deposit.id,status:deposit.status,amount:deposit.amount,currency:deposit.currency,paymentStatus:deposit.status==="held"?"paid":deposit.proof_status??"awaiting_payment",
+      ?{status:deposit.status==="waived"?"waived":conditions.depositHeld?"held":"pending",paymentStatus:deposit.status==="waived"?"waived":conditions.depositHeld?"paid":"awaiting_payment",invoiceUrl:null}
+      :{id:deposit.id,status:deposit.status,amount:deposit.amount,currency:deposit.currency,paymentStatus:deposit.status==="waived"?"waived":deposit.status==="held"?"paid":deposit.proof_status??"awaiting_payment",
         invoiceUrl:`/client/payments/deposit/${deposit.id}`}):null,
     contract:contract?{id:contract.id,status:contract.status,url:`/contracts?id=${contract.id}`}:null,
     msa:{version:msa?.version??null,signed:msaSigned,available:!!msa,url:"/client/msa"},
     conditions,canPrepareContract:!!accepted&&(!depositFirst||conditions.depositHeld)&&(!contract||["void","voided"].includes(contract.status)),
     missing:accepted?activationMissing:offerBlockers,nextActor,
-    stages:keys.map((key,i)=>({key,label:labels[i],complete:flags[i],current:i===current,actor:actors[i]}))};
+    stages:keys.map((key,i)=>({key,label:key==="payment_verified"&&deposit?.status==="waived"?"Payment waived":labels[i],complete:flags[i],current:i===current,actor:actors[i],
+      overridden:key==="final_interview"?overrides.finalInterviewPassed:key==="agreements"?(overrides.skipContractorAgreement||overrides.skipMsa):
+        key==="payment_verified"?deposit?.status==="waived":key==="interview"?(overrides.finalInterviewPassed||overrides.overriddenStages.includes("interviewing")):
+        key==="shortlisted"?overrides.overriddenStages.includes("shortlisted"):key==="offer"?overrides.overriddenStages.some(x=>["offer_extended","offer_accepted","contract_sent","hired"].includes(x)):false}))};
 }

@@ -410,7 +410,8 @@ app.use((req, res, next) => {
   const runBgJobs = process.env.RUN_BACKGROUND_JOBS !== 'false';
 
   if (runBgJobs) {
-    // Durable recipient-specific delivery keys make concurrent instances safe.
+    // Includes configurable 48/120-hour deposit reminders. Durable event and
+    // recipient-specific delivery keys make concurrent instances safe.
     const { dispatchHiringLifecycleEvents } = await import("./services/hiringLifecycleDispatch");
     void dispatchHiringLifecycleEvents(true);
     const hiringLifecycleTimer=setInterval(()=>void dispatchHiringLifecycleEvents(true),15*60*1000);

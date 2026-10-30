@@ -3,6 +3,7 @@ import { computeDepositAmount } from "../lib/billing";
 import { queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
 import { lockAcceptedHiringWaiver, verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
 import { HiringPaymentError } from "./hiringPaymentErrors";
+import {hiringOverrideState} from "./adminHiringOverrideState";
 
 export type OnboardingDb = Pick<PoolClient,"query">;
 export class OnboardingError extends HiringPaymentError {
@@ -19,6 +20,7 @@ export async function requireHiringStage(db:OnboardingDb,id:string,stage:"interv
   if(!await isDepositFirst(db,id))return false;
   const s=(await db.query("SELECT status FROM job_submissions WHERE id=$1 FOR UPDATE",[id])).rows[0];
   if(!s)throw new OnboardingError(404,"APPLICATION_NOT_FOUND","Application not found.");
+  if(stage==="offer"&&(await hiringOverrideState(db,id)).finalInterviewPassed)return false;
   const passed=stage==="interview" ? ["shortlisted","interviewing"].includes(s.status) :
     !!(await db.query(`SELECT id FROM interviews WHERE submission_id=$1 AND interview_type='final'
       AND status='completed' AND lower(btrim(outcome)) IN ('advance','passed') LIMIT 1`,[id])).rows.length;
@@ -39,7 +41,7 @@ export async function requirePaidContract(db:OnboardingDb,offerId:string,id:stri
   if(s&&!await verifiedDeferredHiringPayment(db,s))
     throw new OnboardingError(409,"DEFERRED_HIRING_PAYMENT_REQUIRED","The deferred hiring invoice must be paid and independently verified before agreements are issued.");
   if(!await isDepositFirst(db,id))return;
-  if(!(await db.query("SELECT id FROM security_deposits WHERE offer_id=$1 AND submission_id=$2 AND status='held' FOR UPDATE",[offerId,id])).rows.length)
+  if(!(await db.query("SELECT id FROM security_deposits WHERE offer_id=$1 AND submission_id=$2 AND status IN ('held','waived') FOR UPDATE",[offerId,id])).rows.length)
     throw new OnboardingError(409,"DEPOSIT_PAYMENT_REQUIRED","The security deposit must be independently verified before preparing or sending an agreement.");
 }
 /** Runs inside the offer acceptance transaction; the deposit is the only debt. */

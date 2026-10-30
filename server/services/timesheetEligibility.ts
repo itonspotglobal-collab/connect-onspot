@@ -1,8 +1,15 @@
 import { FORMAL_PIPELINE_PREDICATE } from "./formalPipelineGuard";
 
 /** Historical terminated hires remain readable; offers/unsigned contracts do not. */
-export const TIMESHEET_HIRE_SQL = `hc.status IN ('signed', 'terminated')
-  AND hc.talent_signed_at IS NOT NULL AND hc.onspot_signed_at IS NOT NULL
+export const EXECUTED_HIRING_CONTRACT_SQL = `(
+  (hc.status IN ('signed','terminated') AND hc.talent_signed_at IS NOT NULL AND hc.onspot_signed_at IS NOT NULL)
+  OR (hc.activation_override_id IS NOT NULL AND hc.billing_activated_at IS NOT NULL
+    AND hc.status IN ('draft','sent','signed','terminated'))
+)`;
+export function hasActiveHiringOverride(row:any):boolean {
+  return !!row?.activation_override_id && !!row?.billing_activated_at && ["draft","sent","signed"].includes(row?.status??row?.contract_status);
+}
+export const TIMESHEET_HIRE_SQL = `${EXECUTED_HIRING_CONTRACT_SQL}
   AND js.${FORMAL_PIPELINE_PREDICATE}`;
 
 /** Workspaces are Client-account memberships, not Talent workforce memberships. */
