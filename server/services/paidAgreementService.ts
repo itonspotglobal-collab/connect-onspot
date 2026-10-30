@@ -4,13 +4,15 @@ import { lockOnboarding, OnboardingError } from "./contractorOnboardingPolicy";
 import { queueHiringLifecycleEvent, tryActivateEngagement } from "./hiringLifecycleEvents";
 import { verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
 import {hiringOverrideState} from "./adminHiringOverrideState";
+import {depositArrangement,msaSignatureExists} from "./depositArrangementState";
 
 /** Post-commit outbox work: idempotent drafts and MSA issuance, never sending PDFs automatically. */
 export async function preparePaidAgreements(pool:Pool,p:any) {
   const source=(await pool.query(`SELECT d.*,o.status AS offer_status,js.client_id FROM security_deposits d
     JOIN offers o ON o.id=d.offer_id JOIN job_submissions js ON js.id=d.submission_id
     WHERE d.id=$1`,[p.depositId])).rows[0];
-  if(!source||!["held","waived"].includes(source.status)||!["accepted","offer_accepted"].includes(source.offer_status))
+  const arrangement=source?await depositArrangement(pool,source.submission_id):null;
+  if(!source||(!["held","waived"].includes(source.status)&&arrangement?.waiver_type!=="defer")||!["accepted","offer_accepted"].includes(source.offer_status))
     return {contractId:null,eligible:false};
   const submission=(await pool.query("SELECT * FROM job_submissions WHERE id=$1",[source.submission_id])).rows[0];
   if(!submission||!await verifiedDeferredHiringPayment(pool,submission))return {contractId:null,eligible:false};
@@ -29,7 +31,8 @@ export async function preparePaidAgreements(pool:Pool,p:any) {
     await lockOnboarding(db,source.submission_id);
     const current=(await db.query(`SELECT d.status,o.status AS offer_status FROM security_deposits d JOIN offers o ON o.id=d.offer_id
       WHERE d.id=$1 FOR UPDATE OF d,o`,[source.id])).rows[0];
-    if(!["held","waived"].includes(current?.status)||!["accepted","offer_accepted"].includes(current?.offer_status)) {
+    const currentArrangement=await depositArrangement(db,source.submission_id);
+    if((!["held","waived"].includes(current?.status)&&currentArrangement?.waiver_type!=="defer")||!["accepted","offer_accepted"].includes(current?.offer_status)) {
       await db.query("COMMIT");
       return {contractId:null,eligible:false};
     }
@@ -42,8 +45,7 @@ export async function preparePaidAgreements(pool:Pool,p:any) {
     const msa=(await db.query("SELECT id,version,sha256 FROM msa_documents WHERE active AND effective_at<=now() FOR SHARE")).rows[0];
     if(!msa&&!override.skipMsa)await queueHiringLifecycleEvent(db,`msa-missing:${source.submission_id}`,"msa_missing",{submissionId:source.submission_id});
     else if(msa&&!override.skipMsa) {
-      const signed=!!(await db.query(`SELECT 1 FROM client_msa_signatures WHERE client_id=$1 AND document_id=$2
-        AND document_sha256=$3 AND msa_version=$4`,[source.client_id,msa.id,msa.sha256,msa.version])).rows.length;
+      const signed=await msaSignatureExists(db,source.client_id,msa);
       if(!signed) {
         await db.query(`INSERT INTO client_msa_requests(client_id,msa_document_id,submission_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`,
           [source.client_id,msa.id,source.submission_id]);

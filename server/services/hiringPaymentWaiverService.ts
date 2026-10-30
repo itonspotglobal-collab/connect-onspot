@@ -15,7 +15,7 @@ const reason=(value:unknown)=>{
 /** Caller must lock the submission first. Identity matching is never optional. */
 export async function activeHiringWaiver(db:HiringPaymentDb,s:any) {
   return (await db.query(`SELECT * FROM hiring_payment_waivers WHERE submission_id=$1
-    AND client_id=$2 AND job_id=$3 AND talent_id=$4 AND revoked_at IS NULL FOR SHARE`,
+    AND client_id=$2 AND job_id=$3 AND talent_id=$4 AND scope='pre_offer' AND revoked_at IS NULL FOR SHARE`,
     [s.id,s.client_id,s.job_id,s.talent_id])).rows[0]??null;
 }
 export async function verifiedDeferredHiringPayment(db:HiringPaymentDb,s:any) {
@@ -50,7 +50,7 @@ export function twoBusinessDaysAfter(acceptedAt:Date) {
 }
 export async function enqueueDeferredHiringReminders(db:HiringPaymentDb,now=new Date()) {
   const rows=(await db.query(`SELECT id,submission_id,locked_at FROM hiring_payment_waivers
-    WHERE revoked_at IS NULL AND waiver_type='defer' AND deferred_payment_required AND locked_at IS NOT NULL AND deferred_invoice_id IS NULL`)).rows;
+    WHERE scope='pre_offer' AND revoked_at IS NULL AND waiver_type='defer' AND deferred_payment_required AND locked_at IS NOT NULL AND deferred_invoice_id IS NULL`)).rows;
   for(const w of rows)if(now>=twoBusinessDaysAfter(new Date(w.locked_at)))
     await queueHiringLifecycleEvent(db,`hiring-deferred-reminder:${w.id}:${now.toISOString().slice(0,10)}`,
       "hiring_deferred_reminder",{submissionId:w.submission_id,waiverId:w.id});

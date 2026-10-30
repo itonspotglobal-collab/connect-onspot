@@ -111,11 +111,11 @@ try {
   const hiringFlowOnly=process.argv.includes("--hiring-flow-only");
   if(hiringFlowOnly) {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts"],workerEnv);
-  } else if (!isolatedApp && !process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")&&!process.argv.includes("--onboarding-only")&&!process.argv.includes("--interview-workflow-only")&&!process.argv.includes("--notifications-only")&&!process.argv.includes("--overrides-only")&&!process.argv.includes("--contract-documents-only")) {
+  } else if (!isolatedApp && !process.argv.includes("--deposit-billing-only")&&!process.argv.includes("--payments-only") && !process.argv.includes("--regressions-only")&&!process.argv.includes("--onboarding-only")&&!process.argv.includes("--interview-workflow-only")&&!process.argv.includes("--notifications-only")&&!process.argv.includes("--overrides-only")&&!process.argv.includes("--contract-documents-only")) {
     await run(process.execPath,["--import","tsx","scripts/verify-hiring-flow.ts","contracts"],workerEnv);
   }
   await symlink(resolve("node_modules"),join(root,"node_modules"),"dir");
-  const entries = process.argv.includes("--notifications-only")?["server/tests/deposit-notifications.fixture.ts"]:process.argv.includes("--overrides-only")?["server/tests/admin-hiring-overrides.fixture.ts"]:process.argv.includes("--interview-workflow-only")?["server/tests/interview-workflow.fixture.ts"]:interviewsOnly?["server/tests/interview-scheduling-v1.test.ts"]:process.argv.includes("--onboarding-only") ? ["server/tests/contractor-onboarding.fixture.ts","server/tests/interview-workflow.fixture.ts"] :
+  const entries = process.argv.includes("--deposit-billing-only")?["server/tests/deposit-billing-controls.fixture.ts"]:process.argv.includes("--notifications-only")?["server/tests/deposit-notifications.fixture.ts"]:process.argv.includes("--overrides-only")?["server/tests/admin-hiring-overrides.fixture.ts"]:process.argv.includes("--interview-workflow-only")?["server/tests/interview-workflow.fixture.ts"]:interviewsOnly?["server/tests/interview-scheduling-v1.test.ts"]:process.argv.includes("--onboarding-only") ? ["server/tests/contractor-onboarding.fixture.ts","server/tests/interview-workflow.fixture.ts"] :
     process.argv.includes("--contract-documents-only") ? ["server/tests/contract-documents.fixture.ts"] : hiringFlowOnly ? [] : clientStatusOnly ? [
     jobBillingOnly ? "server/tests/job-billing-classification.fixture.ts" :
       clientNavigationOnly ? "server/tests/client-account-navigation.fixture.ts" : "server/tests/client-application-status.fixture.ts",

@@ -3,6 +3,7 @@ import type { Pool, PoolClient } from "pg";
 import { ManualWiseConfiguration } from "./manualWiseConfiguration";
 import { activateFundedEngagement, queueHiringLifecycleEvent, tryActivateEngagement } from "./hiringLifecycleEvents";
 import { isDepositFirst, lockOnboarding } from "./contractorOnboardingPolicy";
+import {depositArrangement} from "./depositArrangementState";
 
 const categories = ["inquiry","hiring_invoice","invoice","monthly_invoice","deposit","replenishment","payout"] as const;
 export type WiseCategory = typeof categories[number];
@@ -217,7 +218,13 @@ export class ManualWiseService {
       const role=(await db.query("SELECT j.title FROM job_submissions js JOIN jobs j ON j.id=js.job_id WHERE js.id=$1",[r.submission_id])).rows[0]?.title;
       if(role)lineItems[0].description=role;
     }
+    const arrangement=c==="deposit"&&r.submission_id?await depositArrangement(db,r.submission_id):null;
+    if(c==="deposit"&&r.status==="pending"&&!activeConfig)
+      blockedReason="OnSpot is finalising payment details — you'll get an email shortly";
     return {actor,r,binding,config,view:{
+      paymentSource:c==="deposit"?r.payment_source:null,
+      deferredDueAt:arrangement?.waiver_type==="defer"&&r.status==="pending"?arrangement.deposit_due_at:null,
+      arrangementNote:arrangement?.arrangement_note??null,
       category:c,id,reference:r.invoice_number ?? r.reference_number ?? id,
       amount,currency:curr,payerId,status:r.status,paymentStatus,
       companyName:payer?.company_name??null,issuedAt:r.issued_at??r.created_at??null,
@@ -385,6 +392,8 @@ export class ManualWiseService {
       if (new Date(v.settledAt!).getTime()>Date.now()) return fail(422,"Settlement date cannot be in the future.");
       // Same normalized reference lock serializes cross-category and old hiring-route verification.
       await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`wise-settlement:${v.verifiedReference!.trim().toLowerCase()}`]);
+      if((await db.query("SELECT id FROM external_deposit_payments WHERE lower(btrim(reference))=lower(btrim($1))",[v.verifiedReference])).rows.length)
+        return fail(409,"This settlement reference already records an external deposit payment.");
       if ((await db.query(`SELECT id FROM manual_wise_submissions WHERE status='paid'
         AND lower(btrim(verified_reference))=lower(btrim($1)) AND id<>$2`,[v.verifiedReference,id])).rows.length ||
           (await db.query(`SELECT id FROM hiring_pre_offer_invoices WHERE verified_reference IS NOT NULL
@@ -406,6 +415,43 @@ export class ManualWiseService {
     void this.afterCommit?.().catch(()=>console.warn("[hiring-lifecycle] post-commit dispatch failed"));
     return result;
   }
+  /** External receipt attestation uses the identical settlement/activation writer as proof review. */
+  async recordExternalDeposit(db:PoolClient,actor:string,depositId:string,input:any,receipt?:{key:string;contentType:string;filename:string}) {
+    await this.actor(db,actor,true);
+    const v=z.object({amount:money,currency,receivedAt:z.string().date(),
+      reference:text(500),method:z.enum(["bank_transfer","check","cash","other"]),reason:text(2000).min(10),
+      independentlyVerified:z.literal(true)}).parse(input);
+    if(new Date(v.receivedAt).getTime()>Date.now())return fail(422,"Date received cannot be in the future.");
+    const r=await this.raw(db,"deposit",depositId);
+    const prior=(await db.query("SELECT * FROM external_deposit_payments WHERE deposit_id=$1 FOR UPDATE",[depositId])).rows[0];
+    if(prior) {
+      if(wiseCents(prior.amount)===wiseCents(v.amount)&&prior.currency===v.currency&&prior.reference===v.reference&&
+        prior.method===v.method&&new Date(prior.received_at).toISOString().slice(0,10)===v.receivedAt)return {...prior,replay:true};
+      return fail(409,"A different external receipt has already settled this deposit.");
+    }
+    if(r.status!=="pending")return fail(409,"Only a pending deposit may receive an external settlement.");
+    if(wiseCents(r.amount)!==wiseCents(v.amount)||r.currency!==v.currency)return fail(422,"The amount and currency must exactly match the deposit; partial payments remain pending.");
+    await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`wise-settlement:${v.reference.trim().toLowerCase()}`]);
+    if((await db.query(`SELECT 1 FROM manual_wise_submissions WHERE status='paid' AND lower(btrim(verified_reference))=lower(btrim($1))
+      UNION ALL SELECT 1 FROM external_deposit_payments WHERE lower(btrim(reference))=lower(btrim($1))
+      UNION ALL SELECT 1 FROM hiring_pre_offer_invoices WHERE lower(btrim(verified_reference))=lower(btrim($1))
+      UNION ALL SELECT 1 FROM invoices WHERE status='paid' AND lower(btrim(external_ref))=lower(btrim($1))
+      UNION ALL SELECT 1 FROM inquiries WHERE paid_at IS NOT NULL AND lower(btrim(transaction_reference))=lower(btrim($1))
+      UNION ALL SELECT 1 FROM payouts WHERE status='disbursed' AND lower(btrim(external_ref))=lower(btrim($1)) LIMIT 1`,[v.reference])).rows.length)
+      return fail(409,"This settlement reference has already been used. No duplicate credits are permitted.");
+    await db.query(`INSERT INTO manual_wise_obligations(category,deposit_id,payer_id) VALUES('deposit',$1,$2)
+      ON CONFLICT(deposit_id) DO NOTHING`,[depositId,r.client_id]);
+    const obligation=(await db.query("SELECT id FROM manual_wise_obligations WHERE deposit_id=$1 FOR UPDATE",[depositId])).rows[0];
+    const result=(await db.query(`INSERT INTO external_deposit_payments(deposit_id,amount,currency,received_at,reference,method,
+      verified_by,reason,receipt_object_key,receipt_content_type,receipt_filename) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [depositId,v.amount,v.currency,v.receivedAt,v.reference,v.method,actor,v.reason,receipt?.key??null,receipt?.contentType??null,receipt?.filename??null])).rows[0];
+    await this.settle(db,"deposit",r,v.amount,{action:"verify",reason:v.reason,independentlyVerified:true,
+      verifiedAmount:v.amount,verifiedCurrency:v.currency,verifiedReference:v.reference,
+      verifiedRecipient:"OnSpot — external receipt attested by Super Admin",settledAt:v.receivedAt},actor);
+    await db.query("UPDATE security_deposits SET payment_source='external' WHERE id=$1",[depositId]);
+    await this.event(db,actor,"payment_verified",obligation.id,null,{externalPaymentId:result.id,...v});
+    return result;
+  }
   private async settle(db:PoolClient,c:WiseCategory,r:any,amount:string,v:z.infer<typeof wiseReviewInput>,actor:string) {
     if (c==="inquiry") await db.query(`UPDATE inquiries SET status='paid',payment_status='verified',paid_at=now(),
       payment_verified_at=now(),transaction_reference=$2,admin_payment_notes=$3,updated_at=now() WHERE id=$1`,[r.id,v.verifiedReference,v.reason]);
@@ -413,7 +459,7 @@ export class ManualWiseService {
       external_ref=$2,updated_at=now() WHERE id=$1`,[r.id,v.verifiedReference]);
     if (c==="monthly_invoice") await db.query(`UPDATE client_monthly_invoices SET payment_status='paid',paid_at=now() WHERE id=$1`,[r.id]);
     if (c==="deposit") {
-      await db.query(`UPDATE security_deposits SET status='held',held_at=now(),updated_at=now() WHERE id=$1`,[r.id]);
+      await db.query(`UPDATE security_deposits SET status='held',held_at=now(),verified_by=$2,payment_source='manual_wise',updated_at=now() WHERE id=$1`,[r.id,actor]);
       if(r.deposit_first) {
         await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by,created_at)
           SELECT id,status,status,'Security deposit independently verified; Contractor Agreement and current signed Client MSA still required',$2,clock_timestamp()

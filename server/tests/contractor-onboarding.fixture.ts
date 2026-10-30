@@ -21,7 +21,7 @@ import {onboardingStatus} from "../services/contractorOnboardingStatus";
 import {extendOfferExpiration} from "../services/offerExpirationService";
 import {createHiringContract} from "../services/hiringContractService";
 import {offerHandler} from "./fixtures/onboarding-offer-handlers";
-import {HiringPaymentWaiverService,enqueueDeferredHiringReminders,twoBusinessDaysAfter,verifiedDeferredHiringPayment} from "../services/hiringPaymentWaiverService";
+import {HiringPaymentWaiverService,enqueueDeferredHiringReminders,twoBusinessDaysAfter,verifiedDeferredHiringPayment,activeHiringWaiver} from "../services/hiringPaymentWaiverService";
 import {HiringPaymentService,requireVerifiedHiringPayment} from "../services/hiringPaymentService";
 
 const suffix=randomUUID(),client=`onboard-client-${suffix}`,talent=`onboard-talent-${suffix}`;
@@ -75,13 +75,12 @@ async function offerReadyApplication() {
 }
 const sendOffer=(id:string)=>offerHandler("post","/api/client/offers",client,candidate,
   {submissionId:id,rate:2500,rateCurrency:"USD",proposedStartDate:"2032-10-01",expiresAt:"2099-10-01T00:00:00Z"});
-test("payment skips preserve route/trigger enforcement, Super Admin authority and application isolation",async()=>{
+test("historical payment skips retain Super Admin authority and identity isolation; retired fees never gate recruiting",async()=>{
   await query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
   try {
     const id=await offerReadyApplication(),b=await offerReadyApplication();
-    assert.equal((await sendOffer(id)).statusCode,409);
-    await assert.rejects(query(`INSERT INTO offers(submission_id,status,rate,rate_currency,engagement_type,billing_mode)
-      VALUES($1,'sent',2500,'USD','Standard','tracked')`,[id]),/PRE_OFFER_PAYMENT_REQUIRED/);
+    assert.equal((await sendOffer(b)).statusCode,201);
+    assert.equal(await tx(db=>requireVerifiedHiringPayment(db,id)),null);
     for(const actor of [limited,client,talent])
       await assert.rejects(skips.grant(actor,id,{waiverType:"waive",reason:"Synthetic restricted actor test"}),(e:any)=>e.status===403);
     await assert.rejects(skips.grant(admin,id,{waiverType:"waive",reason:"short"}),(e:any)=>e.status===422);
@@ -91,7 +90,8 @@ test("payment skips preserve route/trigger enforcement, Super Admin authority an
     assert.equal((await query("SELECT count(*)::int n FROM hiring_lifecycle_events WHERE event_type='hiring_skip_requested' AND payload->>'submissionId'=$1",[id])).rows[0].n,1);
     await skips.grant(admin,id,{waiverType:"waive",reason:"Approved synthetic per-application arrangement"});
     const authorization=await tx(db=>requireVerifiedHiringPayment(db,id));
-    assert.equal((authorization as any).waiverType,"waive");
+    assert.equal(authorization,null);
+    assert.equal((await skips.status(admin,id)).waiver.waiver_type,"waive");
     const otherJob=`${job}-identity`;
     await query(`INSERT INTO jobs(id,client_id,title,description,category,experience_level,status,approval_status,engagement_type,billing_mode)
       VALUES($1,$2,'Synthetic identity-only job','UAT only','Operations','Intermediate','open','approved','Standard','tracked')`,[otherJob,client]);
@@ -99,7 +99,7 @@ test("payment skips preserve route/trigger enforcement, Super Admin authority an
       // An identity mismatch cannot unlock the application even if a row exists.
       // job_id uses an existing second job so foreign-key enforcement stays on.
       await query(`UPDATE hiring_payment_waivers SET ${column}=$2 WHERE submission_id=$1`,[id,value]);
-      await assert.rejects(tx(db=>requireVerifiedHiringPayment(db,id)),/paid and verified/);
+      assert.equal(await tx(db=>activeHiringWaiver(db,{id,client_id:client,job_id:job,talent_id:talent})),null);
       await query(`UPDATE hiring_payment_waivers SET ${column}=$2 WHERE submission_id=$1`,[id,original]);
     }
     assert.equal((await sendOffer(id)).statusCode,201);
@@ -112,8 +112,7 @@ test("payment skips preserve route/trigger enforcement, Super Admin authority an
     assert.equal((await query("SELECT status FROM offers WHERE id=$1",[sent])).rows[0].status,"sent");
     const counter=await offerHandler("patch","/api/talent/offers/:id/respond",talent,candidate,
       {action:"counter",counterRate:2700,counterRateCurrency:"USD"},sent);
-    assert.equal(counter.statusCode,409);
-    await assert.rejects(extendOfferExpiration(sent,client,"2099-11-01T00:00:00Z"),/paid and verified/);
+    assert.equal(counter.statusCode,200);
     assert.equal((await query("SELECT count(*)::int n FROM manual_wise_audit WHERE details->>'applicationId'=$1",[id])).rows[0].n,2);
   } finally {await query("UPDATE platform_settings SET value='false' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");}
 });
@@ -227,7 +226,7 @@ test("concurrent revocation and offer send serialize on the submission; a commit
         await holder.query("UPDATE hiring_payment_waivers SET revoked_at=now(),revoked_by=$2,revoke_reason='Synthetic locked revoke' WHERE submission_id=$1",[id,admin]);
         const send=sendOffer(id);
         await holder.query("COMMIT");holder.release();
-        assert.equal((await send).statusCode,409);
+        assert.equal((await send).statusCode,201,"Revoking an old fee exception cannot restore a retired fee");
       }else {
         await requireVerifiedHiringPayment(holder,id);
         const revoke=skips.revoke(admin,id,{reason:"Synthetic revoke queued behind committed send"});
@@ -236,19 +235,20 @@ test("concurrent revocation and offer send serialize on the submission; a commit
         await holder.query("COMMIT");holder.release();
         await revoke;
         assert.equal((await query("SELECT count(*)::int n FROM offers WHERE submission_id=$1 AND status='sent'",[id])).rows[0].n,1);
-        await assert.rejects(tx(db=>requireVerifiedHiringPayment(db,id)),/paid and verified/);
+        assert.equal(await tx(db=>requireVerifiedHiringPayment(db,id)),null);
       }
     }
   }finally{await query("UPDATE platform_settings SET value='false' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");}
 });
-test("payment policy changes use database Super Admin checks and the financial Admin audit log",async()=>{
+test("retired payment policy cannot be re-enabled, even by Super Admin; restricted actors remain forbidden",async()=>{
   for(const actor of [limited,client,talent]) {
     const response=await offerHandler("patch","/api/admin/hiring-payment-settings",actor,candidate,{preOfferPaymentRequired:true});
     assert.equal(response.statusCode,403);
   }
   const response=await offerHandler("patch","/api/admin/hiring-payment-settings",admin,candidate,{preOfferPaymentRequired:true});
-  assert.equal(response.statusCode,200,JSON.stringify(response.body));
-  assert.ok((await query("SELECT id FROM manual_wise_audit WHERE actor_id=$1 AND event='hiring_payment_setting_changed'",[admin])).rows.length);
+  assert.equal(response.statusCode,410,JSON.stringify(response.body));
+  assert.equal(response.body.preOfferPaymentRequired,false);
+  assert.equal((await query("SELECT id FROM manual_wise_audit WHERE actor_id=$1 AND event='hiring_payment_setting_changed'",[admin])).rows.length,0);
   await offerHandler("patch","/api/admin/hiring-payment-settings",admin,candidate,{preOfferPaymentRequired:false});
 });
 async function accepted() {
@@ -373,8 +373,8 @@ test("accepted offer issues one pre-contract deposit using existing math/currenc
   assert.equal(Number(a.deposit.amount),computeDepositAmount(2500));
   assert.equal(a.deposit.currency,"USD");
   const talentProgress=await onboardingStatus(pool,a.submissionId,talent);
-  assert.equal(talentProgress.deposit?.invoiceUrl,null);
-  assert.equal("id" in talentProgress.deposit!,false,"Talent sees progress, not the Client billing identifier");
+  assert.equal(talentProgress.deposit,null,"Talent receives no Client deposit details");
+  assert.equal(talentProgress.paymentState,null);
   await assert.rejects(onboardingStatus(pool,a.submissionId,other),(e:any)=>e.status===404);
   await Promise.all([tx(db=>issueAcceptedOfferDeposit(db,a.offerId,a.submissionId)),tx(db=>issueAcceptedOfferDeposit(db,a.offerId,a.submissionId))]);
   assert.equal((await query("SELECT count(*)::int n FROM security_deposits WHERE offer_id=$1",[a.offerId])).rows[0].n,1);

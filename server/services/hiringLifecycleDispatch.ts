@@ -9,7 +9,8 @@ import { ClientMsaService } from "./clientMsaService";
 import { notifyClientOfTalentHired } from "./applicationNotificationService";
 import { sendTalentHiredEmail } from "./emailCompanionService";
 import { enqueueDeferredHiringReminders } from "./hiringPaymentWaiverService";
-import { enqueueDepositReminders } from "./depositReminders";
+import { enqueueDepositReminders,enqueueDeferredDepositReminders } from "./depositReminders";
+import {enqueueOnboardingSetupAlerts} from "./onboardingPrerequisites";
 
 /**
  * Transactional outbox consumer. Call after COMMIT; failures are retained for
@@ -20,6 +21,8 @@ export async function dispatchHiringLifecycleEvents(waiverEventsOnly=false): Pro
   try {
     await enqueueDeferredHiringReminders({query});
     await enqueueDepositReminders({query});
+    await enqueueDeferredDepositReminders({query});
+    await enqueueOnboardingSetupAlerts(pool);
     const attempted:string[]=[];
     for(let batch=0;batch<3;batch++) {
     const events = (await query(`UPDATE hiring_lifecycle_events SET status='processing',
@@ -29,7 +32,8 @@ export async function dispatchHiringLifecycleEvents(waiverEventsOnly=false): Pro
            (status='processing' AND attempted_at<now()-interval '10 minutes'))
            AND NOT(event_key=ANY($1::text[]))
            AND (NOT $2::boolean OR event_type IN ('hiring_skip_requested','hiring_skip_granted','hiring_skip_revoked',
-             'hiring_deferred_due','hiring_deferred_reminder','hiring_deferred_invoice_issued','deposit_reminder'))
+             'hiring_deferred_due','hiring_deferred_reminder','hiring_deferred_invoice_issued','deposit_reminder',
+             'deposit_arrangement','deposit_invoice_resend','onboarding_setup_alert','agreements_recheck'))
          ORDER BY CASE WHEN status='pending' THEN 0 ELSE 1 END,created_at LIMIT 30 FOR UPDATE SKIP LOCKED)
        RETURNING *`,[attempted,waiverEventsOnly])).rows;
     if(!events.length)break;
@@ -86,6 +90,8 @@ async function notify(event:any,user:any,category:string,type:string,title:strin
 
 async function deliverEvent(event:any) {
   const p=event.payload;
+  if(["deposit_invoice_resend","deposit_issued"].includes(event.event_type)&&!(await query(
+    "SELECT id FROM security_deposits WHERE id=$1 AND status='pending'",[p.depositId])).rows.length)return;
   // Recheck at delivery, not just enqueue: an outbox retry may follow payment
   // or an offer withdrawal. A receipt alone does not suppress reminders.
   if(event.event_type==="deposit_reminder"&&!(await query(`SELECT d.id FROM security_deposits d
@@ -94,6 +100,8 @@ async function deliverEvent(event:any) {
     JOIN job_submissions js ON js.id=o.submission_id
     WHERE d.id=$1 AND d.status='pending' AND o.status IN ('accepted','offer_accepted')
       AND js.status NOT IN ('withdrawn','rejected','declined')`,[p.depositId])).rows.length)return;
+  if(event.event_type==="deposit_reminder"&&p.waiverId&&!(await query(`SELECT id FROM hiring_payment_waivers
+    WHERE id=$1 AND scope='deposit' AND waiver_type='defer' AND revoked_at IS NULL`,[p.waiverId])).rows.length)return;
   if(event.event_type==="agreements_recheck") {
     await preparePaidAgreements(pool,p);
     return;
@@ -108,7 +116,7 @@ async function deliverEvent(event:any) {
   const client = p.payerId
     ? (await query("SELECT id,email,first_name,last_name FROM users WHERE id=$1",[p.payerId])).rows[0] : null;
   const contextRow=p.submissionId ? (await query(`SELECT js.client_id,js.talent_id,j.title AS job_title,
-      o.proposed_start_date::text AS proposed_start_date,d.id AS deposit_id,d.amount,d.currency
+      o.proposed_start_date::text AS proposed_start_date,d.id AS deposit_id,d.amount,d.currency,d.status AS deposit_status
     FROM job_submissions js JOIN jobs j ON j.id=js.job_id
     LEFT JOIN hiring_contracts hc ON hc.submission_id=js.id AND hc.status NOT IN ('void','voided')
     LEFT JOIN offers o ON o.id=coalesce($3::uuid,hc.offer_id,(SELECT id FROM offers WHERE submission_id=js.id AND status IN ('accepted','offer_accepted') ORDER BY created_at DESC LIMIT 1))
@@ -166,11 +174,24 @@ async function deliverEvent(event:any) {
       notify(event,talent,"hiring_talent_accepted","job_application_status_changed","Offer accepted",
         "Your offer acceptance is recorded. Your engagement is not active yet.",new URL(buildTalentApplicationsUrl()).pathname,ctx),
     ]);
-  } else if(event.event_type==="deposit_issued") {
+  } else if(event.event_type==="onboarding_setup_alert") {
+    const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
+    ctx.rejectionReason=p.reason;
+    await Promise.all(admins.map(admin=>notify(event,admin,"hiring_onboarding_setup","hiring_payment_review","Onboarding needs attention",
+      p.reason,"/admin/contractor-onboarding",ctx)));
+  } else if(event.event_type==="deposit_arrangement") {
+    const kind=p.action==="record_payment"?"recorded":p.action==="defer"?"deferred":"waived";
+    await notify(event,owner,`hiring_deposit_${kind}`,"monthly_client_invoice",
+      kind==="recorded"?"Deposit paid (recorded by OnSpot)":kind==="deferred"?"Deposit payment deferred":"Deposit waived by OnSpot",
+      kind==="recorded"?"OnSpot has recorded receipt of your deposit outside the platform.":
+      kind==="deferred"?`Payment arrangement: deferred — invoice due by ${new Date(p.dueDate).toISOString().slice(0,10)}. Activation still requires payment.`:
+      "Your deposit was waived under an approved OnSpot arrangement. No cash settlement is claimed.",invoiceUrl,ctx);
+  } else if(event.event_type==="deposit_issued"||event.event_type==="deposit_invoice_resend") {
     await notify(event,owner,"hiring_deposit_required","monthly_client_invoice","Deposit required",
       `Your deposit invoice for ${ctx.jobTitle} is ready. Agreements follow deposit verification.`,invoiceUrl,ctx);
   } else if(event.event_type==="deposit_reminder") {
-    await notify(event,owner,"hiring_deposit_reminder","monthly_client_invoice","Deposit reminder",
+    await notify(event,owner,p.deferred?"hiring_deposit_deferred_reminder":"hiring_deposit_reminder","monthly_client_invoice","Deposit reminder",
+      p.deferred?`Your deferred deposit is still due by ${new Date(p.dueDate).toISOString().slice(0,10)}.`:
       `Your deposit for ${ctx.jobTitle} is awaiting independent verification.`,invoiceUrl,ctx);
   } else if(event.event_type==="deposit_verified") {
     const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
@@ -209,7 +230,7 @@ async function deliverEvent(event:any) {
     if(talent?.email)await sendTalentHiredEmail({submissionId:p.submissionId,talentUserId:talent.id,
       recipientEmail:talent.email,applicantName:name,jobTitle:ctx.jobTitle,companyName:"OnSpot"});
     await Promise.all([
-      notify(event,owner,"hiring_client_active","talent_hired","Your engagement is now active",`${ctx.jobTitle} starts on ${ctx.startDate}.`,"/dashboard",ctx,true),
+      notify(event,owner,row?.deposit_status==="waived"?"hiring_client_active_waived":"hiring_client_active","talent_hired","Your engagement is now active",`${ctx.jobTitle} starts on ${ctx.startDate}.`,"/dashboard",ctx,true),
       notify(event,talent,"hiring_talent_active","job_application_status_changed","Your engagement is now active",`${ctx.jobTitle} starts on ${ctx.startDate}.`,new URL(buildTalentApplicationsUrl()).pathname,ctx),
     ]);
   }

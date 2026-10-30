@@ -68,6 +68,12 @@ export class AdminHiringOverrideService {
       ORDER BY d.created_at DESC LIMIT 1 FOR UPDATE OF d`,[s.id,depositId??null])).rows[0];
     if(!d)fail(404,"DEPOSIT_NOT_FOUND","No deposit exists for this application.");
     if(d.status!=="pending")fail(409,"DEPOSIT_NOT_WAIVABLE","Only a pending deposit can be waived; held funds and historical settlements cannot be changed.");
+    await db.query(`UPDATE hiring_payment_waivers SET revoked_at=now(),revoked_by=$2,
+      revoke_reason='Replaced by explicit Super Admin deposit waiver'
+      WHERE submission_id=$1 AND scope='deposit' AND revoked_at IS NULL`,[s.id,actor]);
+    await db.query(`INSERT INTO hiring_payment_waivers(submission_id,client_id,job_id,talent_id,waiver_type,reason,
+      arrangement_note,granted_by,scope,deposit_id,locked_at) VALUES($1,$2,$3,$4,'waive',$5,$5,$6,'deposit',$7,now())`,
+      [s.id,s.client_id,s.job_id,s.talent_id,reason,actor,d.id]);
     await db.query(`UPDATE security_deposits SET status='waived',waived_by=$2,waived_at=now(),waiver_reason=$3,updated_at=now()
       WHERE id=$1`,[d.id,actor,reason]);
     await db.query(`UPDATE manual_wise_obligations SET cancelled_at=now(),cancellation_reason=$2

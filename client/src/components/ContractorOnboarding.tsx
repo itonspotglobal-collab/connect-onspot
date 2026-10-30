@@ -22,7 +22,7 @@ export interface ContractorOnboarding {
   canSendOffer: boolean;
   defaultInterviewType: string;
   offerId: string | null;
-  deposit: { id: string; status: string; amount?: string; currency?: string; paymentStatus: string; invoiceUrl: string | null } | null;
+  deposit: { id: string; status: string; amount?: string; currency?: string; paymentStatus: string; invoiceUrl: string | null; deferredDueAt?: string | null; paymentSource?: string | null; arrangementNote?: string | null } | null;
   contract: { id: string; status: string; url: string | null } | null;
   msa: { version: string | null; signed: boolean; available: boolean; url: string | null };
   conditions: { depositHeld: boolean; contractSigned: boolean; msaSigned: boolean };
@@ -33,6 +33,12 @@ export interface ContractorOnboarding {
   stageMissing?: string[];
   offerAccepted?: boolean;
   msaUploadWarning?: string | null;
+  dataIssue?: boolean;
+  dataIssueMessage?: string;
+  repairUrl?: string | null;
+  paymentState?: string | null;
+  setup?: { wiseReady: boolean; msaReady: boolean; clientMessage: string };
+  isTalent?: boolean;
   nextActor: string | null;
   stages: OnboardingStage[];
 }
@@ -64,7 +70,26 @@ export function ContractorOnboardingTracker({
       {onRetry && <Button size="sm" variant="outline" onClick={onRetry}>Retry</Button>}
     </div>
   );
-  const stages = data.stages?.length ? data.stages : [];
+  const stages = data.stages?.length
+    ? (data.isTalent ? data.stages.filter((stage) => !/payment|deposit|wise/i.test(`${stage.key} ${stage.label}`)) : data.stages)
+    : [];
+  if (data.dataIssue) return (
+    <section aria-label="Onboarding review needed" className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-950">
+      <div className="flex items-start gap-2"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /><div className="min-w-0 flex-1"><p className="font-semibold">This application needs OnSpot review</p><p className="mt-1 text-sm">{data.dataIssueMessage || "The onboarding record needs a data repair before its progress can be shown."}</p>
+        {data.repairUrl && <Button size="sm" variant="outline" className="mt-3 border-red-300 bg-white text-red-900" onClick={() => navigate(data.repairUrl!)}>Open repair record</Button>}
+      </div></div>
+    </section>
+  );
+  const paymentStateLabel = data.paymentState;
+  const depositStatusCopy = data.isTalent
+    ? "Waiting on OnSpot/client paperwork"
+    : paymentStateLabel === "Deferred"
+      ? `Payment arrangement: deferred — invoice due by ${data.deposit?.deferredDueAt ? new Date(data.deposit.deferredDueAt).toLocaleDateString() : "the agreed date"}`
+      : paymentStateLabel === "Waived"
+        ? "Deposit waived by OnSpot"
+        : paymentStateLabel === "Paid" && data.deposit?.paymentSource === "external"
+          ? "Paid (recorded by OnSpot)"
+          : paymentStateLabel;
   return (
     <section aria-label="Contractor onboarding progress" className="rounded-xl border border-[#dce5df] bg-[#f7faf7] p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -89,8 +114,11 @@ export function ContractorOnboardingTracker({
           ))}
         </ol>
       ) : <p className="mt-3 text-xs text-slate-500">Stage details have not been provided yet.</p>}
-      {!!(data.stageMissing??data.missing)?.length && <p className="mt-3 text-xs leading-relaxed text-amber-800">Still needed: {(data.stageMissing??data.missing).join(" · ")}</p>}
-      {data.offerAccepted && data.deposit?.status==="pending" && data.deposit.invoiceUrl && (
+      {data.isTalent && <p className="mt-3 rounded-lg border border-[#dce5df] bg-white px-3 py-2 text-xs font-medium text-slate-700">Waiting on OnSpot/client paperwork</p>}
+      {!data.isTalent && paymentStateLabel && <p className="mt-3 rounded-lg border border-[#dce5df] bg-white px-3 py-2 text-xs text-slate-700">{depositStatusCopy}</p>}
+      {!data.isTalent && data.setup && !data.setup.wiseReady && <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950">{data.setup.clientMessage || "OnSpot is finalising payment details — you will get an email shortly."}</p>}
+      {!!(data.stageMissing??data.missing)?.length && !data.isTalent && <p className="mt-3 text-xs leading-relaxed text-amber-800">Still needed: {(data.stageMissing??data.missing).join(" · ")}</p>}
+      {data.offerAccepted && !data.isTalent && data.deposit?.status==="pending" && data.deposit.invoiceUrl && (
         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="text-sm font-semibold">Deposit required · {data.deposit.currency} {data.deposit.amount}</p>
           <p className="mt-1 text-xs">Agreements can be prepared once OnSpot independently verifies the deposit.</p>

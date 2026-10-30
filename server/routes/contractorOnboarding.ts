@@ -7,12 +7,19 @@ import { OnboardingError } from "../services/contractorOnboardingPolicy";
 import { dispatchHiringLifecycleEvents } from "../services/hiringLifecycleDispatch";
 import { ContractError } from "../services/hiringContractService";
 import { MAX_CONTRACT_PDF_BYTES } from "../services/contractBlobStore";
+import {DepositBillingService} from "../services/depositBillingService";
+import {OnboardingRepairService} from "../services/onboardingRepairService";
+import {onboardingPrerequisites} from "../services/onboardingPrerequisites";
+import {WiseError} from "../services/manualWiseService";
+import {ZodError} from "zod";
 
 export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:RequestHandler) {
   const router=Router();
   const msa=new ClientMsaService(pool,undefined,dispatchHiringLifecycleEvents);
+  const billing=new DepositBillingService(pool,dispatchHiringLifecycleEvents);
+  const repairs=new OnboardingRepairService(pool);
   router.use((req,_res,next)=>{
-    if(!/^\/api\/(?:contractor-onboarding(?:\/|$)|admin\/(?:contractor-onboarding|msa-documents)(?:\/|$)|client\/(?:msa|pending-deposits)(?:\/|$))/.test(req.path))return next("router");
+    if(!/^\/api\/(?:contractor-onboarding(?:\/|$)|admin\/(?:contractor-onboarding|msa-documents|msa-offline|deposit-billing|deposit-receipts|onboarding-repairs|onboarding-prerequisites)(?:\/|$)|client\/(?:msa|pending-deposits)(?:\/|$))/.test(req.path))return next("router");
     next();
   });
   router.use(authenticate);
@@ -33,6 +40,37 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
     next();
   });
   router.get("/api/contractor-onboarding/:submissionId",handle(async(req,res)=>res.json(await onboardingStatus(pool,req.params.submissionId,req.onboardingActor.id))));
+  router.get("/api/admin/onboarding-prerequisites",handle(async(req,res)=>{
+    await billing.authorize(req.onboardingActor.id);res.json(await onboardingPrerequisites(pool));
+  }));
+  router.get("/api/admin/deposit-receipts/:id",handle(async(req,res)=>{
+    const receipt=await billing.externalReceipt(req.onboardingActor.id,req.params.id);
+    res.set({"Content-Type":receipt.contentType,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff",
+      "Content-Security-Policy":"sandbox","Content-Disposition":'inline; filename="payment-receipt"'}).end(receipt.bytes);
+  }));
+  router.get("/api/admin/deposit-billing/:submissionId",handle(async(req,res)=>res.json(await billing.status(req.onboardingActor.id,req.params.submissionId))));
+  const evidenceUpload=multer({storage:multer.memoryStorage(),limits:{fileSize:MAX_CONTRACT_PDF_BYTES,files:1,fields:12}}).single("file");
+  router.post("/api/admin/deposit-billing/:submissionId/:action",limiter,handle(async(req,res)=>{
+    await billing.authorize(req.onboardingActor.id);
+    if(req.is("multipart/form-data"))await new Promise<void>((resolve,reject)=>evidenceUpload(req,res,e=>e?reject(e):resolve()));
+    res.json(await billing.act(req.onboardingActor.id,req.params.submissionId,req.params.action,req.body,req.file));
+  }));
+  router.get("/api/admin/onboarding-repairs",handle(async(req,res)=>res.json(await repairs.list(req.onboardingActor.id))));
+  router.post("/api/admin/onboarding-repairs/:submissionId/dry-run",limiter,handle(async(req,res)=>res.json(await repairs.dryRun(req.onboardingActor.id,req.params.submissionId,req.body))));
+  router.post("/api/admin/onboarding-repairs/:submissionId/apply",limiter,handle(async(req,res)=>{
+    const result=await repairs.apply(req.onboardingActor.id,req.params.submissionId,req.body);
+    void dispatchHiringLifecycleEvents();res.json(result);
+  }));
+  router.post("/api/admin/msa-offline/:submissionId",limiter,handle(async(req,res)=>{
+    await billing.authorize(req.onboardingActor.id);
+    await new Promise<void>((resolve,reject)=>evidenceUpload(req,res,e=>e?reject(e):resolve()));
+    res.status(201).json(await billing.recordOfflineMsa(req.onboardingActor.id,req.params.submissionId,req.body,req.file));
+  }));
+  router.get("/api/client/msa/offline/:id/pdf",handle(async(req,res)=>{
+    const pdf=await billing.offlinePdf(req.onboardingActor.id,req.params.id);
+    res.set({"Content-Type":"application/pdf","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff",
+      "Content-Security-Policy":"sandbox","Content-Disposition":`inline; filename="signed-msa.pdf"`}).end(pdf.bytes);
+  }));
   router.get("/api/client/pending-deposits",handle(async(req,res)=>{
     if(req.onboardingActor.role!=="client")throw new OnboardingError(403,"FORBIDDEN","Client account required.");
     const items=(await query(`SELECT d.id,d.amount,d.currency,j.title AS job_title,
@@ -69,6 +107,8 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
   }));
   router.post("/api/admin/msa-documents/:id/activate",limiter,handle(async(req,res)=>res.json(await msa.activate(req.onboardingActor.id,req.params.id,req.body))));
   router.use((error:any,_req:any,res:any,next:any)=>{
+    if(error instanceof WiseError)return res.status(error.status).json({error:"DEPOSIT_ACTION_FAILED",message:error.message});
+    if(error instanceof ZodError)return res.status(422).json({error:"INVALID_DETAILS",message:error.issues.map(i=>i.message).join(" ")});
     if(error instanceof OnboardingError)return res.status(error.status).json({error:error.code,code:error.code,message:error.message});
     if(error instanceof ContractError)return res.status(error.status).json(error.body);
     if(error?.code==="LIMIT_FILE_SIZE")return res.status(413).json({error:"PDF_TOO_LARGE",message:"Upload a PDF no larger than 10 MB."});

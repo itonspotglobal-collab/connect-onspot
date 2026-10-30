@@ -4,6 +4,7 @@ import { queueHiringLifecycleEvent } from "./hiringLifecycleEvents";
 import { lockAcceptedHiringWaiver, verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
 import { HiringPaymentError } from "./hiringPaymentErrors";
 import {hiringOverrideState} from "./adminHiringOverrideState";
+import {depositArrangement} from "./depositArrangementState";
 
 export type OnboardingDb = Pick<PoolClient,"query">;
 export class OnboardingError extends HiringPaymentError {
@@ -41,6 +42,7 @@ export async function requirePaidContract(db:OnboardingDb,offerId:string,id:stri
   if(s&&!await verifiedDeferredHiringPayment(db,s))
     throw new OnboardingError(409,"DEFERRED_HIRING_PAYMENT_REQUIRED","The deferred hiring invoice must be paid and independently verified before agreements are issued.");
   if(!await isDepositFirst(db,id))return;
+  if((await depositArrangement(db,id))?.waiver_type==="defer")return;
   if(!(await db.query("SELECT id FROM security_deposits WHERE offer_id=$1 AND submission_id=$2 AND status IN ('held','waived') FOR UPDATE",[offerId,id])).rows.length)
     throw new OnboardingError(409,"DEPOSIT_PAYMENT_REQUIRED","The security deposit must be independently verified before preparing or sending an agreement.");
 }

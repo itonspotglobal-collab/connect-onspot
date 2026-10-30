@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PaymentVerificationCard } from "@/components/hiring-payments/PaymentVerificationCard";
+import { DepositBillingCard } from "@/components/deposit-billing/DepositBillingCard";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -616,7 +616,7 @@ function DetailDialog({
               {detail.jobCompany && <p className="text-slate-500">{detail.jobCompany}</p>}
             </section>
 
-            <PaymentVerificationCard submissionId={detail.id} />
+            {["offer_accepted", "contract_sent", "contract_signed", "hired"].includes(String(detail.status).toLowerCase()) || detail.acceptedOfferId ? <DepositBillingCard submissionId={detail.id} /> : null}
             {/* Status */}
             <section>
               <h3 className="font-semibold text-slate-900 mb-2">Status</h3>

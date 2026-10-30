@@ -2440,6 +2440,8 @@ export const securityDeposits = pgTable("security_deposits", {
   waivedBy: varchar("waived_by").references(() => users.id),
   waivedAt: timestamp("waived_at", { withTimezone: true }),
   waiverReason: text("waiver_reason"),
+  verifiedBy: text("verified_by").references(()=>users.id),
+  paymentSource: text("payment_source"),
   drawnAt: timestamp("drawn_at", { withTimezone: true }),
   drawnReason: text("drawn_reason"),
   replenishmentDueAt: timestamp("replenishment_due_at", { withTimezone: true }),
@@ -2473,6 +2475,9 @@ export const hiringPaymentWaivers = pgTable("hiring_payment_waivers", {
   jobId: text("job_id").notNull().references(()=>jobs.id),
   talentId: text("talent_id").notNull().references(()=>users.id),
   waiverType: text("waiver_type").notNull(),
+  scope: text("scope").notNull().default("pre_offer"),
+  depositId: uuid("deposit_id").references(()=>securityDeposits.id),
+  depositDueAt: timestamp("deposit_due_at",{withTimezone:true}),
   reason: text("reason").notNull(),
   arrangementNote: text("arrangement_note"),
   grantedBy: text("granted_by").notNull().references(()=>users.id),
@@ -2484,10 +2489,46 @@ export const hiringPaymentWaivers = pgTable("hiring_payment_waivers", {
   deferredPaymentRequired: boolean("deferred_payment_required").notNull().default(false),
   deferredInvoiceId: uuid("deferred_invoice_id").references(()=>hiringPreOfferInvoices.id),
 }, t=>[
-  uniqueIndex("hiring_payment_waivers_active_submission").on(t.submissionId).where(sql`${t.revokedAt} IS NULL`),
+  uniqueIndex("hiring_payment_waivers_active_scope").on(t.submissionId,t.scope).where(sql`${t.revokedAt} IS NULL`),
+  uniqueIndex("hiring_payment_waivers_active_deposit").on(t.depositId).where(sql`${t.scope}='deposit' AND ${t.revokedAt} IS NULL`),
   check("hiring_payment_waivers_waiver_type_check",sql`${t.waiverType} IN ('defer','waive')`),
   check("hiring_payment_waivers_reason_check",sql`length(btrim(${t.reason})) >= 10`),
+  check("hiring_payment_waivers_scope_check",sql`${t.scope} IN ('pre_offer','deposit')`),
 ]);
+export const onboardingSubmissionLinks=pgTable("onboarding_submission_links",{
+  submissionId:text("submission_id").primaryKey().references(()=>jobSubmissions.id),
+  canonicalSubmissionId:text("canonical_submission_id").notNull().references(()=>jobSubmissions.id),
+  offerId:uuid("offer_id").notNull().references(()=>offers.id),
+  linkedBy:text("linked_by").notNull().references(()=>users.id),
+  reason:text("reason").notNull(),linkedAt:timestamp("linked_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[check("onboarding_submission_links_reason_check",sql`length(btrim(${t.reason})) BETWEEN 10 AND 2000`),
+  check("onboarding_submission_links_check",sql`${t.submissionId}<>${t.canonicalSubmissionId}`)]);
+export const externalDepositPayments=pgTable("external_deposit_payments",{
+  id:uuid("id").primaryKey().defaultRandom(),depositId:uuid("deposit_id").notNull().unique().references(()=>securityDeposits.id),
+  amount:decimal("amount",{precision:12,scale:2}).notNull(),currency:text("currency").notNull(),
+  receivedAt:timestamp("received_at",{withTimezone:true}).notNull(),reference:text("reference").notNull(),method:text("method").notNull(),
+  verifiedBy:text("verified_by").notNull().references(()=>users.id),verifiedAt:timestamp("verified_at",{withTimezone:true}).notNull().defaultNow(),
+  reason:text("reason").notNull(),receiptObjectKey:text("receipt_object_key"),receiptContentType:text("receipt_content_type"),receiptFilename:text("receipt_filename"),
+},t=>[uniqueIndex("external_deposit_payment_reference").on(sql`lower(btrim(${t.reference}))`),
+  check("external_deposit_payments_amount_check",sql`${t.amount}>0`),
+  check("external_deposit_payments_method_check",sql`${t.method} IN ('bank_transfer','check','cash','other')`),
+  check("external_deposit_payments_reason_check",sql`length(btrim(${t.reason})) BETWEEN 10 AND 2000`)]);
+export const msaDocuments=pgTable("msa_documents",{
+  id:uuid("id").primaryKey().defaultRandom(),version:text("version").notNull().unique(),
+  objectKey:text("object_key").notNull(),filename:text("filename").notNull(),fileSize:integer("file_size").notNull(),sha256:text("sha256").notNull(),
+  effectiveAt:timestamp("effective_at",{withTimezone:true}).notNull(),active:boolean("active").notNull().default(false),
+  uploadedBy:text("uploaded_by").notNull().references(()=>users.id),activatedBy:text("activated_by").references(()=>users.id),
+  activationReason:text("activation_reason"),activatedAt:timestamp("activated_at",{withTimezone:true}),createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[uniqueIndex("msa_documents_one_active").on(t.active).where(sql`${t.active}`),
+  check("msa_documents_sha256_check",sql`length(${t.sha256})=64`)]);
+export const clientMsaOfflineEvidence=pgTable("client_msa_offline_evidence",{
+  id:uuid("id").primaryKey().defaultRandom(),clientId:text("client_id").notNull().references(()=>users.id),
+  documentId:uuid("document_id").notNull().references(()=>msaDocuments.id),documentSha256:text("document_sha256").notNull(),msaVersion:text("msa_version").notNull(),
+  objectKey:text("object_key").notNull(),sha256:text("sha256").notNull(),filename:text("filename").notNull(),contentType:text("content_type").notNull().default("application/pdf"),
+  signerName:text("signer_name").notNull(),signerEmail:text("signer_email").notNull(),signedAt:timestamp("signed_at",{withTimezone:true}).notNull(),
+  recordedBy:text("recorded_by").notNull().references(()=>users.id),recordedAt:timestamp("recorded_at",{withTimezone:true}).notNull().defaultNow(),reason:text("reason").notNull(),
+},t=>[unique("client_msa_offline_evidence_client_id_document_id_key").on(t.clientId,t.documentId),
+  check("client_msa_offline_evidence_reason_check",sql`length(btrim(${t.reason})) BETWEEN 10 AND 2000`)]);
 export type InsertHiringContract = z.infer<typeof insertHiringContractSchema>;
 export type HiringContract = typeof hiringContracts.$inferSelect;
 

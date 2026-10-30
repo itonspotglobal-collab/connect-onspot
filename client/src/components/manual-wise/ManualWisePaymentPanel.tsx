@@ -29,6 +29,9 @@ export type WiseObligation = {
   instructions: null | { id: string; recipient: string; instructions: string; referenceInstructions: string; qrFileId: string | null; currency: string };
   history: WiseSubmission[];
   blockedReason?: string;
+  deferredDueAt?: string | null;
+  paymentSource?: string | null;
+  arrangementNote?: string | null;
 };
 export type WiseSubmission = {
   id: string;
@@ -196,7 +199,10 @@ export function ManualWisePaymentPanel({ category, id, title = "Manual Wise paym
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-indigo-100/75"><LockKeyhole className="h-3.5 w-3.5" /> Secure checkout</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">{obligation.paymentStatus === "paid" ? "Payment confirmed" : "Scan to pay"}</h2>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight">{obligation.paymentStatus === "waived" ? "Deposit waived by OnSpot" :
+              obligation.paymentStatus === "paid" ? obligation.paymentSource==="external"?"Paid (recorded by OnSpot)":"Payment confirmed" : "Scan to pay"}</h2>
+            {obligation.deferredDueAt&&<p className="mt-2 text-sm font-medium">Payment arrangement: deferred — invoice due by {new Date(obligation.deferredDueAt).toLocaleDateString()}. Agreements may be signed, but activation requires payment.</p>}
+            {obligation.paymentStatus==="waived"&&obligation.arrangementNote&&<p className="mt-2 text-sm">Approved arrangement: {obligation.arrangementNote}</p>}
             <p className="mt-1 max-w-sm text-sm leading-relaxed text-indigo-100/80">Open your banking or payment app and scan the code.</p>
           </div>
           <StatusNotice status={obligation.paymentStatus} lifecycleStatus={obligation.status} />

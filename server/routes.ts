@@ -21927,7 +21927,7 @@ export async function registerRoutes(
                 COUNT(ip.id)::int AS period_count,
                 MAX(ip.period_end) AS last_period_end,
                 sd.id AS deposit_id, sd.status AS deposit_status,
-                sd.amount AS deposit_amount, sd.currency AS deposit_currency
+                sd.amount AS deposit_amount, sd.currency AS deposit_currency,sd.waiver_reason AS deposit_waiver_reason
            FROM hiring_contracts hc
            JOIN offers o ON o.id = hc.offer_id
            JOIN job_submissions js ON js.id = hc.submission_id
@@ -22543,7 +22543,7 @@ export async function registerRoutes(
                 p.currency AS payout_currency, p.payout_method, p.external_ref AS payout_external_ref,
                 p.scheduled_at, p.disbursed_at, p.failed_reason,
                 sd.id AS deposit_id, sd.status AS deposit_status, sd.amount AS deposit_amount,
-                sd.currency AS deposit_currency, sd.replenishment_due_at, sd.cure_deadline_at,
+                sd.currency AS deposit_currency,sd.waiver_reason AS deposit_waiver_reason, sd.replenishment_due_at, sd.cure_deadline_at,
                 CASE
                   WHEN inv.status IS NULL OR inv.status IN ('draft','sent','overdue')
                     THEN COALESCE(inv.amount, ip.client_invoice_amount)

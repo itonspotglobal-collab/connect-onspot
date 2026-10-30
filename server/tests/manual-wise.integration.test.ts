@@ -109,6 +109,10 @@ before(async()=>{
   await pool.query(readFileSync("migrations/0043_deposit_funded_activation.sql","utf8"));
   await pool.query(readFileSync("migrations/0046_hiring_payment_waivers.sql","utf8"));
   await pool.query(readFileSync("migrations/0046_hiring_payment_waivers.sql","utf8"));
+  // This deliberately minimal fixture must also model the new cross-method
+  // settlement-reference authority; these are owned, disposable tables only.
+  await pool.query("CREATE TABLE IF NOT EXISTS offers(id uuid PRIMARY KEY); CREATE TABLE IF NOT EXISTS msa_documents(id uuid PRIMARY KEY)");
+  await pool.query(readFileSync("migrations/0052_deposit_billing_controls.sql","utf8"));
   await pool.query("UPDATE platform_settings SET value='true' WHERE key='HIRING_PRE_OFFER_PAYMENT_REQUIRED'");
   await pool.query("INSERT INTO job_submissions(id,client_id,talent_id,job_id) VALUES($1,'client','talent','job')",[submission]);
   await pool.query("INSERT INTO hiring_contracts(id,submission_id) VALUES($1,$2)",[contract,submission]);
@@ -186,13 +190,18 @@ test("inquiry receipt stays pending; rejection is retained and corrected evidenc
   o=await service.detail("client","inquiry",ids.inquiry);
   assert.equal(o.paymentStatus,"paid");assert.equal(o.history.length,2);assert.equal(o.history[1].status,"rejected");
 });
-test("hiring receipt never unlocks offer; only Super Admin independent verification satisfies canonical gate",async()=>{
+test("historical deferred hiring debt requires Super Admin settlement; it never restores the retired recruiting fee",async()=>{
+  await pool.query(`INSERT INTO hiring_payment_waivers(submission_id,client_id,job_id,talent_id,waiver_type,reason,granted_by,
+    locked_at,deferred_payment_required,deferred_invoice_id)
+    SELECT id,client_id,job_id,talent_id,'defer','Synthetic historical accepted debt only','admin',now(),true,$2
+    FROM job_submissions WHERE id=$1`,[submission,ids.hiring_invoice]);
   const s=await service.submit("client","hiring_invoice",ids.hiring_invoice,"hiring-claim",await receipt());
-  await assert.rejects(requireVerifiedHiringPayment(pool as any,submission),/paid and verified/);
+  assert.equal(await requireVerifiedHiringPayment(pool as any,submission),null);
   await assert.rejects(service.review("client",s.id,review("hiring-settled")),deny(403));
   await assert.rejects(service.review("limited",s.id,review("hiring-settled")),deny(403));
   await service.review("admin",s.id,review("hiring-settled"));
-  assert.equal(await requireVerifiedHiringPayment(pool as any,submission),ids.hiring_invoice);
+  assert.equal(await requireVerifiedHiringPayment(pool as any,submission),null);
+  assert.equal((await pool.query("SELECT status FROM hiring_pre_offer_invoices WHERE id=$1",[ids.hiring_invoice])).rows[0].status,"paid");
 });
 test("legacy invoice and monthly net balance remain unpaid until settled; all mismatch checks fail closed",async()=>{
   for(const c of ["invoice","monthly_invoice"] as const) {

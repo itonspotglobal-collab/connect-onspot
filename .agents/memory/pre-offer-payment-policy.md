@@ -35,3 +35,20 @@ changing issued invoices or contracts.
 **How to apply:** Explain which choice is missing and provide the existing owned
 job editor only when permitted. Do not bypass normal job re-review, independent
 settlement verification, or offer eligibility after correcting classification.
+
+Deposit deferral permits agreement preparation/signing, **not activation**.
+Keep its invoice open and require held funds before Hired/Active. An approved
+deposit waiver is a different explicit arrangement: it may satisfy activation
+but never represents cash, independent Wise verification or payout coverage.
+Historical pre-offer debt and deposit arrangements must remain separate scopes.
+
+**Why:** The owner explicitly distinguished deferred debt from a true deposit
+waiver and prohibited invented funds or signatures when unblocking onboarding.
+
+**How to apply:** A Super Admin may attest a truthful external receipt through
+the canonical settlement path, or record an actual offline signed MSA against
+the approved version. No-money positive settlement UAT belongs in isolated
+staging, never a false receipt in the live financial ledger. Keep the service
+activation rules and the database's executed-contract immutability exception
+consistent; otherwise a permitted waiver/offline signature can still roll back
+when activation writes its first timestamp.

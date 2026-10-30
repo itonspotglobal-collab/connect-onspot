@@ -1049,3 +1049,17 @@ mtime_ms = 1793343127340
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/79826f8c-0cac-4c44-80c4-6a5be3270c1b/31697e8b-99cc-44ba-9af0-a2d89cb5a3ff"
 storage_version_token = "1793343155184637"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "4CQUT3hvAb-JNB7_KO7_o"
+uri = "file://docs/contractor-onboarding-production-readiness.md"
+type = "text"
+title = "Contractor onboarding: findings and UAT"
+description = "Read-only production findings, implementation and migration details, verified test results, rollback guidance, and payment-recording/waiver UAT scripts. No production changes or publication were performed."
+logical_id = "f8a87560-0303-41d0-adbe-1674686b3b1f"
+content_hash = "sha256:4b789c93163899064b641edd1e1348c08d98dcad6a0824b4daa35cb3dd82818b"
+size = 17118
+mtime_ms = 1793346972147
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/f8a87560-0303-41d0-adbe-1674686b3b1f/9fa45d33-f391-407f-9ab4-fb55907ec8ca"
+storage_version_token = "1793346981463029"
+content_type = "text/markdown"

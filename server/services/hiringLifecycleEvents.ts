@@ -4,8 +4,10 @@ import { isDepositFirst, lockOnboarding } from "./contractorOnboardingPolicy";
 import type { HiringPaymentDb } from "./hiringPaymentService";
 import { verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
 import {hiringOverrideState} from "./adminHiringOverrideState";
+import {msaSignatureExists} from "./depositArrangementState";
 
 export type HiringLifecycleType = "offer_accepted" | "deposit_issued" | "deposit_reminder" | "proof_submitted" | "proof_rejected" | "engagement_active" | "deposit_verified" | "msa_missing" | "msa_required" | "msa_signed" | "agreements_recheck"
+  | "deposit_arrangement" | "deposit_invoice_resend" | "onboarding_setup_alert"
   | "admin_hiring_override" | "hiring_skip_requested" | "hiring_skip_granted" | "hiring_skip_revoked" | "hiring_deferred_due" | "hiring_deferred_reminder" | "hiring_deferred_invoice_issued";
 export async function queueHiringLifecycleEvent(
   db: HiringPaymentDb, key: string, type: HiringLifecycleType, payload: Record<string, unknown>,
@@ -61,8 +63,7 @@ export async function tryActivateEngagement(db:Pick<PoolClient,"query">,submissi
     await queueHiringLifecycleEvent(db,`msa-missing:${submissionId}`,"msa_missing",{submissionId});
     return false;
   }
-  const signature=msa?(await db.query(`SELECT id FROM client_msa_signatures WHERE client_id=$1
-    AND document_id=$2 AND msa_version=$3 AND document_sha256=$4`,[s.client_id,msa.id,msa.version,msa.sha256])).rows[0]:null;
+  const signature=await msaSignatureExists(db,s.client_id,msa);
   if(!signature&&!override.skipMsa)return false;
   await db.query("UPDATE job_submissions SET status='hired',updated_at=now() WHERE id=$1",[submissionId]);
   const audit=(override.skipContractorAgreement||override.skipMsa)?(await db.query(`SELECT id FROM admin_hiring_overrides

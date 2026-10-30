@@ -2,6 +2,7 @@ import type { Pool, PoolClient } from "pg";
 import { contractBlobProvider, pdfHash, validateContractPdf, type ContractBlobProvider } from "./contractBlobStore";
 import { OnboardingError } from "./contractorOnboardingPolicy";
 import { queueHiringLifecycleEvent, tryActivateEngagement } from "./hiringLifecycleEvents";
+import {msaSignatureExists} from "./depositArrangementState";
 
 export class ClientMsaService {
   constructor(private pool:Pool,private blobs:ContractBlobProvider=contractBlobProvider,private afterCommit?:()=>Promise<void>) {}
@@ -72,8 +73,10 @@ export class ClientMsaService {
     await this.actor(this.pool,id);
     const d=(await this.pool.query("SELECT id,version,sha256,effective_at FROM msa_documents WHERE active AND effective_at<=now()")).rows[0];
     if(!d)return {document:null,signature:null,requiresSignature:true,issued:false};
-    const s=(await this.pool.query(`SELECT id,signed_at AS "signedAt",signer_name AS "signerName" FROM client_msa_signatures
-      WHERE client_id=$1 AND document_id=$2 AND document_sha256=$3 AND msa_version=$4`,[id,d.id,d.sha256,d.version])).rows[0]??null;
+    const s=(await this.pool.query(`SELECT id,signed_at AS "signedAt",signer_name AS "signerName",'platform' AS source
+      FROM client_msa_signatures WHERE client_id=$1 AND document_id=$2 AND document_sha256=$3 AND msa_version=$4
+      UNION ALL SELECT id,signed_at,signer_name,'offline' AS source FROM client_msa_offline_evidence
+      WHERE client_id=$1 AND document_id=$2 AND document_sha256=$3 AND msa_version=$4 LIMIT 1`,[id,d.id,d.sha256,d.version])).rows[0]??null;
     const issued=!!(await this.pool.query("SELECT 1 FROM client_msa_requests WHERE client_id=$1 AND msa_document_id=$2",[id,d.id])).rows.length;
     return {document:{id:d.id,version:d.version,sha256:d.sha256,effectiveAt:d.effective_at,viewUrl:`/api/client/msa/${d.id}/pdf`},
       signature:s,requiresSignature:!s,issued};

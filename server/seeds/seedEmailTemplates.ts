@@ -119,6 +119,31 @@ export const DEFAULT_TEMPLATES: TemplateRow[] = [
     content:`<p>Your deposit of <strong>{{payment_amount}}</strong> for {{job_title}} is awaiting independent verification.</p><p>Due: {{due_date}}</p><p>If you have submitted proof, OnSpot still needs to verify settlement before preparing the agreement.</p>${button("{{deposit_url}}","Review deposit")}`,
   }),
   brandedTemplate({
+    name:"Deposit Recorded Outside Platform",category:"hiring_deposit_recorded",stage:null,isDefault:true,
+    subject:"Deposit paid — recorded by OnSpot for {{job_title}}",
+    content:`<p>OnSpot has recorded receipt of your deposit of <strong>{{payment_amount}}</strong> outside the platform.</p><p>This is an OnSpot payment receipt record, not a claim of independent Wise verification. Your engagement activates only when all required agreements are complete.</p>${button("{{deposit_url}}","View deposit")}`,
+  }),
+  brandedTemplate({
+    name:"Deposit Deferred",category:"hiring_deposit_deferred",stage:null,isDefault:true,
+    subject:"Deposit payment arrangement for {{job_title}}",
+    content:`<p>Payment arrangement: deferred — invoice due by <strong>{{due_date}}</strong>.</p><p>The invoice remains open. Agreements may be signed now, but activation still requires payment.</p>${button("{{deposit_url}}","Review invoice")}`,
+  }),
+  brandedTemplate({
+    name:"Deposit Waived",category:"hiring_deposit_waived",stage:null,isDefault:true,
+    subject:"Deposit waived by OnSpot for {{job_title}}",
+    content:`<p>Deposit waived by OnSpot under an approved special arrangement.</p><p>This does not represent money received or deposit cash available for payout. All other engagement requirements still apply.</p>${button("{{deposit_url}}","View arrangement")}`,
+  }),
+  brandedTemplate({
+    name:"Deferred Deposit Reminder",category:"hiring_deposit_deferred_reminder",stage:null,isDefault:true,
+    subject:"Deferred deposit reminder for {{job_title}}",
+    content:`<p>Your deferred deposit of <strong>{{payment_amount}}</strong> remains due by <strong>{{due_date}}</strong>.</p><p>Agreements can be signed, but the engagement cannot activate before payment is verified.</p>${button("{{deposit_url}}","Review invoice")}`,
+  }),
+  brandedTemplate({
+    name:"Onboarding Setup Alert",category:"hiring_onboarding_setup",stage:null,isDefault:true,
+    subject:"Action needed: onboarding setup",
+    content:`<p>{{rejection_reason}}</p>${button("{{portal_url}}","Review onboarding")}`,
+  }),
+  brandedTemplate({
     name:"Deposit Invoice",category:"hiring_deposit_invoice",stage:null,isDefault:true,
     subject:"Your deposit invoice for {{job_title}}",
     content:`<p>The contract is fully signed. Your security deposit invoice is ready: <strong>{{payment_amount}}</strong>.</p><p>Your engagement activates only after independent payment verification.</p>${button("{{portal_url}}","View deposit invoice")}`,
@@ -137,6 +162,11 @@ export const DEFAULT_TEMPLATES: TemplateRow[] = [
     name:"Payment Proof Rejected",category:"hiring_payment_rejected",stage:null,isDefault:true,
     subject:"Please resubmit your payment proof",
     content:`<p>Your payment proof could not be approved.</p><p>Reason: {{rejection_reason}}</p>${button("{{portal_url}}","Submit proof again")}`,
+  }),
+  brandedTemplate({
+    name:"Client Engagement Active — Deposit Waived",category:"hiring_client_active_waived",stage:null,isDefault:true,
+    subject:"Your engagement with {{talent_name}} is now active",
+    content:`<p>Your deposit was waived by OnSpot under an approved arrangement; no deposit cash receipt is claimed.</p><p>Your engagement for <strong>{{job_title}}</strong> starts on <strong>{{start_date}}</strong>.</p><p>Review the completed agreements and coordinate onboarding with your OnSpot team.</p>${button("{{portal_url}}","Open dashboard")}`,
   }),
   brandedTemplate({
     name:"Client Engagement Active",category:"hiring_client_active",stage:null,isDefault:true,

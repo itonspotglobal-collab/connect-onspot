@@ -53,6 +53,7 @@ interface LedgerRow {
   failed_reason: string | null;
   deposit_id: string | null;
   deposit_status: string | null;
+  deposit_waiver_reason?: string | null;
   deposit_amount: string | null;
   deposit_currency: string | null;
   outstanding_invoice_amount: string;
@@ -81,6 +82,7 @@ interface LedgerResponse {
 }
 
 interface SignedContract {
+  deposit_waiver_reason?: string | null;
   hiring_contract_id: string;
   contract_status: string;
   onspot_signed_at: string | null;
@@ -511,6 +513,7 @@ export default function AdminLedger() {
                       <span>{contract.period_count} period{contract.period_count === 1 ? "" : "s"}</span>
                       {contract.last_period_end ? <span>Last through {date(contract.last_period_end)}</span> : <span>No period yet</span>}
                       <Badge variant="outline" className={statusClass(contract.deposit_status)}>{contract.deposit_status?.replaceAll("_", " ") || "deposit missing"}</Badge>
+                      {contract.deposit_status==="waived"&&contract.deposit_waiver_reason&&<p className="mt-1 text-xs text-amber-800">No cash coverage — {contract.deposit_waiver_reason}</p>}
                     </div>
                   </div>
                   {contract.deposit_status === "pending" || !contract.deposit_id ? (
@@ -640,6 +643,7 @@ export default function AdminLedger() {
                           <>
                             <div className="font-medium">{money(row.deposit_amount, row.deposit_currency)}</div>
                             <Badge variant="outline" className={statusClass(row.deposit_status)}>{row.deposit_status?.replaceAll("_", " ")}</Badge>
+                            {row.deposit_status==="waived"&&row.deposit_waiver_reason&&<p className="mt-1 text-xs text-amber-800">No cash coverage — {row.deposit_waiver_reason}</p>}
                             {row.deposit_status === "held" ? (
                               <div className="flex gap-2 pt-1">
                                 <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "draw")} disabled={mutation.isPending}>Draw</Button>

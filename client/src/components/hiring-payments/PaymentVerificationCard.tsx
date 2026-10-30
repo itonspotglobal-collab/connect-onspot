@@ -35,6 +35,7 @@ export function PaymentVerificationCard({submissionId,client=false}:{submissionI
     },
   });
   const w=state.data?.waiver;
+  if (state.data && !state.data.required) return null;
   return <section className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
     <h3 className="font-semibold">Payment verification</h3>
     {state.isPending?<p>Checking payment arrangement…</p>:state.isError?<p role="alert">Couldn’t check payment arrangement. <button className="underline" onClick={()=>state.refetch()}>Retry</button></p>:<>
