@@ -78,3 +78,4 @@
 - [Workflow port exclusivity](workflow-port-exclusivity.md) — a managed restart can leave an orphaned app process; sharing the preview port masks duplicates and repeats scheduled work.
 - [Interview workflow policy](interview-workflow-policy.md) — recruiting exceptions, immutable outcomes, non-blocking calendars and pre-offer-only cohort repairs.
 - [Native HTTP test harness](native-http-test-environment.md) — distinguish Node test-worker IPC corruption from endpoint failures without weakening auth or assertions.
+- [Production visual isolation](production-visual-verification.md) — inventory startup dependencies; use owned TLS services and actual scrollbar-aware geometry.
