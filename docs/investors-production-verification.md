@@ -12,6 +12,13 @@ No production data writes, production migrations or publication were performed.
 Republication requires the user's Publish action; post-publication live
 screenshots remain pending that action.
 
+**Separate existing production issue:** deployment logs show notification
+inserts failing with an `ON CONFLICT` constraint-matching error and
+`deposit_reminder` delivery being deferred. These logs come from the currently
+published app, before this UI fix is published. This backend issue was not
+investigated or changed in this Investors-only visual task. The passing checks
+below do not certify global hiring/billing notification health.
+
 ## Reproduction before edits
 
 Captured `https://onspotglobal.com/investors` and the development preview at
