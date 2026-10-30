@@ -1063,3 +1063,45 @@ mtime_ms = 1793346972147
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/f8a87560-0303-41d0-adbe-1674686b3b1f/9fa45d33-f391-407f-9ab4-fb55907ec8ca"
 storage_version_token = "1793346981463029"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "0CynrrgMTGbwEsAiXjCX0"
+uri = "file://generated-artifacts/investors/comparison-full-1440.jpg"
+type = "image"
+title = "Investors comparison — 1440px"
+description = "Full-page comparison: approved HTML reference, development preview, and actual local production build. Current application copy and live-data behavior are preserved."
+logical_id = "8a2139a5-980e-4621-a8e8-cb69a5ef6fd5"
+content_hash = "sha256:e6fb914cde617f97e5b489a677c8f906ed539e14718c954f538c1d6bf59b7bcb"
+size = 2025087
+mtime_ms = 1793351214882
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8a2139a5-980e-4621-a8e8-cb69a5ef6fd5/50188c09-60ee-4ed4-9651-6a0b1c7affe9"
+storage_version_token = "1793351288316628"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "KsRbHL4MqW_xChUZj1yjP"
+uri = "file://generated-artifacts/investors/comparison-full-390.jpg"
+type = "image"
+title = "Investors comparison — 390px"
+description = "Full-page mobile comparison: approved reference, development preview, and local npm run start. Download to inspect individual sections at full resolution."
+logical_id = "f8c02782-5b29-495c-aa90-7c4eedaa1d17"
+content_hash = "sha256:6d2fcfc49bff8153fe9a9624f2de17bd44015653b8a9ca39e671a6bc6249e570"
+size = 1226485
+mtime_ms = 1793351215474
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/f8c02782-5b29-495c-aa90-7c4eedaa1d17/f253c0d4-225a-4a5b-badd-38a5961f9926"
+storage_version_token = "1793351291793758"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "8-T7yMt0hZtxqrXp03e-z"
+uri = "file://docs/investors-production-verification.md"
+type = "text"
+title = "Investors verification report"
+description = "Reproduction findings, asset packaging, 27 passing browser tests, production-bundle checks, fresh-checkout limitations, and remaining live verification steps."
+logical_id = "8fec1a4d-9235-4cf5-9b37-41023b7c689b"
+content_hash = "sha256:47c7ee653b684276912f557636db5259ede9cdcb825f103ef75b394b37b3ef15"
+size = 7430
+mtime_ms = 1793351266414
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8fec1a4d-9235-4cf5-9b37-41023b7c689b/bfeea945-c5da-43cf-9ab9-7c1f6e76c760"
+storage_version_token = "1793351293088574"
+content_type = "text/markdown"
