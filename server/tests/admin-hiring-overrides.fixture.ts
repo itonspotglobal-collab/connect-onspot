@@ -12,6 +12,8 @@ import {onboardingStatus} from "../services/contractorOnboardingStatus";
 import {requirePaidContract,requireHiringStage} from "../services/contractorOnboardingPolicy";
 import {clientTeamDashboardSqlForTests} from "../lib/clientTeamDashboardHandler";
 import {TIMESHEET_HIRE_SQL} from "../services/timesheetEligibility";
+import {FORMAL_PIPELINE_PREDICATE} from "../../shared/formalPipelineSql";
+import {ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE} from "../../shared/adminOverrideEligibilitySql";
 const admin=`override-admin-${randomUUID()}`,ta=`override-ta-${randomUUID()}`,cs=`override-cs-${randomUUID()}`,
   client=`override-client-${randomUUID()}`,talent=`override-talent-${randomUUID()}`,talent2=`override-talent-${randomUUID()}`,job=`override-job-${randomUUID()}`;
 const service=new AdminHiringOverrideService(pool);
@@ -38,14 +40,81 @@ async function app() {
     ON CONFLICT(submission_id) DO UPDATE SET workflow_version=2`,[id]);
   return id;
 }
+test("Legacy-only metadata failures allow audited Admin overrides without relaxing normal hiring",async()=>{
+  const variants=[
+    ["workflow_type","UPDATE job_submissions SET workflow_type='client_shortlist' WHERE id=$1"],
+    ["initiated_by","UPDATE job_submissions SET initiated_by='client' WHERE id=$1"],
+    ["registration_status","UPDATE job_submissions SET registration_status='pending_account' WHERE id=$1"],
+    ["job_not_approved","UPDATE jobs SET approval_status='pending' WHERE id=(SELECT job_id FROM job_submissions WHERE id=$1)"],
+    ["job_draft","UPDATE jobs SET status='draft' WHERE id=(SELECT job_id FROM job_submissions WHERE id=$1)"],
+    ["search_scaffold","UPDATE jobs SET created_via='search_scaffold' WHERE id=(SELECT job_id FROM job_submissions WHERE id=$1)"],
+  ];
+  for(const [variant,change] of variants) {
+    for(const path of ["hire_now","skip_then_agreements"]) {
+      const id=await app();
+      await query(change,[id]);
+      const normal=async()=>!!(await query(`SELECT js.id FROM job_submissions js WHERE js.id=$1 AND js.${FORMAL_PIPELINE_PREDICATE}`,[id])).rows.length;
+      assert.equal(await normal(),false,variant);
+      assert.equal((await query(`SELECT js.id FROM job_submissions js WHERE js.id=$1 AND js.${ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE}`,[id])).rows.length,1,variant);
+      if(path==="hire_now")await service.execute(cs,"skip_stage",{submissionId:id,targetStatus:"hired",reason,...terms});
+      else {
+        await service.execute(ta,"skip_stage",{submissionId:id,targetStatus:"offer_accepted",reason,...terms});
+        await service.execute(ta,"waive_deposit",{submissionId:id,reason});
+        await service.execute(cs,"skip_agreements",{submissionId:id,reason,skipContractorAgreement:true,skipMsa:true});
+      }
+      assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"hired",`${variant}/${path}`);
+      const d=(await query("SELECT status,held_at FROM security_deposits WHERE submission_id=$1",[id])).rows[0];
+      assert.equal(d.status,"waived");assert.equal(d.held_at,null);
+      assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides WHERE submission_id=$1",[id])).rows[0].n,path==="hire_now"?1:3);
+      const hc=(await query("SELECT talent_signed_at,onspot_signed_at FROM hiring_contracts WHERE submission_id=$1",[id])).rows[0];
+      assert.equal(hc.talent_signed_at,null);assert.equal(hc.onspot_signed_at,null);
+      assert.equal(await normal(),false,`${variant}: audit must not open normal hiring`);
+      await query("UPDATE jobs SET approval_status='approved',status='open',created_via='manual' WHERE id=$1",[job]);
+    }
+  }
+});
+
+test("Missing Talent accounts, invalid roles, wrong owners and closed applications fail with specific reasons",async()=>{
+  for(const [change,code] of [
+    ["UPDATE job_submissions SET talent_id=NULL WHERE id=$1","TALENT_ACCOUNT_REQUIRED"],
+    [`UPDATE job_submissions SET talent_id='${client}' WHERE id=$1`,"TALENT_ACCOUNT_REQUIRED"],
+    [`UPDATE job_submissions SET client_id='${admin}' WHERE id=$1`,"JOB_CLIENT_MISMATCH"],
+    ["UPDATE job_submissions SET status='rejected' WHERE id=$1","APPLICATION_CLOSED"],
+  ]) {
+    const id=await app();await query(change,[id]);
+    for(const action of ["skip_stage","waive_deposit","skip_agreements"])
+      await assert.rejects(service.execute(cs,action,{submissionId:id,targetStatus:"hired",reason,...terms,skipContractorAgreement:true,skipMsa:true}),
+        (e:any)=>e.code===code);
+    assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides WHERE submission_id=$1",[id])).rows[0].n,0);
+  }
+  await assert.rejects(service.execute(cs,"skip_stage",{submissionId:randomUUID(),targetStatus:"hired",reason,...terms}),
+    (e:any)=>e.code==="APPLICATION_NOT_FOUND");
+});
+
+test("Missing job billing classification returns a specific editor link through the Admin HTTP endpoint",async()=>{
+  const id=await app();
+  await query("UPDATE jobs SET engagement_type=NULL,billing_mode=NULL WHERE id=$1",[job]);
+  const response=await fetch(`${base}/api/admin/hiring-overrides/skip_stage`,{
+    method:"POST",headers:{"Content-Type":"application/json","x-fixture-actor":cs},
+    body:JSON.stringify({submissionId:id,targetStatus:"hired",reason,...terms}),
+  });
+  assert.equal(response.status,409);
+  const result=await response.json();
+  assert.equal(result.error,"JOB_BILLING_CLASSIFICATION_REQUIRED");
+  assert.match(result.message,/engagement type or billing mode/);
+  assert.equal(result.details.jobEditorUrl,`/admin/find-work/jobs/${job}/edit`);
+  assert.equal((await query("SELECT count(*)::int n FROM offers WHERE submission_id=$1",[id])).rows[0].n,0);
+  await query("UPDATE jobs SET engagement_type='Standard',billing_mode='tracked' WHERE id=$1",[job]);
+});
 test("Clients and Talent receive 403 on every override endpoint, including capabilities/history",async()=>{
+  const before=(await query("SELECT count(*)::int n FROM admin_hiring_overrides")).rows[0].n;
   for(const actor of [client,talent])for(const path of ["capabilities","",...HIRING_OVERRIDE_ACTIONS]) {
     const method=HIRING_OVERRIDE_ACTIONS.includes(path as any)?"POST":"GET";
     const response=await fetch(`${base}/api/admin/hiring-overrides${path?`/${path}`:""}`,{method,
       headers:{"x-fixture-actor":actor,"Content-Type":"application/json"},...(method==="POST"?{body:JSON.stringify({reason})}:{})});
     assert.equal(response.status,403,`${actor} ${path}`);
   }
-  assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides")).rows[0].n,0);
+  assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides")).rows[0].n,before);
 });
 test("Stage overrides and safe reversal write immutable audit/history; Final override does not fabricate interviews",async()=>{
   const id=await app();

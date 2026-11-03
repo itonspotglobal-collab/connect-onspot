@@ -12,8 +12,9 @@ const cacheDir=mkdtempSync(join(tmpdir(),"hiring-payments-ui-"));
 before(async()=>{
   vite=await createServer({configFile:false,root:resolve("client"),cacheDir,
     define:{"process.env.NODE_ENV":JSON.stringify("test")},
+    optimizeDeps:{noDiscovery:true,include:["react","react-dom/client","react/jsx-runtime","@tanstack/react-query","@radix-ui/react-dialog","lucide-react","wouter","clsx","tailwind-merge","axios"]},
     resolve:{alias:{"@":resolve("client/src"),"@shared":resolve("shared"),"@assets":resolve("attached_assets")}},
-    plugins:[react(),{name:"payment-fixture",enforce:"pre",resolveId(id){if(id==="@/contexts/AuthContext"||id.endsWith("/contexts/AuthContext.tsx"))return "\0payment-fixture-auth";if(id==="/__payments.tsx")return id;},
+    plugins:[react(),{name:"payment-fixture",enforce:"pre",resolveId(id){if(/(?:^|\/)contexts\/AuthContext(?:\.[jt]sx?)?$/.test(id))return "\0payment-fixture-auth";if(id==="/__payments.tsx")return id;},
       load(id){if(id==="\0payment-fixture-auth")return "export function useAuth(){return {user:{id:'fixture-client',role:'client'},isAuthenticated:true,isLoading:false}}; export function AuthProvider({children}){return children}";if(id!=="/__payments.tsx")return; return `
         import React from 'react';import {createRoot} from 'react-dom/client';
         import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
@@ -45,7 +46,7 @@ const invoice={
   payment_recipient:"Fixture Recipient",payment_instructions:"Fixture transfer instructions",payment_reference:null,
   verified_at:null,created_at:"2026-10-14T00:00:00Z",updated_at:"2026-10-14T00:00:00Z",
 };
-async function fixture(mode="",width=390,status:string|null=null,readyFailure?:{status:number;body:unknown}){
+async function fixture(mode="",width=390,status:string|null=null,readyFailure?:{status:number;body:unknown},overrideFailure?:{status:number;body:unknown}){
   const page=await browser.newPage({viewport:{width,height:844}});
   const state={invoices:status?[{...invoice,status,verified_at:status==="paid"?"2026-10-14T01:00:00Z":null}]:[] as any[],posts:[] as any[]};
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
@@ -62,7 +63,8 @@ async function fixture(mode="",width=390,status:string|null=null,readyFailure?:{
       else if(path.endsWith("/reference")){state.invoices[0]={...state.invoices[0],status:"verification_pending",payment_reference:request.reference};body=state.invoices[0];}
       else if(path.endsWith("/review")){state.invoices[0]={...state.invoices[0],status:"paid",verified_at:"2026-10-14T01:00:00Z"};body=state.invoices[0];}
       else if(path.startsWith("/api/admin/hiring-overrides/")){
-        body={id:"audit-fixture",submissionId:request.submissionId??"new-placement",status:path.endsWith("waive_deposit")?"offer_accepted":"hired"};
+        if(overrideFailure){code=overrideFailure.status;body=overrideFailure.body;}
+        else body={id:"audit-fixture",submissionId:request.submissionId??"new-placement",status:path.endsWith("waive_deposit")?"offer_accepted":"hired"};
       }
       else{body={error:"UNEXPECTED_TEST_MUTATION"};code=500;}
     }else if(path==="/api/admin/hiring-overrides/capabilities"){
@@ -145,6 +147,29 @@ test("Regular Admin Hire now requires explicit terms and sends the existing hire
     assert.equal(state.posts[0].body.currency,"USD");
     assert.equal(state.posts[0].body.rate,2500);
     assert.equal(state.posts[0].body.startDate,"2032-10-01");
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+test("Hiring override errors show the clear reason and only the internal job editor link",async()=>{
+  const {page,state,errors}=await fixture("override-early",390,null,undefined,{status:409,body:{
+    error:"JOB_BILLING_CLASSIFICATION_REQUIRED",
+    message:"This legacy job needs billing details before the application can be hired.",
+    details:{jobId:"legacy/job-42",jobEditorUrl:"/admin/find-work/jobs/job-42/edit"},
+  }});
+  try {
+    await page.getByRole("button",{name:"Hire now",exact:true}).click();
+    const dialog=page.getByRole("dialog"),confirm=dialog.getByRole("button",{name:"Confirm override"});
+    await dialog.locator("textarea").fill("Approved isolated legacy hiring exception");
+    await dialog.locator('input[type="number"]').fill("2500");
+    await dialog.locator('input[type="date"]').fill("2032-10-01");
+    await confirm.click();
+    const alert=page.getByRole("alert");
+    await alert.waitFor();
+    assert.match(await alert.innerText(),/This legacy job needs billing details before the application can be hired\./);
+    const editJob=alert.getByRole("link",{name:"Edit job"});
+    assert.equal(await editJob.getAttribute("href"),"/admin/find-work/jobs/job-42/edit");
+    assert.doesNotMatch(await alert.innerText(),/JOB_BILLING_CLASSIFICATION_REQUIRED|legacy\/job-42/);
+    assert.equal(state.posts[0].path,"/api/admin/hiring-overrides/skip_stage");
     assert.deepEqual(errors,[]);
   }finally{await page.close();}
 });

@@ -24,6 +24,7 @@ import {createHiringContract} from "../services/hiringContractService";
 import {offerHandler} from "./fixtures/onboarding-offer-handlers";
 import {HiringPaymentWaiverService,enqueueDeferredHiringReminders,twoBusinessDaysAfter,verifiedDeferredHiringPayment,activeHiringWaiver} from "../services/hiringPaymentWaiverService";
 import {HiringPaymentService,requireVerifiedHiringPayment} from "../services/hiringPaymentService";
+import {FORMAL_PIPELINE_PREDICATE} from "../../shared/formalPipelineSql";
 
 const suffix=randomUUID(),client=`onboard-client-${suffix}`,talent=`onboard-talent-${suffix}`;
 const candidate=`onboard-candidate-${suffix}`;
@@ -481,12 +482,24 @@ test("activation is safe in all six condition/callback orders, with concurrent f
 // waived status and must not be replayed over a post-0051 waiver fixture.
 test("regular Admin deposit waiver unlocks real private agreement preparation; normal signatures activate without invented payment",async()=>{
   const a=await accepted();
+  // The owner permits only audited Admin preparation of legacy applications;
+  // ordinary Client/Talent offer/contract eligibility must remain unchanged.
+  await query("UPDATE job_submissions SET registration_status='pending_login' WHERE id=$1",[a.submissionId]);
+  await assert.rejects(documents.contractOfferContext(a.offerId,{id:limited}),(e:any)=>e.status===404);
+  await assert.rejects(documents.contractOfferContext(a.offerId,{id:client}),(e:any)=>e.status===404);
   const currentMsa=await msa.upload(admin,{buffer:pdf,mimetype:"application/pdf",originalname:"Waiver-UAT.pdf"} as any,
     "uat-regular-admin-waiver","2026-01-01");
   await msa.activate(admin,currentMsa.id,{reviewed:true,reason:"Synthetic current MSA for Admin waiver signing test"});
   await new AdminHiringOverrideService(pool).execute(limited,"waive_deposit",{
     submissionId:a.submissionId,reason:"Synthetic owner-authorized waiver; no money received or verification claimed",
   });
+  assert.equal((await documents.contractOfferContext(a.offerId,{id:limited})).offerId,a.offerId);
+  await assert.rejects(documents.contractOfferContext(a.offerId,{id:client}),(e:any)=>e.status===404);
+  await assert.rejects(documents.contractOfferContext(a.offerId,{id:talent}),(e:any)=>e.status===404);
+  assert.equal((await query(`SELECT js.id FROM job_submissions js WHERE js.id=$1 AND js.${FORMAL_PIPELINE_PREDICATE}`,[a.submissionId])).rows.length,0);
+  await query("UPDATE admin_hiring_overrides SET reverted_at=now() WHERE submission_id=$1",[a.submissionId]);
+  await assert.rejects(documents.contractOfferContext(a.offerId,{id:limited}),(e:any)=>e.status===404);
+  await query("UPDATE admin_hiring_overrides SET reverted_at=NULL WHERE submission_id=$1",[a.submissionId]);
   const prepared=await preparePaidAgreements(pool,{depositId:a.deposit.id,actorId:limited});
   assert.equal(prepared.eligible,true);assert.ok(prepared.contractId);
   const waiver=(await query("SELECT * FROM security_deposits WHERE id=$1",[a.deposit.id])).rows[0];

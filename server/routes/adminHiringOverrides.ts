@@ -7,7 +7,7 @@ export function registerAdminHiringOverrideRoutes(app:Express,service:AdminHirin
   const handle=(fn:(r:any)=>Promise<any>):RequestHandler=>async(req,res)=>{
     try {res.json(await fn(req));}
     catch(e:any) {
-      if(e instanceof OnboardingError)return void res.status(e.status).json({error:e.code,message:e.message});
+      if(e instanceof OnboardingError)return void res.status(e.status).json({error:e.code,message:e.message,...(e.details?{details:e.details}:{})});
       if(e?.code==="22P02")return void res.status(400).json({error:"INVALID_IDENTIFIER",message:"Invalid identifier."});
       console.warn("[hiring-override] request failed",{code:e?.code??"unavailable"});
       res.status(503).json({error:"OVERRIDE_UNAVAILABLE",message:"No change confirmed. Refresh the application before retrying."});

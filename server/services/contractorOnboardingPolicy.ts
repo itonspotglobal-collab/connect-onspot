@@ -8,7 +8,7 @@ import {depositArrangement} from "./depositArrangementState";
 
 export type OnboardingDb = Pick<PoolClient,"query">;
 export class OnboardingError extends HiringPaymentError {
-  constructor(status:number,code:string,message:string) { super(status,code,message); }
+  constructor(status:number,code:string,message:string,details?:Record<string,unknown>) { super(status,code,message,details); }
 }
 export async function isDepositFirst(db:OnboardingDb,submissionId:string):Promise<boolean> {
   const r=await db.query("SELECT workflow_version FROM contractor_onboarding_cohorts WHERE submission_id=$1",[submissionId]);

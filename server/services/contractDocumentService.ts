@@ -3,6 +3,7 @@ import type { PoolClient } from "pg";
 import { ContractError, createHiringContract, updateHiringContract, voidHiringContract } from "./hiringContractService";
 import { dispatchHiringLifecycleEvents } from "./hiringLifecycleDispatch";
 import { FORMAL_PIPELINE_PREDICATE } from "./formalPipelineGuard";
+import { AUDITED_ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE } from "../../shared/adminOverrideEligibilitySql";
 import { contractBlobProvider, executedContractPdf, pdfHash, validateContractPdf, type ContractBlobProvider } from "./contractBlobStore";
 import { isDepositFirst, requirePaidContract, lockOnboarding } from "./contractorOnboardingPolicy";
 
@@ -100,7 +101,8 @@ export async function contractOfferContext(offerId: string, actor: ContractActor
        COALESCE(NULLIF(c.company,''),NULLIF(TRIM(CONCAT(c.first_name,' ',c.last_name)),''),'Client') AS client_name,u.role AS actor_role
        FROM offers o JOIN job_submissions js ON js.id=o.submission_id JOIN jobs j ON j.id=js.job_id
        JOIN users t ON t.id=js.talent_id JOIN users c ON c.id=js.client_id JOIN users u ON u.id=$2
-       WHERE o.id=$1 AND js.${FORMAL_PIPELINE_PREDICATE}
+       WHERE o.id=$1 AND ((js.${FORMAL_PIPELINE_PREDICATE})
+         OR (u.role='admin' AND js.${AUDITED_ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE}))
          AND (u.role='admin' OR (u.role='client' AND (js.client_id=u.id OR EXISTS(
            SELECT 1 FROM organization_members mine JOIN organization_members theirs ON theirs.organization_id=mine.organization_id
            JOIN organizations org ON org.id=mine.organization_id

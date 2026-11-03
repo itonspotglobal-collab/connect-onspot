@@ -23,6 +23,7 @@
 import { getClient } from "../db.ts";
 import type { PoolClient } from "pg";
 import { loadAdminFormalSubmission } from "./formalPipelineGuard.js";
+import { AUDITED_ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE } from "../../shared/adminOverrideEligibilitySql";
 import { computeDepositAmount } from "../lib/billing.js";
 import { query } from "../db.js";
 import { BILLING_CURRENCY, requireUsdCurrency } from "../../shared/currency";
@@ -137,7 +138,15 @@ export async function createHiringContract(params: {
       forUpdate: true,
       txClient: client,
     });
-    if (!subGuard.ok) {
+    // Never broaden the shared guard: only an authenticated Admin actor may
+    // continue a recorded, unreverted exception through contract preparation.
+    const submission = subGuard.ok ? subGuard.row : adminId
+      ? (await client.query(`SELECT js.* FROM job_submissions js
+          JOIN users override_actor ON override_actor.id=$2 AND override_actor.role='admin'
+          WHERE js.id=$1 AND js.${AUDITED_ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE} FOR UPDATE OF js`,
+        [submissionId,adminId])).rows[0]
+      : null;
+    if (!submission) {
       const anyRow = await client.query(
         `SELECT id FROM job_submissions WHERE id = $1`,
         [submissionId],
@@ -150,7 +159,7 @@ export async function createHiringContract(params: {
         message: "A hiring contract requires an eligible Client invitation or linked Find Work application.",
       });
     }
-    const previousStatus: string = subGuard.row.status;
+    const previousStatus: string = submission.status;
     if (previousStatus !== "offer_accepted") {
       throw new ContractError(409, {
         error: "submission_not_contractable",

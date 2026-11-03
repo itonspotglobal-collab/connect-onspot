@@ -61,6 +61,33 @@ function formatAction(action: string) {
   return action.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function getMutationErrorPresentation(error: unknown) {
+  const apiError = error as { message?: unknown; code?: unknown; data?: unknown } | null;
+  const data = apiError?.data as { message?: unknown; error?: unknown; code?: unknown; details?: { jobEditorUrl?: unknown; jobId?: unknown } } | undefined;
+  const message = typeof data?.message === "string" && data.message.trim()
+    ? data.message
+    : typeof apiError?.message === "string" && apiError.message.trim() ? apiError.message : "Override failed.";
+  const code = apiError?.code ?? data?.code ?? data?.error;
+  let jobEditorUrl: string | null = null;
+  if (code === "JOB_BILLING_CLASSIFICATION_REQUIRED") {
+    const suppliedUrl = data?.details?.jobEditorUrl;
+    if (typeof suppliedUrl === "string" && /^\/admin\/find-work\/jobs\/[^/?#]+\/edit$/.test(suppliedUrl)) {
+      jobEditorUrl = suppliedUrl;
+    } else if (typeof data?.details?.jobId === "string" && data.details.jobId.length > 0) {
+      jobEditorUrl = `/admin/find-work/jobs/${encodeURIComponent(data.details.jobId)}/edit`;
+    }
+  }
+  return { message, jobEditorUrl };
+}
+
+function MutationError({ error, className }: { error: unknown; className: string }) {
+  const presentation = getMutationErrorPresentation(error);
+  return <p role="alert" className={className}>
+    {presentation.message}
+    {presentation.jobEditorUrl && <> <a className="font-medium underline underline-offset-2" href={presentation.jobEditorUrl}>Edit job</a></>}
+  </p>;
+}
+
 export function OverrideControls({
   submissionId, depositId, hasAcceptedOffer = false, initialRate, initialStartDate, initialCurrency, sourceOfferCurrency,
 }: {
@@ -187,7 +214,7 @@ export function OverrideControls({
           <label className="mt-4 block space-y-1 text-sm font-medium">Reason <span className="font-normal text-muted-foreground">(10–2,000 characters)</span><textarea className="min-h-24 w-full rounded-md border bg-background px-3 py-2 font-normal" maxLength={2000} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Document why this exception is necessary." /></label>
           <p className="text-right text-xs text-muted-foreground">{reason.trim().length}/2000</p>
           <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={notifyParties} onChange={(event) => setNotifyParties(event.target.checked)} /><span>Notify client and talent about this override</span></label>
-          {mutation.error && <p role="alert" className="mt-3 rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-800">{mutation.error.message || "Override failed."}</p>}
+          {mutation.error && <MutationError error={mutation.error} className="mt-3 rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-800" />}
           <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => { setAction(""); mutation.reset(); }}>Cancel</Button><Button onClick={submit} disabled={!canSubmit || (action === "skip_agreements" && !skipContractorAgreement && !skipMsa) || (action === "skip_stage" && ["offer_accepted", "hired"].includes(targetStatus) && (!rate || Number(rate) <= 0 || currency.trim().toUpperCase() !== "USD" || !startDate))}>{mutation.isPending ? "Recording…" : "Confirm override"}</Button></div>
         </div>
       </div>}
@@ -210,7 +237,7 @@ export function WaiveDepositButton({ submissionId, depositId, className = "" }: 
         <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">The pending deposit for this application will be waived without payment proof. If it has not been issued yet, the server will issue and waive it in the same operation. This does not confirm funds were received.</p>
         <label className="mt-4 block space-y-1 text-sm font-medium">Reason <span className="font-normal text-muted-foreground">(10–2,000 characters)</span><textarea className="min-h-24 w-full rounded-md border bg-background px-3 py-2 font-normal" maxLength={2000} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
         <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={notifyParties} onChange={(event) => setNotifyParties(event.target.checked)} /><span>Notify client and talent</span></label>
-        {mutation.error && <p role="alert" className="mt-3 text-sm text-rose-700">{mutation.error.message}</p>}
+        {mutation.error && <MutationError error={mutation.error} className="mt-3 text-sm text-rose-700" />}
         <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button disabled={reason.trim().length < 10 || reason.trim().length > 2000 || mutation.isPending} onClick={() => mutation.mutate({ action: "waive_deposit", body: { ...(submissionId ? { submissionId } : {}), ...(depositId ? { depositId } : {}), reason: reason.trim(), notifyParties } })}>{mutation.isPending ? "Recording…" : "Confirm waiver"}</Button></div>
       </div>
     </div>}
@@ -300,7 +327,7 @@ export function DirectPlacementDialog({ clientId, jobs }: { clientId: string; jo
         </div>
         <label className="mt-4 block space-y-1 text-sm font-medium">Reason <span className="font-normal text-muted-foreground">(10–2,000 characters)</span><textarea maxLength={2000} className="min-h-20 w-full rounded-md border bg-background px-3 py-2 font-normal" value={reason} onChange={(event) => setReason(event.target.value)} /></label>
         <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={notifyParties} onChange={(event) => setNotifyParties(event.target.checked)} /><span>Notify client and talent</span></label>
-        {mutation.error && <p role="alert" className="mt-3 text-sm text-rose-700">{mutation.error.message}</p>}
+        {mutation.error && <MutationError error={mutation.error} className="mt-3 text-sm text-rose-700" />}
         <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button disabled={!formReady || mutation.isPending} onClick={submit}>{mutation.isPending ? "Activating…" : "Hire now"}</Button></div>
       </div>
     </div>}

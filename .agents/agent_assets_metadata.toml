@@ -1147,3 +1147,17 @@ mtime_ms = 1793672312384
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/abb690b8-1954-4572-8e5a-a11152a26376/548a21fe-a1a5-44aa-8b76-6a8a42d5e037"
 storage_version_token = "1793672369274180"
 content_type = "image/png"
+
+[[outputs]]
+id = "cITb9O7AECZs6gjYL0-JW"
+uri = "file://reports/legacy-admin-override-uat.md"
+type = "text"
+title = "Legacy Admin override diagnosis and UAT"
+description = "All 18 application IDs and job titles, per-reason counts, real development-row rollback results, isolated tests and remaining limitations. No personal data."
+logical_id = "286111b2-7fd2-461e-9d93-700e875c9714"
+content_hash = "sha256:0e06ab400543c83b7d1756af721c221e28d1705966d21fa5613951ddd21a4a53"
+size = 8136
+mtime_ms = 1793673375564
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/286111b2-7fd2-461e-9d93-700e875c9714/8990020b-b1e5-44f8-8a49-3a46981a9ba2"
+storage_version_token = "1793673418332525"
+content_type = "text/markdown"

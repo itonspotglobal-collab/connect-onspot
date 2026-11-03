@@ -3,7 +3,7 @@ import {randomUUID} from "node:crypto";
 import {lockOnboarding,issueAcceptedOfferDeposit,isDepositFirst,OnboardingError} from "./contractorOnboardingPolicy";
 import {queueHiringLifecycleEvent,tryActivateEngagement,activateFundedEngagement} from "./hiringLifecycleEvents";
 import {hiringOverrideState} from "./adminHiringOverrideState";
-import {FORMAL_PIPELINE_PREDICATE} from "../../shared/formalPipelineSql";
+import {ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE} from "../../shared/adminOverrideEligibilitySql";
 
 const fail=(status:number,code:string,message:string):never=>{throw new OnboardingError(status,code,message);};
 const ranks:Record<string,number>={new:0,under_review:0,reviewed:0,invited:0,shortlisted:1,interviewing:2,
@@ -47,7 +47,9 @@ export class AdminHiringOverrideService {
     const terms=this.terms(body);
     const job=(await db.query("SELECT engagement_type,billing_mode FROM jobs WHERE id=$1",[s.job_id])).rows[0];
     if(!["Lite","Standard"].includes(job?.engagement_type)||!["tracked","guaranteed"].includes(job?.billing_mode))
-      fail(409,"JOB_BILLING_CLASSIFICATION_REQUIRED","Choose the job's engagement type and billing mode through its editor first.");
+      throw new OnboardingError(409,"JOB_BILLING_CLASSIFICATION_REQUIRED",
+        "This job is missing a valid engagement type or billing mode. Choose both in the job editor before creating an offer.",
+        {jobId:s.job_id,jobEditorUrl:`/admin/find-work/jobs/${encodeURIComponent(s.job_id)}/edit`});
     const offer=(await db.query(`INSERT INTO offers(submission_id,status,rate,rate_currency,engagement_type,billing_mode,proposed_start_date,accepted_at,notes)
       VALUES($1,$2,$3,$4,$5,$6,$7,CASE WHEN $8::boolean THEN now() ELSE NULL END,'Admin hiring override; see immutable audit')
       RETURNING *`,[s.id,accepted?"accepted":"sent",terms.rate,terms.currency,job.engagement_type,job.billing_mode,terms.start,accepted])).rows[0];
@@ -142,8 +144,23 @@ export class AdminHiringOverrideService {
       }
       if(typeof id!=="string"||id.length>150)fail(422,"APPLICATION_REQUIRED","An application or deposit identifier is required.");
       await lockOnboarding(db,id);
-      const s=(await db.query(`SELECT js.* FROM job_submissions js WHERE js.id=$1 AND js.${FORMAL_PIPELINE_PREDICATE} FOR UPDATE OF js`,[id])).rows[0];
-      if(!s)fail(404,"ELIGIBLE_APPLICATION_REQUIRED","An eligible original application is required. Withdrawn or rejected applications are not reopened by overrides.");
+      const s=(await db.query(`SELECT js.*,
+        (js.${ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE}) AS override_eligible,
+        (SELECT role FROM users WHERE id=js.talent_id) AS linked_talent_role,
+        (SELECT client_id FROM jobs WHERE id=js.job_id) AS owned_job_client_id,
+        EXISTS(SELECT 1 FROM jobs WHERE id=js.job_id) AS job_exists
+        FROM job_submissions js WHERE js.id=$1 FOR UPDATE OF js`,[id])).rows[0];
+      if(!s)fail(404,"APPLICATION_NOT_FOUND","This application no longer exists.");
+      if(["rejected","withdrawn","declined"].includes(s.status))
+        fail(409,"APPLICATION_CLOSED","Rejected, withdrawn or declined applications cannot be reopened by hiring overrides.");
+      if(!s.talent_id||!s.linked_talent_role)
+        fail(409,"TALENT_ACCOUNT_REQUIRED","This applicant has no linked Talent account — they must sign up/link first");
+      if(s.linked_talent_role!=="talent")
+        fail(409,"TALENT_ACCOUNT_REQUIRED","This applicant is linked to an account that is not a Talent account — they must link a Talent account first");
+      if(!s.job_exists)fail(409,"JOB_NOT_FOUND","The application's job no longer exists. Restore a valid owned job before hiring.");
+      if(s.owned_job_client_id!==s.client_id)
+        fail(409,"JOB_CLIENT_MISMATCH","The application's job belongs to a different Client. Correct the ownership relationship before hiring.");
+      if(!s.override_eligible)fail(409,"ADMIN_OVERRIDE_INELIGIBLE","The application's status, linked Talent account or job ownership is invalid.");
       const state=await hiringOverrideState(db,id);
       const previous:any={status:action==="direct_placement"?null:s.status,...state};
       let next:any={status:s.status};
