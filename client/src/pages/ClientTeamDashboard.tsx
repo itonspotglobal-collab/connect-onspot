@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PendingDeposits } from "@/components/PendingDeposits";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import type { ContractRow } from "@/components/ContractWorkflow";
+import { elapsedSeconds, formatElapsed } from "@/lib/workClockTime";
 
 type MemberStatus = "online" | "away" | "offline";
 
@@ -34,6 +35,7 @@ interface TeamMember {
   role: string;
   team?: string;
   status: MemberStatus;
+  liveStatus?: { type: "work" | "lunch" | "break" | "meeting" | "offline"; startedAt: string | null; isPaid: boolean } | null;
   timezone: string;
   latestActivityAt: string | null;
   project: string;
@@ -206,6 +208,11 @@ function formatActivity(member: TeamMember) {
 }
 
 function TeamMemberCard({ member, onAction, organizationId }: { member: TeamMember; onAction: (name: string) => void; organizationId: string }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setTick((value) => value + 1), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const status = statusCopy[member.status];
   const tracksHours = member.hoursTracking !== "not_tracked";
   const progress = member.weeklyTargetHours > 0
@@ -228,6 +235,10 @@ function TeamMemberCard({ member, onAction, organizationId }: { member: TeamMemb
               <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium ${status.className}`}><span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />{status.label}</span>
               <span>{member.timezone} · {formatLocalTime(member)}</span>
             </div>
+            {member.liveStatus && <p className={`mt-2 text-xs font-semibold ${member.liveStatus.type === "lunch" || member.liveStatus.type === "break" ? "text-amber-700" : member.liveStatus.type === "meeting" ? "text-violet-700" : member.liveStatus.type === "work" ? "text-emerald-700" : "text-slate-500"}`}>
+              {member.liveStatus.type === "work" ? "Working" : member.liveStatus.type === "lunch" ? "On lunch" : member.liveStatus.type === "break" ? "On break" : member.liveStatus.type === "meeting" ? "In a meeting" : "Offline"}
+              {member.liveStatus.startedAt ? ` · ${formatElapsed(elapsedSeconds(member.liveStatus.startedAt, new Date()))}` : ""}
+            </p>}
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -337,6 +348,7 @@ export default function ClientTeamDashboard() {
     },
     enabled: Boolean(selectedOrganizationId),
     staleTime: 30_000,
+    refetchInterval: 30_000,
   });
   const handleAction = useCallback((name: string) => {
     toast({ title: "Messaging is coming soon", description: `A connection to ${name} will be available later.` });

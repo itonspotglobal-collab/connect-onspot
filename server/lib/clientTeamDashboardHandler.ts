@@ -168,7 +168,9 @@ SELECT ge.talent_id,
              'id', cs.id, 'hiringContractId', cs.hiring_contract_id,
              'startedAt', cs.started_at, 'endedAt', cs.ended_at,
              'approvedEndAt', cs.approved_end_at, 'exceptionStatus', cs.exception_status,
-             'exceptionType', cs.exception_type
+             'exceptionType', cs.exception_type,
+             'activities', COALESCE((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.started_at)
+               FROM clock_session_activities a WHERE a.clock_session_id=cs.id),'[]'::jsonb)
            )) FILTER (WHERE cs.started_at >= $2::timestamptz - INTERVAL '8 days'
              OR COALESCE(cs.approved_end_at, cs.ended_at) >= $2::timestamptz - INTERVAL '8 days'
              OR (cs.ended_at IS NULL AND cs.exception_status IS DISTINCT FROM 'approved')), '[]'::jsonb)
@@ -330,6 +332,14 @@ export function createClientTeamDashboardHandler(
           : [];
         return {
           id: row.talent_id,
+          liveStatus: (() => {
+            const session = isActiveModernClock ? clockSessions.find(s => s.endedAt == null && s.exceptionStatus !== "approved"
+              && now().getTime() - new Date(s.startedAt).getTime() >= 0
+              && now().getTime() - new Date(s.startedAt).getTime() <= 16 * 3600_000) : undefined;
+            const activity = session?.activities?.find((a: any) => a.ended_at == null);
+            return session ? { type: activity?.activity_type ?? "work", startedAt: activity?.started_at ?? session.startedAt,
+              isPaid: activity?.is_paid ?? true } : { type: "offline", startedAt: null, isPaid: false };
+          })(),
           canViewTimesheets: row.can_view_timesheets === true,
           name: row.name,
           initials: row.name.split(/\s+/).filter(Boolean).slice(0, 2)

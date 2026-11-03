@@ -1799,6 +1799,12 @@ export type Offer = typeof offers.$inferSelect;
 // One row per contract per offer. Admin/OnSpot-driven.
 // signing_entity is snapshotted from platform_settings at creation time.
 export const hiringContracts = pgTable("hiring_contracts", {
+  lunchPaid: boolean("lunch_paid").default(false),
+  breakPaid: boolean("break_paid").default(true),
+  meetingPaid: boolean("meeting_paid").default(true),
+  lunchMaxMinutes: integer("lunch_max_minutes").default(60),
+  breakMaxMinutes: integer("break_max_minutes").default(15),
+  breaksPerDay: integer("breaks_per_day").default(2),
   id:              uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   offerId:         uuid("offer_id").notNull().references(() => offers.id, { onDelete: "restrict" }),
   // Denormalised for direct lookups without joining through offers
@@ -2012,6 +2018,24 @@ export const clockSessions = pgTable("clock_sessions", {
   `),
 ]);
 
+export const clockSessionActivities = pgTable("clock_session_activities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clockSessionId: uuid("clock_session_id").notNull().references(() => clockSessions.id, { onDelete: "cascade" }),
+  activityType: text("activity_type").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  isPaid: boolean("is_paid").notNull(),
+  maxMinutes: integer("max_minutes"),
+  overLimitNotifiedAt: timestamp("over_limit_notified_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  check("clock_session_activities_activity_type_check", sql`${t.activityType} IN ('work','lunch','break','meeting')`),
+  check("clock_session_activities_check", sql`${t.endedAt} IS NULL OR ${t.endedAt} > ${t.startedAt}`),
+  check("clock_session_activities_max_minutes_check", sql`${t.maxMinutes} IS NULL OR ${t.maxMinutes} > 0`),
+  uniqueIndex("clock_session_activities_one_open").on(t.clockSessionId).where(sql`${t.endedAt} IS NULL`),
+  index("clock_session_activities_session_started").on(t.clockSessionId, t.startedAt),
+]);
+
 export const clockExceptionReviews = pgTable("clock_exception_reviews", {
   id:              uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   clockSessionId:  uuid("clock_session_id").notNull().references(() => clockSessions.id, { onDelete: "cascade" }),
@@ -2072,6 +2096,7 @@ export const timesheetRevisions = pgTable("timesheet_revisions", {
 ]);
 
 export const timesheetRevisionSessions = pgTable("timesheet_revision_sessions", {
+  activitySnapshot: jsonb("activity_snapshot"),
   revisionId: uuid("revision_id").notNull().references(() => timesheetRevisions.id, { onDelete: "restrict" }),
   clockSessionId: uuid("clock_session_id").notNull().references(() => clockSessions.id, { onDelete: "restrict" }),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),

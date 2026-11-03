@@ -198,6 +198,60 @@ test("real mobile Clock In → two-minute wait → reload/navigation → Clock O
   }
 });
 
+test("activity lifecycle uses real Clock APIs and exposes the paid breakdown in Client Timesheets", { timeout: 90_000 }, async () => {
+  await query("UPDATE hiring_contracts SET work_timezone=COALESCE(work_timezone,'Asia/Manila') WHERE id=$1", [contract]);
+  const { page, context } = await makePage("talent");
+  const client = await makePage("client");
+  const getClock = () => fetch(apiBase + "/api/talent/clock", {
+    headers: { Authorization: `Bearer ${signedToken("talent")}` },
+  }).then(r => r.json() as Promise<any>);
+  try {
+    await page.goto(appBase + `/talent/clock?hiringContractId=${contract}`);
+    await page.getByRole("button", { name: "Time In", exact: true }).click();
+    await page.getByRole("button", { name: "Lunch", exact: true }).waitFor();
+    const sessionId = (await getClock()).activeSession.id;
+    await page.getByRole("button", { name: "Lunch", exact: true }).click();
+    await page.getByRole("button", { name: "Back to work", exact: true }).waitFor();
+    assert.equal((await getClock()).activeSession.currentActivity.type, "lunch");
+    await page.getByRole("button", { name: "Time Out", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.waitFor();
+    assert.match(await dialog.innerText(), /on lunch/i);
+    await page.keyboard.press("Escape");
+    assert.ok((await getClock()).activeSession);
+    await page.getByRole("button", { name: "Back to work", exact: true }).click();
+    await page.getByText("Back to work.", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Meeting", exact: true }).click();
+    await page.getByRole("button", { name: "Back to work", exact: true }).waitFor();
+    assert.equal((await getClock()).activeSession.currentActivity.type, "meeting");
+    await page.getByRole("button", { name: "Time Out", exact: true }).click();
+    await page.getByText(/^Time Out recorded/).first().waitFor();
+    const clock = await getClock(), recent = clock.recentSessions.find((s: any) => s.id === sessionId);
+    assert.deepEqual(recent.activities.map((a: any) => a.type), ["work", "lunch", "work", "meeting"]);
+    assert.ok(recent.breakdown.lunchSeconds > 0);
+    assert.ok(recent.breakdown.paidSeconds > 0);
+    assert.equal(recent.breakdown.unpaidSeconds, recent.breakdown.lunchSeconds);
+    assert.ok(Math.abs(recent.breakdown.paidSeconds - recent.breakdown.workSeconds - recent.breakdown.meetingSeconds) < 0.001);
+    await page.getByText("Today’s activity", { exact: true }).waitFor();
+    await client.page.goto(appBase + "/client/timesheets");
+    await client.page.locator("main p").filter({ hasText: /^Website Developer$/ }).first().waitFor();
+    await client.page.getByRole("img", { name: "Session activity timeline" }).first().waitFor();
+    const periods = await fetch(apiBase + "/api/client/timesheets", {
+      headers: { Authorization: `Bearer ${signedToken("client")}` },
+    }).then(r => r.json() as Promise<any>);
+    const session = periods.periods.flatMap((p: any) => p.sessions).find((s: any) => s.id === sessionId);
+    assert.deepEqual(session.breakdown, recent.breakdown);
+    assert.match(await client.page.locator("main").innerText(), /paid/i);
+    mkdirSync("generated-artifacts/clock-activities", { recursive: true });
+    await client.page.screenshot({ path: "generated-artifacts/clock-activities/client-breakdown.png" });
+  } finally {
+    await context.close(); await client.context.close();
+    await fetch(apiBase + "/api/talent/clock/out", {
+      method: "POST", headers: { Authorization: `Bearer ${signedToken("talent")}` },
+    });
+  }
+});
+
 test("forgotten Time Out closes immediately, opens adjustment dialog and Client approval restores counted hours", { timeout: 90_000 }, async () => {
   await query("UPDATE hiring_contracts SET work_timezone=COALESCE(work_timezone,'Asia/Manila') WHERE id=$1", [contract]);
   const row = (await query(`INSERT INTO clock_sessions (hiring_contract_id,talent_id,started_at)

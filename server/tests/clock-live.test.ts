@@ -217,7 +217,10 @@ test("pending adjustments block submission, then approved hours split across per
   assert.ok(after.every((p: any) => p.pendingAdjustmentCount === 0));
   assert.ok(after.every((p: any) => p.sessions.find((s: any) => s.id === row.id)?.exceptionStatus === "approved"));
   const days = after.flatMap((p: any) => p.days).filter((d: any) => d.hours > 0);
-  assert.deepEqual(days, [{ date: "2026-03-15", hours: 1 }, { date: "2026-03-15", hours: 3 }, { date: "2026-03-16", hours: 1 }]);
+  assert.deepEqual(days.map(({ date, hours }: any) => ({ date, hours })),
+    [{ date: "2026-03-15", hours: 1 }, { date: "2026-03-15", hours: 3 }, { date: "2026-03-16", hours: 1 }]);
+  assert.ok(days.every((day: any) => day.workSeconds === day.hours * 3600
+    && day.paidSeconds === day.workSeconds && day.lunchSeconds === 0 && day.breakSeconds === 0));
   const clientPeriods = (await request("GET", "/api/client/timesheets", undefined, client)).json.periods;
   assert.deepEqual(after.map((p: any) => p.totalHours),
     after.map((p: any) => clientPeriods.find((cp: any) => cp.id === p.id).totalHours));

@@ -115,10 +115,12 @@ async function runMigrations() {
 
       const migrationSql = await readFile(migrationPath, "utf8");
 
-      // Pending financial migrations reconcile against Publish-created objects.
+      // Reconciled migrations can target Publish-created objects.
       // Helpers are session-local and loaded inside this same transaction; they
       // never decide ledger completion or connect to a different database.
-      if (/^(001[89]|002[0-9]|003[01])_/.test(migrationId)) {
+      const needsReconciliation = /^(001[89]|002[0-9]|003[01])_/.test(migrationId)
+        || migrationSql.includes("pg_temp.reconcile_");
+      if (needsReconciliation) {
         const reconciliationSql = await readFile(
           new URL("./migration-reconciliation.sql", import.meta.url),
           "utf8",
@@ -131,7 +133,7 @@ async function runMigrations() {
       // when the inner script does NOT manage its own transaction. Since both
       // paths ultimately COMMIT, the tracking INSERT is safe in both cases.
       await client.query(migrationSql);
-      if (/^(001[89]|002[0-9]|003[01])_/.test(migrationId)) {
+      if (needsReconciliation) {
         await client.query("SELECT pg_temp.finish_reconciliation()");
       }
       await client.query(

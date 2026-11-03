@@ -60,7 +60,7 @@ export async function initializeFixture() {
   const files = ["scripts/migration-reconciliation.sql", "migrations/0019_clock_sessions.sql",
     "migrations/0020_clock_exception_reviews.sql", "migrations/0021_timesheets.sql",
     "migrations/0022_timesheet_revision_timezone.sql", "migrations/0037_contract_work_timezone.sql",
-    "migrations/0056_clock_review_roles.sql"];
+    "migrations/0056_clock_review_roles.sql", "migrations/0058_clock_session_activities.sql"];
   const sql = await Promise.all(files.map((path) => readFile(path, "utf8")));
   const client = await pool.connect();
   try { await client.query(sql.join("\n")); } finally { client.release(); }

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useServerClock } from "@/hooks/useServerClock";
 import { elapsedSeconds, formatElapsed, formatWorkClock, formatWorkTime, isValidTimeZone, supportedTimeZones, timezoneOffsetLabel, workLocalInput, workLocalInputInstant } from "@/lib/workClockTime";
+import { ActivityBreakdown, ActivityTrace, type ClockActivity, type ClockActivityType } from "@/components/ActivityTimeline";
 
 const TIME_ZONES = supportedTimeZones();
 type Session = {
@@ -26,7 +27,11 @@ type Session = {
   requestedHours?: number | null;
   workTimezone?: string | null;
   status: "active" | "completed" | "exception_detected" | "exception_pending" | "exception_approved" | "exception_rejected";
+  currentActivity?: ClockActivity & { maxMinutes?: number | null } | null;
+  activities?: ClockActivity[];
+  breakdown?: { workSeconds?: number; meetingSeconds?: number; lunchSeconds?: number; breakSeconds?: number; paidSeconds?: number; unpaidSeconds?: number };
 };
+type BreakRules = { lunchPaid: boolean; breakPaid: boolean; meetingPaid: boolean; lunchMaxMinutes: number; breakMaxMinutes: number; breaksPerDay: number };
 type Contract = {
   id: string;
   jobTitle: string;
@@ -35,8 +40,9 @@ type Contract = {
   organizations?: Array<{ id: string; name: string }>;
   workTimezone?: string | null;
   timezoneLocked?: boolean;
+  breakRules?: BreakRules;
 };
-type ClockData = { serverNow?: string; contracts: Contract[]; activeSession: Session | null; recentSessions: Session[] };
+type ClockData = { serverNow?: string; contracts: Contract[]; activeSession: Session | null; recentSessions: Session[]; todayTotals?: Session["breakdown"] & { workedSeconds?: number }; todayActivities?: Array<ClockActivity & { sessionId?: string; workTimezone?: string }> };
 function errorMessage(error: unknown) {
   const response = (error as { response?: { data?: { error?: string } } })?.response;
   return response?.data?.error ?? (error instanceof Error ? error.message : "The clock could not be updated. Please try again.");
@@ -64,6 +70,7 @@ export default function Clock() {
   const [message, setMessage] = useState("");
   const [completedSession, setCompletedSession] = useState<Session | null>(null);
   const [timezoneDraft, setTimezoneDraft] = useState("");
+  const [timeOutConfirmationType, setTimeOutConfirmationType] = useState<"lunch" | "break" | null>(null);
   const { data, isLoading, error, refetch } = useQuery<ClockData>({
     queryKey: ["/api/talent/clock"],
     queryFn: () => authAPI.get("/api/talent/clock"),
@@ -116,6 +123,7 @@ export default function Clock() {
     },
     onSuccess: (result, kind) => {
       if (kind === "out") {
+        setTimeOutConfirmationType(null);
         const payload = result as { session?: Session; needsAdjustment?: boolean } & Session;
         const session = payload.session || payload;
         const duration = Number((result as { durationSeconds?: number }).durationSeconds ?? session.durationSeconds ?? 0);
@@ -139,6 +147,14 @@ export default function Clock() {
     mutationFn: (workTimezone: string) => authAPI.put("/api/talent/clock/timezone", { hiringContractId: selectedId, workTimezone }),
     onSuccess: () => {
       setMessage("Work timezone saved for this engagement.");
+      refreshRelated();
+    },
+    onError: (failure) => setMessage(errorMessage(failure)),
+  });
+  const activity = useMutation({
+    mutationFn: (activityType: ClockActivityType) => authAPI.post("/api/talent/clock/activity", { activityType }),
+    onSuccess: (_result, activityType) => {
+      setMessage(activityType === "work" ? "Back to work." : `${activityType[0].toUpperCase()}${activityType.slice(1)} status recorded.`);
       refreshRelated();
     },
     onError: (failure) => setMessage(errorMessage(failure)),
@@ -198,9 +214,40 @@ export default function Clock() {
                 </div>
                 <p className="mt-3 text-sm">Started: {formatWorkTime(active.startedAt, workZone)}</p>
                 {active.status !== "active" && <p className="mt-2 flex items-center gap-2 text-sm text-amber-800"><AlertTriangle className="h-4 w-4" />You can still Time Out now. Then request a shorter finish time for review.</p>}
+                {active.currentActivity && (() => {
+                  const currentOverLimit = Boolean(active.currentActivity.overLimit || (active.currentActivity.maxMinutes && elapsedSeconds(active.currentActivity.startedAt, now) > active.currentActivity.maxMinutes * 60));
+                  return <div className={`mt-4 rounded-lg border p-3 ${currentOverLimit ? "border-amber-300 bg-amber-50 text-amber-950" : "border-slate-200 bg-white/80"}`}>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current status</p>
+                  <p className="mt-1 text-sm font-semibold">{active.currentActivity.type === "work" ? "Working" : active.currentActivity.type === "meeting" ? "In a meeting" : active.currentActivity.type === "lunch" ? "On lunch" : "On break"} · {formatElapsed(elapsedSeconds(active.currentActivity.startedAt, now))}{active.currentActivity.maxMinutes ? ` of ${active.currentActivity.maxMinutes} min` : ""}</p>
+                  {currentOverLimit && <p className="mt-1 text-xs font-medium text-amber-800">This activity is over its contract limit. Switch status when you’re ready.</p>}
+                </div>;
+                })()}
                 {!validZone && selectedContract && <div className="mt-4"><p className="mb-2 text-sm font-medium text-amber-800">Confirm a valid work timezone for this engagement. The session's original start stays unchanged.</p>{timezoneEditor()}</div>}
               </div>
-              <Button className="min-h-12 w-full text-base" disabled={action.isPending} onClick={() => action.mutate("out")}>{action.isPending ? "Recording…" : "Time Out"}</Button>
+              <section aria-label="Activity status" className="space-y-3 rounded-xl border p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-semibold">Session status</p><p className="text-xs text-muted-foreground">Switch activities without ending your session.</p></div>
+                  {active.currentActivity?.type !== "work" && <Button variant="outline" size="sm" disabled={activity.isPending} onClick={() => activity.mutate("work")}>Back to work</Button>}
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {(["work", "lunch", "break", "meeting"] as ClockActivityType[]).map((type) => {
+                    const activeType = active.currentActivity?.type || "work";
+                    const label = type === "work" ? "Working" : type === "lunch" ? "Lunch" : type === "break" ? "Break" : "Meeting";
+                    return <Button key={type} type="button" variant={activeType === type ? "default" : "outline"} className="min-h-10" disabled={activity.isPending || activeType === type} aria-pressed={activeType === type} onClick={() => activity.mutate(type)}>{label}</Button>;
+                  })}
+                </div>
+                <ActivityTrace activities={active.activities} now={now} />
+                <ActivityBreakdown breakdown={active.breakdown} />
+                {selectedContract?.breakRules && <p className="text-[11px] leading-relaxed text-muted-foreground">Contract rules · Lunch {selectedContract.breakRules.lunchPaid ? "paid" : "unpaid"}, up to {selectedContract.breakRules.lunchMaxMinutes} min · Break {selectedContract.breakRules.breakPaid ? "paid" : "unpaid"}, up to {selectedContract.breakRules.breakMaxMinutes} min ({selectedContract.breakRules.breaksPerDay}/day) · Meetings {selectedContract.breakRules.meetingPaid ? "paid" : "unpaid"}.</p>}
+              </section>
+              <Button className="min-h-14 w-full text-lg font-semibold" disabled={action.isPending} onClick={() => {
+                const type = active.currentActivity?.type;
+                if (type === "lunch" || type === "break") {
+                  action.reset();
+                  setTimeOutConfirmationType(type);
+                  return;
+                }
+                action.mutate("out");
+              }}>{action.isPending ? "Recording…" : "Time Out"}</Button>
               {(active.status === "exception_detected" || active.status === "exception_rejected") && <p className="text-xs text-muted-foreground">Record Time Out first, then request an adjustment if you finished earlier.</p>}
             </> : data?.contracts.length ? <>
               <div className="space-y-2">
@@ -219,10 +266,25 @@ export default function Clock() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground"><Timer className="h-4 w-4" />Ready to start work</div>
               <p className="text-3xl font-semibold tabular-nums">00:00:00</p>
               {!validZone && <p role="alert" className="text-sm text-amber-700">Clock In is available after you choose and save a valid work timezone for this engagement.</p>}
-              <Button className="min-h-12 w-full text-base" disabled={action.isPending || !selectedId || !validZone} onClick={() => action.mutate("in")}>{action.isPending ? "Recording…" : "Time In"}</Button>
+              <Button className="min-h-14 w-full text-lg font-semibold" disabled={action.isPending || !selectedId || !validZone} onClick={() => action.mutate("in")}>{action.isPending ? "Recording…" : "Time In"}</Button>
             </> : <p className="text-sm text-muted-foreground">Clock controls appear when you have a signed tracked hiring contract.</p>}
           </CardContent>
         </Card>}
+      <Dialog open={timeOutConfirmationType !== null} onOpenChange={(open) => { if (!open && !action.isPending) setTimeOutConfirmationType(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Time out for the day?</DialogTitle>
+            <DialogDescription>
+              {timeOutConfirmationType ? `You're on ${timeOutConfirmationType}. Time out for the day?` : "Time out for the day?"}
+            </DialogDescription>
+          </DialogHeader>
+          {action.isError && <p role="alert" className="text-sm text-destructive">{errorMessage(action.error)}</p>}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" disabled={action.isPending} onClick={() => setTimeOutConfirmationType(null)}>Cancel</Button>
+            <Button type="button" disabled={action.isPending} onClick={() => action.mutate("out")}>{action.isPending ? "Recording…" : "Time Out"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {completedSession && <Card className="mt-6"><CardHeader><CardTitle>Time Out recorded</CardTitle></CardHeader><CardContent className="space-y-2 text-sm">
         <p>Started: {formatWorkTime(completedSession.startedAt, completedSession.workTimezone || workZone)}</p>
         <p>Recorded Time Out: {formatWorkTime(completedSession.endedAt || completedSession.effectiveEndAt, completedSession.workTimezone || workZone)}</p>
@@ -238,20 +300,28 @@ export default function Clock() {
           </Dialog>
         </>}
       </CardContent></Card>}
+      {data?.todayTotals && <Card className="mt-6"><CardHeader><CardTitle>Today’s activity</CardTitle></CardHeader><CardContent className="space-y-3">
+        <ActivityBreakdown breakdown={{ ...data.todayTotals, workSeconds: data.todayTotals.workSeconds ?? data.todayTotals.workedSeconds }} />
+        <ActivityTrace activities={data.todayActivities} now={now} />
+      </CardContent></Card>}
       {!!data?.recentSessions.length && <Card className="mt-6">
         <CardHeader><CardTitle>Recent sessions</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
           {data.recentSessions.filter((session) => session.id !== active?.id).map((session) => {
             const sessionZone = session.workTimezone || data.contracts.find((item) => item.id === session.hiringContractId)?.workTimezone;
             const adjustable = !!session.endedAt && (session.status === "exception_detected" || session.status === "exception_rejected");
-            return <div key={session.id} className="space-y-2 border-b pb-3 last:border-0">
+             return <details key={session.id} className="space-y-2 border-b pb-3 last:border-0">
+               <summary className="cursor-pointer list-none">
               <div className="flex flex-wrap items-center justify-between gap-2"><span>{formatWorkTime(session.startedAt, sessionZone)} → {formatWorkTime(session.endedAt || session.effectiveEndAt, sessionZone)}</span><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${session.status === "exception_rejected" ? "bg-rose-100 text-rose-800" : session.status.startsWith("exception") ? "bg-amber-100 text-amber-900" : "bg-muted text-muted-foreground"}`}>{statusText(session.status)}</span></div>
+               </summary>
               <p className="text-xs text-muted-foreground">{sessionZone || "Work timezone not set"}{session.durationSeconds != null ? ` · ${formatElapsed(session.durationSeconds)} ${session.status === "exception_approved" ? "approved" : "recorded"}` : ""}</p>
+               <ActivityTrace activities={session.activities} />
+               <ActivityBreakdown breakdown={session.breakdown} />
               {session.status === "exception_rejected" && session.resolutionReason && <p className="text-xs text-rose-800">Review note: {session.resolutionReason}</p>}
               {session.status === "exception_pending" && <p className="text-xs text-amber-800">Requested time is awaiting review; recorded events remain unchanged.</p>}
               {session.status === "exception_approved" && session.proposedEndAt && <p className="text-xs text-muted-foreground">Approved adjustment: {formatWorkTime(session.proposedEndAt, sessionZone)}</p>}
               {adjustable && (correctionSessionId === session.id && completedSession?.id !== session.id ? correctionForm(session.id) : <Button variant="outline" size="sm" onClick={() => openAdjustment(session)}>{session.status === "exception_rejected" ? "Resubmit adjustment" : "Adjust time out"}</Button>)}
-            </div>;
+             </details>;
           })}
         </CardContent>
       </Card>}

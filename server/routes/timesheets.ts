@@ -2,6 +2,7 @@ import type { Express, RequestHandler } from "express";
 import { getClient as databaseClient, query as databaseQuery } from "../db.ts";
 import { TIMESHEET_HIRE_SQL, TIMESHEET_CONTEXT_SQL, timesheetDisplayContext } from "../services/timesheetEligibility";
 import { CLOCK_PROPOSAL_TIME_SQL } from "./clockAdjustments";
+import { activityRowsSql, addBreakdown, emptyBreakdown, serializeActivity, sessionPaidTime, type TimeBreakdown } from "../services/sessionPaidTime";
 
 type Middleware = RequestHandler;
 type Options = {
@@ -193,7 +194,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     const revision = approvedRevision?.rows[0]
       ? await query(
         `SELECT rs.clock_session_id AS id, rs.started_at, rs.effective_end_at,
-                rs.source, cs.ended_at, cs.exception_status
+                rs.source, rs.activity_snapshot, cs.ended_at, cs.exception_status
            FROM timesheet_revision_sessions rs JOIN clock_sessions cs ON cs.id = rs.clock_session_id
           WHERE rs.revision_id = $1 ORDER BY rs.started_at`,
         [period.approved_revision_id],
@@ -230,6 +231,8 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       [period.id],
     );
     const workTimezone = approvedRevision?.rows[0]?.work_timezone ?? period.work_timezone;
+    const activityIds = sessions.rows.map((row: any) => row.id);
+    const activityRows = activityIds.length ? (await query(activityRowsSql, [activityIds])).rows : [];
     const periodStart = midnightUtc(dateString(period.period_start), ET);
     const periodEnd = midnightUtc(addCalendarDay(dateString(period.period_end)), ET);
     const problems: string[] = [];
@@ -245,6 +248,10 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
         : null;
       const effectiveEnd = unresolved || !clippedEnd || clippedEnd <= clippedStart ? null : clippedEnd;
       const status = unresolved ? `exception_${row.exception_status}` : effectiveEnd ? "eligible" : !rawEnd ? "active" : "unresolved";
+      const rawActivities = row.source ? row.activity_snapshot ?? [] : activityRows.filter(a => a.clock_session_id === row.id);
+      const breakdown = validTimeZone(workTimezone) && effectiveEnd
+        ? sessionPaidTime({ started_at: clippedStart, effective_end_at: effectiveEnd, source: row.source },
+          rawActivities, workTimezone) : { ...emptyBreakdown(), days: [], segments: [] };
       if (status === "active") problems.push("Clock out before submitting this timesheet.");
       else if (status !== "eligible") problems.push(row.exception_status === "pending"
         ? "A time-out adjustment is awaiting review. Resolve it before submitting this timesheet."
@@ -254,29 +261,22 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
         effectiveEndAt: effectiveEnd?.toISOString() ?? null, status, exceptionStatus: row.exception_status ?? null,
         proposedEndAt: row.proposed_end_at ?? null, proposalReason: row.proposal_reason ?? null,
         resolutionReason: row.resolution_reason ?? null,
+        activities: rawActivities.map((a: any) => serializeActivity(a, new Date())), breakdown,
         requestedHours: row.proposed_end_at
           ? Math.max(0, (Math.min(new Date(row.proposed_end_at).getTime(), periodEnd.getTime()) - clippedStart.getTime()) / 3600000)
           : null,
       };
     });
-    const daySeconds = new Map<string, number>();
-    if (validTimeZone(workTimezone)) {
-      for (const session of outputSessions) {
-        if (session.status !== "eligible" || !session.effectiveEndAt) continue;
-        let cursor = new Date(session.startedAt);
-        const finish = new Date(session.effectiveEndAt);
-        while (cursor < finish) {
-          const date = dateInZone(cursor, workTimezone);
-          const next = midnightUtc(addCalendarDay(date), workTimezone);
-          const boundary = next > cursor ? next : new Date(cursor.getTime() + 86400000);
-          const segmentEnd = boundary < finish ? boundary : finish;
-          daySeconds.set(date, (daySeconds.get(date) ?? 0) + (segmentEnd.getTime() - cursor.getTime()) / 1000);
-          cursor = segmentEnd;
-        }
+    const dayTotals = new Map<string, TimeBreakdown>();
+    for (const session of outputSessions) {
+      if (session.status !== "eligible") continue;
+      for (const day of session.breakdown.days) {
+        const total = dayTotals.get(day.date) ?? emptyBreakdown();
+        addBreakdown(total, day); dayTotals.set(day.date, total);
       }
     }
-    const days = Array.from(daySeconds.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, seconds]) => ({
-      date, hours: Math.round(seconds / 3600 * 10000) / 10000,
+    const days = Array.from(dayTotals.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([date, total]) => ({
+      date, ...total, hours: Math.round(total.paidSeconds / 3600 * 10000) / 10000,
     }));
     return {
       ...timesheetDisplayContext(period),
@@ -632,14 +632,14 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
         );
         timezone = previousRevision.rows[0]?.work_timezone ?? null;
         const previousSessions = await client.query(
-          `SELECT clock_session_id AS id, started_at, effective_end_at, source
+          `SELECT clock_session_id AS id, started_at, effective_end_at, source, activity_snapshot
              FROM timesheet_revision_sessions WHERE revision_id = $1 ORDER BY started_at`,
           [period.approved_revision_id],
         );
         sourceRows = previousSessions.rows;
       } else {
         const job = await client.query(
-          `SELECT j.time_zone FROM hiring_contracts hc JOIN job_submissions js ON js.id = hc.submission_id JOIN jobs j ON j.id = js.job_id WHERE hc.id = $1`,
+          `SELECT COALESCE(hc.work_timezone,j.time_zone) AS time_zone FROM hiring_contracts hc JOIN job_submissions js ON js.id = hc.submission_id JOIN jobs j ON j.id = js.job_id WHERE hc.id = $1`,
           [period.hiring_contract_id],
         );
         timezone = job.rows[0]?.time_zone ?? null;
@@ -702,10 +702,16 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
           await client.query("ROLLBACK"); return res.status(422).json({ error: `Edited session ${id} is not part of this timesheet period` });
         }
       }
-      const billableHours = Math.round(eligible.reduce(
-        (seconds, item) => seconds + (item.endAt.getTime() - item.startedAt.getTime()) / 1000,
-        0,
-      ) / 3600 * 10000) / 10000;
+      const eligibleActivities = eligible.length ? (await client.query(activityRowsSql, [eligible.map(item => item.id)])).rows : [];
+      const activitySnapshots = new Map<string, any[]>();
+      for (const item of eligible) {
+        const prior = sourceRows.find((row: any) => row.id === item.id);
+        activitySnapshots.set(item.id, isDisputeReapproval ? prior?.activity_snapshot ?? []
+          : eligibleActivities.filter((a: any) => a.clock_session_id === item.id));
+      }
+      const billableHours = Math.round(eligible.reduce((seconds, item) => seconds + sessionPaidTime({
+        started_at: item.startedAt, effective_end_at: item.endAt,
+      }, activitySnapshots.get(item.id) ?? [], timezone).paidSeconds, 0) / 3600 * 10000) / 10000;
       if (!(billableHours > 0)) {
         await client.query("ROLLBACK");
         return res.status(409).json({ error: "A timesheet must contain positive billable hours at persisted precision" });
@@ -722,25 +728,25 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
         const editedIds = Array.from(editsById.keys());
         await client.query(
           `INSERT INTO timesheet_revision_sessions
-             (revision_id, clock_session_id, started_at, effective_end_at, source)
-           SELECT $1, clock_session_id, started_at, effective_end_at, source
+             (revision_id, clock_session_id, started_at, effective_end_at, source, activity_snapshot)
+           SELECT $1, clock_session_id, started_at, effective_end_at, source, activity_snapshot
              FROM timesheet_revision_sessions
             WHERE revision_id = $2 AND NOT (clock_session_id = ANY($3::uuid[]))`,
           [revisionId, period.approved_revision_id, editedIds],
         );
         for (const item of eligible.filter((candidate) => editsById.has(candidate.id))) {
           await client.query(
-            `INSERT INTO timesheet_revision_sessions (revision_id, clock_session_id, started_at, effective_end_at, source)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [revisionId, item.id, item.startedAt, item.endAt, item.source],
+            `INSERT INTO timesheet_revision_sessions (revision_id, clock_session_id, started_at, effective_end_at, source, activity_snapshot)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [revisionId, item.id, item.startedAt, item.endAt, item.source, JSON.stringify(activitySnapshots.get(item.id) ?? [])],
           );
         }
       } else {
         for (const item of eligible) {
           await client.query(
-            `INSERT INTO timesheet_revision_sessions (revision_id, clock_session_id, started_at, effective_end_at, source)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [revisionId, item.id, item.startedAt, item.endAt, item.source],
+            `INSERT INTO timesheet_revision_sessions (revision_id, clock_session_id, started_at, effective_end_at, source, activity_snapshot)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [revisionId, item.id, item.startedAt, item.endAt, item.source, JSON.stringify(activitySnapshots.get(item.id) ?? [])],
           );
         }
       }

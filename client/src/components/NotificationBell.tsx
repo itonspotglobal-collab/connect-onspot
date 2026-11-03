@@ -229,6 +229,13 @@ const TYPE_CONFIG: Record<
     label: "Time-out adjustment",
     route: "/talent/clock",
   },
+  clock_activity_over_limit: {
+    icon: Clock,
+    bg: "#FFFBEB",
+    color: "#B45309",
+    label: "Activity limit reached",
+    route: "/talent/clock",
+  },
   monthly_client_invoice: {
     icon: FileText,
     color: "#4D55C7",
@@ -488,7 +495,7 @@ export function NotificationBell() {
     } else if (n.type === "new_message" && n.relatedId) {
       navigate(`/messages/${encodeURIComponent(n.relatedId)}`);
     } else if (cfg) {
-      const route = notificationRouteForRole(n.type, user?.role, cfg.route);
+      const route = notificationRouteForRole(n.type, isTalentPortal ? "talent" : user?.role, cfg.route);
       if (route) navigate(route);
     }
   }

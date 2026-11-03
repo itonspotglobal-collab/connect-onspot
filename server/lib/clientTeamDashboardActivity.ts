@@ -1,4 +1,6 @@
+import { sessionPaidTime } from "../services/sessionPaidTime";
 export interface DashboardClockSession {
+  activities?: any[];
   id: string;
   hiringContractId: string;
   startedAt: string | Date;
@@ -235,22 +237,15 @@ export function calculateModernDashboardActivity(
       if (contractEnd && clippedEnd > contractEnd) clippedEnd = contractEnd;
       if (clippedEnd <= clippedStart) continue;
 
-      let cursor = clippedStart;
-      // The seven iterations are an invariant for a seven-day week; the loop
-      // also safely handles timezone date skips and malformed extreme spans.
-      for (let day = 0; day < 8 && cursor < clippedEnd; day += 1) {
-        const localDate = dateInZone(cursor, timezone);
+      const paid = sessionPaidTime({ started_at: startedAt, effective_end_at: endedAt },
+        session.activities ?? [], timezone, { start: clippedStart, end: clippedEnd, now: nowInstant });
+      for (const day of paid.days) {
+        const localDate = day.date;
         const index = Math.round(
           (Date.parse(`${localDate}T00:00:00.000Z`) - Date.parse(`${bounds.monday}T00:00:00.000Z`))
           / DAY_MS,
         );
-        const nextMidnight = firstInstantOfDate(addCalendarDays(localDate, 1), timezone);
-        const segmentEnd = new Date(Math.min(clippedEnd.getTime(), nextMidnight.getTime()));
-        if (index >= 0 && index < 7 && segmentEnd > cursor) {
-          weeklyActivity[index] += (segmentEnd.getTime() - cursor.getTime()) / (60 * 60 * 1000);
-        }
-        if (segmentEnd <= cursor) break;
-        cursor = segmentEnd;
+        if (index >= 0 && index < 7) weeklyActivity[index] += day.paidSeconds / 3600;
       }
     }
   }

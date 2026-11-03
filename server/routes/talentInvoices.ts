@@ -129,6 +129,7 @@ export const guaranteedPeriodAmount = (
   return roundMoney(Math.max(0, monthlyRate * activeDays / monthLength(period.start)));
 };
 
+import { revisionPaidHours } from "../services/sessionPaidTime";
 const revisionHours = async (
   db: { query: (sql: string, params?: any[]) => Promise<any> },
   revisionId: string,
@@ -136,18 +137,7 @@ const revisionHours = async (
 ) => {
   const startBoundary = period ? midnightInZone(period.start) : null;
   const endBoundary = period ? midnightInZone(addCalendarDays(period.end, 1)) : null;
-  const result = await db.query(
-    `SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (
-       LEAST(effective_end_at, COALESCE($3::timestamptz, effective_end_at))
-       - GREATEST(started_at, COALESCE($2::timestamptz, started_at))
-     )) / 3600), 0) AS hours
-       FROM timesheet_revision_sessions
-      WHERE revision_id = $1
-        AND effective_end_at > COALESCE($2::timestamptz, started_at)
-        AND started_at < COALESCE($3::timestamptz, effective_end_at)`,
-    [revisionId, startBoundary, endBoundary],
-  );
-  return Number(result.rows[0]?.hours ?? 0);
+  return revisionPaidHours(db.query.bind(db), revisionId, startBoundary, endBoundary);
 };
 
 async function ensureTrackedPeriods(contract: any, startDate: string, through: string, today: string) {

@@ -1,4 +1,5 @@
 export const TALENT_NOTIFICATION_TYPES = [
+  "clock_activity_over_limit",
   "clock_adjustment_resolved",
   "contract_update",
   "offer_received",
@@ -41,6 +42,7 @@ export function notificationRouteForRole(
   role: string | null | undefined,
   existingRoute: string | null,
 ): string | null {
+  if (type === "clock_activity_over_limit") return role === "talent" ? "/talent/clock" : null;
   if (type === "clock_adjustment_requested") return role === "client" ? "/client/timesheets" : null;
   if (type === "clock_adjustment_resolved") return role === "talent" ? "/talent/clock" : null;
   if (type === "interview_confirmed") {

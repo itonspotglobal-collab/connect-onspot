@@ -10,9 +10,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertCircle, Clock3, RefreshCw } from "lucide-react";
 import { useServerClock } from "@/hooks/useServerClock";
 import { elapsedSeconds, formatElapsed, formatWorkTime, isValidTimeZone, workLocalInput, workLocalInputInstant } from "@/lib/workClockTime";
+import { ActivityBreakdown, ActivityTrace, type ClockActivity } from "@/components/ActivityTimeline";
 
 type Role = "talent" | "client" | "admin";
-type Session = { id: string; startedAt: string; endedAt: string | null; effectiveEndAt: string | null; proposedEndAt?: string | null; proposalReason?: string | null; resolutionReason?: string | null; requestedHours?: number | null; recordedHours?: number | null; status: string; exceptionStatus?: string | null };
+type TimeBreakdown = { workSeconds?: number; meetingSeconds?: number; lunchSeconds?: number; breakSeconds?: number; paidSeconds?: number; unpaidSeconds?: number };
+type BreakRules = { lunchPaid: boolean; breakPaid: boolean; meetingPaid: boolean; lunchMaxMinutes: number; breakMaxMinutes: number; breaksPerDay: number };
+type Session = { id: string; startedAt: string; endedAt: string | null; effectiveEndAt: string | null; proposedEndAt?: string | null; proposalReason?: string | null; resolutionReason?: string | null; requestedHours?: number | null; recordedHours?: number | null; status: string; exceptionStatus?: string | null; activities?: ClockActivity[]; breakdown?: TimeBreakdown };
 type ActiveSession = { id: string; hiringContractId: string; startedAt: string; status: string; workTimezone: string | null };
 type Correction = { id: string; sessionId: string; requestedStartedAt: string | null; requestedEndAt: string | null; reason: string; status: string; decisionReason: string | null; createdAt: string; decidedAt: string | null };
 type ClockAdjustment = { sessionId: string; status: string; startedAt: string; endedAt: string | null; proposedEndAt: string | null; proposalReason: string | null; resolutionReason: string | null; requestedHours: number; recordedHours: number; talentName?: string | null; workTimezone?: string | null; submittedAt?: string | null; escalated?: boolean };
@@ -32,7 +35,7 @@ type Engagement = {
 };
 type Period = {
   id: string; hiringContractId: string; periodStart: string; periodEnd: string; status: string;
-  workTimezone: string | null; jobTitle: string; clientName: string | null; days: Array<{ date: string; hours: number }>;
+  workTimezone: string | null; jobTitle: string; clientName: string | null; days: Array<{ date: string; hours: number } & TimeBreakdown>;
   jobId?: string | null; talentId?: string | null; talentName?: string | null; talentAvatar?: string | null;
   clientId?: string | null; organizations?: Workspace[]; billingMode?: string | null;
   totalHours: number; approvalBlocked: boolean; blockingIssues: string[]; pendingAdjustmentCount?: number; clockAdjustments?: ClockAdjustment[]; sessions: Session[];
@@ -113,6 +116,22 @@ export default function Timesheets({ role }: { role: Role }) {
   const noPeriodEngagements = filteredEngagements.filter((item) => !periodContractIds.has(item.hiringContractId));
   const activeId = selectedId && filteredPeriods.some((period) => period.id === selectedId) ? selectedId : filteredPeriods[0]?.id;
   const period = useMemo(() => filteredPeriods.find((item) => item.id === activeId), [filteredPeriods, activeId]);
+  const rulesQuery = useQuery<{ breakRules: BreakRules }>({
+    queryKey: ["/api/admin/hiring-contracts", period?.hiringContractId, "break-rules"],
+    queryFn: async () => (await apiRequest("GET", `/api/admin/hiring-contracts/${encodeURIComponent(period!.hiringContractId)}/break-rules`)).json(),
+    enabled: role === "admin" && !!period?.hiringContractId,
+  });
+  const [rulesDraft, setRulesDraft] = useState<BreakRules>({ lunchPaid: false, breakPaid: true, meetingPaid: true, lunchMaxMinutes: 60, breakMaxMinutes: 15, breaksPerDay: 2 });
+  useEffect(() => { if (rulesQuery.data?.breakRules) setRulesDraft(rulesQuery.data.breakRules); }, [rulesQuery.data]);
+  const saveRules = useMutation({
+    mutationFn: async () => (await apiRequest("PATCH", `/api/admin/hiring-contracts/${encodeURIComponent(period!.hiringContractId)}/break-rules`, rulesDraft)).json(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/hiring-contracts", period?.hiringContractId, "break-rules"] });
+      queryClient.invalidateQueries({ queryKey: [queryEndpoint] });
+      toast({ title: "Break rules saved", description: "New rules apply to activities started from now on." });
+    },
+    onError: (err: Error) => toast({ title: "Could not save break rules", description: err.message, variant: "destructive" }),
+  });
   const activeEntry = useMemo(() => {
     if (role !== "talent") return null;
     const bySessionId = new Map<string, { session: ActiveSession; period: Period }>();
@@ -364,7 +383,7 @@ export default function Timesheets({ role }: { role: Role }) {
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg bg-indigo-50 p-4"><p className="text-xs font-medium text-indigo-700">Period total</p><p className="mt-1 text-2xl font-bold text-slate-950">{period.totalHours.toFixed(2)} <span className="text-sm font-medium">hours</span></p></div>
-                  <div className="rounded-lg border border-slate-100 p-4"><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Daily totals</p><div className="flex flex-wrap gap-x-4 gap-y-1">{period.days.map((day) => <span key={day.date} className="text-xs text-slate-700">{day.date}: <b>{day.hours.toFixed(2)}h</b></span>)}</div></div>
+                  <div className="rounded-lg border border-slate-100 p-4"><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Daily totals</p><div className="space-y-3">{period.days.map((day) => <div key={day.date} className="space-y-1.5 border-b border-slate-100 pb-2 last:border-0 last:pb-0"><div className="flex justify-between text-xs text-slate-700"><span>{day.date}</span><b>{day.hours.toFixed(2)}h paid</b></div><ActivityBreakdown breakdown={day} /></div>)}</div></div>
                 </div>
                 {role === "admin" && period.approvalBlocked && <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><p className="flex items-center gap-2 font-semibold"><AlertCircle className="h-4 w-4" />Approval requires attention</p><ul className="mt-1 list-inside list-disc text-xs">{period.blockingIssues.map((issue, index) => <li key={index}>{issue}</li>)}</ul></div>}
               </CardContent></Card>
@@ -377,6 +396,7 @@ export default function Timesheets({ role }: { role: Role }) {
                   return <div key={session.id} className="rounded-lg border border-slate-200 p-4">
                     <div className="flex flex-wrap justify-between gap-2"><span className="text-xs font-medium text-slate-500">Session {session.id}</span><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">{session.status}</span></div>
                     <p className="mt-2 text-sm text-slate-800">{fmt(session.startedAt, period.workTimezone)} → {fmt(end, period.workTimezone)}</p>
+                    <div className="mt-3 space-y-3"><ActivityBreakdown breakdown={session.breakdown} /><ActivityTrace activities={session.activities} /></div>
                     {session.exceptionStatus === "pending" && <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">Pending adjustment · {Number(session.requestedHours ?? 0).toFixed(2)} hrs requested. Not included in period totals until approved.</p>}
                     {session.exceptionStatus === "rejected" && session.resolutionReason && <p className="mt-2 rounded-md bg-rose-50 px-3 py-2 text-xs text-rose-800">Adjustment rejected: {session.resolutionReason}</p>}
                     {session.exceptionStatus === "approved" && <p className="mt-2 text-xs text-emerald-800">Adjustment approved · {Number(session.requestedHours ?? 0).toFixed(2)} hrs accepted.</p>}
@@ -396,6 +416,25 @@ export default function Timesheets({ role }: { role: Role }) {
                   </div>;
                 })}{!period.sessions.length && <p className="text-sm text-slate-500">No clock sessions were recorded for this period.</p>}</div>
               </CardContent></Card>
+
+              {role === "admin" && <Card className="border-indigo-100"><CardContent className="p-5 md:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div><h3 className="font-semibold text-slate-900">Activity pay rules</h3><p className="mt-1 text-xs text-slate-500">Contract {period.hiringContractId}. Rules are snapshotted when an activity starts; saving only affects future activities.</p></div>
+                  {rulesQuery.isLoading && <span className="text-xs text-slate-500">Loading contract rules…</span>}
+                </div>
+                {rulesQuery.isError && <div role="alert" className="mt-3 rounded-md bg-rose-50 p-3 text-sm text-rose-800">Contract rules could not be loaded. <Button type="button" size="sm" variant="outline" className="ml-2" onClick={() => rulesQuery.refetch()}>Retry</Button></div>}
+                {!rulesQuery.isError && <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="space-y-3 rounded-lg border p-4">
+                    <h4 className="text-sm font-semibold">Pay treatment</h4>
+                    {([["lunchPaid", "Lunch is paid"], ["breakPaid", "Break is paid"], ["meetingPaid", "Meetings are paid"]] as const).map(([key, label]) => <label key={key} className="flex items-center justify-between gap-3 text-sm text-slate-700"><span>{label}</span><input type="checkbox" checked={rulesDraft[key]} onChange={(event) => setRulesDraft((previous) => ({ ...previous, [key]: event.target.checked }))} aria-label={label} className="h-4 w-4 accent-indigo-600" /></label>)}
+                  </div>
+                  <div className="space-y-3 rounded-lg border p-4">
+                    <h4 className="text-sm font-semibold">Activity limits</h4>
+                    {([["lunchMaxMinutes", "Lunch max (minutes)"], ["breakMaxMinutes", "Break max (minutes)"], ["breaksPerDay", "Breaks per day"]] as const).map(([key, label]) => <label key={key} className="flex items-center justify-between gap-3 text-sm text-slate-700"><span>{label}</span><input type="number" min="0" max="1440" step="1" value={rulesDraft[key]} onChange={(event) => setRulesDraft((previous) => ({ ...previous, [key]: Math.max(0, Number(event.target.value) || 0) }))} aria-label={label} className="w-24 rounded-md border border-slate-300 px-2 py-1.5 text-right text-sm" /></label>)}
+                  </div>
+                </div>}
+                {!rulesQuery.isError && <div className="mt-4 flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-slate-500">Over-limit time is flagged in activity records, not automatically switched.</p><Button type="button" disabled={saveRules.isPending || rulesQuery.isLoading || !period.hiringContractId} onClick={() => saveRules.mutate()}>{saveRules.isPending ? "Saving…" : "Save contract rules"}</Button></div>}
+              </CardContent></Card>}
 
               {role === "client" && !!period.clockAdjustments?.length && <Card className="border-amber-200"><CardContent className="p-5 md:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-slate-900">Time-out adjustments</h3><span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900">{period.pendingAdjustmentCount ?? period.clockAdjustments.filter((item) => item.status === "pending").length} pending</span></div>

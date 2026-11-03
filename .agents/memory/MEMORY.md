@@ -72,6 +72,7 @@
 - [Timesheet access boundaries](timesheet-access-boundaries.md) — Team roster membership is not payroll permission; navigation eligibility must remain read-only.
 - [Investors visual authority](investors-visual-scope.md) — supplied CEO-letter HTML supersedes the earlier gauge-and-phone design; preserve the narrative and flag claims for review.
 - [Clock work timezone policy](clock-work-timezone-policy.md) — confirmed engagement zone, stable historical grouping, no location-proof claims or independent timer hours.
+- [Clock activity policy](clock-activity-policy.md) — continuous shifts, paid/unpaid activity snapshots, daily allowances and immutable approved-hour interpretations.
 - [Runtime clock compatibility](runtime-clock-compatibility.md) — timestamp-filtered diagnostics must accommodate a durable runtime that can reject Date.now.
 - [Authentication cancellation](auth-cancellation-policy.md) — public signup overlays the mounted page; direct auth cancellation preserves origin independently of success redirects.
 - [Hiring activation policy](pre-offer-payment-policy.md) — permanently retire pre-offer fees; deposit-first defaults allow audited Admin exceptions, never fabricated funds or signatures.

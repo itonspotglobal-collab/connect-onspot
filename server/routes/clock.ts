@@ -1,11 +1,15 @@
 import type { Express, RequestHandler } from "express";
 import { validWorkTimezone } from "../../shared/workTimezone";
 import { TIMESHEET_HIRE_SQL, TIMESHEET_CONTEXT_SQL, timesheetDisplayContext } from "../services/timesheetEligibility";
+import { activityRowsSql, addBreakdown, contractBreakRules, emptyBreakdown, serializeActivity, sessionPaidTime, workDate } from "../services/sessionPaidTime";
+import { ensureWorkActivity, notifyActivityOverLimits, switchClockActivity } from "../services/clockActivities";
+import { registerBreakRuleRoutes } from "./clockBreakRules";
 
 type Query = (sql: string, args?: any[]) => Promise<{ rows: any[]; rowCount?: number | null }>;
 type Options = {
   authenticateJWT: RequestHandler;
   requireTalent: RequestHandler;
+  requireAdmin?: RequestHandler;
   getTalentBillingUserId: (req: any) => Promise<string | null>;
   query: Query;
   getClient: () => Promise<{ query: Query; release: () => void }>;
@@ -16,7 +20,7 @@ const activeContract = `${TIMESHEET_HIRE_SQL} AND hc.status NOT IN ('void','void
   AND (hc.effective_start_date IS NULL OR hc.effective_start_date <= (now() AT TIME ZONE 'America/New_York')::date)
   AND (hc.effective_end_date IS NULL OR hc.effective_end_date >= (now() AT TIME ZONE 'America/New_York')::date)`;
 
-export function serializeWorkSession(row: any) {
+export function serializeWorkSession(row: any, activities: any[] = [], now = new Date()) {
   const end = row.exception_status === "approved" ? row.approved_end_at ?? row.ended_at : row.ended_at;
   const duration = end ? (new Date(end).getTime() - new Date(row.started_at).getTime()) / 1000 : null;
   return {
@@ -32,12 +36,26 @@ export function serializeWorkSession(row: any) {
     proposedEndAt: row.proposed_end_at ?? null,
     proposalReason: row.proposal_reason ?? null,
     resolutionReason: row.resolution_reason ?? null,
+    activities: activities.map(a => serializeActivity(a, now)),
+    currentActivity: !row.ended_at && row.exception_status !== "approved"
+      ? (() => {
+        const activity = activities.find(a => !a.ended_at);
+        return activity ? serializeActivity(activity, now)
+          : { type: "work", startedAt: row.started_at, isPaid: true, maxMinutes: null, overLimit: false };
+      })() : null,
+    breakdown: validWorkTimezone(row.work_timezone)
+      ? sessionPaidTime(row, activities, row.work_timezone, { now, includeOpen: true }) : emptyBreakdown(),
   };
 }
 
 export function registerClockRoutes(app: Express, options: Options) {
   const { query, getClient, getTalentBillingUserId, authenticateJWT, requireTalent } = options;
   const auth = [authenticateJWT, requireTalent];
+  registerBreakRuleRoutes(app, { query, authenticateJWT, requireAdmin: options.requireAdmin });
+  const reminder = setInterval(() => {
+    notifyActivityOverLimits(query).catch(error => console.error("Clock activity reminder failed", error));
+  }, 60_000);
+  reminder.unref();
   app.get("/api/talent/clock", ...auth, async (req, res) => {
     try {
       const talentId = await getTalentBillingUserId(req);
@@ -56,7 +74,8 @@ export function registerClockRoutes(app: Express, options: Options) {
       } catch (error) { await detector.query("ROLLBACK").catch(() => {}); throw error; }
       finally { detector.release(); }
       const [contracts, active, recent, clock] = await Promise.all([
-        query(`SELECT hc.id, ${TIMESHEET_CONTEXT_SQL}, COALESCE(hc.work_timezone, j.time_zone) AS work_timezone,
+        query(`SELECT hc.id, hc.lunch_paid,hc.break_paid,hc.meeting_paid,hc.lunch_max_minutes,hc.break_max_minutes,hc.breaks_per_day,
+          ${TIMESHEET_CONTEXT_SQL}, COALESCE(hc.work_timezone, j.time_zone) AS work_timezone,
           EXISTS (SELECT 1 FROM clock_sessions cs WHERE cs.hiring_contract_id = hc.id) AS has_sessions,
           EXISTS (SELECT 1 FROM timesheet_periods tp WHERE tp.hiring_contract_id = hc.id
             AND tp.approved_revision_id IS NOT NULL) AS has_approved_revision
@@ -76,15 +95,37 @@ export function registerClockRoutes(app: Express, options: Options) {
           ORDER BY cs.started_at DESC LIMIT 20`, [talentId]),
         query("SELECT clock_timestamp() AS server_now"),
       ]);
+      await notifyActivityOverLimits(query, talentId).catch(error => console.error("Clock activity reminder failed", error));
+      const now = new Date(clock.rows[0].server_now);
+      const todaySessions = (await query(`SELECT cs.*,COALESCE(hc.work_timezone,j.time_zone) AS work_timezone
+        FROM clock_sessions cs JOIN hiring_contracts hc ON hc.id=cs.hiring_contract_id
+        JOIN job_submissions js ON js.id=hc.submission_id JOIN jobs j ON j.id=js.job_id
+        WHERE cs.talent_id=$1 AND cs.started_at<$2 AND COALESCE(cs.ended_at,$2)>$2::timestamptz-interval '3 days'`,
+      [talentId, now])).rows;
+      const ids = Array.from(new Set([...active.rows, ...recent.rows, ...todaySessions].map(s => s.id)));
+      const activities = ids.length ? (await query(activityRowsSql, [ids])).rows : [];
+      const forSession = (id: string) => activities.filter(a => a.clock_session_id === id);
+      const todayTotals = emptyBreakdown(), todayActivities: any[] = [];
+      for (const session of todaySessions) {
+        if (!validWorkTimezone(session.work_timezone)) continue;
+        const result = sessionPaidTime(session, forSession(session.id), session.work_timezone, { now, includeOpen: true });
+        const today = workDate(now, session.work_timezone);
+        const day = result.days.find(d => d.date === today);
+        if (day) addBreakdown(todayTotals, day);
+        todayActivities.push(...result.segments.filter(s => s.date === today)
+          .map(s => ({ ...s, sessionId: session.id, workTimezone: session.work_timezone })));
+      }
       return res.json({
         serverNow: clock.rows[0].server_now,
         contracts: contracts.rows.map((row) => ({
           ...timesheetDisplayContext(row), id: row.id,
           workTimezone: validWorkTimezone(row.work_timezone) ? row.work_timezone : null,
           timezoneLocked: Boolean(row.has_approved_revision || (row.has_sessions && validWorkTimezone(row.work_timezone))),
+          breakRules: contractBreakRules(row),
         })),
-        activeSession: active.rows[0] ? serializeWorkSession(active.rows[0]) : null,
-        recentSessions: recent.rows.map(serializeWorkSession),
+        activeSession: active.rows[0] ? serializeWorkSession(active.rows[0], forSession(active.rows[0].id), now) : null,
+        recentSessions: recent.rows.map(row => serializeWorkSession(row, forSession(row.id), now)),
+        todayTotals: { ...todayTotals, workedSeconds: todayTotals.workSeconds }, todayActivities,
       });
     } catch (error) {
       console.error("GET talent clock failed", error);
@@ -170,6 +211,7 @@ export function registerClockRoutes(app: Express, options: Options) {
       await client.query("UPDATE hiring_contracts SET work_timezone = $2 WHERE id = $1 AND work_timezone IS NULL", [hiringContractId, zone]);
       const inserted = await client.query(`INSERT INTO clock_sessions (hiring_contract_id, talent_id, started_at)
         VALUES ($1, $2, clock_timestamp()) RETURNING *`, [hiringContractId, talentId]);
+      await ensureWorkActivity(client.query.bind(client), inserted.rows[0].id);
       await client.query("COMMIT");
       return res.status(201).json(serializeWorkSession({ ...inserted.rows[0], work_timezone: zone }));
     } catch (error: any) {
@@ -203,10 +245,14 @@ export function registerClockRoutes(app: Express, options: Options) {
         if (detected.rows.length) await client.query(
           `INSERT INTO clock_exception_reviews (clock_session_id, action) VALUES ($1, 'detected')`, [active.rows[0].id]);
       }
+      await ensureWorkActivity(client.query.bind(client), active.rows[0].id);
       const ended = await client.query("UPDATE clock_sessions SET ended_at = clock_timestamp() WHERE id = $1 AND ended_at IS NULL RETURNING *", [active.rows[0].id]);
+      await client.query(`UPDATE clock_session_activities SET ended_at=(SELECT ended_at FROM clock_sessions WHERE id=$1)
+        WHERE clock_session_id=$1 AND ended_at IS NULL`, [active.rows[0].id]);
+      const activities = (await client.query(activityRowsSql, [[active.rows[0].id]])).rows;
       await client.query("COMMIT");
       return res.json({
-        ...serializeWorkSession({ ...ended.rows[0], work_timezone: active.rows[0].work_timezone }),
+        ...serializeWorkSession({ ...ended.rows[0], work_timezone: active.rows[0].work_timezone }, activities),
         needsAdjustment: ended.rows[0].exception_type === "missed_out"
           && ["detected", "rejected"].includes(ended.rows[0].exception_status),
       });
@@ -214,6 +260,26 @@ export function registerClockRoutes(app: Express, options: Options) {
       await client.query("ROLLBACK").catch(() => {});
       console.error("POST clock out failed", error);
       return res.status(500).json({ error: "Failed to end clock session" });
+    } finally { client.release(); }
+  });
+
+  app.post("/api/talent/clock/activity", ...auth, async (req, res) => {
+    const talentId = await getTalentBillingUserId(req);
+    if (!talentId) return res.status(404).json({ error: "Talent profile not found" });
+    const client = await getClient();
+    try {
+      await client.query("BEGIN");
+      const result = await switchClockActivity(client.query.bind(client), talentId, req.body?.activityType);
+      if (result.error) {
+        await client.query("ROLLBACK");
+        return res.status(result.status).json({ error: result.error });
+      }
+      await client.query("COMMIT");
+      return res.json({ activity: serializeActivity(result.activity, new Date()) });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error("POST clock activity failed", error);
+      return res.status(500).json({ error: "Failed to switch clock activity" });
     } finally { client.release(); }
   });
 }

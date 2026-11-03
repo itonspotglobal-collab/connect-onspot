@@ -66,6 +66,9 @@ try {
       // Reuse the real reconciliation helpers, on this same owned connection,
       // before migrations that call their session-local pg_temp functions.
       await client.query(await readFile("scripts/migration-reconciliation.sql", "utf8"));
+      // The helper uses pg_catalog-first resolution internally. Generated DDL
+      // is unqualified and must create fixture relations in public, not there.
+      await client.query("SET LOCAL search_path = public, pg_catalog");
       for (const file of (await readdir(schemaDir)).filter((name) => name.endsWith(".sql")).sort()) {
         await client.query(await readFile(join(schemaDir, file), "utf8"));
       }
@@ -88,10 +91,13 @@ try {
       "server/tests/contract-termination-usd-errors.test.ts"], workerEnv);
   }
   await run(process.execPath, ["--import", "tsx", "--test", "--test-concurrency=1",
-    ...(process.argv.includes("--recovery-only") ? ["--test-name-pattern=forgotten Time Out"] : []),
+    ...(process.argv.some(arg => arg.startsWith("--test-pattern="))
+      ? ["--test-name-pattern=" + process.argv.find(arg => arg.startsWith("--test-pattern=")).slice("--test-pattern=".length)]
+      : process.argv.includes("--recovery-only") ? ["--test-name-pattern=forgotten Time Out"] : []),
     ...(process.argv.includes("--browser-only") ? [] : [
       "server/tests/timesheets.test.ts", "server/tests/organization-timesheets.test.ts",
-      "server/tests/clock-live.test.ts", "server/tests/clock-sessions.test.ts", "server/tests/client-team-dashboard.test.ts"]),
+      "server/tests/clock-live.test.ts", "server/tests/clock-sessions.test.ts", "server/tests/clock-activities.test.ts",
+      "server/tests/client-team-dashboard-activity.test.ts", "server/tests/client-team-dashboard.test.ts"]),
     ...(process.argv.includes("--server-only") ? [] : ["browser-tests/clock-live.browser.test.ts"])], workerEnv);
 } finally {
   if (postgres && postgres.exitCode === null) {
