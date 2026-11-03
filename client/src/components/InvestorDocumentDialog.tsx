@@ -421,11 +421,11 @@ export function InvestorDocumentDialog({
             </strong>
             {submission.kind === "sent" ? (
               <p>
-                We&apos;ve received your request for the {document === "deck" ? "OnSpot pitch deck" : "Seedscope valuation summary"}. Our founders will review it personally and respond to you by email at {email.trim()}.
+                We&apos;ve received your request for the {document === "deck" ? "OnSpot pitch deck" : "Seedscope valuation summary"}. Our founders will review it personally and be in touch with you by email.
               </p>
             ) : submission.kind === "saved-notification-failed" ? (
               <p>
-                Your request has been received. If you don&apos;t hear from our founders by email shortly, please contact investors@onspotglobal.com and reference this request. There&apos;s no need to submit the form again.
+                We&apos;ve received your request. If you don&apos;t hear from us soon, please contact investors@onspotglobal.com. There&apos;s no need to submit the form again.
               </p>
             ) : submission.kind === "saved-status-unknown" ? (
               <p>

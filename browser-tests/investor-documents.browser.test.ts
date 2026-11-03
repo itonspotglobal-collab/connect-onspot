@@ -429,7 +429,10 @@ test("validation and typing keep focus, and submit carries document provenance",
     website: "",
   });
   assert.match((await dialog.textContent())!, /We've received your request for the OnSpot pitch deck/);
-  assert.match((await dialog.textContent())!, /respond to you by email at avery@example\.org/);
+  assert.equal(await dialog.locator(".investor-doc-result strong").innerText(), "Thank you, Avery.");
+  assert.equal(await dialog.locator(".investor-doc-result p").innerText(),
+    "We've received your request for the OnSpot pitch deck. Our founders will review it personally and be in touch with you by email.");
+  assert.doesNotMatch(await dialog.getByRole("status").innerText(), /@/);
   assert.equal(await dialog.locator("a[download]").count(), 0);
   await page.screenshot({ path: join(screenshotDir, "confirmation-sent.png"), animations: "disabled" });
   await page.close();
@@ -467,11 +470,14 @@ for (const outcome of ["notification-failed", "server-error", "network-error", "
       await dialog.getByRole("status").waitFor();
       const content = await dialog.textContent();
       if (outcome === "network-error") assert.match(content!, /couldn’t confirm/);
-      else assert.match(content!, /Your request has been received/);
+      else assert.match(content!, /We've received your request/);
     }
     if (outcome === "notification-failed") {
       assert.match(await dialog.locator('[role="status"]').innerText(), /Thank you, Avery\./);
       assert.match(await dialog.locator('[role="status"]').innerText(), /investors@onspotglobal\.com/);
+      assert.equal(await dialog.locator(".investor-doc-result p").innerText(),
+        "We've received your request. If you don't hear from us soon, please contact investors@onspotglobal.com. There's no need to submit the form again.");
+      assert.deepEqual((await dialog.getByRole("status").innerText()).match(/\S+@\S+/g), ["investors@onspotglobal.com."]);
       await markMockFixture(page);
       await page.screenshot({ path: join(screenshotDir, "confirmation-failed.png"), animations: "disabled" });
     }
