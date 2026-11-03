@@ -20,6 +20,7 @@
 - [SQL inspection size limit](sql-inspection-size-limit.md) — oversized read-only SQL can fail with spawn E2BIG before execution; batch with relational context preserved.
 - [Scaffold elimination](scaffold-elimination.md) — Hire Talent search bar never creates a jobs row; invitations need a real open/approved job; job-picker modal handles 0/1/2+ cases.
 - [Direct client→talent messaging](direct-messaging.md) — pre-invite null-job_id thread, masking rules in thread list, graduation on invite-accept, DbStorage notification overrides.
+- [Hired messaging contacts](hired-messaging-contacts.md) — active fully signed hires only; preserve consent, PII handling and existing messaging workflows.
 - [Hiring pipeline — Phase 1](hiring-pipeline-phase1.md) — canonical status constant, 3 new tables, CHECK constraint, interview endpoints; key decisions and gotchas for Phase 2/3.
 - [Hiring pipeline — Phase 2 (offers)](hiring-pipeline-phase2.md) — engagement snapshot from jobs, mismatch flag rules, talent expectation lives in candidates.preferences, ownership + race patterns.
 - [Hiring pipeline — Phase 3](hiring-pipeline-phase3.md) — historical contract/signature context; activation now follows the deposit-funded hiring policy.
