@@ -153,7 +153,6 @@ export async function notifyFounders(
     row("Request", escHtml(REQUEST_LABELS[request.requestType])),
     row("Name", escHtml(request.name)),
     ...(request.firm ? [row("Firm or affiliation", escHtml(request.firm))] : []),
-    row("Email", `<a href="mailto:${escHtml(request.email)}">${escHtml(request.email)}</a>`),
     row("Contact number", request.phone
       ? `<a href="tel:${escHtml(request.phone.replace(/[^0-9+]/g, ""))}">${escHtml(request.phone)}</a>`
       : escHtml("None provided")),

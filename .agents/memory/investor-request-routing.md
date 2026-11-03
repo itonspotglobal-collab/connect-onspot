@@ -20,3 +20,9 @@ Document intake is a request for personal founder follow-up, not automatic docum
 **Why:** On 2026-11-03 the owner explicitly requested confirmations describing founders reviewing the request and responding personally, while preserving honest notification-failure states.
 
 **How to apply:** Keep success copy about the saved request and founder follow-up; distinguish provider acceptance from actual inbox receipt during verification. Never send development test messages to the founders in place of an approved test inbox.
+
+Omit the contact email row from investor notification bodies, while retaining the investor's address in Reply-To and storage. Website confirmations are unchanged by this rule.
+
+**Why:** On 2026-11-03 the owner explicitly chose "Notification email body" when clarifying where the displayed email address should be removed.
+
+**How to apply:** Do not reintroduce an email table row or mailto link into founder notifications. Keep sender/recipient routing and direct-reply behavior intact.

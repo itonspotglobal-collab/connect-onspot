@@ -201,6 +201,8 @@ test("one founder email uses the investors sender, reference, timestamps and esc
       ["nur@onspotglobal.com", "Jake@onspotglobal.com", "Mark.Apostol@onspotglobal.com"]);
     assert.equal(calls[0].senderEmail, "investors@onspotglobal.com");
     assert.equal(calls[0].replyTo, lead.email);
+    assert.ok(!calls[0].bodyHtml.includes(lead.email), "contact email belongs in Reply-To, not the notification body");
+    assert.doesNotMatch(calls[0].bodyHtml, /mailto:|>Email<\/th>/);
     assert.equal(calls[0].subject, "Investor request: Pitch deck from Avery");
     assert.match(calls[0].bodyHtml, /&lt;img src=x&gt;<br>/);
     assert.match(calls[0].bodyHtml, /href="tel:\+15551234567"/);
