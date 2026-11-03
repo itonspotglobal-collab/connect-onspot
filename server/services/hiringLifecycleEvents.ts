@@ -36,7 +36,7 @@ export async function activateFundedEngagement(db: Pick<PoolClient, "query">, co
   await db.query("UPDATE job_submissions SET status='hired',updated_at=now() WHERE id=$1", [row.submission_id]);
   await db.query("UPDATE hiring_contracts SET billing_activated_at=now(),updated_at=now() WHERE id=$1", [contractId]);
   await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by)
-    VALUES($1,'contract_signed','hired',$3,$2)`, [row.submission_id,actor,row.deposit_status==="waived"?"Security deposit explicitly waived by Super Admin; no settlement claimed":"Security deposit independently verified"]);
+    VALUES($1,'contract_signed','hired',$3,$2)`, [row.submission_id,actor,row.deposit_status==="waived"?"Security deposit explicitly waived by Admin; no settlement claimed":"Security deposit independently verified"]);
   await queueHiringLifecycleEvent(db,`engagement-active:${contractId}`,"engagement_active",
     {submissionId:row.submission_id,contractId});
 }
@@ -73,7 +73,7 @@ export async function tryActivateEngagement(db:Pick<PoolClient,"query">,submissi
     activation_override_id=coalesce($2::uuid,activation_override_id),updated_at=now() WHERE id=$1`,[hc.id,audit?.id??null]);
   await db.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by)
     VALUES($1,$2,'hired',$4,$3)`,
-    [submissionId,s.status,actor,audit||d.status==="waived"?"Activated under audited Super Admin hiring exceptions; no absent signatures or settlement were fabricated":"Deposit independently verified; Contractor Agreement and current client MSA fully signed"]);
+    [submissionId,s.status,actor,audit||d.status==="waived"?"Activated under audited Admin hiring exceptions; no absent signatures or settlement were fabricated":"Deposit independently verified; Contractor Agreement and current client MSA fully signed"]);
   await queueHiringLifecycleEvent(db,`engagement-active:${hc.id}`,"engagement_active",{submissionId,contractId:hc.id});
   return true;
 }

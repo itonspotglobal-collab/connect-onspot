@@ -150,6 +150,13 @@ try {
     entryPoints:[entry],outfile:output,
     bundle:true,platform:"node",format:"esm",packages:"external",target:"node22",
     plugins:[{name:"owned-database-only",setup(builder) {
+      if(entry.endsWith("contractor-onboarding.fixture.ts")) {
+        // Persist real transactional outbox events, but do not run background
+        // delivery against tables while this suite replays historical DDL.
+        builder.onLoad({filter:/[/\\]hiringLifecycleDispatch\.ts$/},()=>({
+          contents:"export async function dispatchHiringLifecycleEvents() {}",loader:"ts",
+        }));
+      }
       if (isolatedApp) {
         // Video UAT never exercises the assistant's unrelated KV memory store.
         // Deny it explicitly instead of inheriting a live REPLIT_DB_URL.

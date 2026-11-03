@@ -1,6 +1,6 @@
 import type {OnboardingDb} from "./contractorOnboardingPolicy";
 
-/** Only the Super Admin service can write these flags; never infer signatures. */
+/** Only the audited Admin override service can write these flags; never infer signatures. */
 export async function hiringOverrideState(db:OnboardingDb,submissionId:string) {
   const row=(await db.query(`SELECT
     coalesce(bool_or(new_state->>'finalInterviewPassed'='true'),false) AS final_passed,

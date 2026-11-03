@@ -368,7 +368,7 @@ BEGIN
     WHEN 'reject_timesheet_history_mutation' THEN ARRAY['f4e68ba1e2d006e67573b1ddff30917f']
     WHEN 'prevent_offer_billing_mode_change' THEN ARRAY['6eb2b474500a751a8dbf8bd8e8f44a44']
     WHEN 'prevent_signed_contract_billing_mode_change' THEN ARRAY['123bd250ef377b235cd1f0ba2bc9dee0','99230f95517faa3f1c10cc3002c87c9b']
-    WHEN 'prevent_signed_contract_billing_start_change' THEN ARRAY['824312f7e9fe77cc0caebb42c83ccbf1','9395f7efee65ee045440ea8c882d6b14']
+    WHEN 'prevent_signed_contract_billing_start_change' THEN ARRAY['824312f7e9fe77cc0caebb42c83ccbf1','9395f7efee65ee045440ea8c882d6b14','6d54284b66905168c98460365ee688d4']
     WHEN 'protect_sent_talent_invoice' THEN ARRAY['eb7ae85eb0b1f0656055c7a2e1e45d28']
     WHEN 'protect_talent_credit_memos' THEN ARRAY['a6a793d9e25aeb07e380c2f03b9b9f8b']
     WHEN 'protect_credit_memo_application_v2' THEN ARRAY['8a85b9b601211e735b73e933fea07344']

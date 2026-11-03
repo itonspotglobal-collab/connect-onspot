@@ -3494,7 +3494,7 @@ export async function registerRoutes(
 
   registerInvestorRoutes(app);
   registerAdminHiringOverrideRoutes(app,new AdminHiringOverrideService(pool,dispatchHiringLifecycleEvents),
-    authenticateAdminFlexible,requireSuperAdmin,pipelineMutationLimiter);
+    authenticateAdminFlexible,requireAdmin,pipelineMutationLimiter);
   registerManualWiseRoutes(app, { service: new ManualWiseService(pool,dispatchHiringLifecycleEvents), authenticate: authenticateJWT, limiter: pipelineMutationLimiter });
   app.get("/api/hiring-payment-settings", authenticateJWT, async (req:any,res) => {
     try {
@@ -19569,14 +19569,17 @@ export async function registerRoutes(
                   c.id AS "candidateId",
                   c.resume_url AS "candidateResumeUrl", c.resume_file_name AS "candidateResumeFileName",
                   accepted_offer.id AS "acceptedOfferId",
+                  accepted_offer.rate AS "agreedRate", accepted_offer.rate_currency AS "agreedCurrency",
+                  accepted_offer.proposed_start_date::date::text AS "startDate",
                   (SELECT json_build_object('id',latest.id,'status',latest.status,'expiresAt',latest.expires_at,
+                      'rate',latest.rate,'rateCurrency',latest.rate_currency,'proposedStartDate',latest.proposed_start_date::date::text,
                       'proposerRole',latest.proposer_role,'job',json_build_object('title',j.title,'company',j.company))
                      FROM offers latest WHERE latest.submission_id=js.id ORDER BY latest.created_at DESC LIMIT 1) AS "latestOffer"
            FROM job_submissions js
            JOIN jobs j ON j.id = js.job_id
            LEFT JOIN users u ON u.id = js.talent_id
            LEFT JOIN LATERAL (
-             SELECT id
+             SELECT id,rate,rate_currency,proposed_start_date
              FROM offers
              WHERE submission_id = js.id
                AND status IN ('accepted', 'offer_accepted')

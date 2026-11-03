@@ -12,6 +12,7 @@ import {pool,query} from "./fixtures/hiring-db";
 import {requireHiringStage,issueAcceptedOfferDeposit,isDepositFirst} from "../services/contractorOnboardingPolicy";
 import {tryActivateEngagement} from "../services/hiringLifecycleEvents";
 import {preparePaidAgreements} from "../services/paidAgreementService";
+import {AdminHiringOverrideService} from "../services/adminHiringOverrideService";
 import {ClientMsaService} from "../services/clientMsaService";
 import {ManualWiseService} from "../services/manualWiseService";
 import * as documents from "../services/contractDocumentService";
@@ -442,6 +443,10 @@ test("voiding an accepted offer preserves but voids its pending invoice, and the
   assert.equal((await query("SELECT status FROM security_deposits WHERE id=$1",[a.deposit.id])).rows[0].status,"void");
   await query(readFileSync("migrations/0044_contractor_onboarding.sql","utf8"));
   assert.equal(await isDepositFirst(pool,a.submissionId),true);
+  // Historical replay reinstalls old status/activation guards. Restore the
+  // current waiver policy before testing post-upgrade Admin signing.
+  await query(readFileSync("migrations/0051_admin_hiring_overrides.sql","utf8"));
+  await query(readFileSync("migrations/0054_admin_deposit_waiver_activation.sql","utf8"));
 });
 test("activation is safe in all six condition/callback orders, with concurrent final attempts",async()=>{
   // These are deliberately synthetic canonical-state fixtures, NOT a way to
@@ -470,4 +475,30 @@ test("activation is safe in all six condition/callback orders, with concurrent f
     }
     assert.equal((await query("SELECT count(*)::int n FROM job_application_status_history WHERE application_id=$1 AND new_status='hired'",[a.submissionId])).rows[0].n,1);
   }
+});
+
+// Run after the historical migration replay: older migration 0044 predates the
+// waived status and must not be replayed over a post-0051 waiver fixture.
+test("regular Admin deposit waiver unlocks real private agreement preparation; normal signatures activate without invented payment",async()=>{
+  const a=await accepted();
+  const currentMsa=await msa.upload(admin,{buffer:pdf,mimetype:"application/pdf",originalname:"Waiver-UAT.pdf"} as any,
+    "uat-regular-admin-waiver","2026-01-01");
+  await msa.activate(admin,currentMsa.id,{reviewed:true,reason:"Synthetic current MSA for Admin waiver signing test"});
+  await new AdminHiringOverrideService(pool).execute(limited,"waive_deposit",{
+    submissionId:a.submissionId,reason:"Synthetic owner-authorized waiver; no money received or verification claimed",
+  });
+  const prepared=await preparePaidAgreements(pool,{depositId:a.deposit.id,actorId:limited});
+  assert.equal(prepared.eligible,true);assert.ok(prepared.contractId);
+  const waiver=(await query("SELECT * FROM security_deposits WHERE id=$1",[a.deposit.id])).rows[0];
+  assert.equal(waiver.status,"waived");assert.equal(waiver.held_at,null);assert.equal(waiver.waived_by,limited);
+  await signContract(prepared.contractId);
+  assert.equal(await status(a.submissionId),"contract_signed","deposit waiver cannot silently bypass the new current MSA");
+  await msa.pdf(client,currentMsa.id);
+  await msa.sign(client,{documentId:currentMsa.id,documentSha256:pdfHash(pdf),consent:true,signerName:"Disposable Client"},
+    {ip:"127.0.0.1",userAgent:"isolated-fixture"});
+  assert.equal(await status(a.submissionId),"hired");
+  const hc=(await query("SELECT * FROM hiring_contracts WHERE id=$1",[prepared.contractId])).rows[0];
+  assert.ok(hc.onspot_signed_at);assert.ok(hc.talent_signed_at);assert.ok(hc.billing_activated_at);
+  assert.equal(hc.activation_override_id,null,"waiving a deposit does not bypass either agreement");
+  assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides WHERE submission_id=$1 AND (new_state->>'skipMsa'='true' OR new_state->>'skipContractorAgreement'='true')",[a.submissionId])).rows[0].n,0);
 });

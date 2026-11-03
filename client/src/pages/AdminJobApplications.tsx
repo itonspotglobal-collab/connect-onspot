@@ -139,10 +139,16 @@ interface ApplicationDetail extends Application {
   latestOffer?: {
     id: string;
     status: string;
+    rate?: number | string | null;
+    rateCurrency?: string | null;
+    proposedStartDate?: string | null;
     expiresAt?: string | null;
     proposerRole?: string | null;
     job?: { title?: string | null; company?: string | null } | null;
   } | null;
+  agreedRate?: number | string | null;
+  agreedCurrency?: string | null;
+  startDate?: string | null;
   resumeUrl?: string;
   resumeFileName?: string;
   resumeSource?: "application" | "talent_profile" | null;
@@ -645,7 +651,23 @@ function DetailDialog({
               )}
             </section>
             <ContractorOnboardingTracker data={onboarding.data} isLoading={onboarding.isLoading} isError={onboarding.isError} onRetry={() => void onboarding.refetch()} />
-            <OverrideControls submissionId={detail.id} depositId={onboarding.data?.deposit?.id} />
+            <OverrideControls
+              submissionId={detail.id}
+              depositId={onboarding.data?.deposit?.id}
+              hasAcceptedOffer={Boolean(
+                detail.acceptedOfferId
+                || ["accepted", "offer_accepted"].includes(String(detail.latestOffer?.status ?? "").toLowerCase())
+                || ["offer_accepted", "contract_sent", "contract_signed", "hired"].includes(String(detail.status).toLowerCase())
+              )}
+              initialRate={
+                detail.acceptedOfferId
+                  ? detail.agreedCurrency?.toUpperCase() === "USD" ? detail.agreedRate : ""
+                  : detail.latestOffer?.rateCurrency?.toUpperCase() === "USD" ? detail.latestOffer.rate : ""
+              }
+              initialCurrency={detail.acceptedOfferId ? detail.agreedCurrency ?? "" : detail.latestOffer?.rateCurrency}
+              sourceOfferCurrency={detail.latestOffer?.rateCurrency}
+              initialStartDate={detail.acceptedOfferId ? detail.startDate : detail.latestOffer?.proposedStartDate}
+            />
 
             {detail.hiringPipelineEligible === true
               && detail.latestOffer

@@ -13,17 +13,19 @@ before(async()=>{
   vite=await createServer({configFile:false,root:resolve("client"),cacheDir,
     define:{"process.env.NODE_ENV":JSON.stringify("test")},
     resolve:{alias:{"@":resolve("client/src"),"@shared":resolve("shared"),"@assets":resolve("attached_assets")}},
-    plugins:[react(),{name:"payment-fixture",resolveId(id){if(id==="/__payments.tsx")return id;},
-      load(id){if(id!=="/__payments.tsx")return; return `
+    plugins:[react(),{name:"payment-fixture",enforce:"pre",resolveId(id){if(id==="@/contexts/AuthContext"||id.endsWith("/contexts/AuthContext.tsx"))return "\0payment-fixture-auth";if(id==="/__payments.tsx")return id;},
+      load(id){if(id==="\0payment-fixture-auth")return "export function useAuth(){return {user:{id:'fixture-client',role:'client'},isAuthenticated:true,isLoading:false}}; export function AuthProvider({children}){return children}";if(id!=="/__payments.tsx")return; return `
         import React from 'react';import {createRoot} from 'react-dom/client';
         import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
         import {ClientHiringPaymentPanel,ClientHiringInvoicesSection,AdminHiringPaymentsSection} from '/src/components/hiring-payments/HiringPayments.tsx';
         import {ExtendOfferDialog} from '/src/pages/ClientProfile.tsx';
+        import {OverrideControls,DirectPlacementDialog} from '/src/components/admin-hiring-overrides/OverrideControls.tsx';
+        import {PaymentVerificationCard} from '/src/components/hiring-payments/PaymentVerificationCard.tsx';
         import '/src/index.css';
         const mode=new URLSearchParams(location.search).get('mode');
         const submission={id:'original-submission',status:'reviewed',applicantName:'Fixture Talent',jobTitle:'Fixture Job',engagementType:'Standard'};
         createRoot(document.getElementById('root')).render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>
-         <main style={{padding:16}}>{mode==='admin'?<AdminHiringPaymentsSection/>:mode==='list'?<ClientHiringInvoicesSection/>:mode==='offer'?<ExtendOfferDialog submission={submission} onClose={()=>{}} onOfferSent={()=>{}}/>:<ClientHiringPaymentPanel submissionId="original-submission"/>}</main>
+         <main style={{padding:16}}>{mode==='placement'?<DirectPlacementDialog clientId="fixture-client" jobs={[{id:'job-fixture',title:'Fixture Job',approvalStatus:'approved'}]}/>:mode?.startsWith('override')?<OverrideControls submissionId="original-submission" hasAcceptedOffer={mode!=='override-early'} initialRate={mode==='override-early'?undefined:2500} initialStartDate={mode==='override-early'?undefined:'2032-10-01'}/>:mode==='legacy-card'?<PaymentVerificationCard submissionId="original-submission"/>:mode==='admin'?<AdminHiringPaymentsSection/>:mode==='list'?<ClientHiringInvoicesSection/>:mode==='offer'?<ExtendOfferDialog submission={submission} onClose={()=>{}} onOfferSent={()=>{}}/>:<ClientHiringPaymentPanel submissionId="original-submission"/>}</main>
         </QueryClientProvider>);`;
       },
       configureServer(s){s.middlewares.use(async(req,res,next)=>{
@@ -59,8 +61,18 @@ async function fixture(mode="",width=390,status:string|null=null,readyFailure?:{
       }
       else if(path.endsWith("/reference")){state.invoices[0]={...state.invoices[0],status:"verification_pending",payment_reference:request.reference};body=state.invoices[0];}
       else if(path.endsWith("/review")){state.invoices[0]={...state.invoices[0],status:"paid",verified_at:"2026-10-14T01:00:00Z"};body=state.invoices[0];}
+      else if(path.startsWith("/api/admin/hiring-overrides/")){
+        body={id:"audit-fixture",submissionId:request.submissionId??"new-placement",status:path.endsWith("waive_deposit")?"offer_accepted":"hired"};
+      }
       else{body={error:"UNEXPECTED_TEST_MUTATION"};code=500;}
-    }else if(path.endsWith("/policy"))body=null;
+    }else if(path==="/api/admin/hiring-overrides/capabilities"){
+      code=mode.startsWith("override-denied")?403:200;body=code===403?{error:"ADMIN_REQUIRED"}:{canManage:true,canRevert:false};
+    }
+    else if(path==="/api/admin/hiring-overrides")body={items:state.posts.filter(p=>p.path.startsWith("/api/admin/hiring-overrides/")).map((p,i)=>({
+      id:String(i),action:p.path.split("/").pop(),reason:p.body.reason,created_at:"2026-11-03T00:00:00Z",reverted_at:null,notify_parties:false,
+    }))};
+    else if(path.startsWith("/api/hiring-payment-waivers/"))body={required:true,paid:false,canManage:true,waiver:null};
+    else if(path.endsWith("/policy"))body=null;
     else if(path.endsWith("/exceptions"))body=[];
     else if(path.endsWith("/hiring-invoices"))body=state.invoices;
     else if(path.includes("/hiring-invoices/"))body={invoice:state.invoices[0],history:[{id:"1",event:"invoice_issued",previous_status:null,new_status:"issued",created_at:invoice.created_at}]};
@@ -70,32 +82,118 @@ async function fixture(mode="",width=390,status:string|null=null,readyFailure?:{
       blockedReason:"No approved payment instructions are available. Contact OnSpot billing support.",
     };
     else if(path==="/api/client/offers")body=[];
+    else if(path==="/api/contractor-onboarding/original-submission")body={workflowVersion:2,status:'interviewing',canSendOffer:true,finalInterviewPassed:true,stages:[],deposit:null};
     else{body={error:"UNEXPECTED_TEST_QUERY"};code=404;}
     await route.fulfill({status:code,json:body});
   });
+  const deniedResponse=mode.startsWith("override-denied")?page.waitForResponse(r=>r.url().includes("/api/admin/hiring-overrides/capabilities")):null;
   await page.goto(`${base}/?mode=${mode}`);
+  if(deniedResponse)await deniedResponse;
   return {page,state,errors};
 }
-test("Client readiness issues intent once; missing approved Wise instructions never becomes a payment fallback",async()=>{
+// Retired Ready-for-Offer no longer mounts error UI. Keep its historical
+// structured-error mapping coverage against the real exported mapper instead.
+async function mappedError(page:any,status:number,body:unknown) {
+  await page.locator("main").waitFor();
+  return page.evaluate(async(input:any)=>{
+    const path="/src/components/hiring-payments/paymentTypes.tsx";
+    const {getHiringPaymentErrorInfo}=await import(path);
+    return getHiringPaymentErrorInfo({status:input.status,code:input.body.code,data:input.body});
+  },{status,body});
+}
+test("Retired pre-offer readiness cannot issue a new fee or pretend to verify a deposit",async()=>{
   const {page,state,errors}=await fixture();
-  await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
-  await page.getByText("HPO-00000001", {exact:false}).first().waitFor();
-  assert.equal(state.posts.length,1);
-  await page.getByRole("button",{name:/View invoice.*payment instructions/i}).click();
-  await page.getByText("No approved payment instructions are available. Contact OnSpot billing support.",{exact:true}).waitFor();
+  await page.locator("main").waitFor();
+  assert.equal(await page.getByRole("button",{name:"Ready for Offer",exact:true}).count(),0);
   assert.equal(await page.getByText("Payment Verified",{exact:true}).count(),0);
-  assert.equal(state.posts.length,1);
+  assert.equal(state.posts.length,0);
   assert.deepEqual(errors,[]);
   await page.close();
 });
+
+test("Regular Admin waiver works without a loaded deposit ID and never invokes the retired pre-offer grant",async()=>{
+  const {page,state,errors}=await fixture("override");
+  try {
+    await page.getByRole("button",{name:"Waive deposit",exact:true}).click();
+    const dialog=page.getByRole("dialog");
+    const confirm=dialog.getByRole("button",{name:"Confirm override"});
+    assert.equal(await confirm.isDisabled(),true);
+    await dialog.locator("textarea").fill("Approved isolated deposit waiver for regular admin");
+    await confirm.click();
+    await page.getByText("Approved isolated deposit waiver for regular admin",{exact:true}).waitFor();
+    assert.equal(state.posts.length,1);
+    assert.equal(state.posts[0].path,"/api/admin/hiring-overrides/waive_deposit");
+    assert.equal(state.posts[0].body.submissionId,"original-submission");
+    assert.equal(state.posts[0].body.depositId,undefined);
+    assert.equal(await page.getByRole("button",{name:"Revert latest"}).count(),0);
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+test("Regular Admin Hire now requires explicit terms and sends the existing hired-stage override",async()=>{
+  const {page,state,errors}=await fixture("override-early",1440);
+  try {
+    await page.getByRole("button",{name:"Hire now",exact:true}).click();
+    const dialog=page.getByRole("dialog"),confirm=dialog.getByRole("button",{name:"Confirm override"});
+    await dialog.locator("textarea").fill("Explicit isolated early-stage hiring exception");
+    assert.equal(await confirm.isDisabled(),true);
+    await dialog.locator('input[type="number"]').fill("2500");
+    await dialog.locator('input[type="date"]').fill("2032-10-01");
+    await confirm.click();
+    await page.getByText("Explicit isolated early-stage hiring exception",{exact:true}).waitFor();
+    assert.equal(state.posts[0].path,"/api/admin/hiring-overrides/skip_stage");
+    assert.equal(state.posts[0].body.targetStatus,"hired");
+    assert.equal(state.posts[0].body.currency,"USD");
+    assert.equal(state.posts[0].body.rate,2500);
+    assert.equal(state.posts[0].body.startDate,"2032-10-01");
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+test("Regular Admin direct placement defaults to waived deposit and both agreement bypasses",async()=>{
+  const {page,state,errors}=await fixture("placement",390);
+  try {
+    await page.getByRole("button",{name:"Hire now",exact:true}).click();
+    const dialog=page.getByRole("dialog");
+    await dialog.getByLabel("Talent user ID",{exact:true}).fill("fixture-talent");
+    await dialog.locator("select").first().selectOption("job-fixture");
+    await dialog.locator('input[type="number"]').fill("2500");
+    await dialog.locator('input[type="date"]').fill("2032-10-01");
+    await dialog.locator("textarea").fill("Approved isolated administrative direct hire");
+    await dialog.getByRole("button",{name:"Hire now",exact:true}).click();
+    await dialog.waitFor({state:"detached"});
+    assert.equal(state.posts[0].path,"/api/admin/hiring-overrides/direct_placement");
+    assert.equal(state.posts[0].body.depositPolicy,"waive");
+    assert.equal(state.posts[0].body.skipContractorAgreement,true);
+    assert.equal(state.posts[0].body.skipMsa,true);
+    assert.equal(state.posts[0].body.clientId,"fixture-client");
+    assert.equal(state.posts[0].body.talentId,"fixture-talent");
+    assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
+test("The legacy payment card cannot grant the retired payment skip",async()=>{
+  const {page,state}=await fixture("legacy-card");
+  try {
+    await page.getByRole("heading",{name:"Payment verification"}).waitFor();
+    assert.equal(await page.getByRole("button",{name:"Skip payment verification",exact:true}).count(),0);
+    assert.equal(state.posts.length,0);
+  }finally{await page.close();}
+});
+for(const actor of ["client","talent"])test(`Denied ${actor} capabilities do not expose override controls`,async()=>{
+  const {page,state,errors}=await fixture(`override-denied-${actor}`);
+  try {
+    await page.locator("main").waitFor();
+    assert.equal(await page.getByRole("button",{name:"Waive deposit",exact:true}).count(),0);
+    assert.equal(await page.getByRole("button",{name:"Hire now",exact:true}).count(),0);
+    assert.equal(state.posts.length,0);assert.deepEqual(errors,[]);
+  }finally{await page.close();}
+});
 for(const status of ["issued","verification_pending","paid"]){
-  test(`Existing Send Offer is ${status==="paid"?"enabled":"locked"} for ${status}`,async()=>{
+  test(`Pre-offer invoice ${status} cannot lock an otherwise eligible offer`,async()=>{
     const {page,errors}=await fixture("offer",390,status);
-    await page.getByRole("dialog").waitFor();
+    await page.getByRole("dialog").waitFor({timeout:10000}).catch(cause=>{throw new Error(`${cause.message}; browser errors: ${JSON.stringify(errors)}`);});
     const rate=page.locator('input[type="number"]').first();await rate.fill("2500");
-    const button=page.getByRole("button",{name:status==="paid"?"Send Offer":"Payment verification required",exact:true});
-    if(status==="paid"){await page.getByText("Payment Verified",{exact:true}).waitFor();await button.waitFor();assert.equal(await button.isEnabled(),true);}
-    else assert.equal(await button.isDisabled(),true);
+    await page.locator('input[type="date"]').first().fill("2032-10-01");
+    const button=page.getByRole("button",{name:"Send Offer",exact:true});
+    assert.equal(await button.isDisabled(),false);
     assert.deepEqual(errors,[]);await page.close();
   });
 }
@@ -112,7 +210,7 @@ test("Admin pending hiring invoices route receipt verification to the unified Wi
 });
 test("Client invoice list clearly separates pre-offer billing and opens immutable history",async()=>{
   const {page,errors}=await fixture("list",390,"paid");
-  await page.getByText("Pre-offer hiring invoices",{exact:true}).waitFor();
+  await page.getByText("Historical hiring invoices",{exact:true}).waitFor();
   await page.getByRole("button",{name:/^View invoice$/i}).click();
   await page.getByText("Payment Verified",{exact:true}).waitFor();
   await page.getByText(/invoice issued/i).waitFor();
@@ -122,18 +220,18 @@ test("Client invoice list clearly separates pre-offer billing and opens immutabl
   assert.deepEqual(errors,[]);await page.close();
 });
 
-test("Structured classification error offers only the authorized job editor, never raw JSON",async()=>{
+test("Historical classification error mapping permits only the owned Client job editor",async()=>{
   const {page,errors}=await fixture("",390,null,{status:409,body:{
     code:"JOB_BILLING_CLASSIFICATION_REQUIRED",message:"Raw backend detail must not display",
     details:{missingFields:["engagementType","billingMode"],editPath:"/client/jobs/job-fixture/edit"},
   }});
   try {
-    await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
-    await page.getByText("Job billing setup required",{exact:true}).waitFor();
-    await page.getByText("Engagement type",{exact:true}).waitFor();
-    await page.getByText("Billing mode",{exact:true}).waitFor();
-    assert.equal(await page.getByRole("link",{name:"Review Job Billing Settings"}).getAttribute("href"),"/client/jobs/job-fixture/edit");
-    assert.doesNotMatch(await page.locator("main").innerText(),/Raw backend|JOB_BILLING_CLASSIFICATION_REQUIRED|409:/);
+    const info=await mappedError(page,409,{code:"JOB_BILLING_CLASSIFICATION_REQUIRED",message:"Raw backend detail must not display",
+      details:{missingFields:["engagementType","billingMode"],editPath:"/client/jobs/job-fixture/edit"}});
+    assert.equal(info.heading,"Job billing setup required");
+    assert.deepEqual(info.missingFields,["Engagement type","Billing mode"]);
+    assert.equal(info.editPath,"/client/jobs/job-fixture/edit");
+    assert.doesNotMatch(JSON.stringify(info),/Raw backend|JOB_BILLING_CLASSIFICATION_REQUIRED|409:/);
     assert.deepEqual(errors,[]);
   } finally {await page.close();}
 });
@@ -144,9 +242,8 @@ test("Classification errors without a safe editor show administrator guidance",a
       code:"JOB_BILLING_CLASSIFICATION_REQUIRED",details:{missingFields:["billingMode"],editPath},
     }});
     try {
-      await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
-      await page.getByText(/Please contact an OnSpot administrator to update this job/).waitFor();
-      assert.equal(await page.getByRole("link",{name:"Review Job Billing Settings"}).count(),0);
+      const info=await mappedError(page,409,{code:"JOB_BILLING_CLASSIFICATION_REQUIRED",details:{missingFields:["billingMode"],editPath}});
+      assert.equal(info.editPath,null);
     } finally {await page.close();}
   }
 });
@@ -160,12 +257,12 @@ for(const [status,code,heading] of [
   [409,"HIRING_ATTEMPT_IDENTITY_CHANGED","Invoice could not be matched"],
   [503,"HIRING_PAYMENT_FAILED","Invoice preparation unavailable"],
 ] as const){
-  test(`Ready for Offer handles structured ${code} separately`,async()=>{
+  test(`Historical invoice error mapping handles ${code} separately`,async()=>{
     const {page,errors}=await fixture("",390,null,{status,body:{code,message:"Raw internal server detail"}});
     try {
-      await page.getByRole("button",{name:"Ready for Offer",exact:true}).click();
-      await page.getByText(heading,{exact:true}).waitFor();
-      assert.doesNotMatch(await page.locator("main").innerText(),/Raw internal server detail|\{"code"/);
+      const info=await mappedError(page,status,{code,message:"Raw internal server detail"});
+      assert.equal(info.heading,heading);
+      assert.doesNotMatch(JSON.stringify(info),/Raw internal server detail|\{"code"/);
       assert.deepEqual(errors,[]);
     } finally {await page.close();}
   });
