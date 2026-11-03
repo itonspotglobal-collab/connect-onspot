@@ -6,11 +6,10 @@ import {
   type InvestorDocument,
 } from "@/components/InvestorDocumentDialog";
 import onSpotWordmark from "@/assets/onspot-white-wordmark.png";
-import heroPhoto from "@/assets/investors/hero-team.webp";
+import foundersTeamPhoto from "@/assets/investors/onspot-founders-team.webp";
+import investorHeroMapSvg from "@/assets/investors/investor-hero-map.svg?raw";
 import tractionTeamPhoto from "@/assets/investors/traction-team.webp";
 import tractionPlanningPhoto from "@/assets/investors/traction-planning.webp";
-import founderLetterPhoto from "@/assets/investors/founder-letter.webp";
-import founderInsetPhoto from "@/assets/investors/founder-inset.webp";
 import visionPhoto from "@/assets/investors/earth-at-night.webp";
 import investPhoto from "@/assets/investors/invest-office.webp";
 import jakePhoto from "@/assets/investors/jake-wainberg.webp";
@@ -23,7 +22,8 @@ type InvestorStats = {
 };
 
 type InvestorGoals = {
-  totalGoal: number | null;
+  contractorGoal2027: number | null;
+  clientGoal2027: number | null;
 };
 
 function parseInvestorStats(value: unknown): InvestorStats {
@@ -59,16 +59,20 @@ function parseInvestorGoals(value: unknown): InvestorGoals {
   if (!value || typeof value !== "object") {
     throw new Error("Investor goals are unavailable.");
   }
-  const totalGoal = (value as Record<string, unknown>).totalGoal;
+  const goals = value as Record<string, unknown>;
+  const validGoal = (goal: unknown): goal is number | null =>
+    goal === null ||
+    (typeof goal === "number" && Number.isSafeInteger(goal) && goal > 0);
   if (
-    totalGoal !== null &&
-    (typeof totalGoal !== "number" ||
-      !Number.isSafeInteger(totalGoal) ||
-      totalGoal <= 0)
+    !validGoal(goals.contractorGoal2027) ||
+    !validGoal(goals.clientGoal2027)
   ) {
     throw new Error("Investor goals are unavailable.");
   }
-  return { totalGoal: totalGoal as number | null };
+  return {
+    contractorGoal2027: goals.contractorGoal2027,
+    clientGoal2027: goals.clientGoal2027,
+  };
 }
 
 async function fetchInvestorStats(): Promise<InvestorStats> {
@@ -143,21 +147,20 @@ export default function InvestorsCorner() {
         <section
           className="investor-open"
           aria-labelledby="investor-open-title"
-          style={{
-            backgroundImage: `linear-gradient(110deg, rgba(19, 23, 106, .97) 0%, rgba(30, 40, 148, .9) 48%, rgba(37, 51, 162, .6) 100%), url(${heroPhoto})`,
-          }}
         >
           <div className="investor-hero-grid" aria-hidden="true" />
+          <span
+            className="investor-map-holder"
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: investorHeroMapSvg }}
+          />
           <div className="investor-wrap investor-hero-inner">
-            <h1 id="investor-open-title">
-              OnSpot is the unified outsourcing system where businesses{" "}
-              <span className="investor-hero-accent">
-                find, hire, pay, and manage
-              </span>{" "}
-              vetted remote talent in one place — and{" "}
-              <span className="investor-hero-accent">talent earns more</span>{" "}
-              doing it.
-            </h1>
+            <div className="investor-hero-copy">
+              <span className="h-accent" aria-hidden="true"><i /><i /><i /></span>
+              <h1 id="investor-open-title">
+                OnSpot is the <span className="investor-highlight">unified outsourcing system</span> where businesses find, hire, pay, and manage vetted remote talent in one place, and talent <span className="investor-highlight">earns more</span> doing it.
+              </h1>
+            </div>
             <div className="investor-phone-stage" aria-hidden="true">
               <span className="investor-phone-ring" />
               <span className="investor-phone-glow" />
@@ -175,6 +178,8 @@ export default function InvestorsCorner() {
               </span>
               <span className="investor-badge investor-badge-nur" />
               <span className="investor-badge investor-badge-mark" />
+              <div className="phone-wrap">
+                <span className="phone-shadow" />
               <div className="investor-phone">
                 <span className="investor-phone-island" />
                 <div className="investor-phone-screen">
@@ -194,7 +199,7 @@ export default function InvestorsCorner() {
                   </div>
                   <div className="investor-phone-content">
                     <span className="investor-phone-pill">ABOUT ONSPOT</span>
-                    <div className="investor-phone-headline">
+                  <div className="investor-phone-headline">
                       Built by people who <span>lived</span> the problem.
                     </div>
                     <p className="investor-phone-description">
@@ -208,6 +213,7 @@ export default function InvestorsCorner() {
                   <span className="investor-phone-chat" />
                   <span className="investor-phone-home-indicator" />
                 </div>
+              </div>
               </div>
             </div>
           </div>
@@ -283,81 +289,34 @@ export default function InvestorsCorner() {
                 </div>
               ) : (
                 <div className="investor-traction-grid">
-                  <div className="investor-traction-card">
-                    <span className="investor-traction-icon investor-talent-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.2a3.5 3.5 0 0 1 0 6.6M18 14a5 5 0 0 1 3 4.6V20" /></svg>
-                    </span>
-                    <b>{investorStatsQuery.data.contractorAccounts.toLocaleString()}</b>
-                    <span>Registered Talent</span>
-                  </div>
-                  <div className="investor-traction-card">
-                    <span className="investor-traction-icon investor-client-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M8 9h8M8 13h8M8 17h4" /></svg>
-                    </span>
-                    <b>{investorStatsQuery.data.clientAccounts.toLocaleString()}</b>
-                    <span>Registered Clients</span>
-                  </div>
+                  <InvestorRoleGoalMeter
+                    kind="talent"
+                    label="Registered Talent"
+                    count={investorStatsQuery.data.contractorAccounts}
+                    goal={investorGoalsQuery.data?.contractorGoal2027 ?? null}
+                    goalStatus={investorGoalsQuery.isError ? "error" : investorGoalsQuery.isLoading ? "loading" : "ready"}
+                  />
+                  <InvestorRoleGoalMeter
+                    kind="clients"
+                    label="Registered Clients"
+                    count={investorStatsQuery.data.clientAccounts}
+                    goal={investorGoalsQuery.data?.clientGoal2027 ?? null}
+                    goalStatus={investorGoalsQuery.isError ? "error" : investorGoalsQuery.isLoading ? "loading" : "ready"}
+                  />
                 </div>
               )}
-              <div className="investor-total-progress" aria-live="polite">
-                <div className="investor-total-progress-heading">
-                  <div>
-                    <h3 id="investor-total-progress-title">Total registered accounts</h3>
-                    {investorStatsQuery.data && investorGoalsQuery.data?.totalGoal && (
-                      <p>
-                        {(
-                          investorStatsQuery.data.contractorAccounts +
-                          investorStatsQuery.data.clientAccounts
-                        ).toLocaleString()}{" "}
-                        of {investorGoalsQuery.data.totalGoal.toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                  {investorStatsQuery.data && investorGoalsQuery.data?.totalGoal && (
-                    <strong className="investor-total-progress-percent">
-                      {(
-                        Math.round((investorStatsQuery.data.contractorAccounts +
-                          investorStatsQuery.data.clientAccounts) * 1000 /
-                          investorGoalsQuery.data.totalGoal) / 10
-                      ).toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                      %
-                    </strong>
-                  )}
+              {investorStatsQuery.data && investorGoalsQuery.isError && (
+                <div className="investor-goal-message" role="status">
+                  <span>Account goals are temporarily unavailable.</span>
+                  <button
+                    type="button"
+                    onClick={() => void investorGoalsQuery.refetch()}
+                    disabled={investorGoalsQuery.isFetching}
+                  >
+                    {investorGoalsQuery.isFetching ? "Checking…" : "Try again"}
+                  </button>
                 </div>
-                {investorStatsQuery.isLoading || investorGoalsQuery.isLoading ? (
-                  <div className="investor-total-progress-loading" role="status">
-                    <span aria-hidden="true" />
-                    <span className="sr-only">Loading account goal progress.</span>
-                  </div>
-                ) : investorStatsQuery.isError || !investorStatsQuery.data ? (
-                  <div className="investor-total-progress-message" role="status">
-                    Account progress is unavailable.
-                  </div>
-                ) : investorGoalsQuery.isError || !investorGoalsQuery.data ? (
-                  <div className="investor-total-progress-message" role="status">
-                    <span>Account goal is temporarily unavailable.</span>
-                    <button
-                      type="button"
-                      onClick={() => void investorGoalsQuery.refetch()}
-                      disabled={investorGoalsQuery.isFetching}
-                    >
-                      {investorGoalsQuery.isFetching ? "Checking…" : "Try again"}
-                    </button>
-                  </div>
-                ) : investorGoalsQuery.data.totalGoal === null ? (
-                  <div className="investor-total-progress-message" role="status">
-                    Account goal has not been set.
-                  </div>
-                ) : (
-                  <InvestorTotalProgress
-                    count={
-                      investorStatsQuery.data.contractorAccounts +
-                      investorStatsQuery.data.clientAccounts
-                    }
-                    goal={investorGoalsQuery.data.totalGoal}
-                  />
-                )}
-              </div>
+              )}
             </div>
             <div className="investor-collage">
               <span
@@ -387,16 +346,17 @@ export default function InvestorsCorner() {
           <div className="investor-wrap investor-letter-grid">
               <div
                 className="investor-letter-visual"
-                style={{
-                  backgroundImage: `linear-gradient(0deg, rgba(19, 23, 106, .45), rgba(19, 23, 106, .05)), url(${founderLetterPhoto})`,
-                }}
               >
-                <div className="investor-letter-clip" />
-                <span
-                  className="investor-letter-inset"
-                  aria-hidden="true"
-                  style={{ backgroundImage: `url(${founderInsetPhoto})` }}
+                <img
+                  className="investor-founders-photo"
+                  src={foundersTeamPhoto}
+                  alt="OnSpot co-founders Mark Apostol, Jake Wainberg, and Nur Laminero"
+                  width={819}
+                  height={1024}
+                  loading="lazy"
+                  decoding="async"
                 />
+                <span className="investor-letter-clip" aria-hidden="true" />
                 <span className="investor-dots investor-letter-dots" aria-hidden="true" />
                 <div className="investor-visual-note">
                   <h2 id="investor-letter-title">A letter from the founders.</h2>
@@ -417,15 +377,15 @@ export default function InvestorsCorner() {
                     prices for BPO services that were never designed for them.
                     Meanwhile talented professionals around the world spend their
                     time searching for clients instead of doing the work they are
-                    great at — and earn a fraction of what they are worth.
+                    great at, and earn a fraction of what they are worth.
                   </p>
                 </div>
                 <div className="investor-now">
                   <h3><span className="investor-compare-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>Our solution</h3>
                   <p>
                     With OnSpot, businesses find, hire, and manage vetted global
-                    talent in as fast as 7 days — with the accountability of a
-                    managed service and none of the overhead — while talent sets
+                    talent in as fast as 7 days, with the accountability of a
+                    managed service and none of the overhead, while talent sets
                     their own rate, keeps every dollar, and builds a real
                     international career.
                   </p>
@@ -435,8 +395,7 @@ export default function InvestorsCorner() {
                 We spent four years running a BPO before building this platform.{" "}
                 <strong>
                   We did not guess at the problem. We lived inside it
-                </strong>{" "}
-                — and we built OnSpot from operational truth rather than theory.{" "}
+                </strong>, and we built OnSpot from operational truth rather than theory.{" "}
                 <strong>We are already self-sustaining.</strong> Operations are
                 fully covered by revenue before a single dollar of external
                 investment.
@@ -463,8 +422,8 @@ export default function InvestorsCorner() {
                 <path d="M0 36V20C0 8 6 1 18 0v8C12 9 9 13 9 19h9v17H0Zm30 0V20C30 8 36 1 48 0v8c-6 1-9 5-9 11h9v17H30Z" />
               </svg>
               <p className="investor-vision">
-                We are raising to launch, to scale, and to liberate how the world
-                does meaningful work. A world where anyone can work anywhere — and
+                We are raising capital to launch, to scale, and to liberate how the world
+                does meaningful work. A world where anyone can work anywhere, and
                 every company can hire anyone, without limits.
               </p>
             </div>
@@ -623,42 +582,94 @@ export default function InvestorsCorner() {
   );
 }
 
-function InvestorTotalProgress({ count, goal }: { count: number; goal: number }) {
+function formatGoalPercent(value: number): string {
+  if (value === 0) return "0%";
+  if (value < 1) return `${value.toFixed(2)}%`;
+  if (value < 10) return `${value.toFixed(1)}%`;
+  return `${Math.round(value)}%`;
+}
+
+function InvestorRoleGoalMeter({
+  kind,
+  label,
+  count,
+  goal,
+  goalStatus,
+}: {
+  kind: "talent" | "clients";
+  label: string;
+  count: number;
+  goal: number | null;
+  goalStatus: "loading" | "error" | "ready";
+}) {
   const validCount = Number.isSafeInteger(count) && count >= 0;
-  const cappedCount = validCount ? Math.min(count, goal) : 0;
-  const barPercent = validCount ? Math.min((count / goal) * 100, 100) : 0;
-  const percentage = validCount
-    ? ((count / goal) * 100).toLocaleString(undefined, { maximumFractionDigits: 1 })
-    : "0";
+  const progress = goal && validCount ? Math.min((count / goal) * 100, 100) : 0;
+  const displayPercent = progress;
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
   useEffect(() => {
-    setAnimatedProgress(barPercent / 100);
-  }, [barPercent]);
-
-  if (!validCount) {
-    return (
-      <div className="investor-total-progress-message" role="status">
-        Account total is temporarily unavailable.
-      </div>
-    );
-  }
+    setAnimatedProgress(progress);
+  }, [progress]);
 
   return (
-    <div
-      className="investor-total-progress-track"
-      role="progressbar"
-      aria-labelledby="investor-total-progress-title"
-      aria-valuemin={0}
-      aria-valuemax={goal}
-      aria-valuenow={cappedCount}
-      aria-valuetext={`${count.toLocaleString()} of ${goal.toLocaleString()} registered accounts, ${percentage}%${count > goal ? ", goal exceeded" : ""}`}
-    >
-      <span
-        className="investor-total-progress-fill"
-        style={{ transform: `scaleX(${animatedProgress})` }}
-        aria-hidden="true"
-      />
-    </div>
+    <article className={`investor-traction-card investor-goal-card investor-goal-${kind}`}>
+      <div className="investor-goal-card-top">
+        <div className="investor-goal-identity">
+          <span className={`investor-traction-icon ${kind === "talent" ? "investor-talent-icon" : "investor-client-icon"}`} aria-hidden="true">
+            {kind === "talent" ? (
+              <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" /><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.2a3.5 3.5 0 0 1 0 6.6M18 14a5 5 0 0 1 3 4.6V20" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M8 9h8M8 13h8M8 17h4" /></svg>
+            )}
+          </span>
+          <div>
+            <b>{validCount ? count.toLocaleString() : "—"}</b>
+            <span>{label}</span>
+          </div>
+        </div>
+      </div>
+      {goalStatus === "loading" ? (
+        <div className="investor-goal-progress-loading" role="status" aria-label={`Loading ${label.toLowerCase()} goal progress`} />
+      ) : goalStatus === "ready" && goal === null ? (
+        <p className="investor-goal-copy">A 2027 goal has not been set.</p>
+      ) : goalStatus === "ready" && goal !== null ? (
+        <>
+          <div className="investor-goal-copy">
+            <span>Progress to our {goal.toLocaleString()} goal</span>
+            <strong className="investor-goal-percent">{formatGoalPercent(displayPercent)}</strong>
+          </div>
+          <div
+            className="investor-meter investor-goal-progress"
+            role="progressbar"
+            aria-label={`${label}: ${count.toLocaleString()} of ${goal.toLocaleString()}`}
+            aria-valuemin={0}
+            aria-valuemax={goal}
+            aria-valuenow={Math.min(count, goal)}
+            aria-valuetext={`${count.toLocaleString()} of ${goal.toLocaleString()}, ${formatGoalPercent(displayPercent)}`}
+          >
+            <span className="investor-meter-fill" style={{ width: `${animatedProgress}%` }} />
+            <span className="investor-meter-knob" style={{
+              left: `clamp(10px, ${animatedProgress}%, calc(100% - 10px))`,
+            }} />
+            {[25, 50, 75].map((tick) => (
+              <span key={tick} className="investor-meter-tick" style={{ left: `${tick}%` }} aria-hidden="true" />
+            ))}
+          </div>
+          <div className="investor-meter-scale" aria-hidden="true">
+            <span>0</span><span>{formatScale(goal * 0.25)}</span><span>{formatScale(goal * 0.5)}</span><span>{formatScale(goal * 0.75)}</span><span>{formatScale(goal)}</span>
+          </div>
+        </>
+      ) : (
+        <span className="investor-goal-progress-placeholder" aria-hidden="true" />
+      )}
+    </article>
   );
+}
+
+function formatScale(value: number): string {
+  if (value >= 1000) {
+    const thousands = value / 1000;
+    return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}K`;
+  }
+  return value.toLocaleString();
 }

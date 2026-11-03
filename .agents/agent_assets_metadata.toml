@@ -1189,3 +1189,59 @@ mtime_ms = 1793687772456
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/ac78beab-e388-4eaf-a76a-338c5a1a0fb0/3f48a9c5-1eb3-44ba-b4d9-fb5a6be83098"
 storage_version_token = "1793687827126645"
 content_type = "image/png"
+
+[[outputs]]
+id = "dxHJoWfi0OEbuuG29ekg0"
+uri = "file://generated-artifacts/investor-v7/hero-1440-comparison.jpg"
+type = "image"
+title = "Hero — 1440px comparison"
+description = "Left: implemented development page. Right: supplied HTML reference. Homepage typography and existing site navigation/chat are intentionally preserved."
+logical_id = "0861ba39-8c1c-49a4-a68f-3ec0385f8a06"
+content_hash = "sha256:de88b9b07d7d90ef8fb81ae895d29c2f1fdc3135d4cfaf0a5e256c19bd5717b7"
+size = 404512
+mtime_ms = 1793710934408
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/0861ba39-8c1c-49a4-a68f-3ec0385f8a06/4c43afac-3646-4270-9a5f-fd78a49a26d5"
+storage_version_token = "1793711147442667"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "h3cyZSBbfqqoCE5HsWbA6"
+uri = "file://generated-artifacts/investor-v7/letter-1440-comparison.jpg"
+type = "image"
+title = "Founders letter — 1440px comparison"
+description = "Left: implemented development page. Right: supplied HTML reference. Homepage typography and existing site navigation/chat are intentionally preserved."
+logical_id = "5391973d-3946-4821-ad84-d30679848f76"
+content_hash = "sha256:f3be7ae85004dbffa3878fc745c89f5e2c1a32b1730a92a71804601dba5f9b29"
+size = 398636
+mtime_ms = 1793710935940
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/5391973d-3946-4821-ad84-d30679848f76/a7296a12-4236-4419-8950-a801dfdbc7a5"
+storage_version_token = "1793711149907344"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "s136q_QSlzkKAjXDhdlyC"
+uri = "file://generated-artifacts/investor-v7/hero-390-comparison.jpg"
+type = "image"
+title = "Hero — 390px comparison"
+description = "Left: implemented development page. Right: supplied HTML reference. Homepage typography and existing site navigation/chat are intentionally preserved."
+logical_id = "8e223ca5-edc0-4386-a691-65b73c371cbf"
+content_hash = "sha256:362e52aae5837a2fbc4b0b91a48203d2f36ef9a682226bd667cb87636d3f23e1"
+size = 166655
+mtime_ms = 1793710947392
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8e223ca5-edc0-4386-a691-65b73c371cbf/7e453527-b181-4150-b652-4a8a5e84938f"
+storage_version_token = "1793711151878219"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "NKBF2GYGoPXZy_ZUM1Ajc"
+uri = "file://generated-artifacts/investor-v7/letter-390-comparison.jpg"
+type = "image"
+title = "Founders letter — 390px comparison"
+description = "Left: implemented development page. Right: supplied HTML reference. Homepage typography and existing site navigation/chat are intentionally preserved."
+logical_id = "3670e360-6363-4620-9a80-67e712c2a1b6"
+content_hash = "sha256:69e7bd516c898e167b78b9a8755a74d2255ebdd3240404a2d2a90afcdb2450d3"
+size = 301909
+mtime_ms = 1793710948848
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/3670e360-6363-4620-9a80-67e712c2a1b6/f25475fd-b71d-4d4c-9702-ed565ffb2ffe"
+storage_version_token = "1793711155730602"
+content_type = "image/jpeg"

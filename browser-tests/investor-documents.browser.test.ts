@@ -81,7 +81,7 @@ async function openPage(width = 1280, height = 900, statsHandler?: Parameters<Pa
   await page.route("**/api/public/investor-stats", statsHandler ?? (route =>
     route.fulfill({ json: { contractorAccounts: 1234, clientAccounts: 56, asOf: "2026-10-16T08:00:00.000Z" } })));
   await page.route("**/api/public/investor-goals", goalsHandler ?? (route =>
-    route.fulfill({ json: { totalGoal: 10_000 } })));
+    route.fulfill({ json: { totalGoal: 10_000, contractorGoal2027: 10_000, clientGoal2027: 1_000 } })));
   await page.goto(`${base}/investors`,{waitUntil:"domcontentloaded"});
   await page.locator("h1").waitFor();
   return page;
@@ -99,17 +99,24 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   assert.equal(await page.locator(".investor-top a").getAttribute("href"), "/");
   const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
   const actual = normalize(await page.locator(".onspot-investors-page").innerText());
-  const headline = "OnSpot is the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place — and talent earns more doing it.";
+  const headline = "OnSpot is the unified outsourcing system where businesses find, hire, pay, and manage vetted remote talent in one place, and talent earns more doing it.";
   assert.equal(normalize(await page.locator("h1").innerText()), headline);
-  assert.equal(await page.locator("h1 .investor-hero-accent").allTextContents().then(v => v.map(normalize).join("|")),
-    "find, hire, pay, and manage|talent earns more");
+  assert.equal(await page.locator("h1 .investor-highlight").count(), 2);
+  assert.equal(await page.locator("h1 .investor-highlight").allTextContents().then(v => v.map(normalize).join("|")),
+    "unified outsourcing system|earns more");
+  const referenceMap = readFileSync("attached_assets/onspot_investors_polished_v7_1793709287845.html", "utf8")
+    .match(/<svg class="hero-map"[\s\S]*?<\/svg>/)![0];
+  assert.equal(await page.locator(".hero-map .land").getAttribute("d"),
+    referenceMap.match(/<path class="land" d="([^"]+)"/)![1]);
+  assert.equal(await page.locator(".hero-map .arc").count(), 6);
+  assert.equal(await page.locator(".hero-map").getAttribute("aria-hidden"), "true");
   assert.equal(actual.split(headline).length - 1, 1);
   assert.doesNotMatch(await page.locator(".investor-open").innerText(), /Hi, I.m Nur Laminero/);
   assert.equal(normalize(await page.locator(".investor-fact").first().innerText()),
     "7 days As fast as 7 days for businesses to find, hire, and to start global talent");
   const letter = page.locator(".investor-letter p").filter({ hasText: "We spent four years running a BPO" });
   assert.equal(normalize(await letter.innerText()),
-    "We spent four years running a BPO before building this platform. We did not guess at the problem. We lived inside it — and we built OnSpot from operational truth rather than theory. We are already self-sustaining. Operations are fully covered by revenue before a single dollar of external investment.");
+    "We spent four years running a BPO before building this platform. We did not guess at the problem. We lived inside it, and we built OnSpot from operational truth rather than theory. We are already self-sustaining. Operations are fully covered by revenue before a single dollar of external investment.");
   assert.deepEqual(await letter.locator("strong").allTextContents().then(values => values.map(normalize)),
     ["We did not guess at the problem. We lived inside it", "We are already self-sustaining."]);
   assert.equal(normalize(await page.locator("#investor-invest-title").innerText()), "Invest in the Future of Work today.");
@@ -121,11 +128,19 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
     // The approved update supersedes these reference passages only.
     if (line === "A letter from Nur Laminero" ||
       /^OnSpot is the unified outsourcing system/.test(line) ||
-      /^(Hi, I.m Nur Laminero|We.re the unified outsourcing|As fast as 7 days|My co-founders Jake|Invest in OnSpot today|Co-Founder and CEO)/.test(line) ||
+      /^(Hi, I.m Nur Laminero|We.re the unified outsourcing|As fast as 7 days|My co-founders Jake|Invest in OnSpot today|Co-Founder and CEO|Today, businesses|With OnSpot|We spent four years|We are raising|A world where)/.test(line) ||
       ["NL", "J", "M", "Macky"].includes(line)) continue;
     assert.ok(actual.includes(line), `Missing reference text: ${line}`);
   }
   assert.equal(await page.locator("#investor-letter-title").innerText(), "A letter from the founders.");
+  const teamPhoto = page.locator(".investor-letter-visual > img");
+  await teamPhoto.evaluate((el: HTMLImageElement) => el.decode());
+  assert.ok(await teamPhoto.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
+  assert.doesNotMatch((await teamPhoto.getAttribute("src"))!, /unsplash/i);
+  assert.equal(await teamPhoto.getAttribute("alt"), "OnSpot co-founders Mark Apostol, Jake Wainberg, and Nur Laminero");
+  assert.equal(await page.locator(".investor-letter-inset").count(), 0);
+  assert.equal(normalize(await page.locator(".investor-vision").innerText()),
+    "We are raising capital to launch, to scale, and to liberate how the world does meaningful work. A world where anyone can work anywhere, and every company can hire anyone, without limits.");
   assert.equal(await page.locator(".investor-footer p").innerText(),
     "© 2026 OnSpot. All rights reserved. This page is for information only and is not an offer to sell securities.");
   assert.doesNotMatch(actual, /you may lose your entire investment|© 2026 OnSpot Global/);
@@ -204,10 +219,13 @@ test("traction refresh behavior is preserved and page and portaled dialog use ho
   }, true);
   await page.getByText("1,234", { exact: true }).waitFor();
   assert.equal(await page.locator(".investor-traction-card b").allTextContents().then(v => v.join("|")), "1,234|56");
-  const progress = page.getByRole("progressbar", { name: "Total registered accounts" });
-  await progress.waitFor();
-  assert.equal(await progress.getAttribute("aria-valuenow"), "1290");
+  const progress = page.getByRole("progressbar", { name: /Registered Talent/ });
+  const clientProgress = page.getByRole("progressbar", { name: /Registered Clients/ });
+  await progress.waitFor(); await clientProgress.waitFor();
+  assert.equal(await progress.getAttribute("aria-valuenow"), "1234");
   assert.equal(await progress.getAttribute("aria-valuemax"), "10000");
+  assert.equal(await clientProgress.getAttribute("aria-valuenow"), "56");
+  assert.equal(await clientProgress.getAttribute("aria-valuemax"), "1000");
   await page.clock.fastForward(60_001);
   await page.getByText("1,235", { exact: true }).waitFor();
   assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["1,235", "55"]);
@@ -273,23 +291,21 @@ for (const width of [320, 390, 768, 1024, 1440]) {
   });
 }
 
-test("total account progress shows the true over-goal total and caps its bar", async () => {
+test("role goal meters retain true counts, cap progress and respect reduced motion", async () => {
   const page = await openPage(390, 844, route => route.fulfill({ json: {
     contractorAccounts: 12_000,
     clientAccounts: 345,
     asOf: "2026-10-16T08:00:00.000Z",
   } }));
-  const progress = page.getByRole("progressbar", { name: "Total registered accounts" });
+  const progress = page.getByRole("progressbar", { name: /Registered Talent/ });
   await progress.waitFor();
-  assert.equal(await page.locator(".investor-total-progress-heading p").innerText(), "12,345 of 10,000");
-  assert.equal(await page.locator(".investor-total-progress-percent").innerText(), "123.5%");
+  assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["12,000", "345"]);
+  assert.equal(await page.locator(".investor-goal-percent").first().innerText(), "100%");
   assert.equal(await progress.getAttribute("aria-valuenow"), "10000");
-  assert.match((await progress.getAttribute("aria-valuetext"))!, /12,345 of 10,000.*goal exceeded/);
-  assert.equal(await progress.locator(".investor-total-progress-fill").evaluate(el => getComputedStyle(el).transitionDuration), "0s");
-  await page.waitForFunction(() =>
-    getComputedStyle(document.querySelector(".investor-total-progress-fill")!).transform === "matrix(1, 0, 0, 1, 0, 0)");
-  assert.equal(await progress.locator(".investor-total-progress-fill").evaluate(el => getComputedStyle(el).transform),
-    "matrix(1, 0, 0, 1, 0, 0)");
+  assert.match((await progress.getAttribute("aria-valuetext"))!, /12,000 of 10,000/);
+  assert.equal(await progress.locator(".investor-meter-fill").evaluate(el => getComputedStyle(el).transitionDuration), "0s");
+  assert.equal(await progress.locator(".investor-meter-fill").evaluate(el => el.getBoundingClientRect().width),
+    await progress.evaluate(el => el.getBoundingClientRect().width));
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.close();
 });
@@ -300,12 +316,43 @@ test("investor goal errors offer a retry without hiding account cards", async ()
     calls++;
     return calls === 1
       ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
-      : route.fulfill({ json: { totalGoal: 10_000 } });
+      : route.fulfill({ json: { totalGoal: 10_000, contractorGoal2027: 10_000, clientGoal2027: 1_000 } });
   });
-  await page.getByText("Account goal is temporarily unavailable.").waitFor();
+  await page.getByText("Account goals are temporarily unavailable.").waitFor();
   assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["1,234", "56"]);
   await page.getByRole("button", { name: "Try again" }).last().click();
-  await page.getByRole("progressbar", { name: "Total registered accounts" }).waitFor();
+  await page.getByRole("progressbar", { name: /Registered Talent/ }).waitFor();
+  await page.close();
+});
+
+test("role meters use v7 percentage precision and retain visible zero-value knobs", async () => {
+  let count = 9;
+  const page = await openPage(390, 844, route => route.fulfill({ json: {
+    contractorAccounts: count, clientAccounts: 0, asOf: "2026-10-16T08:00:00.000Z",
+  } }));
+  for (const [nextCount, expected] of [[9, "0.09%"], [120, "1.2%"], [1200, "12%"], [0, "0%"]] as const) {
+    count = nextCount;
+    if (nextCount !== 9) await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("progressbar", { name: /Registered Talent/ }).waitFor();
+    assert.equal(await page.locator(".investor-goal-percent").first().innerText(), expected);
+  }
+  for (const bar of await page.getByRole("progressbar").all()) {
+    assert.equal(await bar.getAttribute("aria-valuenow"), "0");
+    const track = await bar.boundingBox();
+    const knob = await bar.locator(".investor-meter-knob").boundingBox();
+    assert.ok(track && knob && knob.x >= track.x - 1 && knob.x + knob.width <= track.x + track.width + 1,
+      "zero-value knob must remain fully visible within the track");
+  }
+  await page.close();
+});
+
+test("unset role goals never invent progress or hide actual counts", async () => {
+  const page = await openPage(390, 844, undefined, false, route => route.fulfill({ json: {
+    totalGoal: 10000, contractorGoal2027: null, clientGoal2027: null,
+  } }));
+  await page.getByText("A 2027 goal has not been set.").first().waitFor();
+  assert.deepEqual(await page.locator(".investor-traction-card b").allTextContents(), ["1,234", "56"]);
+  assert.equal(await page.getByRole("progressbar").count(), 0);
   await page.close();
 });
 

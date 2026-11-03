@@ -18,7 +18,7 @@
 .onspot-investors-page input,
 .onspot-investors-page select,
 .onspot-investors-page textarea {
-  font-family: var(--font-sans, Inter, sans-serif);
+  font-family: var(--font-sans, sans-serif);
 }
 
 .onspot-investors-page a {
@@ -77,7 +77,7 @@
   color: var(--ink);
   background: var(--paper);
   box-shadow: 0 40px 100px rgba(6, 10, 60, .6);
-  font-family: var(--sans);
+  font-family: var(--font-sans, sans-serif);
   line-height: 1.5;
 }
 
@@ -90,7 +90,7 @@
 
 .investor-request-dialog,
 .investor-request-dialog :is(button, input, select, textarea, h1, h2, h3, h4) {
-  font-family: var(--sans);
+  font-family: var(--font-sans, sans-serif);
 }
 
 .investor-request-dialog .investor-dialog-header {
@@ -124,7 +124,7 @@
 .investor-request-dialog h2 {
   color: var(--ink);
   font-size: 21px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
   letter-spacing: -.015em;
 }
@@ -275,7 +275,7 @@
   background: var(--royal);
   cursor: pointer;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   transition: background .15s, opacity .15s;
 }
 
@@ -374,13 +374,13 @@
   --line: #e3e6f5;
   --white: #fff;
   --wrap: 1160px;
-  --sans: var(--font-sans, Inter, sans-serif);
+  --sans: var(--font-sans, sans-serif);
   position: relative;
   overflow: hidden;
   padding: 0;
   color: var(--ink);
   background: #fff;
-  font-family: var(--sans);
+  font-family: var(--font-sans, sans-serif);
   font-size: 16px;
   line-height: 1.55;
 }
@@ -429,9 +429,455 @@
   color: var(--deep);
   background: #fff;
   font-size: 14px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
+.onspot-investors-page .investor-open {
+  background:
+    radial-gradient(900px 600px at 80% 40%, rgba(110, 124, 255, .35), transparent 65%),
+    linear-gradient(160deg, #2533a2 0%, #1e2894 50%, #151b78 100%);
+}
+
+.onspot-investors-page {
+  --yellow: #fac333;
+  --sans: var(--font-sans, sans-serif);
+  font-family: var(--font-sans, sans-serif);
+  overflow-x: clip;
+}
+
+.onspot-investors-page :is(h1, h2, h3, h4, b, strong, button) {
+  font-weight: 700;
+}
+
+.onspot-investors-page :is(button, input, select, textarea) {
+  font-family: var(--font-sans, sans-serif);
+}
+
+.onspot-investors-page .investor-open {
+  min-height: 860px;
+  background:
+    radial-gradient(900px 600px at 80% 40%, rgba(110, 124, 255, .35), transparent 65%),
+    linear-gradient(160deg, #2533a2 0%, #1e2894 50%, #151b78 100%);
+}
+
+.onspot-investors-page .investor-open::before {
+  background: radial-gradient(circle, rgba(250, 195, 51, .2), rgba(37, 51, 162, .08) 55%, transparent 70%);
+}
+
+.onspot-investors-page .investor-open::after {
+  background: linear-gradient(transparent, rgba(13, 16, 79, .5));
+}
+
+.onspot-investors-page .investor-hero-grid {
+  display: none;
+}
+
+.onspot-investors-page .hero-map {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,.4) 0%, rgba(0,0,0,.4) 38%, #000 58%);
+  mask-image: linear-gradient(90deg, rgba(0,0,0,.4) 0%, rgba(0,0,0,.4) 38%, #000 58%);
+}
+
+.onspot-investors-page .hero-map .land {
+  fill: none;
+  stroke: rgba(255,255,255,.22);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.onspot-investors-page .hero-map .arc {
+  fill: none;
+  stroke: var(--yellow);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 6 8;
+  opacity: .75;
+  animation: investor-map-dash 4s linear infinite;
+}
+
+.onspot-investors-page .hero-map .pin { fill: #fff; }
+.onspot-investors-page .hero-map .pin.home { fill: var(--yellow); }
+.onspot-investors-page .hero-map .pulse {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: investor-map-ping 2.6s ease-out infinite;
+}
+.onspot-investors-page .hero-map .pulse.home { stroke: var(--yellow); }
+
+@keyframes investor-map-dash { to { stroke-dashoffset: -140; } }
+@keyframes investor-map-ping {
+  from { transform: scale(1); opacity: .9; }
+  to { transform: scale(4); opacity: 0; }
+}
+
+.onspot-investors-page .investor-hero-inner {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 130px 0 70px;
+}
+
+.onspot-investors-page .investor-hero-copy { align-self: center; }
+.onspot-investors-page .h-accent {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+.onspot-investors-page .h-accent i {
+  height: 5px;
+  border-radius: 5px;
+  background: var(--yellow);
+}
+.onspot-investors-page .h-accent i:nth-child(1) { width: 46px; }
+.onspot-investors-page .h-accent i:nth-child(2) { width: 14px; opacity: .6; }
+.onspot-investors-page .h-accent i:nth-child(3) { width: 7px; opacity: .35; }
+.onspot-investors-page .investor-open h1 {
+  max-width: 14em;
+  color: #fff;
+  font-size: clamp(34px, 3.9vw, 54px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.03em;
+  text-wrap: pretty;
+}
+.onspot-investors-page .investor-highlight { color: #fac333; }
+
+.onspot-investors-page .investor-phone-stage {
+  min-height: 740px;
+  perspective: none;
+  overflow: visible;
+}
+.onspot-investors-page .phone-wrap {
+  --phone-scale: 1;
+  position: relative;
+  width: 612px;
+  height: 703px;
+  flex: none;
+  transform: scale(var(--phone-scale));
+  transform-origin: center;
+  animation: investor-phone-arrive 1.1s cubic-bezier(.2,.7,.2,1) both;
+}
+@keyframes investor-phone-arrive {
+  from { opacity: 0; translate: 0 50px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.onspot-investors-page .phone-shadow {
+  position: absolute;
+  left: 8%;
+  right: 22%;
+  bottom: -6px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(5,7,45,.6), transparent);
+  filter: blur(10px);
+  transform: rotate(10deg);
+}
+.onspot-investors-page .phone-wrap .investor-phone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 688px;
+  padding: 11px;
+  border-radius: 56px;
+  transform-origin: 0 0;
+  transform: matrix3d(.89845837,.10920125,0,-7.1711952e-05,-.38504687,.82552738,0,-.00011580961,0,0,1,0,287,10,0,1);
+  animation: none;
+  background: linear-gradient(120deg,#4a4a52 0%,#16161a 16%,#2e2e35 36%,#0c0c0f 60%,#2a2a30 82%,#141417 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.22), inset 0 0 0 3.5px rgba(0,0,0,.6), 5px 6px 0 #1d1d22, 8px 9px 0 #0d0d10, 10px 12px 24px rgba(5,7,45,.6);
+}
+.onspot-investors-page .phone-wrap .investor-phone::before {
+  top: 150px;
+  left: -3px;
+  width: 3px;
+  height: 34px;
+  background: #2c2c33;
+  box-shadow: 0 52px 0 #2c2c33, 0 96px 0 #2c2c33;
+}
+.onspot-investors-page .phone-wrap .investor-phone::after {
+  top: 170px;
+  right: -3px;
+  width: 3px;
+  height: 70px;
+  background: #2c2c33;
+}
+.onspot-investors-page .phone-wrap .investor-phone-screen {
+  border: 7px solid #000;
+  border-radius: 46px;
+}
+.onspot-investors-page .phone-wrap .investor-phone-island {
+  top: 25px;
+  width: 94px;
+  height: 27px;
+  background: #000;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.onspot-investors-page .phone-wrap .investor-phone-content { padding: 86px 22px 0; }
+.onspot-investors-page .phone-wrap .investor-phone-headline { font-size: 30px; }
+.onspot-investors-page .phone-wrap .investor-phone-description { max-width: 236px; font-size: 12.5px; }
+.onspot-investors-page .phone-wrap .investor-phone-screen::after {
+  background: linear-gradient(120deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,0) 35%);
+}
+.onspot-investors-page .investor-phone-wordmark {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: normal;
+}
+.onspot-investors-page .investor-phone-glow { width: 560px; height: 560px; }
+.onspot-investors-page .investor-phone-ring { width: 620px; height: 620px; }
+.onspot-investors-page .investor-orbit { width: 640px; height: 640px; }
+.onspot-investors-page .investor-badge-globe { top: 40px; right: -3%; }
+.onspot-investors-page .investor-badge-check { bottom: 150px; left: 0; }
+.onspot-investors-page .investor-badge-nur { top: 150px; left: 4%; }
+.onspot-investors-page .investor-badge-mark { bottom: 80px; right: 8%; }
+
+.onspot-investors-page .investor-traction-heading h2,
+.onspot-investors-page .investor-letter h2 {
+  letter-spacing: -.025em;
+  font-weight: 700;
+}
+
+.onspot-investors-page .investor-traction-grid {
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.onspot-investors-page .investor-traction-card {
+  padding: 28px 30px;
+}
+.onspot-investors-page .investor-traction-card > b { font-size: 42px; }
+.onspot-investors-page .investor-role-goals {
+  display: grid;
+  order: 2;
+  gap: 16px;
+  margin-top: 16px;
+}
+.onspot-investors-page .investor-role-goal-skeletons {
+  display: grid;
+  gap: 16px;
+}
+.onspot-investors-page .investor-role-goal-skeletons > span:first-child {
+  height: 220px;
+  border-radius: 18px;
+  background: linear-gradient(100deg, #e8eaf7 25%, #f7f8fd 40%, #e8eaf7 65%);
+  background-size: 300% 100%;
+  animation: investor-skeleton 1.4s ease infinite;
+}
+@keyframes investor-skeleton { to { background-position: -150% 0; } }
+.onspot-investors-page .investor-goal-card {
+  position: relative;
+  overflow: hidden;
+  padding: 24px 26px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(20,26,94,.045);
+}
+.onspot-investors-page .investor-goal-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.onspot-investors-page .investor-goal-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 18px;
+}
+.onspot-investors-page .investor-goal-identity > div { min-width: 0; }
+.onspot-investors-page .investor-goal-identity strong {
+  display: block;
+  color: var(--deep);
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+}
+.onspot-investors-page .investor-goal-identity > div > span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.onspot-investors-page .investor-goal-percent {
+  flex: 0 0 auto;
+  color: var(--royal);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.onspot-investors-page .investor-goal-copy {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.onspot-investors-page .investor-meter {
+  position: relative;
+  height: 12px;
+  border-radius: 99px;
+  background: #e9ecfa;
+  box-shadow: inset 0 1px 2px rgba(19,23,106,.08);
+}
+.onspot-investors-page .investor-meter-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--royal), #5b6bff);
+  transition: width 1.4s cubic-bezier(.2,.7,.2,1);
+}
+.onspot-investors-page .investor-meter-knob {
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 2px 8px rgba(19,23,106,.3);
+}
+.onspot-investors-page .investor-meter-tick {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: #d3d8f3;
+}
+.onspot-investors-page .investor-meter-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 3px;
+  margin-top: 9px;
+  color: #9aa0c8;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.onspot-investors-page .investor-meter-scale span { display: inline; margin: 0; }
+.onspot-investors-page .investor-goal-clients .investor-meter-fill {
+  background: linear-gradient(90deg, #e8ae1c, var(--yellow));
+}
+.onspot-investors-page .investor-goal-clients .investor-meter-knob { background: var(--royal); }
+.onspot-investors-page .investor-goal-card[role="status"] p {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.onspot-investors-page .investor-goal-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.onspot-investors-page .investor-goal-message button {
+  padding: 8px 14px;
+  border: 1px solid var(--royal);
+  border-radius: 9px;
+  color: var(--royal);
+  background: transparent;
+  cursor: pointer;
+}
+
+.onspot-investors-page .investor-letter-visual {
+  min-height: 640px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--deep);
+}
+.onspot-investors-page .investor-founders-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 28%;
+  border-radius: 20px;
+}
+.onspot-investors-page .investor-letter-clip {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: 20px;
+  background: linear-gradient(0deg, rgba(19,23,106,.55) 0%, rgba(19,23,106,0) 45%);
+}
+.onspot-investors-page .investor-visual-note { z-index: 2; }
+.onspot-investors-page .investor-letter-dots { z-index: 3; }
+.onspot-investors-page .investor-letter-inset { display: none; }
+.onspot-investors-page .investor-visual-note h2 {
+  font-size: 24px;
+  letter-spacing: -.02em;
+  font-weight: 700;
+}
+.onspot-investors-page .investor-phone-stage { min-width: 0; }
+
+@media (max-width: 1180px) {
+  .onspot-investors-page .phone-wrap { --phone-scale: .86; }
+  .onspot-investors-page .investor-phone-stage { min-height: 660px; }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  .onspot-investors-page .phone-wrap { --phone-scale: .72; }
+}
+@media (max-width: 900px) {
+  .onspot-investors-page .investor-open { min-height: 0; }
+  .onspot-investors-page .investor-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-top: 125px;
+  }
+  .onspot-investors-page .investor-open h1 { max-width: none; }
+  .onspot-investors-page .phone-wrap { --phone-scale: .9; }
+  .onspot-investors-page .investor-phone-stage { min-height: 680px; }
+  .onspot-investors-page .investor-badge-nur,
+  .onspot-investors-page .investor-badge-mark { display: none; }
+  .onspot-investors-page .investor-letter-visual { min-height: 520px; }
+}
+@media (max-width: 600px) {
+  .onspot-investors-page .investor-wrap { width: calc(100% - 32px); }
+  .onspot-investors-page .investor-hero-inner { padding-top: 112px; }
+  .onspot-investors-page .phone-wrap { --phone-scale: .6; }
+  .onspot-investors-page .investor-phone-stage {
+    min-height: 470px;
+    overflow: hidden;
+  }
+  .onspot-investors-page .investor-phone-glow,
+  .onspot-investors-page .investor-phone-ring { width: 380px; height: 380px; }
+  .onspot-investors-page .investor-orbit { width: 400px; height: 400px; }
+  .onspot-investors-page .investor-traction-card { padding: 22px 20px; }
+  .onspot-investors-page .investor-goal-card { padding: 22px 20px; }
+  .onspot-investors-page .investor-goal-identity { gap: 14px; }
+  .onspot-investors-page .investor-goal-identity strong { font-size: 32px; }
+  .onspot-investors-page .investor-letter-visual { min-height: 440px; }
+}
+@media (max-width: 380px) {
+  .onspot-investors-page .phone-wrap { --phone-scale: .48; }
+  .onspot-investors-page .investor-phone-stage { min-height: 390px; }
+  .onspot-investors-page .investor-hero-inner { gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onspot-investors-page .hero-map .arc,
+  .onspot-investors-page .hero-map .pulse { animation: none; }
+}
 .onspot-investors-page .investor-open {
   position: relative;
   display: block;
@@ -494,9 +940,9 @@
   max-width: 15em;
   color: #fff;
   font-size: clamp(34px, 4.1vw, 54px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.08;
-  letter-spacing: -.035em;
+  letter-spacing: -.03em;
   text-wrap: balance;
 }
 
@@ -683,7 +1129,7 @@
   margin: 20px 0 14px;
   color: #fff;
   font-size: 31px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.08;
   letter-spacing: -.03em;
 }
@@ -974,7 +1420,7 @@
   display: block;
   color: var(--deep);
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
   letter-spacing: -.03em;
   white-space: normal;
@@ -1029,9 +1475,9 @@
 .onspot-investors-page .investor-letter h2 {
   color: var(--deep);
   font-size: clamp(30px, 4vw, 45px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.12;
-  letter-spacing: -.04em;
+  letter-spacing: -.025em;
 }
 
 .onspot-investors-page .investor-traction-heading p {
@@ -1052,7 +1498,7 @@
   color: var(--muted);
   background: #fff;
   font-size: 12.5px;
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .onspot-investors-page .investor-traction-updated::before {
@@ -1092,7 +1538,7 @@
 .onspot-investors-page .investor-total-progress-heading h3 {
   color: var(--deep);
   font-size: 16px;
-  font-weight: 750;
+  font-weight: 700;
   line-height: 1.3;
 }
 
@@ -1107,7 +1553,7 @@
   flex: 0 0 auto;
   color: var(--royal);
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1198,9 +1644,9 @@
 .onspot-investors-page .investor-traction-card b {
   color: var(--deep);
   font-size: 54px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: -.045em;
+  letter-spacing: -.02em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1480,7 +1926,7 @@
   margin-bottom: 30px;
   color: var(--deep) !important;
   font-size: clamp(22px, 2.3vw, 28px) !important;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3 !important;
   letter-spacing: -.025em;
 }
@@ -1517,7 +1963,7 @@
   margin-bottom: 12px;
   color: var(--muted);
   font-size: 15px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .onspot-investors-page .investor-compare .investor-now h3 {
@@ -1644,9 +2090,9 @@
   border-top: 0;
   color: #fff;
   font-size: clamp(26px, 3.4vw, 42px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -.035em;
+  letter-spacing: -.025em;
   text-wrap: balance;
 }
 
@@ -1658,7 +2104,7 @@
   margin-bottom: 20px;
   color: var(--yellow);
   font-size: 12px;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: .1em;
   text-align: center;
   text-transform: uppercase;
@@ -1706,7 +2152,7 @@
 .onspot-investors-page .investor-sign b {
   color: #fff;
   font-size: 15.5px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
 }
 
@@ -1762,9 +2208,9 @@
   margin-bottom: 40px;
   color: #fff;
   font-size: clamp(34px, 5vw, 64px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.02;
-  letter-spacing: -.038em;
+  letter-spacing: -.025em;
   text-wrap: balance;
 }
 
@@ -1813,7 +2259,7 @@
   gap: 10px;
   color: rgba(255, 255, 255, .75);
   font-size: 13.5px;
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .onspot-investors-page .investor-card-kicker svg {
@@ -1830,7 +2276,7 @@
 .onspot-investors-page .investor-card-title {
   display: block;
   font-size: 27px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -.03em;
 }
@@ -1842,7 +2288,7 @@
   margin-top: 12px;
   color: var(--yellow);
   font-size: 14.5px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .onspot-investors-page .investor-card-link svg {
@@ -1944,7 +2390,7 @@
   --field: #f4f6ff;
   --field-line: #d3d8f5;
   --error: #c4314b;
-  --sans: var(--font-sans, Inter, sans-serif);
+  --sans: var(--font-sans, sans-serif);
   --wrap: 1160px;
   --measure: 64ch;
 }
@@ -2012,6 +2458,220 @@
     padding: 40px;
   }
 
+}
+
+/* Final investor reference overrides. Keep the dialog styles above isolated. */
+.onspot-investors-page {
+  --yellow: #fac333;
+  --sans: var(--font-sans, sans-serif);
+  overflow-x: clip;
+  font-family: var(--font-sans, sans-serif);
+}
+.onspot-investors-page :is(h1, h2, h3, h4, b, strong, button) { font-weight: 700; }
+.onspot-investors-page :is(button, input, select, textarea) { font-family: var(--font-sans, sans-serif); }
+.onspot-investors-page .investor-open {
+  min-height: 860px;
+  padding: 0;
+  background:
+    radial-gradient(900px 600px at 80% 40%, rgba(110,124,255,.35), transparent 65%),
+    linear-gradient(160deg,#2533a2 0%,#1e2894 50%,#151b78 100%);
+}
+.onspot-investors-page .investor-open::before {
+  background: radial-gradient(circle,rgba(250,195,51,.20),rgba(37,51,162,.08) 55%,transparent 70%);
+}
+.onspot-investors-page .investor-open::after { background: linear-gradient(transparent,rgba(13,16,79,.5)); }
+.onspot-investors-page .investor-hero-grid { display: none; }
+.onspot-investors-page .hero-map {
+  position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%;
+  -webkit-mask-image: linear-gradient(90deg,rgba(0,0,0,.4) 0%,rgba(0,0,0,.4) 38%,#000 58%);
+  mask-image: linear-gradient(90deg,rgba(0,0,0,.4) 0%,rgba(0,0,0,.4) 38%,#000 58%);
+}
+.onspot-investors-page .hero-map .land {
+  fill: none; stroke: rgba(255,255,255,.22); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round;
+}
+.onspot-investors-page .hero-map .arc {
+  fill: none; stroke: var(--yellow); stroke-width: 1.6; stroke-linecap: round;
+  stroke-dasharray: 6 8; opacity: .75; animation: investor-map-dash 4s linear infinite;
+}
+.onspot-investors-page .hero-map .pin { fill: #fff; }
+.onspot-investors-page .hero-map .pin.home { fill: var(--yellow); }
+.onspot-investors-page .hero-map .pulse {
+  fill: none; stroke: #fff; stroke-width: 1.5; transform-box: fill-box; transform-origin: center;
+  animation: investor-map-ping 2.6s ease-out infinite;
+}
+.onspot-investors-page .hero-map .pulse.home { stroke: var(--yellow); }
+@keyframes investor-map-dash { to { stroke-dashoffset: -140; } }
+@keyframes investor-map-ping { from { transform: scale(1); opacity: .9; } to { transform: scale(4); opacity: 0; } }
+.onspot-investors-page .investor-hero-inner {
+  position: relative; z-index: 1; min-height: 860px; grid-template-columns: 1fr 1fr;
+  gap: 24px; padding: 130px 0 70px;
+}
+.onspot-investors-page .investor-hero-copy { align-self: center; }
+.onspot-investors-page .h-accent { display: flex; gap: 6px; margin-bottom: 24px; }
+.onspot-investors-page .h-accent i { height: 5px; border-radius: 5px; background: var(--yellow); }
+.onspot-investors-page .h-accent i:nth-child(1) { width: 46px; }
+.onspot-investors-page .h-accent i:nth-child(2) { width: 14px; opacity: .6; }
+.onspot-investors-page .h-accent i:nth-child(3) { width: 7px; opacity: .35; }
+.onspot-investors-page .investor-open h1 {
+  max-width: 14em; color: #fff; font-size: clamp(34px,3.9vw,54px); font-weight: 700;
+  line-height: 1.1; letter-spacing: -.03em; text-wrap: pretty;
+}
+.onspot-investors-page .investor-highlight { color: #fac333; }
+.onspot-investors-page .investor-phone-stage {
+  min-width: 0; min-height: 740px; overflow: visible; perspective: none;
+}
+.onspot-investors-page .phone-wrap {
+  --phone-scale: 1; position: relative; width: 612px; height: 703px; flex: none;
+  transform: scale(var(--phone-scale)); transform-origin: center;
+  animation: investor-phone-arrive 1.1s cubic-bezier(.2,.7,.2,1) both;
+}
+@keyframes investor-phone-arrive { from { opacity: 0; translate: 0 50px; } to { opacity: 1; translate: 0 0; } }
+.onspot-investors-page .phone-shadow {
+  position: absolute; left: 8%; right: 22%; bottom: -6px; height: 70px; border-radius: 50%;
+  background: radial-gradient(closest-side,rgba(5,7,45,.6),transparent); filter: blur(10px); transform: rotate(10deg);
+}
+.onspot-investors-page .phone-wrap .investor-phone {
+  position: absolute; top: 0; left: 0; width: 320px; height: 688px; padding: 11px; border-radius: 56px;
+  transform-origin: 0 0;
+  transform: matrix3d(.89845837,.10920125,0,-7.1711952e-05,-.38504687,.82552738,0,-.00011580961,0,0,1,0,287,10,0,1);
+  animation: none;
+  background: linear-gradient(120deg,#4a4a52 0%,#16161a 16%,#2e2e35 36%,#0c0c0f 60%,#2a2a30 82%,#141417 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.22),inset 0 0 0 3.5px rgba(0,0,0,.6),5px 6px 0 #1d1d22,8px 9px 0 #0d0d10,10px 12px 24px rgba(5,7,45,.6);
+}
+.onspot-investors-page .phone-wrap .investor-phone::before {
+  top: 150px; left: -3px; width: 3px; height: 34px; background: #2c2c33;
+  box-shadow: 0 52px 0 #2c2c33,0 96px 0 #2c2c33;
+}
+.onspot-investors-page .phone-wrap .investor-phone::after {
+  top: 170px; right: -3px; width: 3px; height: 70px; background: #2c2c33;
+}
+.onspot-investors-page .phone-wrap .investor-phone-screen { border: 7px solid #000; border-radius: 46px; }
+.onspot-investors-page .phone-wrap .investor-phone-island {
+  top: 25px; width: 94px; height: 27px; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.onspot-investors-page .phone-wrap .investor-phone-content { padding: 86px 22px 0; }
+.onspot-investors-page .phone-wrap .investor-phone-headline { font-size: 30px; }
+.onspot-investors-page .phone-wrap .investor-phone-description { max-width: 236px; font-size: 12.5px; }
+.onspot-investors-page .phone-wrap .investor-phone-screen::after {
+  background: linear-gradient(120deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 35%);
+}
+.onspot-investors-page .investor-phone-wordmark { color: #fff; font-size: 18px; font-weight: 700; letter-spacing: normal; }
+.onspot-investors-page .investor-phone-glow { width: 560px; height: 560px; }
+.onspot-investors-page .investor-phone-ring { width: 620px; height: 620px; }
+.onspot-investors-page .investor-orbit { width: 640px; height: 640px; }
+.onspot-investors-page .investor-badge-globe { top: 40px; right: -3%; }
+.onspot-investors-page .investor-badge-check { bottom: 150px; left: 0; }
+.onspot-investors-page .investor-badge-nur { top: 150px; left: 4%; }
+.onspot-investors-page .investor-badge-mark { bottom: 80px; right: 8%; }
+.onspot-investors-page .investor-traction-heading h2,
+.onspot-investors-page .investor-letter h2 { letter-spacing: -.025em; font-weight: 700; }
+.onspot-investors-page .investor-traction-grid { grid-template-columns: 1fr; gap: 16px; }
+.onspot-investors-page .investor-traction-card { padding: 28px 30px; }
+.onspot-investors-page .investor-traction-card > b { font-size: 42px; }
+.onspot-investors-page .investor-role-goals { display: grid; order: 2; gap: 16px; margin-top: 16px; }
+.onspot-investors-page .investor-role-goal-skeletons { display: grid; gap: 16px; }
+.onspot-investors-page .investor-role-goal-skeletons > span:first-child {
+  height: 220px; border-radius: 18px;
+  background: linear-gradient(100deg,#e8eaf7 25%,#f7f8fd 40%,#e8eaf7 65%); background-size: 300% 100%;
+  animation: investor-skeleton 1.4s ease infinite;
+}
+@keyframes investor-skeleton { to { background-position: -150% 0; } }
+.onspot-investors-page .investor-goal-card {
+  position: relative; overflow: hidden; padding: 24px 26px 20px;
+  border: 1px solid var(--line); border-radius: 18px; background: #fff;
+  box-shadow: 0 12px 34px rgba(20,26,94,.045);
+}
+.onspot-investors-page .investor-goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.onspot-investors-page .investor-goal-identity { display: flex; min-width: 0; align-items: center; gap: 18px; }
+.onspot-investors-page .investor-goal-identity > div { min-width: 0; }
+.onspot-investors-page .investor-goal-identity strong {
+  display: block; color: var(--deep); font-size: 38px; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
+.onspot-investors-page .investor-goal-identity > div > span {
+  display: block; margin-top: 6px; color: var(--muted); font-size: 14px; font-weight: 600;
+}
+.onspot-investors-page .investor-goal-percent {
+  flex: 0 0 auto; color: var(--royal); font-size: 20px; font-variant-numeric: tabular-nums;
+}
+.onspot-investors-page .investor-goal-copy { margin-bottom: 10px; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.onspot-investors-page .investor-meter {
+  position: relative; height: 12px; border-radius: 99px; background: #e9ecfa;
+  box-shadow: inset 0 1px 2px rgba(19,23,106,.08);
+}
+.onspot-investors-page .investor-meter-fill {
+  position: absolute; top: 0; bottom: 0; left: 0; border-radius: inherit;
+  background: linear-gradient(90deg,var(--royal),#5b6bff); transition: width 1.4s cubic-bezier(.2,.7,.2,1);
+}
+.onspot-investors-page .investor-meter-knob {
+  position: absolute; top: 50%; right: -6px; display: block; width: 20px; height: 20px; margin-top: -10px;
+  border: 4px solid #fff; border-radius: 50%; background: var(--yellow); box-shadow: 0 2px 8px rgba(19,23,106,.3);
+}
+.onspot-investors-page .investor-meter-tick {
+  position: absolute; top: 3px; bottom: 3px; width: 2px; margin-left: -1px; border-radius: 2px; background: #d3d8f3;
+}
+.onspot-investors-page .investor-meter-scale {
+  display: flex; justify-content: space-between; gap: 3px; margin-top: 9px; color: #9aa0c8; font-size: 11px;
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.onspot-investors-page .investor-meter-scale span { display: inline; margin: 0; }
+.onspot-investors-page .investor-goal-clients .investor-meter-fill { background: linear-gradient(90deg,#e8ae1c,var(--yellow)); }
+.onspot-investors-page .investor-goal-clients .investor-meter-knob { background: var(--royal); }
+.onspot-investors-page .investor-goal-card[role="status"] p { margin-top: 12px; color: var(--muted); font-size: 13px; }
+.onspot-investors-page .investor-goal-message { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 14px; }
+.onspot-investors-page .investor-goal-message button {
+  padding: 8px 14px; border: 1px solid var(--royal); border-radius: 9px; color: var(--royal); background: transparent; cursor: pointer;
+}
+.onspot-investors-page .investor-letter-visual { min-height: 640px; overflow: hidden; border-radius: 20px; background: var(--deep); }
+.onspot-investors-page .investor-founders-photo {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 28%; border-radius: 20px;
+}
+.onspot-investors-page .investor-letter-clip {
+  position: absolute; z-index: 1; inset: 0; border-radius: 20px;
+  background: linear-gradient(0deg,rgba(19,23,106,.55) 0%,rgba(19,23,106,0) 45%);
+}
+.onspot-investors-page .investor-visual-note { z-index: 2; }
+.onspot-investors-page .investor-letter-dots { z-index: 3; }
+.onspot-investors-page .investor-letter-inset { display: none; }
+.onspot-investors-page .investor-visual-note h2 { font-size: 24px; letter-spacing: -.02em; font-weight: 700; }
+@media (max-width: 1180px) {
+  .onspot-investors-page .phone-wrap { --phone-scale: .86; }
+  .onspot-investors-page .investor-phone-stage { min-height: 660px; }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  .onspot-investors-page .phone-wrap { --phone-scale: .72; }
+}
+@media (max-width: 900px) {
+  .onspot-investors-page .investor-open { min-height: 0; }
+  .onspot-investors-page .investor-hero-inner { min-height: 0; grid-template-columns: 1fr; gap: 0; padding: 125px 0 70px; }
+  .onspot-investors-page .investor-open h1 { max-width: none; }
+  .onspot-investors-page .phone-wrap { --phone-scale: .9; }
+  .onspot-investors-page .investor-phone-stage { min-height: 680px; }
+  .onspot-investors-page .investor-badge-nur,
+  .onspot-investors-page .investor-badge-mark { display: none; }
+  .onspot-investors-page .investor-letter-visual { min-height: 520px; }
+}
+@media (max-width: 600px) {
+  .onspot-investors-page .investor-wrap { width: calc(100% - 32px); }
+  .onspot-investors-page .investor-hero-inner { padding-top: 112px; }
+  .onspot-investors-page .phone-wrap { --phone-scale: .55; }
+  .onspot-investors-page .investor-phone-stage { min-height: 450px; overflow: hidden; }
+  .onspot-investors-page .investor-phone-glow,
+  .onspot-investors-page .investor-phone-ring { width: 380px; height: 380px; }
+  .onspot-investors-page .investor-orbit { width: 400px; height: 400px; }
+  .onspot-investors-page .investor-traction-card,
+  .onspot-investors-page .investor-goal-card { padding: 22px 20px; }
+  .onspot-investors-page .investor-goal-identity { gap: 14px; }
+  .onspot-investors-page .investor-goal-identity strong { font-size: 32px; }
+  .onspot-investors-page .investor-letter-visual { min-height: 440px; }
+}
+@media (max-width: 340px) {
+  .onspot-investors-page .phone-wrap { --phone-scale: .45; }
+  .onspot-investors-page .investor-phone-stage { min-height: 365px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onspot-investors-page .hero-map .arc,
+  .onspot-investors-page .hero-map .pulse,
+  .onspot-investors-page .investor-role-goal-skeletons > span:first-child { animation: none; }
 }
 
 @media (max-width: 600px) {
@@ -2210,4 +2870,226 @@
     transform: none;
   }
 
+}
+
+/* End-of-file wins over the original layered investor styles above. */
+.onspot-investors-page { --yellow: #fac333; --sans: var(--font-sans, sans-serif); overflow-x: clip; font-family: var(--font-sans, sans-serif); }
+.onspot-investors-page :is(h1,h2,h3,h4,b,strong,button) { font-weight: 700; }
+.onspot-investors-page :is(button,input,select,textarea) { font-family: var(--font-sans, sans-serif); }
+.onspot-investors-page .investor-open {
+  min-height: 860px; padding: 0;
+  background: radial-gradient(900px 600px at 80% 40%,rgba(110,124,255,.35),transparent 65%),linear-gradient(160deg,#2533a2 0%,#1e2894 50%,#151b78 100%);
+}
+.onspot-investors-page .investor-open::before { background: radial-gradient(circle,rgba(250,195,51,.2),rgba(37,51,162,.08) 55%,transparent 70%); }
+.onspot-investors-page .investor-open::after { background: linear-gradient(transparent,rgba(13,16,79,.5)); }
+.onspot-investors-page .investor-hero-grid { display: none; }
+.onspot-investors-page .hero-map {
+  position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%;
+  -webkit-mask-image: linear-gradient(90deg,rgba(0,0,0,.4) 0%,rgba(0,0,0,.4) 38%,#000 58%);
+  mask-image: linear-gradient(90deg,rgba(0,0,0,.4) 0%,rgba(0,0,0,.4) 38%,#000 58%);
+}
+.onspot-investors-page .hero-map .land { fill: none; stroke: rgba(255,255,255,.22); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+.onspot-investors-page .hero-map .arc { fill: none; stroke: var(--yellow); stroke-width: 1.6; stroke-dasharray: 6 8; opacity: .75; animation: investor-map-dash 4s linear infinite; }
+.onspot-investors-page .hero-map .pin { fill: #fff; }
+.onspot-investors-page .hero-map .pin.home { fill: var(--yellow); }
+.onspot-investors-page .hero-map .pulse { fill: none; stroke: #fff; stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: investor-map-ping 2.6s ease-out infinite; }
+.onspot-investors-page .hero-map .pulse.home { stroke: var(--yellow); }
+@keyframes investor-map-dash { to { stroke-dashoffset: -140; } }
+@keyframes investor-map-ping { from { transform: scale(1); opacity: .9; } to { transform: scale(4); opacity: 0; } }
+.onspot-investors-page .investor-hero-inner { position: relative; z-index: 1; min-height: 860px; grid-template-columns: 1fr 1fr; gap: 24px; padding: 130px 0 70px; }
+.onspot-investors-page .investor-hero-copy { align-self: center; }
+.onspot-investors-page .h-accent { display: flex; gap: 6px; margin-bottom: 24px; }
+.onspot-investors-page .h-accent i { height: 5px; border-radius: 5px; background: var(--yellow); }
+.onspot-investors-page .h-accent i:nth-child(1) { width: 46px; }
+.onspot-investors-page .h-accent i:nth-child(2) { width: 14px; opacity: .6; }
+.onspot-investors-page .h-accent i:nth-child(3) { width: 7px; opacity: .35; }
+.onspot-investors-page .investor-open h1 { max-width: 14em; color: #fff; font-size: clamp(34px,3.9vw,54px); font-weight: 700; line-height: 1.1; letter-spacing: -.03em; text-wrap: pretty; }
+.onspot-investors-page .investor-highlight { color: #fac333; }
+.onspot-investors-page .investor-phone-stage { min-width: 0; min-height: 740px; overflow: visible; perspective: none; }
+.onspot-investors-page .phone-wrap { --phone-scale: 1; position: relative; width: 612px; height: 703px; flex: none; transform: scale(var(--phone-scale)); transform-origin: center; animation: investor-phone-arrive 1.1s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes investor-phone-arrive { from { opacity: 0; translate: 0 50px; } to { opacity: 1; translate: 0 0; } }
+.onspot-investors-page .phone-shadow { position: absolute; left: 8%; right: 22%; bottom: -6px; height: 70px; border-radius: 50%; background: radial-gradient(closest-side,rgba(5,7,45,.6),transparent); filter: blur(10px); transform: rotate(10deg); }
+.onspot-investors-page .phone-wrap .investor-phone {
+  position: absolute; top: 0; left: 0; width: 320px; height: 688px; padding: 11px; border-radius: 56px; transform-origin: 0 0;
+  transform: matrix3d(.89845837,.10920125,0,-7.1711952e-05,-.38504687,.82552738,0,-.00011580961,0,0,1,0,287,10,0,1); animation: none;
+  background: linear-gradient(120deg,#4a4a52 0%,#16161a 16%,#2e2e35 36%,#0c0c0f 60%,#2a2a30 82%,#141417 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.22),inset 0 0 0 3.5px rgba(0,0,0,.6),5px 6px 0 #1d1d22,8px 9px 0 #0d0d10,10px 12px 24px rgba(5,7,45,.6);
+}
+.onspot-investors-page .phone-wrap .investor-phone::before { top: 150px; left: -3px; width: 3px; height: 34px; background: #2c2c33; box-shadow: 0 52px 0 #2c2c33,0 96px 0 #2c2c33; }
+.onspot-investors-page .phone-wrap .investor-phone::after { top: 170px; right: -3px; width: 3px; height: 70px; background: #2c2c33; }
+.onspot-investors-page .phone-wrap .investor-phone-screen { border: 7px solid #000; border-radius: 46px; }
+.onspot-investors-page .phone-wrap .investor-phone-island { top: 25px; width: 94px; height: 27px; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+.onspot-investors-page .phone-wrap .investor-phone-content { padding: 86px 22px 0; }
+.onspot-investors-page .phone-wrap .investor-phone-headline { font-size: 30px; }
+.onspot-investors-page .phone-wrap .investor-phone-description { max-width: 236px; font-size: 12.5px; }
+.onspot-investors-page .investor-phone-wordmark { color: #fff; font-size: 18px; font-weight: 700; letter-spacing: normal; }
+.onspot-investors-page .investor-phone-glow { width: 560px; height: 560px; }
+.onspot-investors-page .investor-phone-ring { width: 620px; height: 620px; }
+.onspot-investors-page .investor-orbit { width: 640px; height: 640px; }
+.onspot-investors-page .investor-badge-globe { top: 40px; right: -3%; }
+.onspot-investors-page .investor-badge-check { bottom: 150px; left: 0; }
+.onspot-investors-page .investor-badge-nur { top: 150px; left: 4%; }
+.onspot-investors-page .investor-badge-mark { bottom: 80px; right: 8%; }
+.onspot-investors-page .investor-traction-heading h2,
+.onspot-investors-page .investor-letter h2 { letter-spacing: -.025em; font-weight: 700; }
+.onspot-investors-page .investor-traction-grid { grid-template-columns: 1fr; gap: 16px; }
+.onspot-investors-page .investor-traction-card { padding: 28px 30px; }
+.onspot-investors-page .investor-traction-card > b { font-size: 42px; }
+.onspot-investors-page .investor-role-goals { display: grid; order: 2; gap: 16px; margin-top: 16px; }
+.onspot-investors-page .investor-role-goal-skeletons { display: grid; gap: 16px; }
+.onspot-investors-page .investor-role-goal-skeletons > span:first-child { height: 220px; border-radius: 18px; background: linear-gradient(100deg,#e8eaf7 25%,#f7f8fd 40%,#e8eaf7 65%); background-size: 300% 100%; animation: investor-skeleton 1.4s ease infinite; }
+@keyframes investor-skeleton { to { background-position: -150% 0; } }
+.onspot-investors-page .investor-goal-card { position: relative; overflow: hidden; padding: 24px 26px 20px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 12px 34px rgba(20,26,94,.045); }
+.onspot-investors-page .investor-goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.onspot-investors-page .investor-goal-identity { display: flex; min-width: 0; align-items: center; gap: 18px; }
+.onspot-investors-page .investor-goal-identity strong { display: block; color: var(--deep); font-size: 38px; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.onspot-investors-page .investor-goal-identity > div > span { display: block; margin-top: 6px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.onspot-investors-page .investor-goal-percent { flex: 0 0 auto; color: var(--royal); font-size: 20px; font-variant-numeric: tabular-nums; }
+.onspot-investors-page .investor-goal-copy { margin-bottom: 10px; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.onspot-investors-page .investor-meter { position: relative; height: 12px; border-radius: 99px; background: #e9ecfa; box-shadow: inset 0 1px 2px rgba(19,23,106,.08); }
+.onspot-investors-page .investor-meter-fill { position: absolute; top: 0; bottom: 0; left: 0; border-radius: inherit; background: linear-gradient(90deg,var(--royal),#5b6bff); transition: width 1.4s cubic-bezier(.2,.7,.2,1); }
+.onspot-investors-page .investor-meter-knob { position: absolute; top: 50%; right: -6px; display: block; width: 20px; height: 20px; margin-top: -10px; border: 4px solid #fff; border-radius: 50%; background: var(--yellow); box-shadow: 0 2px 8px rgba(19,23,106,.3); }
+.onspot-investors-page .investor-meter-tick { position: absolute; top: 3px; bottom: 3px; width: 2px; margin-left: -1px; border-radius: 2px; background: #d3d8f3; }
+.onspot-investors-page .investor-meter-scale { display: flex; justify-content: space-between; gap: 3px; margin-top: 9px; color: #9aa0c8; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.onspot-investors-page .investor-meter-scale span { display: inline; margin: 0; }
+.onspot-investors-page .investor-goal-clients .investor-meter-fill { background: linear-gradient(90deg,#e8ae1c,var(--yellow)); }
+.onspot-investors-page .investor-goal-clients .investor-meter-knob { background: var(--royal); }
+.onspot-investors-page .investor-goal-card[role="status"] p { margin-top: 12px; color: var(--muted); font-size: 13px; }
+.onspot-investors-page .investor-goal-message { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 14px; }
+.onspot-investors-page .investor-goal-message button { padding: 8px 14px; border: 1px solid var(--royal); border-radius: 9px; color: var(--royal); background: transparent; cursor: pointer; }
+.onspot-investors-page .investor-letter-visual { min-height: 640px; overflow: hidden; border-radius: 20px; background: var(--deep); }
+.onspot-investors-page .investor-founders-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 28%; border-radius: 20px; }
+.onspot-investors-page .investor-letter-clip { position: absolute; z-index: 1; inset: 0; border-radius: 20px; background: linear-gradient(0deg,rgba(19,23,106,.55) 0%,rgba(19,23,106,0) 45%); }
+.onspot-investors-page .investor-visual-note { z-index: 2; }
+.onspot-investors-page .investor-letter-dots { z-index: 3; }
+.onspot-investors-page .investor-letter-inset { display: none; }
+.onspot-investors-page .investor-visual-note h2 { font-size: 24px; letter-spacing: -.02em; font-weight: 700; }
+@media (max-width: 1180px) { .onspot-investors-page .phone-wrap { --phone-scale: .86; } .onspot-investors-page .investor-phone-stage { min-height: 660px; } }
+@media (min-width: 901px) and (max-width: 1100px) { .onspot-investors-page .phone-wrap { --phone-scale: .72; } }
+@media (max-width: 900px) {
+  .onspot-investors-page .investor-open { min-height: 0; }
+  .onspot-investors-page .investor-hero-inner { min-height: 0; grid-template-columns: 1fr; gap: 0; padding: 125px 0 70px; }
+  .onspot-investors-page .investor-open h1 { max-width: none; }
+  .onspot-investors-page .phone-wrap { --phone-scale: .9; }
+  .onspot-investors-page .investor-phone-stage { min-height: 680px; }
+  .onspot-investors-page .investor-badge-nur,.onspot-investors-page .investor-badge-mark { display: none; }
+  .onspot-investors-page .investor-letter-visual { min-height: 520px; }
+}
+@media (max-width: 600px) {
+  .onspot-investors-page .investor-wrap { width: calc(100% - 32px); }
+  .onspot-investors-page .investor-hero-inner { padding-top: 112px; }
+  .onspot-investors-page .phone-wrap { --phone-scale: .58; }
+  .onspot-investors-page .investor-phone-stage { min-height: 450px; overflow: hidden; }
+  .onspot-investors-page .investor-phone-glow,.onspot-investors-page .investor-phone-ring { width: 380px; height: 380px; }
+  .onspot-investors-page .investor-orbit { width: 400px; height: 400px; }
+  .onspot-investors-page .investor-traction-card,.onspot-investors-page .investor-goal-card { padding: 22px 20px; }
+  .onspot-investors-page .investor-goal-identity { gap: 14px; }
+  .onspot-investors-page .investor-goal-identity strong { font-size: 32px; }
+  .onspot-investors-page .investor-letter-visual { min-height: 440px; }
+}
+@media (max-width: 340px) { .onspot-investors-page .phone-wrap { --phone-scale: .44; } .onspot-investors-page .investor-phone-stage { min-height: 365px; } }
+@media (prefers-reduced-motion: reduce) {
+  .onspot-investors-page .hero-map .arc,.onspot-investors-page .hero-map .pulse,.onspot-investors-page .investor-role-goal-skeletons > span:first-child { animation: none; }
+}
+.onspot-investors-page :is(h1,h2,h3,h4,b,strong) { font-weight: 700 !important; }
+.onspot-investors-page :is(.investor-top > .investor-nav > span,.investor-card-title,.investor-card-kicker,.investor-card-link,.investor-fact b,.investor-letter-first,.investor-letter-origin,.investor-vision,.investor-signatures h3) {
+  font-weight: 700;
+}
+.onspot-investors-page .investor-role-goal-skeletons::after {
+  display: block;
+  height: 220px;
+  border-radius: 18px;
+  background: linear-gradient(100deg,#e8eaf7 25%,#f7f8fd 40%,#e8eaf7 65%);
+  background-size: 300% 100%;
+  animation: investor-skeleton 1.4s ease infinite;
+  content: "";
+}
+.onspot-investors-page .investor-traction-card.investor-goal-card {
+  display: block;
+  min-height: 0;
+  padding: 28px 30px;
+}
+.onspot-investors-page .investor-goal-identity .investor-traction-icon {
+  position: static;
+  top: auto;
+  left: auto;
+  flex: 0 0 58px;
+}
+.onspot-investors-page .investor-goal-identity b {
+  display: block;
+  color: var(--deep);
+  font-size: 54px;
+  line-height: 1;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.onspot-investors-page .investor-goal-card .investor-goal-copy {
+  margin-top: 18px;
+}
+.onspot-investors-page .investor-goal-progress-loading,
+.onspot-investors-page .investor-goal-progress-placeholder {
+  display: block;
+  height: 12px;
+  border-radius: 99px;
+  background: #e9ecfa;
+}
+.onspot-investors-page .investor-goal-progress-loading {
+  background: linear-gradient(100deg,#e9ecfa 25%,#f7f8fd 45%,#e9ecfa 65%);
+  background-size: 300% 100%;
+  animation: investor-skeleton 1.4s ease infinite;
+}
+.onspot-investors-page .investor-goal-message { margin-top: 14px; }
+@media (max-width: 600px) {
+  .onspot-investors-page .investor-traction-card.investor-goal-card { padding: 22px 20px; }
+  .onspot-investors-page .investor-goal-identity .investor-traction-icon { flex-basis: 46px; }
+  .onspot-investors-page .investor-goal-identity b { font-size: 42px; }
+}
+@media (max-width: 600px) { .onspot-investors-page .phone-wrap { --phone-scale: .55; } }
+@media (max-width: 340px) { .onspot-investors-page .phone-wrap { --phone-scale: .44; } }
+@keyframes investor-skeleton { 50% { opacity: .56; } }
+.onspot-investors-page .investor-map-holder {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+}
+.onspot-investors-page .investor-phone-headline { font-weight: 700; letter-spacing: -.02em; }
+.onspot-investors-page .investor-phone-wordmark { letter-spacing: normal; }
+.onspot-investors-page .investor-traction-card.investor-goal-card b { letter-spacing: -.02em; }
+.onspot-investors-page .investor-goal-identity strong { letter-spacing: -.02em; }
+.onspot-investors-page .investor-vision { letter-spacing: -.025em; }
+.onspot-investors-page .investor-invest-head h2 { letter-spacing: -.025em; }
+
+/* Final v7 section rhythm and contained meter endpoints. */
+.onspot-investors-page .investor-open { padding: 96px 0; }
+@media (min-width: 1181px) {
+  .onspot-investors-page .investor-hero-inner { grid-template-columns: minmax(0, 1fr) 612px; }
+}
+.onspot-investors-page .investor-letter-body > p:not(.investor-letter-first) {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.75;
+}
+.onspot-investors-page .investor-goal-copy {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.onspot-investors-page .investor-meter-fill { min-width: 0; }
+.onspot-investors-page .investor-meter-knob {
+  right: auto;
+  top: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+@media (max-width: 600px) {
+  .onspot-investors-page .investor-open { padding: 68px 0; }
+  .onspot-investors-page .investor-hero-inner { padding: 130px 0 70px; }
+  .onspot-investors-page .phone-wrap { --phone-scale: .6; margin: -140px -120px; }
+  .onspot-investors-page .investor-phone-stage { height: 470px; min-height: 470px; overflow: visible; }
+  .onspot-investors-page .investor-badge { display: none; }
+}
+@media (max-width: 340px) {
+  .onspot-investors-page .phone-wrap { --phone-scale: .44; }
 }
