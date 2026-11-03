@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { before, after, test } from "node:test";
-import { mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { createServer, type ViteDevServer } from "vite";
@@ -11,6 +11,15 @@ let vite: ViteDevServer;
 let browser: Browser;
 let base: string;
 const cacheDir = mkdtempSync(join(tmpdir(), "investor-docs-vite-"));
+const screenshotDir = resolve("screenshots/investor-request");
+function markMockFixture(page: Page) {
+  return page.evaluate(() => {
+    const badge = document.createElement("div");
+    badge.textContent = "MOCKED BROWSER FIXTURE · NO EMAIL SENT";
+    badge.style.cssText = "position:fixed;z-index:10000;right:12px;bottom:12px;padding:7px 10px;border-radius:6px;background:#151a5e;color:#fff;font:700 10px/1.2 sans-serif;letter-spacing:.06em;box-shadow:0 2px 10px #151a5e44";
+    document.body.appendChild(badge);
+  });
+}
 before(async () => {
   vite = await createServer({
     configFile: false, root: resolve("client"), publicDir: resolve("public"), cacheDir,
@@ -352,6 +361,19 @@ for (const width of [320, 390, 768, 1024, 1440]) {
       assert.ok(layout.top >= 0 && layout.bottom <= layout.height + 1, JSON.stringify(layout));
       assert.equal(layout.bg, "rgb(255, 255, 255)");
       assert.notEqual(layout.color, layout.bg);
+      if (width === 320) {
+        assert.equal(await dialog.locator("textarea").getAttribute("maxlength"), "1500");
+        assert.equal(await dialog.locator("textarea").getAttribute("rows"), "4");
+        const scrollState = await dialog.evaluate(el => ({
+          overflowY: getComputedStyle(el).overflowY,
+          overflowX: getComputedStyle(el).overflowX,
+          scrollHeight: el.scrollHeight,
+          clientHeight: el.clientHeight,
+        }));
+        assert.equal(scrollState.overflowY, "auto");
+        assert.ok(scrollState.scrollHeight > scrollState.clientHeight, JSON.stringify(scrollState));
+        assert.equal(scrollState.overflowX, "hidden");
+      }
       await page.keyboard.press("Escape");
       await dialog.waitFor({ state: "hidden" });
       await page.waitForFunction(el => el === document.activeElement, await card.elementHandle());
@@ -362,6 +384,7 @@ for (const width of [320, 390, 768, 1024, 1440]) {
 }
 
 test("validation and typing keep focus, and submit carries document provenance", async () => {
+  mkdirSync(screenshotDir, { recursive: true });
   const page = await openPage(390, 844);
   let submitted: unknown;
   await page.route("**/api/public/investor-document-requests", (route) => {
@@ -371,23 +394,50 @@ test("validation and typing keep focus, and submit carries document provenance",
   await page.getByRole("button", { name: /Meet the Founders/ }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Get the pitch deck", exact: true }).click();
-  assert.equal(await dialog.locator('input[aria-invalid="true"]').count(), 2);
+  assert.equal(await dialog.locator('input[aria-invalid="true"]').count(), 3);
   const name = dialog.getByLabel("First name");
   await name.pressSequentially("Avery", { delay: 25 });
   assert.equal(await name.inputValue(), "Avery");
   assert.equal(await name.evaluate(el => el === document.activeElement), true);
   await dialog.getByLabel("Email", { exact: true }).fill("avery@example.org");
+  const phone = dialog.getByLabel("Contact number");
+  await phone.fill("123-456");
+  await dialog.getByRole("button", { name: "Get the pitch deck", exact: true }).click();
+  assert.equal(await phone.evaluate(el => el === document.activeElement), true);
+  assert.equal(await phone.getAttribute("type"), "tel");
+  assert.equal(await phone.getAttribute("autocomplete"), "tel");
+  assert.match(await dialog.innerText(), /Enter a valid contact number, including country code\./);
+  await phone.fill("+1 (415) 555-0198");
+  const inquiry = dialog.getByLabel("Inquiry (optional)");
+  await inquiry.fill("x".repeat(1501));
+  assert.equal(await inquiry.inputValue().then(value => value.length), 1500);
+  assert.equal(await dialog.locator("#investor-document-inquiry-counter").innerText(), "1500/1500");
+  const inquiryText = "I’d love to learn more about your expansion plans.";
+  await inquiry.fill(inquiryText);
+  assert.equal(await dialog.locator("#investor-document-inquiry-counter").innerText(), `${inquiryText.length}/1500`);
+  await markMockFixture(page);
+  await page.screenshot({ path: join(screenshotDir, "form.png"), animations: "disabled" });
   await dialog.getByRole("button", { name: "Get the pitch deck", exact: true }).click();
   await dialog.getByRole("status").waitFor();
-  assert.deepEqual(submitted, { firstName: "Avery", email: "avery@example.org", requestedDocument: "deck", source: "investors-page", website: "" });
-  assert.match((await dialog.textContent())!, /request has been saved/);
-  assert.match((await dialog.textContent())!, /not available yet/);
+  assert.deepEqual(submitted, {
+    firstName: "Avery",
+    email: "avery@example.org",
+    phone: "+1 (415) 555-0198",
+    inquiry: inquiryText,
+    requestedDocument: "deck",
+    source: "investors-page",
+    website: "",
+  });
+  assert.match((await dialog.textContent())!, /We've received your request for the OnSpot pitch deck/);
+  assert.match((await dialog.textContent())!, /respond to you by email at avery@example\.org/);
   assert.equal(await dialog.locator("a[download]").count(), 0);
+  await page.screenshot({ path: join(screenshotDir, "confirmation-sent.png"), animations: "disabled" });
   await page.close();
 });
 
 for (const outcome of ["notification-failed", "server-error", "network-error", "pending"] as const) {
   test(`valuation form honestly handles ${outcome}`, async () => {
+    mkdirSync(screenshotDir, { recursive: true });
     const page = await openPage();
     let release: (() => void) | undefined;
     await page.route("**/api/public/investor-document-requests", async (route) => {
@@ -402,6 +452,7 @@ for (const outcome of ["notification-failed", "server-error", "network-error", "
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("First name").fill("Avery");
     await dialog.getByLabel("Email", { exact: true }).fill("avery@example.org");
+    await dialog.getByLabel("Contact number").fill("+1 415 555 0198");
     await dialog.getByRole("button", { name: "Get the valuation summary", exact: true }).click();
     if (outcome === "pending") {
       const pending = dialog.getByRole("button", { name: "Saving request…" });
@@ -416,7 +467,13 @@ for (const outcome of ["notification-failed", "server-error", "network-error", "
       await dialog.getByRole("status").waitFor();
       const content = await dialog.textContent();
       if (outcome === "network-error") assert.match(content!, /couldn’t confirm/);
-      else assert.match(content!, /notification.*(not|couldn’t)/i);
+      else assert.match(content!, /Your request has been received/);
+    }
+    if (outcome === "notification-failed") {
+      assert.match(await dialog.locator('[role="status"]').innerText(), /Thank you, Avery\./);
+      assert.match(await dialog.locator('[role="status"]').innerText(), /investors@onspotglobal\.com/);
+      await markMockFixture(page);
+      await page.screenshot({ path: join(screenshotDir, "confirmation-failed.png"), animations: "disabled" });
     }
     await page.close();
   });

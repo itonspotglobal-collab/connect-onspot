@@ -36,6 +36,7 @@ export const ALLOWED_SENDERS: Record<string, string> = {
   "careers@onspotglobal.com":    "OnSpot Careers",
   "findwork@onspotglobal.com":   "OnSpot Find Work",
   "hiretalent@onspotglobal.com": "OnSpot Hire Talent",
+  "investors@onspotglobal.com":  "OnSpot Investors",
 };
 
 interface TokenCache {
@@ -107,7 +108,7 @@ function resolveSenderAddress(): string {
 }
 
 export interface SendEmailOptions {
-  to: string;          // recipient email address
+  to: string | { address: string; name?: string }[];
   toName?: string;     // recipient display name (optional)
   subject: string;
   bodyHtml: string;
@@ -226,14 +227,9 @@ export async function sendApplicantEmail(opts: SendEmailOptions): Promise<SendEm
         contentType: "HTML",
         content: canonicalizeApplicationEmailLinks(opts.bodyHtml),
       },
-      toRecipients: [
-        {
-          emailAddress: {
-            address: opts.to,
-            ...(opts.toName ? { name: opts.toName } : {}),
-          },
-        },
-      ],
+      toRecipients: (typeof opts.to === "string"
+        ? [{ address: opts.to, ...(opts.toName ? { name: opts.toName } : {}) }]
+        : opts.to).map(emailAddress => ({ emailAddress })),
       from: {
         emailAddress: {
           address: fromAddress,

@@ -20,6 +20,8 @@ export const investorRequests = pgTable("investor_requests", {
   name: text("name").notNull(),
   firm: text("firm").notNull(),
   email: varchar("email", { length: 254 }).notNull(),
+  phone: varchar("phone", { length: 32 }),
+  inquiry: text("inquiry"),
   requestType: text("request_type").notNull(),
   source: text("source"),
   requestedDocument: text("requested_document"),

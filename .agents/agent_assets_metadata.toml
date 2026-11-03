@@ -1105,3 +1105,45 @@ mtime_ms = 1793351266414
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/8fec1a4d-9235-4cf5-9b37-41023b7c689b/bfeea945-c5da-43cf-9ab9-7c1f6e76c760"
 storage_version_token = "1793351293088574"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "yE5KHrEevzA2BEkNpbZFj"
+uri = "file://screenshots/investor-request/dev-preview-form.png"
+type = "image"
+title = "Updated investor request form"
+description = "Actual development preview with sample fields filled in. The form was not submitted and no email was sent."
+logical_id = "5604ec55-856f-4503-9c1a-bd10cb793f2d"
+content_hash = "sha256:858bbb5b2abe2f32c20c978c05b60004acd94de60799a80d0b22964d34c61c27"
+size = 41540
+mtime_ms = 1793672303489
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/5604ec55-856f-4503-9c1a-bd10cb793f2d/8f729c78-e4cc-40f7-97ed-21d7093a32a0"
+storage_version_token = "1793672365004255"
+content_type = "image/png"
+
+[[outputs]]
+id = "7tmD_bb060OOdNJxzmMQd"
+uri = "file://screenshots/investor-request/confirmation-sent.png"
+type = "image"
+title = "Request confirmation — simulated success"
+description = "Browser test screenshot using a mocked successful notification response. Not evidence of email delivery."
+logical_id = "d94ad746-5f93-46a7-aaa9-15a074a310ef"
+content_hash = "sha256:44c4f1e74cf696c529341cc13e7fa249227b7c01d97afeccadcc6f0b5bb5ded1"
+size = 69994
+mtime_ms = 1793672311588
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/d94ad746-5f93-46a7-aaa9-15a074a310ef/01a4b61c-0c8b-4368-af9d-84d3e1bd6109"
+storage_version_token = "1793672366682942"
+content_type = "image/png"
+
+[[outputs]]
+id = "jyAYnyciiNCuNERjMwxND"
+uri = "file://screenshots/investor-request/confirmation-failed.png"
+type = "image"
+title = "Request confirmation — simulated notification failure"
+description = "Browser test screenshot verifying the saved-request fallback copy. No email was sent."
+logical_id = "abb690b8-1954-4572-8e5a-a11152a26376"
+content_hash = "sha256:b3a3416aff274fabfb9c4f25b773f6af733adcd9264520bbd68241f21c444e56"
+size = 164699
+mtime_ms = 1793672312384
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/abb690b8-1954-4572-8e5a-a11152a26376/548a21fe-a1a5-44aa-8b76-6a8a42d5e037"
+storage_version_token = "1793672369274180"
+content_type = "image/png"

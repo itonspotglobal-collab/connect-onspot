@@ -3,7 +3,7 @@ name: Investor resource requests
 description: Document lead capture, direct Wefunder navigation and honest delivery states.
 ---
 
-The owner’s new investor-resource requirements supersede the earlier rule that all three actions use the same inquiry gate: Pitch Deck and Valuation Summary collect first name/email; Wefunder goes directly to its external opportunity profile in a secure new tab.
+The owner’s investor-resource requirements supersede the earlier rule that all three actions use the same inquiry gate: Pitch Deck and Valuation Summary collect private founder-follow-up requests; Wefunder goes directly to its external opportunity profile in a secure new tab.
 
 **Why:** The owner explicitly supplied distinct behaviors in the approved CEO-letter page.
 
@@ -14,3 +14,9 @@ Saving a request, notifying the founder, delivering a document to the visitor, a
 **Why:** Neither investment document was supplied with the approved page. Placeholder HTML declared a download ready without a real backend.
 
 **How to apply:** Confirm persistence before showing a saved state. If founder notification fails, report saved-but-not-notified without encouraging duplicate submissions. Until real files and controlled access are available, do not claim downloads are ready, link nonexistent files, publish unrestricted asset links, or imply email delivery to the visitor.
+
+Document intake is a request for personal founder follow-up, not automatic document fulfillment.
+
+**Why:** On 2026-11-03 the owner explicitly requested confirmations describing founders reviewing the request and responding personally, while preserving honest notification-failure states.
+
+**How to apply:** Keep success copy about the saved request and founder follow-up; distinguish provider acceptance from actual inbox receipt during verification. Never send development test messages to the founders in place of an approved test inbox.

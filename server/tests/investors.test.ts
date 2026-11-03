@@ -4,7 +4,7 @@ import express from "express";
 import type { Server } from "node:http";
 
 // Import the production registrar without connecting to a live database.
-process.env.DATABASE_URL ??= "postgres://test:test@127.0.0.1:5432/test";
+process.env.DATABASE_URL = "postgres://test:test@127.0.0.1:1/test";
 const { createCachedInvestorStatsLoader, registerInvestorRoutes } =
   await import("../routes/investors.js");
 
@@ -38,7 +38,7 @@ describe("public investor intake", () => {
         saves.push(request);
         return { id: `request-${saves.length}` };
       },
-      notifyFounder: async (request) => {
+      notifyFounders: async (request) => {
         notifications.push(request);
         return { success: deliver, error: deliver ? undefined : "Test mail failure" };
       },
@@ -111,7 +111,7 @@ describe("public investor intake", () => {
     registerInvestorRoutes(app, {
       loadStats: async () => { throw new Error("Fixture statistics failure"); },
       saveRequest: async () => ({ id: "unused" }),
-      notifyFounder: async () => ({ success: true }),
+      notifyFounders: async () => ({ success: true }),
       recordNotification: async () => {},
     });
     const isolatedServer = app.listen(0);
@@ -127,18 +127,20 @@ describe("public investor intake", () => {
     }
   });
 
-  it("saves and notifies Nur for each of the three request types", async () => {
+  it("saves and notifies founders for each of the three request types", async () => {
     for (const requestType of ["meeting", "deck", "founder"] as const) {
       const response = await fetch(`${base}/api/public/investor-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...sample, requestType }),
+        body: JSON.stringify({ ...sample, requestType, phone: " +63 917 123 4567 ", message: "Please follow up." }),
       });
       assert.equal(response.status, 201);
       assert.equal((await response.json()).notificationStatus, "sent");
     }
     assert.deepEqual(saves.map((r) => r.requestType), ["meeting", "deck", "founder"]);
     assert.deepEqual(notifications.map((r) => r.requestType), ["meeting", "deck", "founder"]);
+    assert.equal(saves[0].phone, "+63 917 123 4567");
+    assert.equal(saves[0].message, "Please follow up.");
     assert.equal(outcomes.every((r) => r.success), true);
   });
 
@@ -173,7 +175,7 @@ describe("public investor intake", () => {
     registerInvestorRoutes(failingApp, {
       loadStats: async () => ({ contractorAccounts: 0, clientAccounts: 0, asOf: "2026-10-01T00:00:00.000Z" }),
       saveRequest: async () => { throw new Error("Test save failure"); },
-      notifyFounder: async () => { sent = true; return { success: true }; },
+      notifyFounders: async () => { sent = true; return { success: true }; },
       recordNotification: async () => {},
     });
     const failingServer = failingApp.listen(0);
@@ -202,4 +204,52 @@ describe("public investor intake", () => {
     assert.equal(response.status, 429);
     assert.equal(saves.length, previous);
   });
+});
+
+it("Graph keeps single-string recipients compatible and maps named arrays into one message", async () => {
+  const originalFetch = globalThis.fetch;
+  // Synthetic credentials only; every HTTP request is intercepted below.
+  process.env.MICROSOFT_TENANT_ID = "fixture-tenant";
+  process.env.MICROSOFT_CLIENT_ID = "fixture-client";
+  process.env.MICROSOFT_CLIENT_SECRET = "fixture-secret";
+  const payloads: any[] = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    if (url.startsWith("https://login.microsoftonline.com/")) {
+      return new Response(JSON.stringify({ access_token: "fixture-token", expires_in: 3600 }), { status: 200 });
+    }
+    assert.match(url, /^https:\/\/graph.microsoft.com\/v1.0\/users\//);
+    payloads.push(JSON.parse(String(init?.body)));
+    return new Response(null, { status: 202 });
+  };
+  try {
+    const { sendApplicantEmail } = await import("../services/microsoftGraphEmailService.js");
+    assert.deepEqual(await sendApplicantEmail({
+      to: "applicant@example.org", toName: "Applicant", senderEmail: "careers@onspotglobal.com",
+      subject: "Existing caller", bodyHtml: "<p>Hello</p>",
+    }), { success: true });
+    assert.deepEqual(payloads[0].message.toRecipients,
+      [{ emailAddress: { address: "applicant@example.org", name: "Applicant" } }]);
+    const { notifyFounders } = await import("../routes/investors.js");
+    const previousSender = process.env.INVESTORS_EMAIL;
+    const previousTo = process.env.INVESTOR_NOTIFICATION_TO;
+    delete process.env.INVESTORS_EMAIL;
+    delete process.env.INVESTOR_NOTIFICATION_TO;
+    try {
+      await notifyFounders(sample, { id: "fixture-ref", createdAt: new Date("2026-11-03T00:00:00Z") });
+      assert.equal(payloads.length, 2);
+      assert.equal(payloads[1].message.toRecipients.length, 3);
+      assert.equal(payloads[1].message.from.emailAddress.address, "investors@onspotglobal.com");
+      assert.equal(payloads[1].message.from.emailAddress.name, "OnSpot Investors");
+      assert.deepEqual(payloads[1].message.replyTo, [{ emailAddress: { address: sample.email } }]);
+    } finally {
+      if (previousSender === undefined) delete process.env.INVESTORS_EMAIL; else process.env.INVESTORS_EMAIL = previousSender;
+      if (previousTo === undefined) delete process.env.INVESTOR_NOTIFICATION_TO; else process.env.INVESTOR_NOTIFICATION_TO = previousTo;
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.MICROSOFT_TENANT_ID;
+    delete process.env.MICROSOFT_CLIENT_ID;
+    delete process.env.MICROSOFT_CLIENT_SECRET;
+  }
 });

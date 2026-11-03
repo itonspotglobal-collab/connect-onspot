@@ -57,16 +57,20 @@ export function InvestorDocumentDialog({
 }: Props) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [inquiry, setInquiry] = useState("");
   const [website, setWebsite] = useState("");
   const [invalidFields, setInvalidFields] = useState({
     firstName: false,
     email: false,
+    phone: false,
   });
   const [submission, setSubmission] = useState<SubmissionState>({
     kind: "idle",
   });
   const nameInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
   const documentInfo = DOCUMENTS[document];
   const hasOutcome = [
     "sent",
@@ -82,9 +86,11 @@ export function InvestorDocumentDialog({
       if (hasOutcome) {
         setFirstName("");
         setEmail("");
+        setPhone("");
+        setInquiry("");
         setWebsite("");
       }
-      setInvalidFields({ firstName: false, email: false });
+      setInvalidFields({ firstName: false, email: false, phone: false });
       setSubmission({ kind: "idle" });
     }
   };
@@ -94,9 +100,16 @@ export function InvestorDocumentDialog({
       firstName.trim().length >= 1 && firstName.trim().length <= 120;
     const emailValid =
       email.trim().length <= 254 && EMAIL_PATTERN.test(email.trim());
+    const trimmedPhone = phone.trim();
+    const phoneValid =
+      trimmedPhone.length >= 7 &&
+      trimmedPhone.length <= 20 &&
+      /^[0-9 +().-]+$/.test(trimmedPhone) &&
+      (trimmedPhone.match(/\d/g)?.length ?? 0) >= 7;
     const nextInvalidFields = {
       firstName: !nameValid,
       email: !emailValid,
+      phone: !phoneValid,
     };
     setInvalidFields(nextInvalidFields);
     if (nextInvalidFields.firstName) {
@@ -105,6 +118,10 @@ export function InvestorDocumentDialog({
     }
     if (nextInvalidFields.email) {
       emailInputRef.current?.focus();
+      return false;
+    }
+    if (nextInvalidFields.phone) {
+      phoneInputRef.current?.focus();
       return false;
     }
     return true;
@@ -122,6 +139,8 @@ export function InvestorDocumentDialog({
         body: JSON.stringify({
           firstName: firstName.trim(),
           email: email.trim(),
+          phone: phone.trim(),
+          inquiry: inquiry.trim(),
           requestedDocument: document,
           source: "investors-page",
           website,
@@ -204,15 +223,14 @@ export function InvestorDocumentDialog({
               {hasOutcome
                 ? submission.kind === "unconfirmed"
                   ? "Request status unconfirmed"
-                  : "Request received"
+                  : "Request submitted"
                 : documentInfo.title}
             </DialogTitle>
             <p className="investor-dialog-meta">{documentInfo.meta}</p>
           </div>
         </div>
         <p id="investor-document-description" className="sr-only">
-          Documents are not available yet. You can save a request and OnSpot will
-          follow up.
+          Share your details and OnSpot’s founders will follow up personally by email.
         </p>
 
         {!hasOutcome ? (
@@ -295,6 +313,57 @@ export function InvestorDocumentDialog({
             </div>
 
             <div
+              className="investor-doc-field"
+              data-invalid={invalidFields.phone || undefined}
+            >
+              <label htmlFor="investor-document-phone">Contact number</label>
+              <input
+                ref={phoneInputRef}
+                id="investor-document-phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="+1 555 123 4567"
+                maxLength={20}
+                aria-invalid={invalidFields.phone}
+                aria-describedby={
+                  invalidFields.phone ? "investor-document-phone-error" : "investor-document-phone-help"
+                }
+                value={phone}
+                onChange={(event) => {
+                  setPhone(event.target.value);
+                  if (invalidFields.phone) {
+                    setInvalidFields((current) => ({ ...current, phone: false }));
+                  }
+                }}
+              />
+              <span id="investor-document-phone-help" className="investor-doc-help">
+                Include your country code.
+              </span>
+              <span id="investor-document-phone-error" className="investor-doc-error">
+                Enter a valid contact number, including country code.
+              </span>
+            </div>
+
+            <div className="investor-doc-field investor-doc-inquiry-field">
+              <label htmlFor="investor-document-inquiry">Inquiry (optional)</label>
+              <textarea
+                id="investor-document-inquiry"
+                name="inquiry"
+                rows={4}
+                maxLength={1500}
+                placeholder="Share any questions or what you'd like to discuss with the founders."
+                value={inquiry}
+                aria-describedby="investor-document-inquiry-counter"
+                onChange={(event) => setInquiry(event.target.value)}
+              />
+              <span id="investor-document-inquiry-counter" className="investor-doc-counter" aria-live="polite">
+                {inquiry.length}/1500
+              </span>
+            </div>
+
+            <div
               className="investor-doc-field investor-doc-honeypot"
               aria-hidden="true"
             >
@@ -336,8 +405,7 @@ export function InvestorDocumentDialog({
               Unsubscribe anytime.
             </p>
             <p className="investor-doc-legal">
-              Documents are not available yet; submit a request and we’ll follow
-              up.
+              Submit your details and our founders will respond to you personally by email.
             </p>
           </form>
         ) : (
@@ -347,30 +415,30 @@ export function InvestorDocumentDialog({
                 ? `Thank you, ${firstName.trim()}.`
                 : submission.kind === "unconfirmed"
                   ? "We couldn’t confirm your request."
-                  : "Your request is saved."}
+                  : submission.kind === "saved-notification-failed"
+                    ? `Thank you, ${firstName.trim()}.`
+                    : "Your request is saved."}
             </strong>
             {submission.kind === "sent" ? (
               <p>
-                Your request has been saved, and the notification was sent. The
-                document is not available yet; OnSpot will follow up.
+                We&apos;ve received your request for the {document === "deck" ? "OnSpot pitch deck" : "Seedscope valuation summary"}. Our founders will review it personally and respond to you by email at {email.trim()}.
               </p>
             ) : submission.kind === "saved-notification-failed" ? (
               <p>
-                Your request has been saved, but we couldn’t send the
-                notification. The document is not available yet. We have your
-                request and will follow up; please don’t submit it again.
+                Your request has been received. If you don&apos;t hear from our founders by email shortly, please contact investors@onspotglobal.com and reference this request. There&apos;s no need to submit the form again.
               </p>
             ) : submission.kind === "saved-status-unknown" ? (
               <p>
                 The server confirmed your request was saved, but its
-                notification status could not be confirmed. The document is not
-                available yet; please don’t submit another request.
+                notification status could not be confirmed. Our founders will
+                follow up by email if the notification was delivered; please don’t
+                submit another request.
               </p>
             ) : (
               <p>
                 We couldn’t confirm whether your request was received. Please
-                contact OnSpot before submitting another request. The document
-                is not available yet.
+                contact OnSpot before submitting another request. Our founders
+                can confirm the request and follow up by email.
               </p>
             )}
             <button
