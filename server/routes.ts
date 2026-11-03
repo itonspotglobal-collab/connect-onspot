@@ -75,6 +75,8 @@ import { registerDisabledLinkedInImportRoutes } from "./lib/disabledLinkedInImpo
 import { hasEmailOwnership } from "./lib/emailOwnership";
 import { authenticatePassword } from "./lib/passwordAuthentication";
 import { registerSignupVerificationRoutes } from "./routes/signupVerification";
+import { registerPasswordResetRoutes } from "./routes/passwordReset";
+import { passwordResetRuntime } from "./services/passwordResetRuntime";
 import { signupVerificationRuntime } from "./services/signupVerificationRuntime";
 import {
   createClientTeamDashboardHandler,
@@ -3446,6 +3448,7 @@ export async function registerRoutes(
 
   // JWT-based signup route
   registerSignupVerificationRoutes(app, signupVerificationRuntime);
+  registerPasswordResetRoutes(app, passwordResetRuntime, authResetLimiter);
   // Retired immediate-activation implementation. Not registered; the shared
   // pending service above owns both signup paths and both first-password paths.
   if (false) app.post("/api/signup", signupLimiter, async (req: Request, res: Response) => {
@@ -7197,38 +7200,6 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("GET /api/admin/candidates/missing-passwords error:", error);
       return res.status(500).json({ error: "Failed to query candidates" });
-    }
-  });
-
-  /**
-   * POST /api/dev/candidates/set-temp-password
-   * DEV ONLY: temporary tool for fixing old candidate records that have no password_hash.
-   * Disabled in production unless ENABLE_DEV_PASSWORD_RESET=true.
-   */
-  app.post("/api/dev/candidates/set-temp-password", async (req: Request, res: Response) => {
-    // DEV ONLY: temporary tool for fixing old candidate records
-    const isEnabled =
-      process.env.NODE_ENV !== "production" ||
-      process.env.ENABLE_DEV_PASSWORD_RESET === "true";
-    if (!isEnabled) {
-      return res.status(403).json({ error: "Disabled in this environment." });
-    }
-    try {
-      const { email, temporaryPassword } = req.body as { email?: string; temporaryPassword?: string };
-      if (!email || !temporaryPassword) {
-        return res.status(400).json({ error: "email and temporaryPassword are required" });
-      }
-      const candidate = await storage.getCandidateByEmail(email.toLowerCase().trim());
-      if (!candidate) {
-        return res.status(404).json({ error: "No candidate found with that email." });
-      }
-      const hash = await hashPassword(temporaryPassword);
-      await storage.updateCandidate(candidate.id, { passwordHash: hash } as any);
-      console.log(`🔑 [DEV] Temp password set for candidate: ***@${email.split("@")[1]}`);
-      return res.json({ success: true, candidateId: candidate.id, email: candidate.email });
-    } catch (error: any) {
-      console.error("POST /api/dev/candidates/set-temp-password error:", error);
-      return res.status(500).json({ error: "Failed to set temporary password" });
     }
   });
 
@@ -22797,103 +22768,6 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("GET /api/job-resumes error:", err);
       res.status(500).send("Error serving resume");
-    }
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // DEV ONLY: Temporary password reset endpoint for testing accounts.
-  // Enabled when NODE_ENV !== "production" OR ENABLE_DEV_PASSWORD_RESET=true.
-  //
-  // SECURITY NOTE — replace before going to production with:
-  //   - One-time reset token (UUID stored in DB with expiry)
-  //   - Email delivery / verification
-  //   - Token expiration (15–60 min)
-  //   - Rate limiting per email address
-  //   - No user enumeration (return 200 regardless of email existence)
-  // ─────────────────────────────────────────────────────────────────────────
-  app.post("/api/dev/reset-password", authResetLimiter, async (req: Request, res: Response) => {
-    const isEnabled =
-      process.env.NODE_ENV !== "production" ||
-      process.env.ENABLE_DEV_PASSWORD_RESET === "true";
-
-    if (!isEnabled) {
-      return res.status(403).json({
-        success: false,
-        message: "Password reset is disabled in this environment.",
-      });
-    }
-
-    try {
-      const { email: rawResetEmail, newPassword } = req.body;
-
-      if (!rawResetEmail || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Email and newPassword are required.",
-        });
-      }
-
-      // Normalize email identically to signup and login
-      const email = rawResetEmail.trim().toLowerCase();
-
-      if (!validateEmail(email)) {
-        return res.status(400).json({
-          success: false,
-          message: "Please enter a valid email address.",
-        });
-      }
-
-      const strengthCheck = validatePasswordStrength(newPassword);
-      if (!strengthCheck.isValid) {
-        return res.status(400).json({
-          success: false,
-          message: `Password requirements not met: ${strengthCheck.errors.join(", ")}`,
-        });
-      }
-
-      const userResult = await query(
-        "SELECT id, email FROM users WHERE email = $1",
-        [email]
-      );
-
-      // Also check candidates table for talent portal
-      const candidateForReset = await storage.getCandidateByEmail(email);
-
-      if (userResult.rows.length === 0 && !candidateForReset) {
-        return res.status(404).json({
-          success: false,
-          message: "No account found with that email address.",
-        });
-      }
-
-      const newHash = await hashPassword(newPassword);
-
-      // Update users table if matched
-      if (userResult.rows.length > 0) {
-        await query(
-          'UPDATE users SET "password_hash" = $1, "updated_at" = NOW() WHERE email = $2',
-          [newHash, email]
-        );
-      }
-
-      // Update candidates table if matched (talent portal)
-      if (candidateForReset) {
-        await storage.updateCandidate(candidateForReset.id, { passwordHash: newHash } as any);
-      }
-
-      console.log(`🔑 [DEV] Password reset for: ***@${email.split("@")[1]}`);
-
-      return res.json({
-        success: true,
-        message:
-          "Password reset successfully. You can now sign in with your new password.",
-      });
-    } catch (error) {
-      console.error("[DEV] Reset password error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "An error occurred while resetting the password.",
-      });
     }
   });
 

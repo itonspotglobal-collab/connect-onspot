@@ -12,6 +12,7 @@ import { AuthModalFrame } from "@/components/AuthModalFrame";
 import { getSafeReturnTo } from "@shared/internalRedirect";
 import { AuthBackButton } from "@/components/AuthBackButton";
 import { authPortalHref } from "@/lib/authBackNavigation";
+import { PasswordResetFlow } from "@/components/PasswordResetFlow";
 
 type PageStep = "login" | "setup-password" | "forgot-password";
 
@@ -136,13 +137,6 @@ export default function PortalLogin() {
   const [setupConfirm, setSetupConfirm] = useState("");
   const [showSetupPw, setShowSetupPw] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
-
-  // Forgot password state
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotNewPw, setForgotNewPw] = useState("");
-  const [forgotConfirm, setForgotConfirm] = useState("");
-  const [showForgotPw, setShowForgotPw] = useState(false);
-  const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
     if (!retryUntil.current) return;
@@ -296,40 +290,6 @@ export default function PortalLogin() {
     }
   }
 
-  async function handleForgotPassword() {
-    if (!forgotEmail || !forgotNewPw || !forgotConfirm) {
-      toast({ variant: "destructive", title: "Missing fields", description: "Please fill in all fields." });
-      return;
-    }
-    if (forgotNewPw !== forgotConfirm) { toast({ variant: "destructive", title: "Passwords don't match" }); return; }
-    if (forgotNewPw.length < 8) {
-      toast({ variant: "destructive", title: "Password too short", description: "Must be at least 8 characters." });
-      return;
-    }
-    setForgotLoading(true);
-    try {
-      const res = await fetch("/api/dev/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase(), newPassword: forgotNewPw }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast({ title: "Password reset", description: data.message || "You can now sign in with your new password." });
-        setEmail(forgotEmail);
-        setPassword("");
-        setForgotEmail(""); setForgotNewPw(""); setForgotConfirm("");
-        setStep("login");
-      } else {
-        toast({ variant: "destructive", title: "Reset failed", description: data.message || "Could not reset password." });
-      }
-    } catch {
-      toast({ variant: "destructive", title: "Network error", description: "Could not reach the server. Please try again." });
-    } finally {
-      setForgotLoading(false);
-    }
-  }
-
   // ── Password Setup Step ───────────────────────────────────────────────────
   if (step === "setup-password") {
     return (
@@ -383,50 +343,18 @@ export default function PortalLogin() {
   if (step === "forgot-password") {
     return (
       <AuthModalFrame title="Reset Password">
-        <button type="button"
-          onClick={() => { setStep("login"); setForgotEmail(""); setForgotNewPw(""); setForgotConfirm(""); }}
-          className={backBtnCls} style={{ color: BRAND }}>
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
-        </button>
-        <h2 className="text-2xl font-semibold text-white mb-1" style={{ letterSpacing: "-0.02em" }}>
-          Reset Password
-        </h2>
-        <p className="text-white/70 mb-6 text-sm">
-          Enter your registered email and choose a new password.
-        </p>
-        <div className="space-y-4 mb-6">
-          <div className="space-y-2">
-            <Label className={labelCls}>Email Address</Label>
-            <Input id="forgot-email" name="email" type="email" placeholder="you@example.com"
-              value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)}
-              autoComplete="email" className={inputCls} />
-          </div>
-          <div className="space-y-2">
-            <Label className={labelCls}>New Password</Label>
-            <div className="relative">
-              <Input id="forgot-new-password" name="new-password" type={showForgotPw ? "text" : "password"}
-                placeholder="Min 8 characters" value={forgotNewPw}
-                onChange={(e) => setForgotNewPw(e.target.value)} autoComplete="new-password"
-                className={`${inputCls} pr-11`} />
-              <EyeToggle show={showForgotPw} onToggle={() => setShowForgotPw(v => !v)} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className={labelCls}>Confirm New Password</Label>
-            <Input id="forgot-confirm" name="confirm-password" type={showForgotPw ? "text" : "password"}
-              placeholder="Repeat your new password" value={forgotConfirm}
-              onChange={(e) => setForgotConfirm(e.target.value)} autoComplete="new-password"
-              className={inputCls}
-              onKeyDown={(e) => e.key === "Enter" && handleForgotPassword()} />
-            {forgotConfirm && forgotNewPw !== forgotConfirm && (
-              <p className="text-red-300 text-xs">Passwords do not match.</p>
-            )}
-          </div>
-        </div>
-        <PrimaryButton onClick={handleForgotPassword} loading={forgotLoading} loadingText="Resetting…"
-          disabled={!forgotEmail || !forgotNewPw || !forgotConfirm || forgotNewPw !== forgotConfirm}>
-          <span>Reset Password</span> <ArrowRight className="w-4 h-4" />
-        </PrimaryButton>
+        <PasswordResetFlow
+          initialEmail={email}
+          role={activePortal}
+          appearance="dark"
+          onCancel={() => setStep("login")}
+          onSuccess={(resetEmail) => {
+            setEmail(resetEmail);
+            setPassword("");
+            setStep("login");
+          }}
+          toast={toast}
+        />
       </AuthModalFrame>
     );
   }
@@ -465,7 +393,6 @@ export default function PortalLogin() {
               <button type="button" disabled={isLoading || retrySeconds > 0}
                 onClick={() => {
                   if (signInPending.current) return;
-                  setForgotEmail(email);
                   setStep("forgot-password");
                 }}
                 className="text-xs font-medium transition-colors duration-200 hover:underline disabled:cursor-not-allowed disabled:opacity-50"

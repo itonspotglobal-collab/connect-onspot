@@ -93,11 +93,13 @@ INVESTORS_EMAIL = "investors@onspotglobal.com"
 CLIENT_VERIFICATION_EMAIL_FROM = "HireTalent@onspotglobal.com"
 SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED = "true"
 TALENT_VERIFICATION_EMAIL_FROM = "FindWork@onspotglobal.com"
+PASSWORD_RESET_EMAIL_DELIVERY_ENABLED = "true"
 
 [userenv.development]
 CLIENT_VERIFICATION_EMAIL_FROM = "HireTalent@onspotglobal.com"
 SIGNUP_VERIFICATION_EMAIL_DELIVERY_ENABLED = "true"
 TALENT_VERIFICATION_EMAIL_FROM = "FindWork@onspotglobal.com"
+PASSWORD_RESET_EMAIL_DELIVERY_ENABLED = "true"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-a56b95ea-3447-42a4-89ca-9cc63ddfde38"

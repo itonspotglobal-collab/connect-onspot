@@ -75,6 +75,7 @@ import { LoginDialog } from "@/components/LoginDialog";
 import { SignUpDialog } from "@/components/SignUpDialog";
 import { SignupEmailVerification } from "@/components/SignupEmailVerification";
 import { SignupPendingState, isSignupPending, signupStatus } from "@/lib/signupVerification";
+import { PasswordResetFlow } from "@/components/PasswordResetFlow";
 
 // Set to true when the Amazing page is ready to launch
 const SHOW_AMAZING_NAV = false;
@@ -142,13 +143,7 @@ export function TopNavigation() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [showSetupPw, setShowSetupPw] = useState(false);
   const [showSetupConfirm, setShowSetupConfirm] = useState(false);
-  // DEV ONLY: forgot-password flow state — remove when real password-reset email is implemented
   const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotNewPassword, setForgotNewPassword] = useState("");
-  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
-  const [forgotLoading, setForgotLoading] = useState(false);
-  const [showForgotPwd, setShowForgotPwd] = useState(false);
-  const [showForgotConfirm, setShowForgotConfirm] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileAccordionOpen, setMobileAccordionOpen] = useState<string | null>(null);
   const [visibleItems, setVisibleItems] = useState<number>(navigationItems.length);
@@ -1936,7 +1931,8 @@ export function TopNavigation() {
             // DEV ONLY: reset auth form state
             setSigninEmail(""); setSigninPassword(""); setSigninPortal(null);
             setSignupFirstName(""); setSignupLastName(""); setSignupEmail(""); setSignupPassword(""); setSignupRole(null);
-            setShowAuthPassword(false); setShowSignupPassword(false); setShowSignupConfirm(false); setShowForgotPwd(false); setShowForgotConfirm(false);
+            setShowAuthPassword(false); setShowSignupPassword(false); setShowSignupConfirm(false);
+            setForgotEmail("");
             // Reset password setup state
             setSigninNeedsSetup(false); setSetupPassword(""); setSetupConfirmPassword(""); setShowSetupPw(false); setShowSetupConfirm(false);
           }
@@ -2894,7 +2890,7 @@ export function TopNavigation() {
             </div>
           </DialogPortal>
         ) : modalStep === "forgot" ? (
-          /* DEV ONLY: Forgot Password step — same dark futuristic shell as signin/signup */
+          /* Secure password reset flow */
           <DialogPortal>
             <DialogOverlay className="fixed inset-0 z-50 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 duration-300" style={{ background: 'rgba(10,10,30,0.55)' }} />
             <div
@@ -2923,116 +2919,19 @@ export function TopNavigation() {
                   }}
                 >
                   <div className="relative z-10 flex flex-col px-8 py-10 w-full">
-                    <button
-                      onClick={() => setModalStep("signin")}
-                      className="flex items-center gap-1.5 text-[#555B78] hover:text-[#17182C] text-sm mb-8 w-fit transition-colors duration-200"
-                    >
-                      <ArrowRight className="w-3.5 h-3.5 rotate-180" /> Back to Sign In
-                    </button>
-                    <h2 className="text-3xl font-light text-[#17182C] mb-2" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>Reset Password</h2>
-                    <p className="text-[#555B78] mb-7 text-sm">Enter the email used for your account and choose a new password.</p>
-
-                    {/* Email */}
-                    <div className="space-y-2 mb-4">
-                      <Label className="text-[#30344F] text-sm font-medium">Email Address</Label>
-                      <Input
-                        type="email"
-                        placeholder="you@example.com"
-                        value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
-                        autoComplete="email"
-                        className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12"
-                      />
-                    </div>
-
-                    {/* New Password */}
-                    <div className="space-y-2 mb-4">
-                      <Label className="text-[#30344F] text-sm font-medium">New Password</Label>
-                      <div className="relative">
-                        <Input
-                          type={showForgotPwd ? "text" : "password"}
-                          placeholder="Min 8 chars, upper, lower, number, symbol"
-                          value={forgotNewPassword}
-                          onChange={(e) => setForgotNewPassword(e.target.value)}
-                          autoComplete="new-password"
-                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
-                        />
-                        <button type="button" onClick={() => setShowForgotPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
-                          {showForgotPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div className="space-y-2 mb-7">
-                      <Label className="text-[#30344F] text-sm font-medium">Confirm New Password</Label>
-                      <div className="relative">
-                        <Input
-                          type={showForgotConfirm ? "text" : "password"}
-                          placeholder="Repeat your new password"
-                          value={forgotConfirmPassword}
-                          onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                          autoComplete="new-password"
-                          className="bg-[rgba(255,255,255,0.44)] border-[rgba(73,78,118,0.20)] text-[#20223A] placeholder:text-[#858BA5] focus:border-[#7167E8] focus:ring-[#7167E8]/[0.14] h-12 pr-10"
-                        />
-                        <button type="button" onClick={() => setShowForgotConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#858BA5] hover:text-[#30344F] transition-colors">
-                          {showForgotConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      {forgotConfirmPassword && forgotNewPassword !== forgotConfirmPassword && (
-                        <p className="text-xs text-red-400 mt-1">Passwords do not match.</p>
-                      )}
-                    </div>
-
-                    {/* Submit */}
-                    <button
-                      onClick={async () => {
-                        if (!forgotEmail || !forgotNewPassword || !forgotConfirmPassword) {
-                          toast({ variant: "destructive", title: "Missing fields", description: "Please fill in all fields." });
-                          return;
-                        }
-                        if (forgotNewPassword !== forgotConfirmPassword) {
-                          toast({ variant: "destructive", title: "Passwords don't match", description: "New password and confirmation must be the same." });
-                          return;
-                        }
-                        setForgotLoading(true);
-                        try {
-                          const res = await fetch("/api/dev/reset-password", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email: forgotEmail, newPassword: forgotNewPassword }),
-                          });
-                          const data = await res.json();
-                          if (data.success) {
-                            toast({ title: "Password reset", description: data.message });
-                            setSigninEmail(forgotEmail);
-                            setForgotEmail("");
-                            setForgotNewPassword("");
-                            setForgotConfirmPassword("");
-                            setModalStep("signin");
-                          } else {
-                            toast({ variant: "destructive", title: "Reset failed", description: data.message || "Could not reset password." });
-                          }
-                        } catch {
-                          toast({ variant: "destructive", title: "Network error", description: "Please try again." });
-                        } finally {
-                          setForgotLoading(false);
-                        }
+                    <PasswordResetFlow
+                      initialEmail={forgotEmail}
+                      role={signinPortal ?? selectedPortal}
+                      appearance="light"
+                      onCancel={() => setModalStep("signin")}
+                      onSuccess={(resetEmail) => {
+                        setSigninEmail(resetEmail);
+                        setSigninPassword("");
+                        setForgotEmail("");
+                        setModalStep("signin");
                       }}
-                      disabled={forgotLoading || !forgotEmail || !forgotNewPassword || !forgotConfirmPassword || forgotNewPassword !== forgotConfirmPassword}
-                      className="relative group w-full px-8 py-4 text-base font-semibold text-white rounded-xl overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                      style={{ background: 'linear-gradient(135deg, #3A3AF8 0%, #5B7CFF 50%, #7F3DF4 100%)', boxShadow: '0 8px 30px rgba(58,58,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)' }}
-                    >
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                        {forgotLoading ? "Resetting…" : "Reset Password"}
-                      </span>
-                    </button>
-
-                    <p className="text-center text-xs text-[#858BA5] mt-4">
-                      Remembered it?{' '}
-                      <button className="text-[#555B78] hover:text-[#17182C] underline transition-colors" onClick={() => setModalStep("signin")}>Sign In</button>
-                    </p>
+                      toast={toast}
+                    />
                   </div>
                 </div>
               </div>

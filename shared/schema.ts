@@ -795,6 +795,22 @@ export const signupVerificationLimits = pgTable("signup_verification_limits", {
   bucket: text("bucket").primaryKey(), used: integer("used").notNull().default(0),
   resetsAt: timestamp("resets_at", { withTimezone: true }).notNull(),
 });
+export const passwordResetCodes = pgTable("password_reset_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  role: text("role").notNull(),
+  codeHmac: text("code_hmac").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  index("password_reset_codes_email_created_idx").on(t.email, t.createdAt.desc()),
+  check("password_reset_codes_role_check", sql`${t.role} IN ('client','talent')`),
+  check("password_reset_codes_attempts_check", sql`${t.attempts} BETWEEN 0 AND 5`),
+  check("password_reset_codes_email_check", sql`${t.email} = lower(btrim(${t.email}))`),
+  check("password_reset_codes_hmac_check", sql`length(${t.codeHmac}) = 64`),
+]);
 export const authProviderLinks = pgTable("auth_provider_links", {
   provider: text("provider").notNull(), subject: text("subject").notNull(),
   userId: varchar("user_id").notNull().references(() => users.id),

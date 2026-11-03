@@ -9,6 +9,12 @@ Normal new Client and Talent registrations must not activate usable accounts unt
 
 **How to apply:** Historical established accounts must not suddenly lose access or acquire a false verified timestamp. Passwordless imported records are not established authenticated accounts merely because a registration flag is set.
 
+Password recovery always requires inbox ownership, independently of any temporary signup-verification exception. Development must not offer an unverified password-writing bypass.
+
+**Why:** The owner explicitly replaced the dev-only reset with email-code recovery and required honest reporting about session invalidation.
+
+**How to apply:** Keep recovery enforcement independent from signup rollout switches. Do not claim that changing a password revokes issued bearer tokens unless the application actually implements shared revocation.
+
 The temporary exception must never claim that an email was verified, take over an existing account, or attach an imported profile without ownership proof. Re-enabling verification applies to subsequent registrations; do not silently lock out accounts created during the approved exception.
 
 **Why:** The owner requested a reversible signup-only fallback while explicitly preserving existing login, authentication, and authorization.
