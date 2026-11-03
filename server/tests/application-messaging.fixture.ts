@@ -14,6 +14,8 @@ import { chromium, type Browser, type BrowserContext, type Page } from "playwrig
 import { query, pool } from "../db";
 import { registerRoutes } from "../routes";
 import { hashPassword } from "../auth-utils";
+import { ACTIVE_HIRE_SUBMISSION_SQL } from "../services/messagingContacts";
+import { TIMESHEET_HIRE_SQL } from "../services/timesheetEligibility";
 
 assert.ok(process.env.HIRING_FLOW_TEST_DATABASE_URL?.includes("/onspot_hiring_test"));
 const baseline = process.env.MESSAGING_UAT_BASELINE === "true";
@@ -31,12 +33,13 @@ async function api(method: string, route: string, who = "client", body?: unknown
   return { status: response.status, body: await response.json().catch(() => null) };
 }
 const open = (id: string = applicationId, who = "client") => api("POST", `/api/applications/${id}/message-thread`, who);
-async function hiredContact(title: string, signed = true, historicallyEnded = false) {
+async function hiredContact(title: string, signed = true, historicallyEnded = false,
+  pair = { client: ids.client, talent: ids.talent }) {
   const job = randomUUID();
   await query(`INSERT INTO jobs(id,client_id,title,description,category,status,experience_level)
-    VALUES($1,$2,$3,'Isolated messaging test','Other','open','intermediate')`, [job, ids.client, title]);
-  const application = await submission({ status: "hired", workflow: "client_invitation", initiator: "client" });
-  await query("UPDATE job_submissions SET job_id=$1 WHERE id=$2", [job, application]);
+    VALUES($1,$2,$3,'Isolated messaging test','Other','open','intermediate')`, [job, pair.client, title]);
+  const application = await submission({ talent: pair.talent, status: "hired", workflow: "client_invitation", initiator: "client" });
+  await query("UPDATE job_submissions SET job_id=$1,client_id=$3 WHERE id=$2", [job, application, pair.client]);
   const offer = (await query(`INSERT INTO offers(submission_id,status,rate,rate_currency,engagement_type)
     VALUES($1,'accepted',1000,'USD','Standard') RETURNING id`, [application])).rows[0].id;
   const contract = (await query(`INSERT INTO hiring_contracts(offer_id,submission_id,status,talent_signed_at,onspot_signed_at,
@@ -73,9 +76,9 @@ function registerHiredContactTests() {
     assert.ok(clientRows.every((c: any) => c.otherUserId === ids.talent && c.hiredAt));
     assert.ok(talent.body.contacts.some((c: any) => c.applicationId === a.application
       && c.companyName === "Messaging UAT Company" && c.contactPerson === "Client Fixture"));
-    assert.ok(!client.body.contacts.some((c: any) => c.applicationId === unsigned.application));
+    assert.equal(client.body.contacts.find((c: any) => c.applicationId === unsigned.application).paperworkPending, true);
     assert.ok(!client.body.contacts.some((c: any) => c.applicationId === applicationId));
-    assert.equal((await open(unsigned.application)).status, 409);
+    assert.ok([200, 201].includes((await open(unsigned.application)).status));
     assert.equal((await api("GET", "/api/me/message-contacts", "otherClient")).body.contacts.length, 0);
     assert.equal((await api("GET", "/api/me/message-contacts", "otherTalent")).body.contacts.length, 0);
     assert.equal((await open(a.application, "otherClient")).status, 403);
@@ -95,10 +98,70 @@ function registerHiredContactTests() {
     assert.ok(!("email" in contact) && !("phone" in contact));
     assert.equal((await api("POST", `/api/message-threads/${started.body.threadId}/mark-read`, "client", {})).status, 204);
     assert.equal((await api("GET", "/api/me/message-contacts")).body.contacts.find((c: any) => c.applicationId === a.application).unreadCount, 0);
-    // A fully signed historical hire remains valid even when its old
-    // application provenance differs from today's applicant-created rows.
+    // Execution cannot bypass the canonical formal-pipeline provenance rule.
     await query("UPDATE job_submissions SET workflow_type='application',initiated_by='client' WHERE id=$1", [a.application]);
-    assert.equal((await open(a.application)).status, 200);
+    assert.equal((await open(a.application)).status, 409);
+    assert.ok(!(await api("GET", "/api/me/message-contacts")).body.contacts.some((c: any) => c.applicationId === a.application));
+  });
+
+  test("formal hires with draft or missing contracts can communicate without becoming timesheet or roster eligible", async () => {
+    const pair = { client: ids.otherClient, talent: ids.otherTalent };
+    const pending = await hiredContact("Draft paperwork hire", false, false, pair);
+    const missing = await hiredContact("Missing paperwork hire", false, false, pair);
+    await query("UPDATE hiring_contracts SET status='draft' WHERE id=$1", [pending.contract]);
+    await query("DELETE FROM hiring_contracts WHERE id=$1", [missing.contract]);
+    await query("UPDATE jobs SET approval_status='approved' WHERE id=ANY($1::text[])", [[pending.job, missing.job]]);
+    await query(`UPDATE job_submissions SET workflow_type='application',initiated_by='talent',registration_status='linked'
+      WHERE id=ANY($1::text[])`, [[pending.application, missing.application]]);
+    await query(`INSERT INTO candidates(id,email,first_name,last_name,full_name,user_id)
+      SELECT $1,email,first_name,last_name,concat_ws(' ',first_name,last_name),id FROM users WHERE id=$2`,
+    [randomUUID(), pair.talent]);
+    const expectedName = (await query("SELECT concat_ws(' ',first_name,last_name) AS name FROM users WHERE id=$1", [pair.talent])).rows[0].name;
+    for (const hire of [pending, missing]) {
+      await query(`INSERT INTO job_application_status_history(application_id,new_status,changed_by,created_at)
+        VALUES($1,'hired',$2,'2026-02-01T09:00:00Z')`, [hire.application, ids.admin]);
+      for (const who of ["otherClient", "otherTalent"]) {
+        const result = await api("GET", "/api/me/message-contacts", who);
+        assert.equal(result.status, 200);
+        const contact = result.body.contacts.find((c: any) => c.applicationId === hire.application);
+        assert.ok(contact);
+        assert.equal(contact.paperworkPending, true);
+        assert.equal(new Date(contact.hiredAt).toISOString(), "2026-02-01T09:00:00.000Z");
+        if (who === "otherClient") assert.equal(contact.personName, expectedName);
+        const policy = await api("GET", "/api/me/messaging-policy", who);
+        assert.equal((await api("POST", "/api/me/messaging-policy/accept", who, { version: policy.body.currentVersion })).status, 200);
+      }
+      const started = await open(hire.application, "otherClient");
+      assert.ok([200, 201].includes(started.status), JSON.stringify(started.body));
+      assert.equal((await open(hire.application, "otherTalent")).body.threadId, started.body.threadId);
+      for (const who of ["otherClient", "otherTalent"]) {
+        assert.equal((await api("POST", "/api/messages", who, {
+          threadId: started.body.threadId, content: "Can we discuss the project setup?",
+        })).status, 201);
+      }
+      const headers = await api("GET", "/api/me/message-threads", "otherClient");
+      assert.equal(headers.body.participantNames[pair.talent], expectedName);
+    }
+    const strict = await query(`SELECT (${ACTIVE_HIRE_SUBMISSION_SQL}) AS active,
+      (${TIMESHEET_HIRE_SQL}) AS timesheet FROM job_submissions js
+      JOIN hiring_contracts hc ON hc.submission_id=js.id WHERE js.id=$1`, [pending.application]);
+    assert.deepEqual(strict.rows[0], { active: false, timesheet: false });
+    assert.equal((await query(`SELECT hc.id FROM job_submissions js JOIN hiring_contracts hc ON hc.submission_id=js.id
+      WHERE js.id=$1 AND ${TIMESHEET_HIRE_SQL}`, [missing.application])).rows.length, 0);
+    const org = (await query("INSERT INTO organizations(name,created_by) VALUES('Pending paperwork team',$1) RETURNING id", [pair.client])).rows[0].id;
+    await query("INSERT INTO organization_members(organization_id,user_id,role,status) VALUES($1,$2,'owner','active')", [org, pair.client]);
+    const roster = await api("GET", `/api/client/team-dashboard?organizationId=${org}`, "otherClient");
+    assert.equal(roster.status, 200, JSON.stringify(roster.body));
+    assert.equal(roster.body.members.length, 0);
+    for (const [hire, status] of [[pending, "rejected"], [missing, "withdrawn"]] as const) {
+      const existing = await open(hire.application, "otherClient");
+      await query("UPDATE job_submissions SET status=$2 WHERE id=$1", [hire.application, status]);
+      for (const who of ["otherClient", "otherTalent"]) {
+        assert.ok(!(await api("GET", "/api/me/message-contacts", who)).body.contacts.some((c: any) => c.applicationId === hire.application));
+        assert.equal((await open(hire.application, who)).status, 409);
+        assert.equal((await api("POST", "/api/messages", who, { threadId: existing.body.threadId, content: "Should not be sent." })).status, 409);
+      }
+    }
   });
 
   test("ended, void and inactive hires disappear and stale entry points cannot reuse their old thread", async () => {
@@ -112,10 +175,23 @@ function registerHiredContactTests() {
       assert.equal((await open(hire.application, who)).status, 409);
     }
     const voidHire = await hiredContact("Void hire");
-    assert.ok([200, 201].includes((await open(voidHire.application)).status));
+    const voidThread = await open(voidHire.application);
+    assert.ok([200, 201].includes(voidThread.status));
     await query("UPDATE hiring_contracts SET status='void',voided_at=now() WHERE id=$1", [voidHire.contract]);
     assert.equal((await open(voidHire.application)).status, 409);
+    assert.equal((await api("POST", "/api/messages", "client", { threadId: voidThread.body.threadId, content: "Should not be sent." })).status, 409);
     assert.ok(!(await api("GET", "/api/me/message-contacts")).body.contacts.some((c: any) => c.applicationId === voidHire.application));
+    for (const status of ["terminated", "voided"]) {
+      const inactive = await hiredContact(`${status} hire`);
+      const oldThread = await open(inactive.application);
+      assert.ok([200, 201].includes(oldThread.status));
+      await query("UPDATE hiring_contracts SET status=$2 WHERE id=$1", [inactive.contract, status]);
+      for (const who of ["client", "talent"]) {
+        assert.ok(!(await api("GET", "/api/me/message-contacts", who)).body.contacts.some((c: any) => c.applicationId === inactive.application));
+        assert.equal((await open(inactive.application, who)).status, 409);
+        assert.equal((await api("POST", "/api/messages", who, { threadId: oldThread.body.threadId, content: "Should not be sent." })).status, 409);
+      }
+    }
     const futureEnd = await hiredContact("Active scheduled ending");
     await query(`UPDATE hiring_contracts SET effective_end_date=CURRENT_DATE+10,
       termination_reason='Future isolated ending',terminated_by=$2,terminated_at=now() WHERE id=$1`,
@@ -125,10 +201,11 @@ function registerHiredContactTests() {
     assert.equal((await open(futureEnd.application)).status, 409);
   });
 
-  test("managed agreements require actual execution and required party signatures, not just a hired status", async () => {
+  test("paperwork stays pending until actual execution without preventing messaging", async () => {
     const hire = await hiredContact("Managed agreement");
     await query("UPDATE hiring_contracts SET document_managed=true,party_type='client' WHERE id=$1", [hire.contract]);
-    assert.equal((await open(hire.application)).status, 409);
+    assert.ok([200, 201].includes((await open(hire.application)).status));
+    assert.equal((await api("GET", "/api/me/message-contacts")).body.contacts.find((c: any) => c.applicationId === hire.application).paperworkPending, true);
     const document = (await query(`INSERT INTO contract_documents(hiring_contract_id,object_key,original_filename,mime_type,file_size,
       sha256,version,status,uploaded_by,executed_at) VALUES($1,$2,'fixture.pdf','application/pdf',100,$3,1,'executed',$4,now()) RETURNING id`,
     [hire.contract, `fixture/${randomUUID()}`, "a".repeat(64), ids.admin])).rows[0].id;
@@ -136,15 +213,17 @@ function registerHiredContactTests() {
       await query(`INSERT INTO contract_signatures(document_id,signer_user_id,signer_role,legal_name,document_version,document_sha256,authority_context)
         VALUES($1,$2,$3,'Isolated Fixture',1,$4,'Disposable eligibility fixture')`, [document, user, role, "a".repeat(64)]);
     }
-    assert.equal((await open(hire.application)).status, 409);
+    assert.ok([200, 201].includes((await open(hire.application)).status));
+    assert.equal((await api("GET", "/api/me/message-contacts")).body.contacts.find((c: any) => c.applicationId === hire.application).paperworkPending, true);
     await query(`INSERT INTO contract_signatures(document_id,signer_user_id,signer_role,legal_name,document_version,document_sha256,authority_context)
       VALUES($1,$2,'client','Isolated Client',1,$3,'Disposable eligibility fixture')`, [document, ids.client, "a".repeat(64)]);
-    assert.ok((await api("GET", "/api/me/message-contacts")).body.contacts.some((c: any) => c.applicationId === hire.application));
+    assert.equal((await api("GET", "/api/me/message-contacts")).body.contacts.find((c: any) => c.applicationId === hire.application).paperworkPending, false);
     assert.ok([200, 201].includes((await open(hire.application)).status));
   });
 
   test("password-authenticated Talent and Client see hired contacts, open chats, and retain the privacy policy", { timeout: 60000 }, async () => {
-    const hire = await hiredContact("Browser hired engagement");
+    const hire = await hiredContact("Browser hired engagement", false);
+    await query("UPDATE hiring_contracts SET status='draft' WHERE id=$1", [hire.contract]);
     for (const [page, who] of [[talentPage, "talent"], [clientPage, "client"]] as const) {
       await page.goto(base + "/messages");
       await page.getByTestId("tab-messages-chats").waitFor();
@@ -153,6 +232,7 @@ function registerHiredContactTests() {
       await row.waitFor();
       assert.match(await row.innerText(), /Browser hired engagement/);
       assert.match(await row.innerText(), /Hired/);
+      assert.match(await row.innerText(), /Paperwork pending/);
       if (who === "talent") await page.getByText("Messaging is optional. Use it for urgent matters or when you need to reach your client.", { exact: true }).waitFor();
       await page.getByTestId(`button-message-contact-${hire.application}`).click();
       await page.waitForURL(/\/messages\/[a-zA-Z0-9-]+$/);

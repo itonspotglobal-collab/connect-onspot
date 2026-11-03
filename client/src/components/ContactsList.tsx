@@ -87,8 +87,8 @@ export function ContactsList({
       </div>
       <p className="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">
         {isTalent
-          ? "You'll see clients here once a hiring contract is fully signed."
-          : "Hired talent will appear here once their contract is fully signed."}
+          ? "You'll see clients here once you're hired."
+          : "Talent you hire will appear here."}
       </p>
     </div>;
   }
@@ -112,6 +112,9 @@ export function ContactsList({
         <p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
           <CalendarDays className="h-3 w-3" />Hired {hiredDate(contact.hiredAt)}
         </p>
+        {contact.paperworkPending && <span className="mt-2 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          Paperwork pending
+        </span>}
         <Button type="button" size="sm" variant={contact.threadId ? "outline" : "default"}
           className={`mt-3 h-8 w-full text-xs ${contact.threadId ? "" : "bg-[#474ead] text-white hover:bg-[#3d439c]"}`}
           disabled={opening}

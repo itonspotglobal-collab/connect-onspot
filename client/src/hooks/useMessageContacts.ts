@@ -6,6 +6,7 @@ export interface MessageContact {
   jobId: string;
   jobTitle: string;
   hiredAt: string | null;
+  paperworkPending: boolean;
   personName: string;
   companyName: string | null;
   contactPerson: string | null;

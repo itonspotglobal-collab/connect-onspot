@@ -70,7 +70,7 @@ import {
 } from "./lib/interviewTime";
 import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
 import { maskClientTalentName } from "../shared/talentName";
-import { activeHireExistsSQL, listMessagingContacts } from "./services/messagingContacts";
+import { activeHireExistsSQL, canSendHireMessage, hiredHistoryExistsSQL, listMessagingContacts, messagingNameRevealExistsSQL } from "./services/messagingContacts";
 import { createCandidateMeHandler } from "./lib/candidateMeHandler";
 import { registerDisabledLinkedInImportRoutes } from "./lib/disabledLinkedInImport";
 import { hasEmailOwnership } from "./lib/emailOwnership";
@@ -11375,7 +11375,7 @@ export async function registerRoutes(
          (u.role = 'talent' OR EXISTS (
            SELECT 1 FROM candidates c WHERE c.user_id = u.id
          )) AS is_talent,
-         ${nameRevealExistsSQL("$2", "u.id")} AS name_revealed
+         ${messagingNameRevealExistsSQL("$2", "u.id")} AS name_revealed
        FROM users u
       WHERE u.id = $1
       LIMIT 1`,
@@ -11503,17 +11503,18 @@ export async function registerRoutes(
         return { status: 409, error: "This application has changed. Please refresh and try again." };
       }
 
-      // Fully signed hires must still be active, even when a conversation
-      // already exists. Preserve the distinct pre-hire applicant policy.
-      const contracts = await txClient.query(
-        `SELECT id,status,talent_signed_at,onspot_signed_at FROM hiring_contracts
+      // Hired messaging is independent of execution/billing, but still closes
+      // for invalidated/ended hires. Preserve the distinct pre-hire policy.
+      await txClient.query(
+        `SELECT id FROM hiring_contracts
           WHERE submission_id=$1 ORDER BY id FOR SHARE`, [applicationId],
       );
-      if (isHired || latest.status === "hired" || contracts.rows.some((c: any) => c.talent_signed_at && c.onspot_signed_at)) {
+      const history = await txClient.query(`SELECT ${hiredHistoryExistsSQL("$1")} AS was_hired`, [applicationId]);
+      if (isHired || latest.status === "hired" || history.rows[0].was_hired) {
         const active = await txClient.query(`SELECT ${activeHireExistsSQL("$1")} AS allowed`, [applicationId]);
         if (!active.rows[0]?.allowed) {
           await txClient.query("ROLLBACK");
-          return { status: 409, error: "Messaging requires an active, fully signed hiring contract." };
+          return { status: 409, error: "This hire is no longer eligible for messaging." };
         }
       }
 
@@ -11744,7 +11745,7 @@ export async function registerRoutes(
              u.last_name,
              u.username,
              -- Revealed once the talent has accepted a client-initiated invitation
-             ${nameRevealExistsSQL("$2", "u.id")} AS name_revealed,
+             ${messagingNameRevealExistsSQL("$2", "u.id")} AS name_revealed,
              -- Clients are never masked; only talent participants need masking
              EXISTS (SELECT 1 FROM candidates c WHERE c.user_id = u.id) AS is_talent
            FROM users u
@@ -11851,6 +11852,11 @@ export async function registerRoutes(
           `SELECT pg_advisory_xact_lock(hashtext($1))`,
           [`message-privacy:${validated.threadId}`],
         );
+
+        if (!await canSendHireMessage(txClient, thread)) {
+          await txClient.query("ROLLBACK");
+          return res.status(409).json({ error: "This hire is no longer eligible for messaging." });
+        }
 
         const recent = await txClient.query(
           `SELECT
