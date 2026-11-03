@@ -31,6 +31,22 @@ async function api(method: string, route: string, who = "client", body?: unknown
   return { status: response.status, body: await response.json().catch(() => null) };
 }
 const open = (id: string = applicationId, who = "client") => api("POST", `/api/applications/${id}/message-thread`, who);
+async function hiredContact(title: string, signed = true, historicallyEnded = false) {
+  const job = randomUUID();
+  await query(`INSERT INTO jobs(id,client_id,title,description,category,status,experience_level)
+    VALUES($1,$2,$3,'Isolated messaging test','Other','open','intermediate')`, [job, ids.client, title]);
+  const application = await submission({ status: "hired", workflow: "client_invitation", initiator: "client" });
+  await query("UPDATE job_submissions SET job_id=$1 WHERE id=$2", [job, application]);
+  const offer = (await query(`INSERT INTO offers(submission_id,status,rate,rate_currency,engagement_type)
+    VALUES($1,'accepted',1000,'USD','Standard') RETURNING id`, [application])).rows[0].id;
+  const contract = (await query(`INSERT INTO hiring_contracts(offer_id,submission_id,status,talent_signed_at,onspot_signed_at,
+    effective_end_date,termination_reason,terminated_by,terminated_at)
+    VALUES($1,$2,$3,CASE WHEN $4 THEN now() END,CASE WHEN $4 THEN now() END,
+      CASE WHEN $5 THEN CURRENT_DATE-2 END,CASE WHEN $5 THEN 'Historical fixture ending' END,
+      CASE WHEN $5 THEN $6 END,CASE WHEN $5 THEN now()-interval '3 days' END) RETURNING id`,
+  [offer, application, signed ? "signed" : "sent", signed, historicallyEnded, ids.admin])).rows[0].id;
+  return { application, contract, job };
+}
 async function submission(values: { talent?: string | null; email?: string; status?: string; workflow?: string; initiator?: string } = {}) {
   const id = randomUUID();
   await query(`INSERT INTO job_submissions
@@ -39,6 +55,127 @@ async function submission(values: { talent?: string | null; email?: string; stat
   [id, jobId, ids.client, values.talent === undefined ? ids.talent : values.talent,
     values.email || `${ids.talent}@example.test`, values.status || "new", values.workflow || "application", values.initiator || "talent"]);
   return id;
+}
+
+function registerHiredContactTests() {
+  test("active hired contacts are role-scoped, per job, privately presented, and use readBy unread counts", async () => {
+    assert.equal((await api("GET", "/api/me/message-contacts", "anonymous")).status, 401);
+    assert.equal((await api("GET", "/api/me/message-contacts", "admin")).status, 403);
+    const a = await hiredContact("Active hire A"), b = await hiredContact("Active hire B");
+    const unsigned = await hiredContact("Unsigned hire", false);
+    const client = await api("GET", "/api/me/message-contacts");
+    const talent = await api("GET", "/api/me/message-contacts", "talent");
+    assert.equal(client.status, 200, JSON.stringify(client.body));
+    assert.equal(talent.status, 200, JSON.stringify(talent.body));
+    const clientRows = client.body.contacts.filter((c: any) => [a.application, b.application].includes(c.applicationId));
+    assert.equal(clientRows.length, 2);
+    assert.deepEqual(clientRows.map((c: any) => c.jobTitle).sort(), ["Active hire A", "Active hire B"]);
+    assert.ok(clientRows.every((c: any) => c.otherUserId === ids.talent && c.hiredAt));
+    assert.ok(talent.body.contacts.some((c: any) => c.applicationId === a.application
+      && c.companyName === "Messaging UAT Company" && c.contactPerson === "Client Fixture"));
+    assert.ok(!client.body.contacts.some((c: any) => c.applicationId === unsigned.application));
+    assert.ok(!client.body.contacts.some((c: any) => c.applicationId === applicationId));
+    assert.equal((await open(unsigned.application)).status, 409);
+    assert.equal((await api("GET", "/api/me/message-contacts", "otherClient")).body.contacts.length, 0);
+    assert.equal((await api("GET", "/api/me/message-contacts", "otherTalent")).body.contacts.length, 0);
+    assert.equal((await open(a.application, "otherClient")).status, 403);
+    assert.equal((await open(a.application, "otherTalent")).status, 403);
+    const started = await open(a.application);
+    assert.ok([200, 201].includes(started.status), JSON.stringify(started.body));
+    const repeated = await open(a.application, "talent");
+    assert.equal(repeated.status, 200);
+    assert.equal(repeated.body.threadId, started.body.threadId);
+    await query(`INSERT INTO messages(thread_id,sender_id,content,read_by)
+      VALUES($1,$2,'Isolated hired message',$3::text[])`, [started.body.threadId, ids.talent, [ids.talent]]);
+    const contact = (await api("GET", "/api/me/message-contacts")).body.contacts.find((c: any) => c.applicationId === a.application);
+    const thread = (await api("GET", "/api/me/message-threads")).body.threads.find((t: any) => t.id === started.body.threadId);
+    assert.equal(contact.threadId, started.body.threadId);
+    assert.equal(contact.unreadCount, thread.unreadCount);
+    assert.ok(contact.unreadCount >= 1);
+    assert.ok(!("email" in contact) && !("phone" in contact));
+    assert.equal((await api("POST", `/api/message-threads/${started.body.threadId}/mark-read`, "client", {})).status, 204);
+    assert.equal((await api("GET", "/api/me/message-contacts")).body.contacts.find((c: any) => c.applicationId === a.application).unreadCount, 0);
+    // A fully signed historical hire remains valid even when its old
+    // application provenance differs from today's applicant-created rows.
+    await query("UPDATE job_submissions SET workflow_type='application',initiated_by='client' WHERE id=$1", [a.application]);
+    assert.equal((await open(a.application)).status, 200);
+  });
+
+  test("ended, void and inactive hires disappear and stale entry points cannot reuse their old thread", async () => {
+    // Insert historical data rather than bypassing the real no-backdating
+    // update guard. Application code cannot manufacture a past termination.
+    const hire = await hiredContact("Ended hire", true, true);
+    for (const who of ["client", "talent"]) {
+      const result = await api("GET", "/api/me/message-contacts", who);
+      assert.equal(result.status, 200);
+      assert.ok(!result.body.contacts.some((c: any) => c.applicationId === hire.application));
+      assert.equal((await open(hire.application, who)).status, 409);
+    }
+    const voidHire = await hiredContact("Void hire");
+    assert.ok([200, 201].includes((await open(voidHire.application)).status));
+    await query("UPDATE hiring_contracts SET status='void',voided_at=now() WHERE id=$1", [voidHire.contract]);
+    assert.equal((await open(voidHire.application)).status, 409);
+    assert.ok(!(await api("GET", "/api/me/message-contacts")).body.contacts.some((c: any) => c.applicationId === voidHire.application));
+    const futureEnd = await hiredContact("Active scheduled ending");
+    await query(`UPDATE hiring_contracts SET effective_end_date=CURRENT_DATE+10,
+      termination_reason='Future isolated ending',terminated_by=$2,terminated_at=now() WHERE id=$1`,
+    [futureEnd.contract, ids.admin]);
+    assert.ok((await api("GET", "/api/me/message-contacts")).body.contacts.some((c: any) => c.applicationId === futureEnd.application));
+    await query("UPDATE job_submissions SET status='rejected' WHERE id=$1", [futureEnd.application]);
+    assert.equal((await open(futureEnd.application)).status, 409);
+  });
+
+  test("managed agreements require actual execution and required party signatures, not just a hired status", async () => {
+    const hire = await hiredContact("Managed agreement");
+    await query("UPDATE hiring_contracts SET document_managed=true,party_type='client' WHERE id=$1", [hire.contract]);
+    assert.equal((await open(hire.application)).status, 409);
+    const document = (await query(`INSERT INTO contract_documents(hiring_contract_id,object_key,original_filename,mime_type,file_size,
+      sha256,version,status,uploaded_by,executed_at) VALUES($1,$2,'fixture.pdf','application/pdf',100,$3,1,'executed',$4,now()) RETURNING id`,
+    [hire.contract, `fixture/${randomUUID()}`, "a".repeat(64), ids.admin])).rows[0].id;
+    for (const [role, user] of [["talent", ids.talent], ["onspot", ids.admin]]) {
+      await query(`INSERT INTO contract_signatures(document_id,signer_user_id,signer_role,legal_name,document_version,document_sha256,authority_context)
+        VALUES($1,$2,$3,'Isolated Fixture',1,$4,'Disposable eligibility fixture')`, [document, user, role, "a".repeat(64)]);
+    }
+    assert.equal((await open(hire.application)).status, 409);
+    await query(`INSERT INTO contract_signatures(document_id,signer_user_id,signer_role,legal_name,document_version,document_sha256,authority_context)
+      VALUES($1,$2,'client','Isolated Client',1,$3,'Disposable eligibility fixture')`, [document, ids.client, "a".repeat(64)]);
+    assert.ok((await api("GET", "/api/me/message-contacts")).body.contacts.some((c: any) => c.applicationId === hire.application));
+    assert.ok([200, 201].includes((await open(hire.application)).status));
+  });
+
+  test("password-authenticated Talent and Client see hired contacts, open chats, and retain the privacy policy", { timeout: 60000 }, async () => {
+    const hire = await hiredContact("Browser hired engagement");
+    for (const [page, who] of [[talentPage, "talent"], [clientPage, "client"]] as const) {
+      await page.goto(base + "/messages");
+      await page.getByTestId("tab-messages-chats").waitFor();
+      await page.getByTestId("tab-messages-contacts").click();
+      const row = page.getByTestId(`message-contact-${hire.application}`);
+      await row.waitFor();
+      assert.match(await row.innerText(), /Browser hired engagement/);
+      assert.match(await row.innerText(), /Hired/);
+      if (who === "talent") await page.getByText("Messaging is optional. Use it for urgent matters or when you need to reach your client.", { exact: true }).waitFor();
+      await page.getByTestId(`button-message-contact-${hire.application}`).click();
+      await page.waitForURL(/\/messages\/[a-zA-Z0-9-]+$/);
+      await page.getByTestId("button-view-messaging-policy").waitFor();
+    }
+    assert.equal(clientPage.url(), talentPage.url());
+    const expectedThread = clientPage.url();
+    await talentPage.goto(base + "/my-applications");
+    await talentPage.getByTestId(`button-message-client-${hire.application}`).click();
+    await talentPage.waitForURL(/\/messages\/[a-zA-Z0-9-]+$/);
+    assert.equal(talentPage.url(), expectedThread);
+
+    const membership = await query("SELECT organization_id FROM organization_members WHERE user_id=$1 AND status='active' LIMIT 1", [ids.client]);
+    if (!membership.rows.length) {
+      const org = (await query("INSERT INTO organizations(name,created_by) VALUES('Messaging Fixture Team',$1) RETURNING id", [ids.client])).rows[0].id;
+      await query("INSERT INTO organization_members(organization_id,user_id,role,status) VALUES($1,$2,'owner','active')", [org, ids.client]);
+    }
+    await clientPage.goto(base + "/clients");
+    await clientPage.getByRole("button", { name: "Message", exact: true }).first().click();
+    await clientPage.getByRole("dialog").getByRole("button", { name: /Browser hired engagement/ }).click();
+    await clientPage.waitForURL(/\/messages\/[a-zA-Z0-9-]+$/);
+    assert.equal(clientPage.url(), expectedThread);
+  });
 }
 async function acceptPolicy(page: Page) {
   const checkbox = page.getByTestId("checkbox-messaging-policy");
@@ -269,3 +406,5 @@ if (!baseline) {
     await clientPage.unroute(`**/api/applications/*/message-thread`);
   });
 }
+
+if (!baseline) registerHiredContactTests();

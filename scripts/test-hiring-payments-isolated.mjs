@@ -195,7 +195,7 @@ try {
   });
     // Full Express startup can interfere with Node 22 test-worker IPC framing.
     // Direct node:test execution retains assertions/exit codes without that IPC.
-    await run(process.execPath,interviewsOnly?[output]:["--test","--test-concurrency=1",output],workerEnv);
+    await run(process.execPath,(interviewsOnly || messagingOnly)?[output]:["--test","--test-concurrency=1",output],workerEnv);
   }
   }
 } finally {

@@ -89,6 +89,8 @@ async function cleanup() {
     [CLIENT_ID, TALENT_ID, OUTSIDER_ID],
   );
   await query(`DELETE FROM message_threads WHERE participants && ARRAY[$1, $2, $3]::text[]`, [CLIENT_ID, TALENT_ID, OUTSIDER_ID]);
+  await query(`DELETE FROM contractor_onboarding_cohorts WHERE submission_id IN
+    (SELECT id FROM job_submissions WHERE client_id=$1)`, [CLIENT_ID]);
   await query(`DELETE FROM job_submissions WHERE client_id = $1`, [CLIENT_ID]);
   await query(`DELETE FROM jobs WHERE id = $1`, [JOB_ID]);
   await query(
@@ -337,6 +339,7 @@ describe("production messaging routes (registerRoutes)", () => {
     assert.equal(await threadCount(), 0, "no thread may exist for a talent-initiated submission");
     const row = await query(`SELECT status FROM job_submissions WHERE id = $1`, [subId]);
     assert.equal(row.rows[0].status, "invited", "status must be unchanged");
+    await query(`DELETE FROM contractor_onboarding_cohorts WHERE submission_id=$1`, [subId]);
     await query(`DELETE FROM job_submissions WHERE id = $1`, [subId]);
   });
 
@@ -366,6 +369,7 @@ describe("production messaging routes (registerRoutes)", () => {
     // Clean state for subsequent tests
     await query(`DELETE FROM messages WHERE thread_id = $1`, [r1.json.id]);
     await query(`DELETE FROM message_threads WHERE id = $1`, [r1.json.id]);
+    await query(`DELETE FROM contractor_onboarding_cohorts WHERE submission_id=$1`, [subId]);
     await query(`DELETE FROM job_submissions WHERE id = $1`, [subId]);
   });
 

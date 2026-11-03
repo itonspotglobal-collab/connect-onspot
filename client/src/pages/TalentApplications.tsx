@@ -36,6 +36,7 @@ import { bucketTalentOffers, isTalentOfferExpired } from "@/components/talentOff
 import { getTalentHistoryTimeline } from "@/components/talentApplicationHistory";
 import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
 import { isPendingClientInvitation } from "@/lib/talentInvitationState";
+import { useMessageContacts, type MessageContact } from "@/hooks/useMessageContacts";
 import {
   Briefcase, Calendar, ChevronRight, RefreshCw,
   AlertCircle, Loader2, ExternalLink, Clock,
@@ -266,10 +267,12 @@ function ApplicationCard({
   app,
   onViewSubmission,
   unreadMessageCount = 0,
+  messageContact,
 }: {
   app: TalentApplication;
   onViewSubmission: () => void;
   unreadMessageCount?: number;
+  messageContact?: MessageContact;
 }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -334,6 +337,34 @@ function ApplicationCard({
       toast({
         title: "Unable to open conversation",
         description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setOpeningChat(false);
+    }
+  }
+
+  async function handleMessageClient() {
+    if (openingChat || !messageContact) return;
+    setOpeningChat(true);
+    try {
+      let threadId = messageContact.threadId;
+      if (!threadId) {
+        const response = await apiRequest("POST", `/api/applications/${encodeURIComponent(messageContact.applicationId)}/message-thread`);
+        const result = await response.json() as { threadId?: string };
+        threadId = result.threadId ?? null;
+      }
+      if (!threadId) throw new Error("No thread returned");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["message-contacts"] }),
+        qc.invalidateQueries({ queryKey: ["my-message-threads"] }),
+      ]);
+      navigate(`/messages/${threadId}`);
+    } catch (error) {
+      console.error("Open hired client conversation failed:", error);
+      toast({
+        title: "Unable to open conversation",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -406,6 +437,25 @@ function ApplicationCard({
                     {unreadMessageCount > 0 && (
                       <span className="ml-1 inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                         {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                      </span>
+                    )}
+                  </button>
+                </>
+              )}
+              {messageContact && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-700">·</span>
+                  <button
+                    onClick={() => void handleMessageClient()}
+                    disabled={openingChat}
+                    className="text-xs text-[#474ead] hover:underline dark:text-indigo-400 flex items-center gap-0.5 disabled:opacity-50"
+                    data-testid={`button-message-client-${app.id}`}
+                  >
+                    {openingChat ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                    {openingChat ? "Opening…" : "Message client"}
+                    {messageContact.unreadCount > 0 && (
+                      <span className="ml-1 inline-flex min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                        {messageContact.unreadCount > 99 ? "99+" : messageContact.unreadCount}
                       </span>
                     )}
                   </button>
@@ -1624,6 +1674,7 @@ export default function TalentApplications() {
   const openedApplicationId = useRef<string | null>(null);
 
   const { data: applications, isLoading, isError, refetch } = useTalentApplications();
+  const { data: messageContactsData } = useMessageContacts(hasTalentSession);
   const requestedApplication = applications?.find((app) => app.id === requestedApplicationId);
   useEffect(() => {
     // Client-created invitations have separate, inline Accept/Decline actions;
@@ -1869,6 +1920,7 @@ export default function TalentApplications() {
                   app={app}
                   onViewSubmission={() => setDrawerApp(app)}
                   unreadMessageCount={unreadByJobId.get(app.job.id) ?? 0}
+                  messageContact={messageContactsData?.contacts.find((contact) => contact.applicationId === app.id)}
                 />
               ))}
             </div>

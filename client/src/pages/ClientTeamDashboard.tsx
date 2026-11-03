@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { PendingDeposits } from "@/components/PendingDeposits";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -7,7 +7,6 @@ import {
   ArrowUpRight,
   Clock3,
   Info,
-  MessageSquare,
   Star,
   Users,
   Wallet,
@@ -19,9 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/hooks/use-toast";
 import type { ContractRow } from "@/components/ContractWorkflow";
 import { elapsedSeconds, formatElapsed } from "@/lib/workClockTime";
+import { useMessageContacts } from "@/hooks/useMessageContacts";
+import { MessageContactButton } from "@/components/MessageContactButton";
 
 type MemberStatus = "online" | "away" | "offline";
 
@@ -207,7 +207,7 @@ function formatActivity(member: TeamMember) {
   return `Last active ${activityDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
-function TeamMemberCard({ member, onAction, organizationId }: { member: TeamMember; onAction: (name: string) => void; organizationId: string }) {
+function TeamMemberCard({ member, organizationId, contacts }: { member: TeamMember; organizationId: string; contacts: import("@/hooks/useMessageContacts").MessageContact[] }) {
   const [, setTick] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(() => setTick((value) => value + 1), 30_000);
@@ -261,7 +261,11 @@ function TeamMemberCard({ member, onAction, organizationId }: { member: TeamMemb
         <div className="mt-4 flex gap-2">
           {member.canViewTimesheets === true && <a href={`/client/timesheets?talentId=${encodeURIComponent(member.id)}&organizationId=${encodeURIComponent(organizationId)}`} className="inline-flex flex-1 items-center justify-center rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50">View Timesheets</a>}
           <MemberContractAccess member={member} organizationId={organizationId} />
-          <Button type="button" size="sm" className="flex-1 bg-[#474ead] text-xs text-white hover:bg-[#3e439c]" onClick={() => onAction(member.name)}><MessageSquare className="h-3.5 w-3.5" />Message</Button>
+          <MessageContactButton
+            contacts={contacts.filter((contact) => contact.otherUserId === member.id)
+              .sort((a, b) => Number(b.jobTitle === member.project) - Number(a.jobTitle === member.project))}
+            className="bg-[#474ead] text-white hover:bg-[#3e439c]"
+          />
         </div>
       </div>
     </Card>
@@ -337,6 +341,7 @@ function TeamROI({ data }: { data: TeamDashboardData }) {
 
 export default function ClientTeamDashboard() {
   const { selectedOrganizationId } = useAuth();
+  const { data: contactsData } = useMessageContacts();
   const { data, isLoading, isError, error, refetch } = useQuery<TeamDashboardData>({
     queryKey: ["/api/client/team-dashboard", selectedOrganizationId],
     queryFn: async () => {
@@ -350,10 +355,6 @@ export default function ClientTeamDashboard() {
     staleTime: 30_000,
     refetchInterval: 30_000,
   });
-  const handleAction = useCallback((name: string) => {
-    toast({ title: "Messaging is coming soon", description: `A connection to ${name} will be available later.` });
-  }, []);
-
   if (!selectedOrganizationId) {
     return (
       <div className="mx-auto flex min-h-[60vh] w-full max-w-[1500px] items-center justify-center">
@@ -422,7 +423,7 @@ export default function ClientTeamDashboard() {
             <p className="mt-1 text-sm text-slate-500">Signed contracts for this organization will appear here once a team member is onboarded.</p>
           </Card>
         ) : (
-          <div className="grid gap-4 xl:grid-cols-3">{data.members.map((member) => <TeamMemberCard key={member.id} member={member} onAction={handleAction} organizationId={selectedOrganizationId} />)}</div>
+          <div className="grid gap-4 xl:grid-cols-3">{data.members.map((member) => <TeamMemberCard key={member.id} member={member} organizationId={selectedOrganizationId} contacts={contactsData?.contacts ?? []} />)}</div>
         )}
       </section>
       {data.members.length > 0 && <TeamROI data={data} />}

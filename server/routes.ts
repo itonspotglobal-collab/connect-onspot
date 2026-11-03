@@ -70,6 +70,7 @@ import {
 } from "./lib/interviewTime";
 import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/clientSearchSanitize";
 import { maskClientTalentName } from "../shared/talentName";
+import { activeHireExistsSQL, listMessagingContacts } from "./services/messagingContacts";
 import { createCandidateMeHandler } from "./lib/candidateMeHandler";
 import { registerDisabledLinkedInImportRoutes } from "./lib/disabledLinkedInImport";
 import { hasEmailOwnership } from "./lib/emailOwnership";
@@ -11404,6 +11405,7 @@ export async function registerRoutes(
     "offer_extended",
     "offer_accepted",
     "contract_sent",
+    "hired", // Separately checked against the active, fully signed hire predicate.
   ]);
 
   type ApplicationThreadResult =
@@ -11463,7 +11465,9 @@ export async function registerRoutes(
     // thread endpoint. A real applicant may talk to the owner of their job;
     // private Client shortlist rows must never establish that relationship.
     const isApplication = submission.workflow_type === "application" && submission.initiated_by === "talent";
-    if (submission.workflow_type !== "client_invitation" && !isApplication) {
+    const isHired = submission.status === "hired";
+    if (submission.workflow_type !== "client_invitation" && !isApplication
+      && !(isHired && submission.workflow_type === "application")) {
       return { status: 403, error: "Messaging is not available for this submission type." };
     }
     if (role === "client" && clientId !== authenticatedUserId) {
@@ -11497,6 +11501,20 @@ export async function registerRoutes(
           latest.workflow_type !== submission.workflow_type || latest.initiated_by !== submission.initiated_by) {
         await txClient.query("ROLLBACK");
         return { status: 409, error: "This application has changed. Please refresh and try again." };
+      }
+
+      // Fully signed hires must still be active, even when a conversation
+      // already exists. Preserve the distinct pre-hire applicant policy.
+      const contracts = await txClient.query(
+        `SELECT id,status,talent_signed_at,onspot_signed_at FROM hiring_contracts
+          WHERE submission_id=$1 ORDER BY id FOR SHARE`, [applicationId],
+      );
+      if (isHired || latest.status === "hired" || contracts.rows.some((c: any) => c.talent_signed_at && c.onspot_signed_at)) {
+        const active = await txClient.query(`SELECT ${activeHireExistsSQL("$1")} AS allowed`, [applicationId]);
+        if (!active.rows[0]?.allowed) {
+          await txClient.query("ROLLBACK");
+          return { status: 409, error: "Messaging requires an active, fully signed hiring contract." };
+        }
       }
 
       // Job-specific application threads take precedence. A pre-existing direct
@@ -11682,6 +11700,23 @@ export async function registerRoutes(
     } catch (error) {
       console.error("POST /api/applications/:applicationId/message-thread error:", error);
       return res.status(500).json({ error: "Unable to open conversation. Please try again." });
+    }
+  });
+
+  app.get("/api/me/message-contacts", authenticateJWT, async (req, res) => {
+    try {
+      const user = (req as any).user as { id?: string; role?: string } | undefined;
+      if (!user?.id) return res.status(401).json({ error: "Unauthorized" });
+      if (user.role !== "client" && user.role !== "talent") {
+        return res.status(403).json({ error: "Contacts are available to Clients and Talent only." });
+      }
+      const userId = await getCanonicalMessagingUserId(req);
+      if (!userId) return sendMessagingAccountLinkRequired(res);
+      const contacts = await listMessagingContacts(userId, user.role);
+      return res.json({ userId, role: user.role, contacts });
+    } catch (error) {
+      console.error("GET /api/me/message-contacts error:", error);
+      return res.status(500).json({ error: "Unable to load your messaging contacts." });
     }
   });
 
