@@ -1161,3 +1161,31 @@ mtime_ms = 1793673375564
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/286111b2-7fd2-461e-9d93-700e875c9714/8990020b-b1e5-44f8-8a49-3a46981a9ba2"
 storage_version_token = "1793673418332525"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "cyp3_KduIhfinzQJbXMPl"
+uri = "file://generated-artifacts/investor-live-uat/live-form.png"
+type = "image"
+title = "Investor request form — live development preview"
+description = "Actual completed preview form with contact number and inquiry; not a mocked API fixture."
+logical_id = "bf77f0b8-8990-4cfc-b305-04e4744f0373"
+content_hash = "sha256:590e90241ed2b3caab83d5791a28c6f0aaf44de576cc880ed5300cf310a20c28"
+size = 45064
+mtime_ms = 1793687768875
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/bf77f0b8-8990-4cfc-b305-04e4744f0373/7db75c02-04ae-4782-9e44-76cff81a46f6"
+storage_version_token = "1793687825865133"
+content_type = "image/png"
+
+[[outputs]]
+id = "oZ4ZPOdNw3hAzGS4KTWJO"
+uri = "file://generated-artifacts/investor-live-uat/live-confirmation.png"
+type = "image"
+title = "Request submitted — live confirmation"
+description = "Actual confirmation after HTTP 201 and Microsoft Graph acceptance. Inbox receipt has not yet been independently verified."
+logical_id = "ac78beab-e388-4eaf-a76a-338c5a1a0fb0"
+content_hash = "sha256:312477d5488fc6150daa75ecfb1e31792aeffdf5051fff9638b78a8418e7f064"
+size = 21738
+mtime_ms = 1793687772456
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/ac78beab-e388-4eaf-a76a-338c5a1a0fb0/3f48a9c5-1eb3-44ba-b4d9-fb5a6be83098"
+storage_version_token = "1793687827126645"
+content_type = "image/png"
