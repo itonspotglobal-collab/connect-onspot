@@ -1,4 +1,5 @@
 export const TALENT_NOTIFICATION_TYPES = [
+  "clock_adjustment_resolved",
   "contract_update",
   "offer_received",
   "job_invitation",
@@ -10,6 +11,7 @@ export const TALENT_NOTIFICATION_TYPES = [
 ] as const;
 
 export const CLIENT_NOTIFICATION_TYPES = [
+  "clock_adjustment_requested",
   "contract_update",
   "offer_accepted",
   "offer_declined",
@@ -39,6 +41,8 @@ export function notificationRouteForRole(
   role: string | null | undefined,
   existingRoute: string | null,
 ): string | null {
+  if (type === "clock_adjustment_requested") return role === "client" ? "/client/timesheets" : null;
+  if (type === "clock_adjustment_resolved") return role === "talent" ? "/talent/clock" : null;
   if (type === "interview_confirmed") {
     return role === "talent" ? "/my-applications" : "/client/interviews";
   }

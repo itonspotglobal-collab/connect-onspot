@@ -27,6 +27,9 @@ interface ClockException {
   status: ExceptionStatus;
   exceptionDetectedAt: string | null;
   proposedEndAt: string | null;
+  submittedAt?: string | null;
+  escalated?: boolean;
+  canResolve?: boolean;
   proposalReason: string | null;
   approvedEndAt: string | null;
   resolvedBy: string | null;
@@ -50,6 +53,11 @@ const statusLabel: Record<ExceptionStatus, string> = {
   detected: 'Detected — awaiting talent proposal',
   rejected: 'Rejected',
 };
+const hoursBetween = (start: string | null | undefined, end: string | null | undefined) => {
+  if (!start || !end) return "—";
+  const hours = (new Date(end).getTime() - new Date(start).getTime()) / 3_600_000;
+  return Number.isFinite(hours) && hours >= 0 ? `${hours.toFixed(2)} hrs` : "—";
+};
 
 export default function AdminClockExceptions() {
   const { user } = useAuth();
@@ -71,6 +79,11 @@ export default function AdminClockExceptions() {
     onSuccess: (_result, variables) => {
       setReasons((current) => ({ ...current, [variables.sessionId]: '' }));
       queryClient.invalidateQueries({ queryKey: ['/api/admin/clock/exceptions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/timesheets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/client/timesheets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/client/timesheets?eligibilityOnly=true'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/talent/timesheets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/talent/clock'] });
       toast({
         title: variables.decision === 'approve' ? 'Exception approved' : 'Exception rejected',
         description: 'The clock exception has been resolved.',
@@ -171,7 +184,7 @@ export default function AdminClockExceptions() {
                           {exception.talentName && <CardDescription>{exception.talentEmail}</CardDescription>}
                         </div>
                         <Badge variant={exception.status === 'pending' ? 'default' : exception.status === 'rejected' ? 'destructive' : 'secondary'}>
-                          {statusLabel[exception.status]}
+                          {exception.status === 'pending' ? (exception.escalated ? 'Escalated to OnSpot' : 'Awaiting client') : statusLabel[exception.status]}
                         </Badge>
                       </div>
                       <p className="text-sm font-medium">{exception.jobTitle}</p>
@@ -183,12 +196,18 @@ export default function AdminClockExceptions() {
                           <dd className="font-medium">{formatLocalDateTime(exception.startedAt)}</dd>
                         </div>
                         <div>
-                          <dt className="text-muted-foreground">Proposed clock-out (local)</dt>
-                          <dd className="font-medium">{formatLocalDateTime(exception.proposedEndAt)}</dd>
+                          <dt className="text-muted-foreground">Recorded time out (local)</dt>
+                          <dd className="font-medium">{formatLocalDateTime(exception.endedAt)}</dd>
                         </div>
                         <div>
-                          <dt className="text-muted-foreground">Detected (local)</dt>
-                          <dd>{formatLocalDateTime(exception.exceptionDetectedAt)}</dd>
+                          <dt className="text-muted-foreground">Requested time out (local)</dt>
+                          <dd className="font-medium">{formatLocalDateTime(exception.proposedEndAt)}</dd>
+                        </div>
+                        <div><dt className="text-muted-foreground">Recorded hours</dt><dd className="font-medium">{hoursBetween(exception.startedAt, exception.endedAt)}</dd></div>
+                        <div><dt className="text-muted-foreground">Requested hours</dt><dd className="font-medium">{hoursBetween(exception.startedAt, exception.proposedEndAt)}</dd></div>
+                        <div>
+                          <dt className="text-muted-foreground">Submitted (local)</dt>
+                          <dd>{formatLocalDateTime(exception.submittedAt || exception.exceptionDetectedAt)}</dd>
                         </div>
                         <div>
                           <dt className="text-muted-foreground">Exception type</dt>
@@ -209,7 +228,7 @@ export default function AdminClockExceptions() {
                       {exception.status === 'pending' && (
                         <div className="space-y-3 border-t pt-4">
                           <label htmlFor={`resolution-reason-${exception.id}`} className="text-sm font-medium">
-                            Decision reason <span className="text-destructive">*</span>
+                            Decision reason <span className="text-xs font-normal text-muted-foreground">(required to reject)</span>
                           </label>
                           <Textarea
                             id={`resolution-reason-${exception.id}`}
@@ -222,18 +241,18 @@ export default function AdminClockExceptions() {
                           <div className="flex flex-wrap justify-end gap-2">
                             <Button
                               variant="outline"
-                              disabled={!reason.trim() || isResolving}
+                            disabled={!reason.trim() || isResolving || !exception.canResolve}
                               onClick={() => resolveMutation.mutate({ sessionId: exception.id, decision: 'reject', reason: reason.trim() })}
                             >
                               {isResolving && resolveMutation.variables?.decision === 'reject' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                               Reject
                             </Button>
                             <Button
-                              disabled={!reason.trim() || isResolving}
+                              disabled={isResolving || !exception.canResolve}
                               onClick={() => resolveMutation.mutate({ sessionId: exception.id, decision: 'approve', reason: reason.trim() })}
                             >
                               {isResolving && resolveMutation.variables?.decision === 'approve' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              Approve
+                              {exception.canResolve ? "Approve" : "Awaiting client"}
                             </Button>
                           </div>
                         </div>

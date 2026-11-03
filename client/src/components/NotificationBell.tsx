@@ -215,6 +215,20 @@ const TYPE_CONFIG: Record<
     label: "Talent Invoice Draft",
     route: "/talent-dashboard",
   },
+  clock_adjustment_requested: {
+    icon: Clock,
+    bg: "#FFFBEB",
+    color: "#D97706",
+    label: "Time-out adjustment",
+    route: "/client/timesheets",
+  },
+  clock_adjustment_resolved: {
+    icon: Clock,
+    bg: "#EEF2FF",
+    color: "#4F46E5",
+    label: "Time-out adjustment",
+    route: "/talent/clock",
+  },
   monthly_client_invoice: {
     icon: FileText,
     color: "#4D55C7",

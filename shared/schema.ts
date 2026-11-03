@@ -2002,6 +2002,7 @@ export const clockExceptionReviews = pgTable("clock_exception_reviews", {
   action:          text("action").notNull(),
   actorId:         varchar("actor_id").references(() => users.id, { onDelete: "restrict" }),
   reviewerId:      varchar("reviewer_id").references(() => users.id, { onDelete: "restrict" }),
+  reviewerRole:    text("reviewer_role"),
   proposedEndAt:   timestamp("proposed_end_at", { withTimezone: true }),
   proposalReason:  text("proposal_reason"),
   decisionReason:  text("decision_reason"),
@@ -2009,6 +2010,7 @@ export const clockExceptionReviews = pgTable("clock_exception_reviews", {
 }, (table) => [
   index("clock_exception_reviews_session_history").on(table.clockSessionId, table.createdAt, table.id),
   check("clock_exception_reviews_action_check", sql`${table.action} IN ('detected', 'proposed', 'approved', 'rejected')`),
+  check("clock_exception_reviews_reviewer_role_check", sql`${table.reviewerRole} IN ('client', 'admin')`),
   check("clock_exception_reviews_state_check", sql`
     (${table.action} = 'detected' AND ${table.actorId} IS NULL AND ${table.reviewerId} IS NULL
       AND ${table.proposedEndAt} IS NULL AND ${table.proposalReason} IS NULL AND ${table.decisionReason} IS NULL)

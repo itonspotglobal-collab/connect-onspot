@@ -1,6 +1,7 @@
 import type { Express, RequestHandler } from "express";
 import { getClient as databaseClient, query as databaseQuery } from "../db.ts";
 import { TIMESHEET_HIRE_SQL, TIMESHEET_CONTEXT_SQL, timesheetDisplayContext } from "../services/timesheetEligibility";
+import { CLOCK_PROPOSAL_TIME_SQL } from "./clockAdjustments";
 
 type Middleware = RequestHandler;
 type Options = {
@@ -136,7 +137,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     }
   }
 
-  async function loadPeriods(scopeSql: string, scopeArgs: unknown[], eligibilityOnly = false) {
+  async function loadPeriods(scopeSql: string, scopeArgs: unknown[], eligibilityOnly = false, includePendingCount = false) {
     const contractResult = await query(
       `SELECT hc.id, hc.effective_end_date, COALESCE(hc.work_timezone, j.time_zone) AS time_zone, ${eligibilityOnly ? "hc.billing_mode" : TIMESHEET_CONTEXT_SQL} FROM hiring_contracts hc
        JOIN job_submissions js ON js.id = hc.submission_id
@@ -153,7 +154,13 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     };
     // Account navigation needs only eligibility, not period generation or the
     // potentially large session/revision history.
-    if (eligibilityOnly) return eligibility;
+    if (eligibilityOnly && !includePendingCount) return eligibility;
+    if (eligibilityOnly) {
+      const ids = contractResult.rows.filter((row: any) => row.billing_mode === "tracked").map((row: any) => row.id);
+      const count = await query(`SELECT count(*)::int AS count FROM clock_sessions
+        WHERE hiring_contract_id = ANY($1::uuid[]) AND exception_status = 'pending'`, [ids]);
+      return { ...eligibility, pendingAdjustmentCount: Number(count.rows[0]?.count ?? 0) };
+    }
     await ensurePeriods(contractResult.rows);
     if (!contractResult.rows.length) return { periods: [], engagements, eligible: false, trackedEligible: false };
     const ids = contractResult.rows.map((row: any) => row.id);
@@ -194,7 +201,9 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       : null;
     const sessions = await query(
       `SELECT cs.id, cs.started_at, cs.ended_at, cs.approved_end_at, cs.exception_status,
-              cs.exception_type, cs.proposed_end_at
+              cs.exception_type, cs.proposed_end_at, cs.proposal_reason, cs.resolution_reason,
+              ${CLOCK_PROPOSAL_TIME_SQL} AS submitted_at,
+              COALESCE(${CLOCK_PROPOSAL_TIME_SQL},cs.exception_detected_at) <= now() - interval '3 days' AS escalated
          FROM clock_sessions cs
         WHERE cs.hiring_contract_id = $1
           AND cs.started_at < (($3::date + 1)::timestamp AT TIME ZONE '${ET}')
@@ -237,10 +246,17 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       const effectiveEnd = unresolved || !clippedEnd || clippedEnd <= clippedStart ? null : clippedEnd;
       const status = unresolved ? `exception_${row.exception_status}` : effectiveEnd ? "eligible" : !rawEnd ? "active" : "unresolved";
       if (status === "active") problems.push("Clock out before submitting this timesheet.");
-      else if (status !== "eligible") problems.push(`Session ${row.id} requires explicit OnSpot Admin resolution.`);
+      else if (status !== "eligible") problems.push(row.exception_status === "pending"
+        ? "A time-out adjustment is awaiting review. Resolve it before submitting this timesheet."
+        : "A session needs a time-out adjustment before its hours can count.");
       return {
         id: row.id, startedAt: clippedStart.toISOString(), endedAt: row.ended_at ?? null,
-        effectiveEndAt: effectiveEnd?.toISOString() ?? null, status,
+        effectiveEndAt: effectiveEnd?.toISOString() ?? null, status, exceptionStatus: row.exception_status ?? null,
+        proposedEndAt: row.proposed_end_at ?? null, proposalReason: row.proposal_reason ?? null,
+        resolutionReason: row.resolution_reason ?? null,
+        requestedHours: row.proposed_end_at
+          ? Math.max(0, (Math.min(new Date(row.proposed_end_at).getTime(), periodEnd.getTime()) - clippedStart.getTime()) / 3600000)
+          : null,
       };
     });
     const daySeconds = new Map<string, number>();
@@ -279,6 +295,18 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
         })()
         : null,
       sessions: outputSessions.filter((session: any) => session.status !== "active"),
+      pendingAdjustmentCount: sessions.rows.filter((row: any) => row.exception_status === "pending").length,
+      clockAdjustments: sessions.rows.filter((row: any) => row.exception_status).map((row: any) => ({
+        sessionId: row.id, status: row.exception_status, startedAt: row.started_at,
+        endedAt: row.ended_at ?? null, proposedEndAt: row.proposed_end_at ?? null,
+        proposalReason: row.proposal_reason ?? null, resolutionReason: row.resolution_reason ?? null,
+        requestedHours: row.proposed_end_at
+          ? (new Date(row.proposed_end_at).getTime() - new Date(row.started_at).getTime()) / 3600000 : null,
+        recordedHours: row.ended_at
+          ? (new Date(row.ended_at).getTime() - new Date(row.started_at).getTime()) / 3600000 : null,
+        talentName: period.talent_name ?? null, workTimezone: workTimezone ?? null,
+        submittedAt: row.submitted_at ?? null, escalated: row.escalated === true,
+      })),
       revisions: revisions.rows.map((row: any) => ({
         id: row.id, version: row.version, reason: row.reason,
         exceptionApproved: row.exception_approved, workTimezone: row.work_timezone, createdAt: row.created_at,
@@ -325,7 +353,7 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
         clauses.push(`${column} = $${args.length}`);
       }
     }
-    return { status: 200, body: await loadPeriods(clauses.join(" AND "), args, req.query.eligibilityOnly === "true") };
+    return { status: 200, body: await loadPeriods(clauses.join(" AND "), args, req.query.eligibilityOnly === "true", client) };
   }
 
   app.get("/api/talent/timesheets", ...talentAuth, async (req: any, res) => {
@@ -382,6 +410,15 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       if (open.rows.length) {
         await client.query("ROLLBACK");
         return res.status(409).json({ error: "Clock out before submitting this timesheet." });
+      }
+      const pending = await client.query(`SELECT id FROM clock_sessions WHERE hiring_contract_id = $1
+        AND exception_status = 'pending'
+        AND started_at < (($3::date + 1)::timestamp AT TIME ZONE '${ET}')
+        AND COALESCE(ended_at, now()) > ($2::date::timestamp AT TIME ZONE '${ET}') LIMIT 1`,
+      [locked.rows[0].hiring_contract_id, locked.rows[0].period_start, locked.rows[0].period_end]);
+      if (pending.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(409).json({ error: "A time-out adjustment is awaiting review. Resolve it before submitting this timesheet." });
       }
       await client.query(`UPDATE timesheet_periods SET status = 'submitted', submitted_at = now(), updated_at = now() WHERE id = $1`, [req.params.id]);
       await client.query(`INSERT INTO timesheet_audit (timesheet_period_id, actor_id, action) VALUES ($1, $2, 'submitted')`, [req.params.id, talentId]);
@@ -506,6 +543,10 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
     const client = await getClient();
     try {
       await client.query("BEGIN");
+      // Adjustment review takes this same contract lock before session/period
+      // locks, preventing races with approved revision snapshots.
+      await client.query(`SELECT hc.id FROM hiring_contracts hc JOIN timesheet_periods tp
+        ON tp.hiring_contract_id = hc.id WHERE tp.id = $1 FOR UPDATE OF hc`, [req.params.id]);
        const found = await client.query(
          `SELECT tp.*, hc.effective_end_date FROM timesheet_periods tp
           JOIN hiring_contracts hc ON hc.id = tp.hiring_contract_id
@@ -522,6 +563,17 @@ export function registerTimesheetRoutes(app: Express, options: Options) {
       }
       if (!["submitted", "disputed"].includes(period.status)) {
         await client.query("ROLLBACK"); return res.status(409).json({ error: "Only submitted or disputed periods can be reviewed" });
+      }
+      if (decision !== "reject") {
+        const pending = await client.query(`SELECT id FROM clock_sessions WHERE hiring_contract_id = $1
+          AND exception_status = 'pending'
+          AND started_at < (($3::date + 1)::timestamp AT TIME ZONE '${ET}')
+          AND COALESCE(ended_at, now()) > ($2::date::timestamp AT TIME ZONE '${ET}') LIMIT 1`,
+        [period.hiring_contract_id, period.period_start, period.period_end]);
+        if (pending.rows.length) {
+          await client.query("ROLLBACK");
+          return res.status(409).json({ error: "Review the pending time-out adjustment before approving this period" });
+        }
       }
       if (decision === "reject") {
         await client.query(`UPDATE timesheet_periods SET status = 'rejected', updated_at = now() WHERE id = $1`, [period.id]);

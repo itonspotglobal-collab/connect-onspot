@@ -1,314 +1,193 @@
-import { describe, it, before, after } from "node:test";
+// Owned disposable PostgreSQL only; never run Clock mutations against app data.
+import { before, after, test } from "node:test";
 import assert from "node:assert/strict";
-import http from "node:http";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { query } from "../db.js";
-import { registerRoutes } from "../routes.js";
+import { readFile } from "node:fs/promises";
+import { query, initializeFixture, closeFixture, registerRoutes } from "./fixtures/timesheetServer";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-fallback-secret";
-const suffix = Date.now();
-const ADMIN_ID = `clock-admin-${suffix}`;
-const CLIENT_ID = `clock-client-${suffix}`;
-const TALENT_ID = `clock-talent-${suffix}`;
-const OTHER_TALENT_ID = `clock-other-talent-${suffix}`;
-const talentToken = jwt.sign(
-  { userId: TALENT_ID, email: `${TALENT_ID}@test.example`, role: "talent" },
-  JWT_SECRET,
-  { expiresIn: "1h" },
-);
-const otherTalentToken = jwt.sign(
-  { userId: OTHER_TALENT_ID, email: `${OTHER_TALENT_ID}@test.example`, role: "talent" },
-  JWT_SECRET,
-  { expiresIn: "1h" },
-);
-const clientToken = jwt.sign(
-  { userId: CLIENT_ID, email: `${CLIENT_ID}@test.example`, role: "client" },
-  JWT_SECRET,
-  { expiresIn: "1h" },
-);
-const adminToken = jwt.sign(
-  { userId: ADMIN_ID, email: `${ADMIN_ID}@test.example`, role: "admin" },
-  JWT_SECRET,
-  { expiresIn: "1h" },
-);
-
-function request(server: http.Server, method: string, path: string, body?: unknown, token?: string) {
-  const { port } = server.address() as { port: number };
-  return new Promise<{ status: number; json: any }>((resolve, reject) => {
-    const data = body === undefined ? undefined : JSON.stringify(body);
-    const req = http.request({
-      host: "127.0.0.1", port, method, path,
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(data ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}),
-      },
-    }, (res) => {
-      let text = "";
-      res.on("data", (chunk) => (text += chunk));
-      res.on("end", () => {
-        let json: any = null;
-        try { json = JSON.parse(text); } catch {}
-        resolve({ status: res.statusCode ?? 0, json });
-      });
-    });
-    req.on("error", reject);
-    if (data) req.write(data);
-    req.end();
-  });
+let server: Awaited<ReturnType<typeof registerRoutes>>;
+let base: string;
+let contract: string;
+const token = (id: string, role: string) => jwt.sign({ userId: id, role },
+  process.env.JWT_SECRET || "fixture-only", { expiresIn: "1h" });
+const talent = token("adjust-talent", "talent");
+const client = token("adjust-client", "client");
+const otherClient = token("unrelated-client", "client");
+const admin = token("adjust-admin", "admin");
+async function request(method: string, path: string, body?: any, auth = talent) {
+  const response = await fetch(base + path, { method, headers: {
+    Authorization: `Bearer ${auth}`, ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+  }, body: body === undefined ? undefined : JSON.stringify(body) });
+  return { status: response.status, json: await response.json() as any };
 }
-
-let server: http.Server;
-let jobId: string;
-let submissionId: string;
-let offerId: string;
-let contractId: string;
-let otherSubmissionId: string;
-let otherOfferId: string;
-let otherContractId: string;
-let legacySubmissionId: string;
-let legacyOfferId: string;
-let legacyContractId: string;
-let sessionId: string;
-
-async function setup() {
-  await query(
-    `INSERT INTO users (id, email, role) VALUES
-       ($1, $2, 'admin'), ($3, $4, 'client'), ($5, $6, 'talent'), ($7, $8, 'talent')`,
-    [ADMIN_ID, `${ADMIN_ID}@test.example`, CLIENT_ID, `${CLIENT_ID}@test.example`,
-      TALENT_ID, `${TALENT_ID}@test.example`, OTHER_TALENT_ID, `${OTHER_TALENT_ID}@test.example`],
-  );
-  jobId = (await query(
-    `INSERT INTO jobs (client_id, title, description, category, experience_level, status, engagement_type, billing_mode)
-     VALUES ($1, 'Clock Test Job', 'test', 'Engineering', 'intermediate', 'open', 'Standard', 'tracked') RETURNING id`,
-    [CLIENT_ID],
-  )).rows[0].id;
-  submissionId = (await query(
-    `INSERT INTO job_submissions
-       (job_id, client_id, talent_id, email, applicant_name, status, initiated_by, workflow_type)
-     VALUES ($1, $2, $3, $4, 'Clock Talent', 'hired', 'client', 'client_invitation') RETURNING id`,
-    [jobId, CLIENT_ID, TALENT_ID, `${TALENT_ID}@test.example`],
-  )).rows[0].id;
-  offerId = (await query(
-    `INSERT INTO offers (submission_id, engagement_type, rate, rate_currency, status)
-     VALUES ($1, 'Standard', 40000, 'PHP', 'accepted') RETURNING id`,
-    [submissionId],
-  )).rows[0].id;
-  contractId = (await query(
-     `INSERT INTO hiring_contracts (offer_id, submission_id, status, talent_signed_at, onspot_signed_at, billing_mode)
-      VALUES ($1, $2, 'signed', NOW(), NOW(), 'tracked') RETURNING id`,
-    [offerId, submissionId],
-  )).rows[0].id;
-  otherSubmissionId = (await query(
-    `INSERT INTO job_submissions
-       (job_id, client_id, talent_id, email, applicant_name, status, initiated_by, workflow_type)
-     VALUES ($1, $2, $3, $4, 'Other Clock Talent', 'hired', 'client', 'client_invitation') RETURNING id`,
-    [jobId, CLIENT_ID, OTHER_TALENT_ID, `${OTHER_TALENT_ID}@test.example`],
-  )).rows[0].id;
-  otherOfferId = (await query(
-     `INSERT INTO offers (submission_id, engagement_type, billing_mode, rate, rate_currency, status)
-      VALUES ($1, 'Standard', 'tracked', 40000, 'PHP', 'accepted') RETURNING id`,
-    [otherSubmissionId],
-  )).rows[0].id;
-  otherContractId = (await query(
-     `INSERT INTO hiring_contracts (offer_id, submission_id, status, talent_signed_at, onspot_signed_at, billing_mode)
-      VALUES ($1, $2, 'signed', NOW(), NOW(), 'tracked') RETURNING id`,
-    [otherOfferId, otherSubmissionId],
-  )).rows[0].id;
-  legacySubmissionId = (await query(
-    `INSERT INTO job_submissions
-       (job_id, client_id, talent_id, email, applicant_name, status, initiated_by, workflow_type)
-     VALUES ($1, $2, $3, $4, 'Legacy Clock Talent', 'hired', 'client', 'client_invitation') RETURNING id`,
-    [jobId, CLIENT_ID, TALENT_ID, `${TALENT_ID}@test.example`],
-  )).rows[0].id;
-  legacyOfferId = (await query(
-    `INSERT INTO offers (submission_id, engagement_type, rate, rate_currency, status)
-     VALUES ($1, 'Standard', 40000, 'PHP', 'accepted') RETURNING id`,
-    [legacySubmissionId],
-  )).rows[0].id;
-  legacyContractId = (await query(
-    `INSERT INTO hiring_contracts (offer_id, submission_id, status, talent_signed_at, onspot_signed_at)
-     VALUES ($1, $2, 'signed', NOW(), NOW()) RETURNING id`,
-    [legacyOfferId, legacySubmissionId],
-  )).rows[0].id;
-  const app = express();
-  app.use(express.json());
-  server = await registerRoutes(app);
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+async function makeContract(zone = "Asia/Manila") {
+  const job = (await query(`INSERT INTO jobs (client_id,title,billing_mode,time_zone)
+    VALUES ('adjust-client','Adjustment test role','tracked',$1) RETURNING id`, [zone])).rows[0].id;
+  const submission = (await query(`INSERT INTO job_submissions (job_id,client_id,talent_id,status,workflow_type,initiated_by)
+    VALUES ($1,'adjust-client','adjust-talent','hired','client_invitation','client') RETURNING id`, [job])).rows[0].id;
+  const offer = (await query(`INSERT INTO offers (submission_id,billing_mode,status)
+    VALUES ($1,'tracked','accepted') RETURNING id`, [submission])).rows[0].id;
+  return (await query(`INSERT INTO hiring_contracts
+    (offer_id,submission_id,status,billing_mode,talent_signed_at,onspot_signed_at,work_timezone)
+    VALUES ($1,$2,'signed','tracked',now(),now(),$3) RETURNING id`, [offer, submission, zone])).rows[0].id;
 }
-
-async function teardown() {
-  await query(`DELETE FROM clock_sessions WHERE talent_id = ANY($1::varchar[])`, [[TALENT_ID, OTHER_TALENT_ID]]).catch(() => {});
-  await query(`DELETE FROM hiring_contracts WHERE id = ANY($1::uuid[])`, [[contractId, otherContractId]]).catch(() => {});
-  await query(`DELETE FROM hiring_contracts WHERE id = $1`, [legacyContractId]).catch(() => {});
-  await query(`DELETE FROM offers WHERE id = ANY($1::uuid[])`, [[offerId, otherOfferId, legacyOfferId]]).catch(() => {});
-  await query(`DELETE FROM job_submissions WHERE id = ANY($1::varchar[])`, [[submissionId, otherSubmissionId, legacySubmissionId]]).catch(() => {});
-  await query(`DELETE FROM jobs WHERE id = $1`, [jobId]).catch(() => {});
-  await query(`DELETE FROM users WHERE id = ANY($1::varchar[])`, [[ADMIN_ID, CLIENT_ID, TALENT_ID, OTHER_TALENT_ID]]).catch(() => {});
+async function closedSession(hiringContract = contract, startedAt = "2026-10-07T04:00:00Z", endedAt = "2026-10-08T04:00:00Z") {
+  return (await query(`INSERT INTO clock_sessions (hiring_contract_id,talent_id,started_at,ended_at)
+    VALUES ($1,'adjust-talent',$2,$3) RETURNING *`, [hiringContract, startedAt, endedAt])).rows[0];
 }
+async function propose(row: any, end?: string, auth = talent) {
+  return request("POST", "/api/talent/clock/exception", {
+    sessionId: row.id, proposedEndAt: end ?? new Date(new Date(row.started_at).getTime() + 8 * 3600000).toISOString(),
+    reason: "I forgot to time out after my work ended.",
+  }, auth);
+}
+before(async () => {
+  await initializeFixture();
+  await query(`INSERT INTO users (id,email,role) VALUES
+    ('adjust-talent','talent@adjust.test','talent'),('adjust-client','client@adjust.test','client'),
+    ('unrelated-client','other@adjust.test','client'),('adjust-admin','admin@adjust.test','admin')`);
+  contract = await makeContract();
+  const app = express(); app.use(express.json()); server = await registerRoutes(app);
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  base = `http://127.0.0.1:${(server.address() as any).port}`;
+});
+after(async () => {
+  if (server) await new Promise<void>(resolve => server.close(() => resolve()));
+  await closeFixture();
+});
 
-describe("clock session foundation", () => {
-  before(async () => setup());
-  after(async () => {
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-    await teardown();
-  });
+test("detected, pending and rejected open sessions always Time Out and release Time In", async () => {
+  for (const status of ["detected", "pending", "rejected"]) {
+    const row = (await query(`INSERT INTO clock_sessions
+      (hiring_contract_id,talent_id,started_at,exception_type,exception_status,exception_detected_at,
+       proposed_end_at,proposal_reason,resolved_by,resolved_at,resolution_reason)
+      VALUES ($1,'adjust-talent',now()-interval '7 days','missed_out',$2,now()-interval '6 days',
+       CASE WHEN $2 <> 'detected' THEN now()-interval '6 days' END,
+       CASE WHEN $2 <> 'detected' THEN 'Missed time out' END,
+       CASE WHEN $2 = 'rejected' THEN 'adjust-admin' END,
+       CASE WHEN $2 = 'rejected' THEN now()-interval '4 days' END,
+       CASE WHEN $2 = 'rejected' THEN 'Clarify the request' END) RETURNING *`, [contract, status])).rows[0];
+    const out = await request("POST", "/api/talent/clock/out", {});
+    assert.equal(out.status, 200, JSON.stringify(out.json));
+    assert.equal(out.json.status, `exception_${status}`);
+    assert.equal(out.json.needsAdjustment, status !== "pending");
+    assert.equal(out.json.startedAt, row.started_at.toISOString());
+    assert.ok(out.json.endedAt);
+    assert.equal((await request("POST", "/api/talent/clock/out", {})).status, 409);
+    const fresh = await request("POST", "/api/talent/clock/in", { hiringContractId: contract });
+    assert.equal(fresh.status, 201, JSON.stringify(fresh.json));
+    assert.equal((await request("POST", "/api/talent/clock/in", { hiringContractId: contract })).status, 409);
+    assert.equal((await request("POST", "/api/talent/clock/out", {})).status, 200);
+    if (status === "pending") {
+      // Existing pre-release pending requests remain reviewable after raw close.
+      assert.equal((await request("POST", `/api/client/clock/${row.id}/resolve`, { decision: "approve" }, client)).status, 200);
+    }
+  }
+});
 
-  it("authenticates talent-only clock access and limits signed contracts to their owner", async () => {
-    assert.equal((await request(server, "GET", "/api/talent/clock")).status, 401);
-    assert.equal((await request(server, "GET", "/api/talent/clock", undefined, clientToken)).status, 403);
-    const own = await request(server, "GET", "/api/talent/clock", undefined, talentToken);
-    assert.equal(own.status, 200);
-    assert.deepEqual(own.json.contracts.map((contract: any) => contract.id), [contractId]);
-    assert.equal(own.json.contracts[0].jobTitle, "Clock Test Job");
-    assert.ok(!own.json.contracts.some((contract: any) => contract.id === legacyContractId),
-      "signed legacy contracts without an explicit billing mode are not clock-eligible");
-    const legacyClockIn = await request(server, "POST", "/api/talent/clock/in", { hiringContractId: legacyContractId }, talentToken);
-    assert.equal(legacyClockIn.status, 409);
-    const foreign = await request(server, "POST", "/api/talent/clock/in", { hiringContractId: otherContractId }, talentToken);
-    assert.equal(foreign.status, 409);
-    assert.match(foreign.json.error, /signed contract/i);
-    assert.equal((await request(server, "POST", "/api/talent/clock/in", {}, talentToken)).status, 422);
-  });
+test("closed ordinary sessions may request shortening; invalid bounds, reason and ownership fail", async () => {
+  const row = await closedSession();
+  for (const end of [row.started_at.toISOString(), "2026-10-07T03:59:00Z", "2026-10-08T04:00:01Z"]) {
+    assert.equal((await propose(row, end)).status, 422);
+  }
+  assert.equal((await propose(row, undefined, client)).status, 403);
+  assert.equal((await request("POST", "/api/talent/clock/exception", {
+    sessionId: row.id, proposedEndAt: "2026-10-07T12:00:00Z", reason: "x".repeat(1001),
+  })).status, 422);
+  assert.equal((await propose(row)).status, 200);
+  assert.equal((await propose(row)).status, 409);
+  const notification = await query("SELECT * FROM notifications WHERE related_id = $1", [row.id]);
+  assert.equal(notification.rows[0].user_id, "adjust-client");
+  assert.equal(notification.rows[0].type, "clock_adjustment_requested");
+});
 
-  it("captures clock-in/out through database timestamps and rejects duplicate transitions", async () => {
-    const concurrentIns = await Promise.all([
-      request(server, "POST", "/api/talent/clock/in", { hiringContractId: contractId }, talentToken),
-      request(server, "POST", "/api/talent/clock/in", { hiringContractId: contractId }, talentToken),
-    ]);
-    assert.deepEqual(concurrentIns.map((response) => response.status).sort(), [201, 409]);
-    const started = concurrentIns.find((response) => response.status === 201)!;
-    assert.equal(started.status, 201);
-    assert.equal(started.json.status, "active");
-    assert.ok(started.json.startedAt);
-    sessionId = started.json.id;
-    assert.equal((await request(server, "POST", "/api/talent/clock/in", { hiringContractId: contractId }, talentToken)).status, 409);
-    const active = await request(server, "GET", "/api/talent/clock", undefined, talentToken);
-    assert.equal(active.json.activeSession.id, sessionId);
-    const ended = await request(server, "POST", "/api/talent/clock/out", undefined, talentToken);
-    assert.equal(ended.status, 200);
-    assert.equal(ended.json.status, "completed");
-    assert.ok(ended.json.endedAt);
-    assert.equal((await request(server, "POST", "/api/talent/clock/out", undefined, talentToken)).status, 409);
-  });
+test("only the hiring client resolves; rejection requires a reason, resubmission preserves history and raw times", async () => {
+  const row = await closedSession();
+  assert.equal((await propose(row)).status, 200);
+  for (const auth of [otherClient, talent]) {
+    assert.ok([403, 404].includes((await request("POST", `/api/client/clock/${row.id}/resolve`, { decision: "approve" }, auth)).status));
+  }
+  assert.equal((await request("POST", `/api/client/clock/${row.id}/resolve`, { decision: "reject" }, client)).status, 422);
+  assert.equal((await request("POST", `/api/client/clock/${row.id}/resolve`, {
+    decision: "reject", reason: "Please clarify when work ended.",
+  }, client)).status, 200);
+  assert.equal((await propose(row)).status, 200);
+  const results = await Promise.all([1, 2].map(() =>
+    request("POST", `/api/client/clock/${row.id}/resolve`, { decision: "approve" }, client)));
+  assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
+  const saved = (await query("SELECT * FROM clock_sessions WHERE id = $1", [row.id])).rows[0];
+  assert.equal(saved.started_at.toISOString(), row.started_at.toISOString());
+  assert.equal(saved.ended_at.toISOString(), row.ended_at.toISOString());
+  assert.equal(saved.approved_end_at.toISOString(), "2026-10-07T12:00:00.000Z");
+  const history = (await query(`SELECT action,reviewer_role,proposal_reason FROM clock_exception_reviews
+    WHERE clock_session_id=$1 ORDER BY created_at,id`, [row.id])).rows;
+  assert.deepEqual(history.map(r => r.action), ["proposed", "rejected", "proposed", "approved"]);
+  assert.deepEqual(history.filter(r => r.reviewer_role).map(r => r.reviewer_role), ["client", "client"]);
+  assert.equal(history[0].proposal_reason, "I forgot to time out after my work ended.",
+    "resubmission and decisions preserve the original proposal");
+  assert.equal((await query(`SELECT count(*)::int AS n FROM notifications
+    WHERE related_id=$1 AND user_id='adjust-talent' AND type='clock_adjustment_resolved'`, [row.id])).rows[0].n, 2);
+});
 
-  it("detects missed clock-outs and resolves a proposed end without rewriting the raw event", async () => {
-    const started = await request(server, "POST", "/api/talent/clock/in", { hiringContractId: contractId }, talentToken);
-    assert.equal(started.status, 201);
-    sessionId = started.json.id;
-    await query(`UPDATE clock_sessions SET started_at = NOW() - INTERVAL '18 hours' WHERE id = $1`, [sessionId]);
-    const detected = await request(server, "GET", "/api/talent/clock", undefined, talentToken);
-    assert.equal(detected.json.activeSession.status, "exception_detected");
-    const startTime = new Date(detected.json.activeSession.startedAt);
-    const proposedEndAt = new Date(startTime.getTime() + 60 * 60 * 1000).toISOString();
-    const proposal = await request(
-      server, "POST", "/api/talent/clock/exception",
-      { sessionId, proposedEndAt, reason: "Forgot to stop the timer" }, talentToken,
-    );
-    assert.equal(proposal.status, 200);
-    assert.equal((await request(server, "GET", "/api/admin/clock/exceptions")).status, 401);
-    assert.equal((await request(server, "GET", "/api/admin/clock/exceptions", undefined, clientToken)).status, 403);
-    const exceptions = await request(server, "GET", "/api/admin/clock/exceptions", undefined, adminToken);
-    assert.equal(exceptions.status, 200);
-    const listed = exceptions.json.find((exception: any) => exception.id === sessionId);
-    assert.ok(listed);
-    assert.equal(listed.status, "pending");
-    assert.equal(listed.jobTitle, "Clock Test Job");
-    assert.equal(listed.talentEmail, `${TALENT_ID}@test.example`);
-    assert.equal(listed.proposalReason, "Forgot to stop the timer");
-    assert.equal(new Date(listed.proposedEndAt).toISOString(), proposedEndAt);
-    assert.equal((await request(server, "POST", `/api/admin/clock/${sessionId}/resolve`, {
-      decision: "approve", reason: "Approved after review",
-    }, clientToken)).status, 403);
-    const rejected = await request(server, "POST", `/api/admin/clock/${sessionId}/resolve`, {
-      decision: "reject", reason: "Please provide a clearer explanation",
-    }, adminToken);
-    assert.equal(rejected.status, 200);
-    assert.equal(rejected.json.status, "exception_rejected");
-    const rejectedItems = await request(server, "GET", "/api/admin/clock/exceptions", undefined, adminToken);
-    assert.equal(rejectedItems.json.find((exception: any) => exception.id === sessionId).status, "rejected");
-    const resubmitted = await request(
-      server, "POST", "/api/talent/clock/exception",
-      { sessionId, proposedEndAt, reason: "I reviewed the time and confirm this end" }, talentToken,
-    );
-    assert.equal(resubmitted.status, 200);
-    assert.equal(resubmitted.json.status, "exception_pending");
-    const approved = await request(server, "POST", `/api/admin/clock/${sessionId}/resolve`, {
-      decision: "approve", reason: "Approved after review",
-    }, adminToken);
-    assert.equal(approved.status, 200);
-    assert.equal(approved.json.status, "exception_approved");
-    const audit = await query(
-      `SELECT ended_at, proposed_end_at, approved_end_at, proposal_reason,
-              resolution_reason, resolved_by, exception_status
-         FROM clock_sessions WHERE id = $1`,
-      [sessionId],
-    );
-    assert.equal(audit.rows[0].ended_at, null);
-    assert.equal(audit.rows[0].exception_status, "approved");
-    assert.equal(audit.rows[0].proposed_end_at.toISOString(), proposedEndAt);
-    assert.equal(audit.rows[0].approved_end_at.toISOString(), proposedEndAt);
-    assert.equal(audit.rows[0].proposal_reason, "I reviewed the time and confirm this end");
-    assert.equal(audit.rows[0].resolution_reason, "Approved after review");
-    assert.equal(audit.rows[0].resolved_by, ADMIN_ID);
-    const history = await query(
-      `SELECT action, proposal_reason, decision_reason
-         FROM clock_exception_reviews WHERE clock_session_id = $1`,
-      [sessionId],
-    );
-    assert.equal(history.rows.filter((row: any) => row.action === "proposed").length, 2);
-    assert.equal(history.rows.filter((row: any) => row.action === "rejected").length, 1);
-    assert.equal(history.rows.filter((row: any) => row.action === "approved").length, 1);
-    assert.ok(history.rows.some((row: any) => row.decision_reason === "Please provide a clearer explanation"));
-    assert.equal((await request(server, "POST", `/api/admin/clock/${sessionId}/resolve`, {
-      decision: "approve", reason: "Duplicate decision",
-    }, adminToken)).status, 409);
-  });
+test("any admin is a fallback only after three days since the latest proposal", async () => {
+  const row = await closedSession();
+  assert.equal((await propose(row)).status, 200);
+  const path = `/api/admin/clock/${row.id}/resolve`;
+  assert.equal((await request("POST", path, { decision: "approve" }, admin)).status, 409);
+  const pending = (await request("GET", "/api/admin/clock/exceptions", undefined, admin)).json.find((r: any) => r.id === row.id);
+  assert.equal(pending.escalated, false); assert.equal(pending.canResolve, false);
+  const old = await closedSession();
+  await query(`UPDATE clock_sessions SET exception_type='missed_out',exception_status='pending',
+    exception_detected_at=now()-interval '5 days',proposed_end_at=started_at+interval '8 hours',
+    proposal_reason='Old pending request' WHERE id=$1`, [old.id]);
+  await query(`INSERT INTO clock_exception_reviews
+    (clock_session_id,action,actor_id,proposed_end_at,proposal_reason,created_at)
+    VALUES ($1,'proposed','adjust-talent',$2,'Old pending request',now()-interval '4 days')`,
+  [old.id, "2026-10-07T12:00:00Z"]);
+  const escalated = (await request("GET", "/api/admin/clock/exceptions", undefined, admin)).json.find((r: any) => r.id === old.id);
+  assert.equal(escalated.escalated, true); assert.equal(escalated.canResolve, true);
+  assert.equal((await request("POST", `/api/admin/clock/${old.id}/resolve`, { decision: "reject", reason: "Clarify" }, admin)).status, 200);
+  assert.equal((await propose(old)).status, 200);
+  assert.equal((await request("POST", `/api/admin/clock/${old.id}/resolve`, { decision: "approve" }, admin)).status, 409,
+    "a resubmission starts a fresh client review window");
+  const oldApprove = await closedSession();
+  await query(`UPDATE clock_sessions SET exception_type='missed_out',exception_status='pending',
+    exception_detected_at=now()-interval '5 days',proposed_end_at=started_at+interval '8 hours',
+    proposal_reason='Historical request' WHERE id=$1`, [oldApprove.id]);
+  assert.equal((await request("POST", `/api/admin/clock/${oldApprove.id}/resolve`, { decision: "approve" }, admin)).status, 200);
+  const audit = (await query("SELECT reviewer_role FROM clock_exception_reviews WHERE clock_session_id=$1", [oldApprove.id])).rows;
+  assert.equal(audit[0].reviewer_role, "admin");
+});
 
-  it("allows a legitimate long-session clock-out while keeping the anomaly visible to admins", async () => {
-    const started = await request(server, "POST", "/api/talent/clock/in", { hiringContractId: contractId }, talentToken);
-    assert.equal(started.status, 201);
-    sessionId = started.json.id;
-    await query(`UPDATE clock_sessions SET started_at = NOW() - INTERVAL '18 hours' WHERE id = $1`, [sessionId]);
-    const ended = await request(server, "POST", "/api/talent/clock/out", undefined, talentToken);
-    assert.equal(ended.status, 200);
-    assert.equal(ended.json.status, "exception_detected");
-    assert.ok(ended.json.endedAt);
-    const talentClock = await request(server, "GET", "/api/talent/clock", undefined, talentToken);
-    assert.equal(talentClock.json.activeSession, null);
-    const recentAnomaly = talentClock.json.recentSessions.find((session: any) => session.id === sessionId);
-    assert.ok(recentAnomaly);
-    assert.equal(recentAnomaly.status, "exception_detected");
-    assert.equal(recentAnomaly.exceptionType, "missed_out");
-    const listed = await request(server, "GET", "/api/admin/clock/exceptions", undefined, adminToken);
-    const anomaly = listed.json.find((exception: any) => exception.id === sessionId);
-    assert.ok(anomaly);
-    assert.equal(anomaly.status, "detected");
-    assert.ok(anomaly.endedAt);
-    const row = await query(`SELECT exception_status, approved_end_at FROM clock_sessions WHERE id = $1`, [sessionId]);
-    assert.equal(row.rows[0].exception_status, "detected");
-    assert.equal(row.rows[0].approved_end_at, null);
+test("approved periods reject proposals and the reviewer-role migration is additive and repeatable", async () => {
+  const own = await makeContract();
+  const row = await closedSession(own);
+  const periods = (await request("GET", "/api/talent/timesheets")).json.periods.filter((p: any) => p.hiringContractId === own);
+  const period = periods.find((p: any) => p.sessions.some((s: any) => s.id === row.id));
+  await query("UPDATE timesheet_periods SET status='approved' WHERE id=$1", [period.id]);
+  assert.equal((await propose(row)).status, 409);
+  const before = (await query("SELECT count(*)::int AS n FROM clock_exception_reviews")).rows[0].n;
+  const migration = await readFile("migrations/0056_clock_review_roles.sql", "utf8");
+  await query(migration); await query(migration);
+  assert.equal((await query("SELECT count(*)::int AS n FROM clock_exception_reviews")).rows[0].n, before);
+});
 
-    const proposedEndAt = new Date(new Date(ended.json.startedAt).getTime() + 60 * 60 * 1000).toISOString();
-    const proposal = await request(
-      server, "POST", "/api/talent/clock/exception",
-      { sessionId, proposedEndAt, reason: "Reviewing the long session end time" }, talentToken,
-    );
-    assert.equal(proposal.status, 200);
-    assert.equal(proposal.json.status, "exception_pending");
-    const pendingRecent = await request(server, "GET", "/api/talent/clock", undefined, talentToken);
-    const pendingSession = pendingRecent.json.recentSessions.find((session: any) => session.id === sessionId);
-    assert.equal(pendingSession.proposedEndAt, proposedEndAt);
-    const approved = await request(server, "POST", `/api/admin/clock/${sessionId}/resolve`, {
-      decision: "approve", reason: "Reviewed and approved",
-    }, adminToken);
-    assert.equal(approved.status, 200);
-    const resolved = await query(
-      `SELECT ended_at, approved_end_at, exception_status FROM clock_sessions WHERE id = $1`,
-      [sessionId],
-    );
-    assert.equal(resolved.rows[0].ended_at.toISOString(), new Date(ended.json.endedAt).toISOString());
-    assert.equal(resolved.rows[0].approved_end_at.toISOString(), proposedEndAt);
-    assert.equal(resolved.rows[0].exception_status, "approved");
-  });
+test("the production-shaped stuck pending record can close, retain its proposal and receive Client approval", async () => {
+  // Synthetic copy in the explicitly owned fixture, not the production account.
+  const id = "5c13547e-907f-42f0-b995-f07a67820858";
+  await query(`INSERT INTO clock_sessions
+    (id,hiring_contract_id,talent_id,started_at,exception_type,exception_status,exception_detected_at,
+     proposed_end_at,proposal_reason)
+    VALUES ($1,$2,'adjust-talent','2026-10-07T04:34:55.804Z','missed_out','pending',
+      '2026-10-12T12:32:00Z','2026-10-12T12:32:00Z','Existing pending adjustment')`, [id, contract]);
+  const out = await request("POST", "/api/talent/clock/out", {});
+  assert.equal(out.status, 200); assert.equal(out.json.id, id);
+  assert.equal(out.json.status, "exception_pending"); assert.equal(out.json.needsAdjustment, false);
+  const rawEnd = out.json.endedAt;
+  assert.equal((await request("POST", `/api/client/clock/${id}/resolve`, { decision: "approve" }, client)).status, 200);
+  const saved = (await query("SELECT * FROM clock_sessions WHERE id=$1", [id])).rows[0];
+  assert.equal(saved.ended_at.toISOString(), rawEnd);
+  assert.equal(saved.proposed_end_at.toISOString(), "2026-10-12T12:32:00.000Z");
+  assert.equal(saved.approved_end_at.toISOString(), saved.proposed_end_at.toISOString());
 });

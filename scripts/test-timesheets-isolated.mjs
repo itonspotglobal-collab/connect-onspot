@@ -88,9 +88,11 @@ try {
       "server/tests/contract-termination-usd-errors.test.ts"], workerEnv);
   }
   await run(process.execPath, ["--import", "tsx", "--test", "--test-concurrency=1",
-    "server/tests/timesheets.test.ts", "server/tests/organization-timesheets.test.ts",
-    "server/tests/clock-live.test.ts", "server/tests/client-team-dashboard.test.ts",
-    "browser-tests/clock-live.browser.test.ts"], workerEnv);
+    ...(process.argv.includes("--recovery-only") ? ["--test-name-pattern=forgotten Time Out"] : []),
+    ...(process.argv.includes("--browser-only") ? [] : [
+      "server/tests/timesheets.test.ts", "server/tests/organization-timesheets.test.ts",
+      "server/tests/clock-live.test.ts", "server/tests/clock-sessions.test.ts", "server/tests/client-team-dashboard.test.ts"]),
+    ...(process.argv.includes("--server-only") ? [] : ["browser-tests/clock-live.browser.test.ts"])], workerEnv);
 } finally {
   if (postgres && postgres.exitCode === null) {
     const exited = new Promise((resolve) => postgres.once("exit", resolve));

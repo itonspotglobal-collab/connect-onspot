@@ -20,3 +20,9 @@ Tracked-work timers are visual projections of canonical sessions, never another 
 **Why:** The owner explicitly required preserving clock-derived hours and no per-second database writes.
 
 **How to apply:** Recover the saved session after navigation/authentication changes. Keep unfinished work distinct from completed totals; do not silently complete it for submission.
+
+Raw Time Out must never wait for adjustment approval. The hiring Client is the primary adjustment reviewer; any Admin is a fallback only after three days from the latest proposal, including after resubmission.
+
+**Why:** The owner requires a missed Time Out not to prevent closing an open session or starting the next shift. An earlier actual finish is a separate approval decision, not permission to record the raw Time Out event.
+
+**How to apply:** Preserve raw attendance events, exclude unresolved flagged hours from counted time, retain proposal/decision history, and reject adjustments overlapping an approved timesheet period.

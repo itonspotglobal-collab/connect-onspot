@@ -1,6 +1,6 @@
 import { before, after, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import express from "express";
@@ -32,10 +32,12 @@ async function makePage(role: "talent" | "client") {
     localStorage.setItem(`onboarding_completed_live-${role}`, "true");
   }, { role, token: signedToken(role) });
   const page = await context.newPage();
+  page.on("pageerror", error => console.error("Clock fixture browser error:", error));
   const attendanceWrites: string[] = [];
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
-    if (url.pathname.startsWith("/api/talent/clock") || url.pathname.startsWith(`/api/${role}/timesheets`)) {
+    if (url.pathname.startsWith("/api/talent/clock") || url.pathname.startsWith(`/api/${role}/timesheets`)
+      || (role === "client" && url.pathname.startsWith("/api/client/clock/"))) {
       if (url.pathname === "/api/talent/clock/in" || url.pathname === "/api/talent/clock/out") {
         attendanceWrites.push(`${route.request().method()} ${url.pathname}`);
       }
@@ -98,10 +100,11 @@ before(async () => {
         return `import React from 'react'; import {createRoot} from 'react-dom/client';
           import {QueryClientProvider} from '@tanstack/react-query'; import {queryClient} from '/src/lib/queryClient';
           import {AuthProvider} from '/src/contexts/AuthContext'; import {Switch,Route} from 'wouter';
+          import {SignupModalProvider} from '/src/components/SignupModalProvider';
           import Clock from '/src/pages/talent/Clock'; import Timesheets from '/src/pages/Timesheets'; import '/src/index.css';
           createRoot(document.getElementById('root')).render(<QueryClientProvider client={queryClient}><AuthProvider>
-          <Switch><Route path='/talent/clock'><Clock/></Route><Route path='/talent/timesheets'><Timesheets role='talent'/></Route>
-          <Route path='/client/timesheets'><Timesheets role='client'/></Route></Switch></AuthProvider></QueryClientProvider>);`;
+           <SignupModalProvider><Switch><Route path='/talent/clock'><Clock/></Route><Route path='/talent/timesheets'><Timesheets role='talent'/></Route>
+           <Route path='/client/timesheets'><Timesheets role='client'/></Route></Switch></SignupModalProvider></AuthProvider></QueryClientProvider>);`;
       },
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
@@ -130,18 +133,15 @@ test("real mobile Clock In → two-minute wait → reload/navigation → Clock O
     await page.goto(appBase + `/talent/clock?hiringContractId=${contract}`);
     await page.getByRole("combobox", { name: "Select work timezone" }).selectOption("Asia/Manila");
     await page.getByRole("button", { name: "Confirm timezone" }).click();
-    await page.getByRole("button", { name: "Clock In", exact: true }).waitFor();
-    await page.waitForFunction(() => !(Array.from(document.querySelectorAll("button")).find((button) => button.textContent === "Clock In") as HTMLButtonElement)?.disabled);
-    await page.getByRole("button", { name: "Clock In", exact: true }).click();
-    await page.getByRole("button", { name: "Clock Out", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Time In", exact: true }).waitFor();
+    await page.waitForFunction(() => !(Array.from(document.querySelectorAll("button")).find((button) => button.textContent === "Time In") as HTMLButtonElement)?.disabled);
+    await page.getByRole("button", { name: "Time In", exact: true }).click();
+    await page.getByRole("button", { name: "Time Out", exact: true }).waitFor();
     const persisted = (await query("SELECT * FROM clock_sessions WHERE talent_id = 'live-talent' AND ended_at IS NULL")).rows[0];
     assert.ok(persisted); assert.equal(persisted.ended_at, null);
     const start = persisted.started_at.toISOString();
-    await page.waitForTimeout(120_000); // Real elapsed time; no fake clock or DB timestamp manipulation.
-    assert.ok(await timerValue(page) >= 119);
     await page.reload();
-    await page.getByRole("button", { name: "Clock Out", exact: true }).waitFor();
-    assert.ok(await timerValue(page) >= 119);
+    await page.getByRole("button", { name: "Time Out", exact: true }).waitFor();
     await page.goto(appBase + "/talent/timesheets");
     await page.getByText("Currently working", { exact: true }).waitFor();
     assert.equal(await page.getByRole("button", { name: "Submit for review", exact: true }).isDisabled(), true);
@@ -150,10 +150,14 @@ test("real mobile Clock In → two-minute wait → reload/navigation → Clock O
     assert.equal(state.periods[0].activeSession.startedAt, start);
     assert.equal(state.periods[0].totalHours, 0);
     await page.getByRole("link", { name: "Open Clock", exact: true }).last().click();
-    await page.getByRole("button", { name: "Clock Out", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Time Out", exact: true }).waitFor();
+    await page.waitForTimeout(120_000); // Real elapsed time; no fake clock or DB timestamp manipulation.
     assert.ok(await timerValue(page) >= 119);
-    await page.getByRole("button", { name: "Clock Out", exact: true }).click();
-    await page.getByText("Session completed", { exact: true }).waitFor();
+    await page.reload();
+    await page.getByRole("button", { name: "Time Out", exact: true }).waitFor();
+    assert.ok(await timerValue(page) >= 119);
+    await page.getByRole("button", { name: "Time Out", exact: true }).click();
+    await page.getByText(/^Time Out recorded/).first().waitFor();
     const ended = (await query("SELECT * FROM clock_sessions WHERE id = $1", [persisted.id])).rows[0];
     assert.deepEqual(attendanceWrites, ["POST /api/talent/clock/in", "POST /api/talent/clock/out"],
       "The live timer must not send per-second clock mutations.");
@@ -181,5 +185,72 @@ test("real mobile Clock In → two-minute wait → reload/navigation → Clock O
       assert.deepEqual(cp.periods.find((row: any) => row.id === period).days, tp.days);
       assert.match(await client.page.locator("main").innerText(), new RegExp(tp.totalHours.toFixed(2)));
     } finally { await client.context.close(); }
-  } finally { await context.close(); }
+  } catch (error) {
+    console.error("Clock fixture visible page:", await page.locator("body").innerText());
+    throw error;
+  } finally {
+    await context.close();
+    // Do not let a failed assertion leave this owned fixture's Talent clock
+    // open and hide an independent browser regression behind a duplicate key.
+    await fetch(apiBase + "/api/talent/clock/out", {
+      method: "POST", headers: { Authorization: `Bearer ${signedToken("talent")}` },
+    });
+  }
+});
+
+test("forgotten Time Out closes immediately, opens adjustment dialog and Client approval restores counted hours", { timeout: 90_000 }, async () => {
+  await query("UPDATE hiring_contracts SET work_timezone=COALESCE(work_timezone,'Asia/Manila') WHERE id=$1", [contract]);
+  const row = (await query(`INSERT INTO clock_sessions (hiring_contract_id,talent_id,started_at)
+    VALUES ($1,'live-talent',date_trunc('minute',now())-interval '18 hours') RETURNING *`, [contract])).rows[0];
+  const { page, context } = await makePage("talent");
+  const client = await makePage("client");
+  const directory = "generated-artifacts/clock-adjustments";
+  mkdirSync(directory, { recursive: true });
+  try {
+    await page.goto(appBase + `/talent/clock?hiringContractId=${contract}`);
+    await page.getByRole("button", { name: "Time Out", exact: true }).waitFor();
+    const response = page.waitForResponse(r => r.url().endsWith("/api/talent/clock/out") && r.request().method() === "POST");
+    await page.getByRole("button", { name: "Time Out", exact: true }).click();
+    assert.equal((await response).status(), 200);
+    const dialog = page.getByRole("dialog");
+    await dialog.waitFor();
+    const closed = (await query("SELECT * FROM clock_sessions WHERE id=$1", [row.id])).rows[0];
+    assert.ok(closed.ended_at, "Time Out closes the raw session before any adjustment is submitted");
+    assert.equal(closed.exception_status, "detected");
+    await dialog.getByLabel("Reason", { exact: true }).fill("Forgot to time out after finishing my shift.");
+    await page.screenshot({ path: `${directory}/talent-adjustment-dialog.png`, fullPage: true });
+    await dialog.getByRole("button", { name: "Submit adjustment", exact: true }).click();
+    await dialog.waitFor({ state: "hidden" });
+    const pending = (await query("SELECT * FROM clock_sessions WHERE id=$1", [row.id])).rows[0];
+    assert.equal(pending.exception_status, "pending");
+    assert.equal(pending.ended_at.toISOString(), closed.ended_at.toISOString());
+    await page.getByRole("button", { name: "Time In", exact: true }).waitFor();
+    const getSheets = (role: "talent" | "client") => fetch(apiBase + `/api/${role}/timesheets`, {
+      headers: { Authorization: `Bearer ${signedToken(role)}` },
+    }).then(r => r.json());
+    const before = await getSheets("client");
+    const affected = before.periods.filter((p: any) => p.sessions.some((s: any) => s.id === row.id));
+    assert.ok(affected.length > 0);
+    assert.ok(affected.every((p: any) => p.pendingAdjustmentCount === 1));
+    const beforeHours = affected.reduce((sum: number, p: any) => sum + p.totalHours, 0);
+    await client.page.goto(appBase + "/client/timesheets");
+    await client.page.getByRole("button", { name: "Approve adjustment", exact: true }).waitFor();
+    await client.page.getByText("Forgot to time out after finishing my shift.", { exact: true }).waitFor();
+    await client.page.screenshot({ path: `${directory}/client-adjustment-review.png`, fullPage: true });
+    const approval = client.page.waitForResponse(r => r.url().includes(`/clock/${row.id}/resolve`));
+    await client.page.getByRole("button", { name: "Approve adjustment", exact: true }).click();
+    assert.equal((await approval).status(), 200);
+    const after = await getSheets("client");
+    const counted = after.periods.filter((p: any) => affected.some((a: any) => a.id === p.id));
+    const afterHours = counted.reduce((sum: number, p: any) => sum + p.totalHours, 0);
+    assert.ok(Math.abs(afterHours - beforeHours - 8) < .001);
+    const saved = (await query("SELECT * FROM clock_sessions WHERE id=$1", [row.id])).rows[0];
+    assert.equal(saved.ended_at.toISOString(), closed.ended_at.toISOString());
+    assert.equal(saved.exception_status, "approved");
+    await page.goto(appBase + "/talent/timesheets");
+    await page.getByText(/^Adjustment approved ·/).first().waitFor();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    assert.ok(await client.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await client.page.screenshot({ path: `${directory}/client-approved-hours.png`, fullPage: true });
+  } finally { await context.close(); await client.context.close(); }
 });

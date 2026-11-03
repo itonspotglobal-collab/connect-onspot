@@ -31,6 +31,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { TopNavigation } from "@/components/TopNavigation";
 import { useUnreadMessagesCount } from "@/hooks/useUnreadMessagesCount";
+import { useQuery } from "@tanstack/react-query";
+import { authAPI } from "@/lib/api";
 
 // Core Modules
 const coreModules = [
@@ -127,6 +129,13 @@ function ClientSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
   const unreadMessagesCount = useUnreadMessagesCount();
+  const { data: eligibility } = useQuery<{ pendingAdjustmentCount?: number }>({
+    queryKey: ["/api/client/timesheets?eligibilityOnly=true"],
+    queryFn: () => authAPI.get("/api/client/timesheets?eligibilityOnly=true"),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const pendingAdjustmentCount = eligibility?.pendingAdjustmentCount ?? 0;
   const isActiveRoute = (url: string) =>
     location === url || (url !== "/dashboard" && location.startsWith(`${url}/`));
 
@@ -173,7 +182,12 @@ function ClientSidebar() {
                     <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
                       <Link href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                         <item.icon className="w-4 h-4" />
-                        <span>{item.title}</span>
+                        <span className="flex-1">{item.title}</span>
+                        {item.title === "Timesheets" && pendingAdjustmentCount > 0 && (
+                          <span aria-label={`${pendingAdjustmentCount} pending time-out adjustments`} className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">
+                            {pendingAdjustmentCount > 99 ? "99+" : pendingAdjustmentCount}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

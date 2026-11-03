@@ -190,3 +190,39 @@ test("an open legacy session with no valid zone can confirm an initial zone with
   assert.equal(state.json.activeSession.startedAt, legacy.started_at.toISOString());
   assert.equal(state.json.activeSession.workTimezone, "Asia/Manila");
 });
+
+test("pending adjustments block submission, then approved hours split across periods and work-zone days", async () => {
+  const engagement = await makeContract("clock-talent");
+  await query("UPDATE hiring_contracts SET work_timezone='America/Los_Angeles' WHERE id=$1", [engagement]);
+  const row = (await query(`INSERT INTO clock_sessions (hiring_contract_id,talent_id,started_at,ended_at)
+    VALUES ($1,'clock-talent','2026-03-16T03:00:00Z','2026-03-16T09:00:00Z') RETURNING *`, [engagement])).rows[0];
+  const proposed = await request("POST", "/api/talent/clock/exception", {
+    sessionId: row.id, proposedEndAt: "2026-03-16T08:00:00Z", reason: "Stopped working one hour before the recorded time out.",
+  });
+  assert.equal(proposed.status, 200, JSON.stringify(proposed.json));
+  const before = (await request("GET", "/api/talent/timesheets")).json.periods
+    .filter((p: any) => p.hiringContractId === engagement && p.sessions.some((s: any) => s.id === row.id));
+  assert.equal(before.length, 2);
+  assert.ok(before.every((p: any) => p.totalHours === 0 && p.pendingAdjustmentCount === 1));
+  assert.ok(before.every((p: any) => p.clockAdjustments[0].recordedHours === 6 && p.clockAdjustments[0].requestedHours === 5));
+  for (const period of before) {
+    const blocked = await request("POST", `/api/talent/timesheets/${period.id}/submit`, {});
+    assert.equal(blocked.status, 409); assert.match(blocked.json.error, /adjustment.*review/i);
+  }
+  assert.equal((await request("POST", `/api/client/clock/${row.id}/resolve`, { decision: "approve" }, client)).status, 200);
+  const after = (await request("GET", "/api/talent/timesheets")).json.periods
+    .filter((p: any) => p.hiringContractId === engagement && p.sessions.some((s: any) => s.id === row.id))
+    .sort((a: any, b: any) => a.periodStart.localeCompare(b.periodStart));
+  assert.deepEqual(after.map((p: any) => p.totalHours), [1, 4]);
+  assert.ok(after.every((p: any) => p.pendingAdjustmentCount === 0));
+  assert.ok(after.every((p: any) => p.sessions.find((s: any) => s.id === row.id)?.exceptionStatus === "approved"));
+  const days = after.flatMap((p: any) => p.days).filter((d: any) => d.hours > 0);
+  assert.deepEqual(days, [{ date: "2026-03-15", hours: 1 }, { date: "2026-03-15", hours: 3 }, { date: "2026-03-16", hours: 1 }]);
+  const clientPeriods = (await request("GET", "/api/client/timesheets", undefined, client)).json.periods;
+  assert.deepEqual(after.map((p: any) => p.totalHours),
+    after.map((p: any) => clientPeriods.find((cp: any) => cp.id === p.id).totalHours));
+  const saved = (await query("SELECT started_at,ended_at,approved_end_at FROM clock_sessions WHERE id=$1", [row.id])).rows[0];
+  assert.equal(saved.started_at.toISOString(), "2026-03-16T03:00:00.000Z");
+  assert.equal(saved.ended_at.toISOString(), "2026-03-16T09:00:00.000Z");
+  assert.equal(saved.approved_end_at.toISOString(), "2026-03-16T08:00:00.000Z");
+});

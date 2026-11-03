@@ -46,3 +46,9 @@ Temporary fixture processes and logs do not survive workspace restarts. Keep the
 **Why:** Workspace restarts during verification erased both the disposable cluster and its output; retrying against the application database would change the safety boundary.
 
 **How to apply:** Reinitialize only the disposable fixture, recheck the latest source edits, and never replace lost test evidence with a claim of success.
+
+Focused fixtures must track the prerequisites of the production routes and UI they import.
+
+**Why:** Changes to shared hiring eligibility can require additional fixture schema, while navigation can acquire a required React provider. Those omissions fail before the feature under test and can look like application regressions.
+
+**How to apply:** Inspect transitive prerequisites when the first failure is a missing relation, column, or context. Update only the owned fixture; retain real authorization checks and assertions rather than bypassing the dependency.

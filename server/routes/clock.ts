@@ -31,6 +31,7 @@ export function serializeWorkSession(row: any) {
     exceptionDetectedAt: row.exception_detected_at ?? null,
     proposedEndAt: row.proposed_end_at ?? null,
     proposalReason: row.proposal_reason ?? null,
+    resolutionReason: row.resolution_reason ?? null,
   };
 }
 
@@ -189,15 +190,11 @@ export function registerClockRoutes(app: Express, options: Options) {
       const active = await client.query(`SELECT cs.*, COALESCE(hc.work_timezone, j.time_zone) AS work_timezone
         FROM clock_sessions cs JOIN hiring_contracts hc ON hc.id = cs.hiring_contract_id
         JOIN job_submissions js ON js.id = hc.submission_id JOIN jobs j ON j.id = js.job_id
-        WHERE cs.talent_id = $1 AND cs.ended_at IS NULL AND cs.exception_status IS DISTINCT FROM 'approved'
+        WHERE cs.talent_id = $1 AND cs.ended_at IS NULL
         ORDER BY cs.started_at DESC LIMIT 1 FOR UPDATE OF cs`, [talentId]);
       if (!active.rows.length) {
         await client.query("ROLLBACK");
         return res.status(409).json({ error: "There is no active clock session to end" });
-      }
-      if (active.rows[0].exception_status === "pending") {
-        await client.query("ROLLBACK");
-        return res.status(409).json({ error: "A proposed missed-out exception must be reviewed before clocking out" });
       }
       if (active.rows[0].exception_status === null) {
         const detected = await client.query(`UPDATE clock_sessions SET exception_type = 'missed_out',
@@ -208,7 +205,11 @@ export function registerClockRoutes(app: Express, options: Options) {
       }
       const ended = await client.query("UPDATE clock_sessions SET ended_at = clock_timestamp() WHERE id = $1 AND ended_at IS NULL RETURNING *", [active.rows[0].id]);
       await client.query("COMMIT");
-      return res.json(serializeWorkSession({ ...ended.rows[0], work_timezone: active.rows[0].work_timezone }));
+      return res.json({
+        ...serializeWorkSession({ ...ended.rows[0], work_timezone: active.rows[0].work_timezone }),
+        needsAdjustment: ended.rows[0].exception_type === "missed_out"
+          && ["detected", "rejected"].includes(ended.rows[0].exception_status),
+      });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
       console.error("POST clock out failed", error);
