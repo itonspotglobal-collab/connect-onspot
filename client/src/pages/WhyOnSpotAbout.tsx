@@ -160,7 +160,7 @@ const leaders: Array<{
     bio: "5 years building software and scaling platforms for startups. Now engineering the Unified Outsourcing System behind the next generation of operations for OnSpot.",
   },
   {
-    name: "Emmanuel Rogel (Emman)",
+    name: "Emmanuel Rogel",
     role: "Product Lead",
     photo: emmanuelPhoto,
     photoAlt: "Portrait of Emmanuel Rogel (Emman)",
