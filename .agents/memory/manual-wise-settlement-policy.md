@@ -15,6 +15,12 @@ Deposit funding additionally requires an explicit business-approved manual fundi
 
 **How to apply:** Keep deposits/top-ups disabled until the business explicitly confirms the operating policy. Pending top-ups provide no coverage. Preserve historical funds, existing principal formulas and lifecycle/termination rules.
 
+Replenishments permit only the independently verified unpaid-to-paid transition; settled records and their original principal/ownership remain immutable.
+
+**Why:** The owner authorized a narrow settlement-guard correction, not relaxed financial edit permissions. The earlier unconditional append-only guard also rejected legitimate verified manual Wise settlement.
+
+**How to apply:** Require matching paid settlement evidence from a database-confirmed Super Admin within the same transaction. Roll back evidence with any settlement failure; never disable guards or count an unpaid funding request as coverage.
+
 The supplied official OnSpot Wise QR must remain byte-for-byte unchanged, including its branding. Providing the official image does not establish supported currencies or approve unknown receiving settings.
 
 **Why:** The product owner explicitly requires preserving the pattern and keeping the image pending if destination/currency approval cannot be established.

@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AdminHiringPaymentsSection } from "@/components/hiring-payments/HiringPayments";
 import { AdminWisePayments } from "@/components/manual-wise/AdminWisePayments";
 import { WaiveDepositButton } from "@/components/admin-hiring-overrides/OverrideControls";
+import { useSuperAdminTools } from "@/components/deposit-billing/useSuperAdminTools";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -156,6 +157,7 @@ function currentMonthDates() {
 }
 
 export default function AdminLedger() {
+  const isSuperAdmin = useSuperAdminTools();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [page, setPage] = useState(1);
@@ -196,7 +198,7 @@ export default function AdminLedger() {
     onError: (error: any) => {
       toast({
         title: "Ledger update failed",
-        description: error?.response?.data?.error || "Please check the record and try again.",
+        description: error?.response?.data?.code === "SUPER_ADMIN_REQUIRED" ? error.response.data.message : error?.response?.data?.error || "Please check the record and try again.",
         variant: "destructive",
       });
     },
@@ -213,7 +215,7 @@ export default function AdminLedger() {
     onError: (error: any) => {
       toast({
         title: "Ledger update failed",
-        description: error?.response?.data?.error || "Please check the record and try again.",
+        description: error?.response?.data?.code === "SUPER_ADMIN_REQUIRED" ? error.response.data.message : error?.response?.data?.error || "Please check the record and try again.",
         variant: "destructive",
       });
     },
@@ -516,7 +518,7 @@ export default function AdminLedger() {
                       {contract.deposit_status==="waived"&&contract.deposit_waiver_reason&&<p className="mt-1 text-xs text-amber-800">No cash coverage — {contract.deposit_waiver_reason}</p>}
                     </div>
                   </div>
-                  {contract.deposit_status === "pending" || !contract.deposit_id ? (
+                  {isSuperAdmin && (contract.deposit_status === "pending" || !contract.deposit_id) ? (
                     <Button size="sm" variant="outline" onClick={() => collectContractDeposit(contract)} disabled={postMutation.isPending} data-testid={`button-collect-contract-deposit-${contract.hiring_contract_id}`}>
                       Request deposit funding
                     </Button>
@@ -644,7 +646,7 @@ export default function AdminLedger() {
                             <div className="font-medium">{money(row.deposit_amount, row.deposit_currency)}</div>
                             <Badge variant="outline" className={statusClass(row.deposit_status)}>{row.deposit_status?.replaceAll("_", " ")}</Badge>
                             {row.deposit_status==="waived"&&row.deposit_waiver_reason&&<p className="mt-1 text-xs text-amber-800">No cash coverage — {row.deposit_waiver_reason}</p>}
-                            {row.deposit_status === "held" ? (
+                            {isSuperAdmin && row.deposit_status === "held" ? (
                               <div className="flex gap-2 pt-1">
                                 <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "draw")} disabled={mutation.isPending}>Draw</Button>
                                 <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "apply")} disabled={mutation.isPending}>Apply</Button>
@@ -652,30 +654,30 @@ export default function AdminLedger() {
                             ) : null}
                             {row.deposit_status === "pending" ? (
                               <div className="flex flex-wrap gap-2 pt-1">
-                                <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>Request deposit funding</Button>
+                                {isSuperAdmin && <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>Request deposit funding</Button>}
                                 <WaiveDepositButton depositId={row.deposit_id} />
                               </div>
                             ) : null}
-                            {row.deposit_status === "drawn" ? (
+                            {isSuperAdmin && row.deposit_status === "drawn" ? (
                               <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "replenishment_pending")} disabled={mutation.isPending}>
                                 Mark replenishment due
                               </Button>
                             ) : null}
-                            {row.deposit_status === "replenishment_pending" ? (
+                            {isSuperAdmin && row.deposit_status === "replenishment_pending" ? (
                               <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "suspend")} disabled={mutation.isPending}>Suspend</Button>
                             ) : null}
-                            {row.deposit_status === "suspended" ? (
+                            {isSuperAdmin && row.deposit_status === "suspended" ? (
                               <div className="flex gap-2 pt-1">
                                 <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "cure")} disabled={mutation.isPending}>Cure / hold</Button>
                                 <Button size="sm" variant="outline" onClick={() => advanceDeposit(row, "forfeit")} disabled={mutation.isPending}>Forfeit</Button>
                               </div>
                             ) : null}
                           </>
-                        ) : (
+                        ) : isSuperAdmin ? (
                           <Button size="sm" variant="outline" onClick={() => collectDeposit(row)} disabled={postMutation.isPending}>
                             Request deposit funding
                           </Button>
-                        )}
+                        ) : null}
                       </td>
                     </tr>
                   ))}

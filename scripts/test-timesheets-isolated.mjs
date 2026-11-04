@@ -1,6 +1,7 @@
-import { mkdtemp, rm, readdir, readFile } from "node:fs/promises";
+import { mkdtemp, rm, readdir, readFile, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { build } from "esbuild";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:net";
 import pg from "pg";
@@ -69,14 +70,31 @@ try {
       // The helper uses pg_catalog-first resolution internally. Generated DDL
       // is unqualified and must create fixture relations in public, not there.
       await client.query("SET LOCAL search_path = public, pg_catalog");
-      for (const file of (await readdir(schemaDir)).filter((name) => name.endsWith(".sql")).sort()) {
-        await client.query(await readFile(join(schemaDir, file), "utf8"));
-      }
-      // Current Drizzle tables omit SQL-only financial guards. Install the
-      // finance/clock migrations, not retired pre-finance transformations that
-      // reference columns deliberately removed from the current schema.
+      const migrations = [];
       for (const file of (await readdir("migrations"))
-        .filter((name) => /^\d+.*\.sql$/.test(name) && Number(name.slice(0, 4)) >= 18).sort()) {
+        .filter(name => name.endsWith(".sql") && Number(name.slice(0,4)) >= 18 && Number(name.slice(0,4)) <= 37).sort()) {
+        migrations.push(await readFile(join("migrations",file),"utf8"));
+      }
+      const sqlOwned = new Set(migrations.flatMap(sql =>
+        [...sql.matchAll(/pg_temp\.reconcile_table\(\s*'public\.([a-z_]+)'/g)].map(m => m[1])));
+      const deferredReferences = [];
+      for (const file of (await readdir(schemaDir)).filter(name => name.endsWith(".sql")).sort()) {
+        for (const statement of (await readFile(join(schemaDir,file),"utf8")).split("--> statement-breakpoint")) {
+          const table = statement.match(/(?:CREATE TABLE|ALTER TABLE)\s+"([^"]+)"/)?.[1]
+            ?? statement.match(/CREATE (?:UNIQUE )?INDEX .* ON "([^"]+)"/)?.[1];
+          if (table && sqlOwned.has(table)) continue;
+          if (/^\s*CREATE INDEX\s/.test(statement)) continue;
+          const referenced = statement.match(/REFERENCES "(?:public"\.")?([^"]+)"/)?.[1];
+          if (referenced && sqlOwned.has(referenced)) { deferredReferences.push(statement); continue; }
+          if (statement.trim()) await client.query(statement);
+        }
+      }
+      await client.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_sub_role text");
+      for (const sql of migrations) await client.query(sql);
+      for (const sql of deferredReferences) await client.query(sql);
+      await client.query("CREATE TABLE IF NOT EXISTS platform_settings(key text PRIMARY KEY,value text,updated_at timestamptz DEFAULT now())");
+      for (const file of (await readdir("migrations"))
+        .filter(name => name.endsWith(".sql") && Number(name.slice(0,4)) >= 38).sort()) {
         await client.query(await readFile(join("migrations", file), "utf8"));
       }
       await client.query("COMMIT");
@@ -84,11 +102,27 @@ try {
       await client.query("ROLLBACK").catch(() => {});
       throw error;
     } finally { await client.end(); }
-    await run(process.execPath, ["--import", "tsx", "--test", "--test-concurrency=1",
+    // Production's Neon WebSocket driver cannot connect to this local native
+    // PostgreSQL server. Bind only these disposable tests to the native adapter.
+    await symlink(resolve("node_modules"), join(root,"node_modules"), "dir");
+    const financeEntries = [
       "server/tests/talent-invoicing.integration.test.ts",
       "server/tests/talent-invoice-calculations.test.ts",
       "server/tests/talent-invoices-usd-guard.test.ts",
-      "server/tests/contract-termination-usd-errors.test.ts"], workerEnv);
+      "server/tests/contract-termination-usd-errors.test.ts"];
+    const outputs = [];
+    for (const [index,entry] of financeEntries.entries()) {
+      const outfile = join(root,`finance-${index}.mjs`);
+      await build({entryPoints:[entry],outfile,bundle:true,platform:"node",format:"esm",packages:"external",target:"node22",
+        plugins:[{name:"owned-timesheet-database",setup(builder) {
+          builder.onResolve({filter:/(?:^|\/)db(?:\.[jt]s)?$/},args => {
+            const file = resolve(args.resolveDir,args.path.replace(/\.[jt]s$/,""));
+            return file === resolve("server/db") ? {path:resolve("server/tests/fixtures/timesheet-db.ts")} : undefined;
+          });
+        }}]});
+      outputs.push(outfile);
+    }
+    await run(process.execPath, ["--test", "--test-concurrency=1", ...outputs], workerEnv);
   }
   await run(process.execPath, ["--import", "tsx", "--test", "--test-concurrency=1",
     ...(process.argv.some(arg => arg.startsWith("--test-pattern="))

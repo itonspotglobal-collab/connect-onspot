@@ -54,6 +54,8 @@ before(async()=>{
 });
 after(async()=>{await new Promise<void>(r=>server.close(r));await pool.end();});
 test("All new admin endpoints reject Client, Talent, TA, Client Success and unrelated clients before file consumption",async()=>{
+  const allowed=await fetch(`${base}/api/admin/onboarding-prerequisites`,{headers:{"x-fixture-actor":admin}});
+  assert.equal(allowed.status,200,"A database-confirmed Super Admin can read onboarding prerequisites");
   for(const actor of [client,talent,ta,cs,other])for(const [method,path] of [
     ["GET","onboarding-prerequisites"],["GET","onboarding-repairs"],["GET","deposit-billing/synthetic"],["GET",`deposit-receipts/${randomUUID()}`],
     ...["record_payment","defer","waive","resend_invoice"].map(action=>["POST",`deposit-billing/synthetic/${action}`]),
@@ -61,6 +63,7 @@ test("All new admin endpoints reject Client, Talent, TA, Client Success and unre
     const res=await fetch(`${base}/api/admin/${path}`,{method,headers:{"x-fixture-actor":actor,"Content-Type":"application/json"},
       ...(method==="POST"?{body:JSON.stringify({reason})}:{})});
     assert.equal(res.status,403,`${actor} ${path}`);
+    assert.equal((await res.json() as any).code,"SUPER_ADMIN_REQUIRED");
   }
 });
 test("Missing accepted offer is an explicit data issue; repair dry-run, stale protection, missing deposit and duplicate alias preserve immutable sources",async()=>{

@@ -1,13 +1,17 @@
 import type {Pool,PoolClient} from "pg";
 import {createHash} from "node:crypto";
 import {lockOnboarding,issueAcceptedOfferDeposit,OnboardingError} from "./contractorOnboardingPolicy";
-import {AdminHiringOverrideService} from "./adminHiringOverrideService";
 const fail=(status:number,code:string,message:string):never=>{throw new OnboardingError(status,code,message);};
 export class OnboardingRepairService {
-  private auth:AdminHiringOverrideService;
-  constructor(private pool:Pool){this.auth=new AdminHiringOverrideService(pool);}
+  constructor(private pool:Pool){}
+  // Repairs are not part of the 2026-11-03 all-Admin hiring overrides.
+  private async authorize(actor:string,db:Pick<PoolClient,"query">=this.pool) {
+    const a=(await db.query("SELECT role,admin_sub_role FROM users WHERE id=$1",[actor])).rows[0];
+    if(a?.role!=="admin"||a.admin_sub_role!==null)
+      fail(403,"SUPER_ADMIN_REQUIRED","Only a Super Admin may manage deposit billing, offline MSAs or onboarding repairs.");
+  }
   async list(actor:string) {
-    await this.auth.capabilities(actor);
+    await this.authorize(actor);
     const rows=(await this.pool.query(`SELECT js.id AS "submissionId",js.status,j.title AS "jobTitle",
       EXISTS(SELECT 1 FROM offers o WHERE o.submission_id=js.id AND o.status IN('accepted','offer_accepted')) AS has_offer,
       EXISTS(SELECT 1 FROM offers o JOIN security_deposits d ON d.offer_id=o.id WHERE o.submission_id=js.id
@@ -60,12 +64,12 @@ export class OnboardingRepairService {
     return {submissionId:id,action:input.action,offerId:source?.id??accepted?.id??null,sourceSubmissionId:source?.submission_id??null,
       previousStatus,changes,summary:changes[0],fingerprint};
   }
-  async dryRun(actor:string,id:string,input:any) {await this.auth.capabilities(actor);return this.plan(this.pool,id,input);}
+  async dryRun(actor:string,id:string,input:any) {await this.authorize(actor);return this.plan(this.pool,id,input);}
   async apply(actor:string,id:string,input:any) {
     const reason=typeof input.reason==="string"?input.reason.trim():"";
     const db=await this.pool.connect();
     try {
-      await db.query("BEGIN");await this.auth.authorize(db,actor);
+      await db.query("BEGIN");await this.authorize(actor,db);
       if(reason.length<10||reason.length>2000)fail(422,"REASON_REQUIRED","A reason of 10–2000 characters is required.");
       const prior=(await db.query(`SELECT new_state FROM admin_hiring_overrides WHERE submission_id=$1 AND action=$2
         AND new_state->>'fingerprint'=$3 LIMIT 1`,[id,`repair_${input.action}`,input.fingerprint??""])).rows[0];

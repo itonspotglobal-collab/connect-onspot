@@ -405,10 +405,14 @@ export class ManualWiseService {
         UNION ALL SELECT external_ref FROM payouts WHERE status='disbursed'
       ) t WHERE lower(btrim(t.reference))=lower(btrim($1)) LIMIT 1`,[v.verifiedReference])).rows;
       if(legacy.length)return fail(409,"This transaction reference already appears in historical settlement records.");
-      await this.settle(db,c,o.r,o.view.amount,v,actorId);
+      if(c!=="replenishment")await this.settle(db,c,o.r,o.view.amount,v,actorId);
+      // Replenishments require validated evidence first within this same
+      // transaction. Failure rolls back both evidence and balance changes.
+      // Other payment categories retain their existing settlement order.
       const result=(await db.query(`UPDATE manual_wise_submissions SET status='paid',verified_by=$2,verified_at=now(),
         verified_amount=$3,verified_currency=$4,verified_reference=$5,verified_recipient=$6,settled_at=$7
         WHERE id=$1 RETURNING *`,[id,actorId,v.verifiedAmount,v.verifiedCurrency,v.verifiedReference,v.verifiedRecipient,v.settledAt])).rows[0];
+      if(c==="replenishment")await this.settle(db,c,o.r,o.view.amount,v,actorId);
       await this.event(db,actorId,c==="payout" ? "payout_disbursed" : "payment_verified",o.binding.id,id,v);
       return result;
     });

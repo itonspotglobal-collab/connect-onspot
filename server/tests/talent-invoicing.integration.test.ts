@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { after, it } from "node:test";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import pg from "pg";
+import { ManualWiseService } from "../services/manualWiseService";
 import express, { type RequestHandler } from "express";
 import jwt from "jsonwebtoken";
 import { createServer, type Server } from "node:http";
-import { getClient, query } from "../db.ts";
+import { getClient, query, pool, applicantEmailLedgerPool } from "../db.ts";
 import {
   claimDeadlineForPeriod,
   guaranteedPeriodAmount,
@@ -25,6 +28,7 @@ if (fixtureUrl.hostname !== "127.0.0.1"
 }
 const app = express();
 app.use(express.json());
+const wisePool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
 const apiCall = (baseUrl: string, method: string, path: string) => {
   let authorization = "";
@@ -290,6 +294,12 @@ const cleanup = async (fixtures: Fixture[]) => {
     await client.query("ALTER TABLE timesheet_revision_sessions DISABLE TRIGGER ALL");
     await client.query("ALTER TABLE timesheet_revisions DISABLE TRIGGER ALL");
     await client.query("ALTER TABLE hiring_contract_termination_requests DISABLE TRIGGER ALL");
+    // These records exist only in this owned disposable fixture.
+    await client.query(`DELETE FROM manual_wise_audit WHERE actor_id = ANY($1::varchar[])`, [userIds]);
+    await client.query(`DELETE FROM manual_wise_submissions WHERE submitted_by = ANY($1::varchar[])`, [userIds]);
+    await client.query(`DELETE FROM manual_wise_obligations WHERE payer_id = ANY($1::varchar[])`, [userIds]);
+    await client.query(`DELETE FROM manual_wise_config WHERE created_by = ANY($1::varchar[])`, [userIds]);
+    await client.query(`DELETE FROM manual_wise_files WHERE uploaded_by = ANY($1::varchar[])`, [userIds]);
     await client.query(
       `DELETE FROM hiring_contract_termination_requests WHERE hiring_contract_id = ANY($1::uuid[])`,
       [contractIds],
@@ -332,7 +342,7 @@ const cleanup = async (fixtures: Fixture[]) => {
       [contractIds],
     );
     await client.query(`DELETE FROM talent_invoices WHERE hiring_contract_id = ANY($1::uuid[])`, [contractIds]);
-    await client.query(`DELETE FROM security_deposit_replenishments WHERE hiring_contract_id = ANY($1::uuid[])`, [contractIds]);
+    await client.query(`DELETE FROM security_deposit_replenishments WHERE hiring_contract_id = ANY($1::uuid[]) OR recorded_by = ANY($2::varchar[])`, [contractIds, userIds]);
     await client.query(`DELETE FROM security_deposits WHERE hiring_contract_id = ANY($1::uuid[])`, [contractIds]);
     await client.query(
       `DELETE FROM timesheet_revision_sessions WHERE revision_id IN
@@ -354,6 +364,7 @@ const cleanup = async (fixtures: Fixture[]) => {
     await client.query(`DELETE FROM timesheet_periods WHERE hiring_contract_id = ANY($1::uuid[])`, [contractIds]);
     await client.query(`DELETE FROM hiring_contracts WHERE id = ANY($1::uuid[])`, [contractIds]);
     await client.query(`DELETE FROM offers WHERE id = ANY($1::uuid[])`, [fixtures.map((item) => item.offerId)]);
+    await client.query(`DELETE FROM contractor_onboarding_cohorts WHERE submission_id = ANY($1::varchar[])`, [fixtures.map((item) => item.submissionId)]);
     await client.query(`DELETE FROM job_submissions WHERE id = ANY($1::varchar[])`, [fixtures.map((item) => item.submissionId)]);
     await client.query(`DELETE FROM jobs WHERE id = ANY($1::varchar[])`, [fixtures.map((item) => item.jobId)]);
     await client.query("ALTER TABLE talent_credit_memo_applications_v2 ENABLE TRIGGER ALL");
@@ -380,13 +391,16 @@ const cleanup = async (fixtures: Fixture[]) => {
 
 after(async () => {
   if (httpServer) await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+  await wisePool.end();
   if (candidateIds.length) {
     await query(`DELETE FROM candidates WHERE id = ANY($1::varchar[])`, [candidateIds]).catch(() => {});
   }
   if (userIds.length) {
     await query(`DELETE FROM notifications WHERE user_id = ANY($1::varchar[])`, [userIds]).catch(() => {});
+    await query(`DELETE FROM security_deposit_replenishments WHERE recorded_by = ANY($1::varchar[])`, [userIds]);
     await query(`DELETE FROM users WHERE id = ANY($1::varchar[])`, [userIds]).catch(() => {});
   }
+  await Promise.all([pool.end(), applicantEmailLedgerPool.end()]);
 });
 
 it("covers authenticated claims, correction credits, monthly close, deposit coverage, and tenant isolation", async () => {
@@ -559,15 +573,51 @@ it("covers authenticated claims, correction credits, monthly close, deposit cove
     assert.equal((await query(`SELECT id FROM payouts WHERE talent_invoice_id = $1`, [nextDraft.rows[0].id])).rows.length, 0);
 
     const deposit = await query(`SELECT id FROM security_deposits WHERE hiring_contract_id = $1`, [tracked.id]);
-    const mismatchTopUp = await api.post(`/api/admin/security-deposits/${deposit.rows[0].id}/replenishments`)
-      .set("Authorization", `Bearer ${tokens.admin}`)
-      .send({ amount: 187.5, currency: "USD" });
-    assert.equal(mismatchTopUp.status, 409);
     const replenishment = await api.post(`/api/admin/security-deposits/${deposit.rows[0].id}/replenishments`)
       .set("Authorization", `Bearer ${tokens.admin}`)
-      .send({ amount: 187.5, currency: "USD", reference: "phase3b integration replenishment" });
+      .send({ amount: 187.5, currency: "USD" });
     assert.equal(replenishment.status, 201);
     assert.equal(Number(replenishment.body.replenishment.amount), 187.5);
+    assert.equal(replenishment.body.replenishment.payment_status, "unpaid");
+    // Reapplying the settlement migration is safe and never rewrites rows.
+    const settlementMigration = await readFile("migrations/0059_verified_replenishment_settlement.sql", "utf8");
+    await wisePool.query(settlementMigration);
+    await wisePool.query(settlementMigration);
+    await assert.rejects(query(`UPDATE security_deposit_replenishments
+      SET payment_status='paid',verified_at=now(),reference='unverified' WHERE id=$1`,
+      [replenishment.body.replenishment.id]), /immutable/);
+
+    assert.equal((await query(`SELECT id FROM payouts WHERE talent_invoice_id=$1`, [nextDraft.rows[0].id])).rows.length, 0);
+    // Synthetic receiving details/evidence only; the fixture cannot touch live Wise.
+    const wise = new ManualWiseService(wisePool);
+    const qr = (await query(`INSERT INTO manual_wise_files(uploaded_by,purpose,object_key,filename,content_type,byte_size)
+      VALUES($1,'qr',$2,'synthetic.png','image/png',100) RETURNING id`,
+      [ids.admin, `fixture-private/${randomUUID()}`])).rows[0].id;
+    const draft = await wise.configure(ids.admin, { currency:"USD", recipient:"Synthetic fixture recipient",
+      instructions:"Disposable no-money test only", qrFileId:qr, depositFundingConfirmed:true });
+    await wise.configurations.activate(ids.admin, draft.id, { confirmImageReviewed:true,
+      confirmReceivingAccount:true, confirmCurrencies:true, confirmInstructions:true,
+      reason:"Synthetic fixture review; no real receiving destination or funds" });
+    const receipt = (await query(`INSERT INTO manual_wise_files(uploaded_by,purpose,object_key,filename,content_type,byte_size)
+      VALUES($1,'receipt',$2,'synthetic.pdf','application/pdf',100) RETURNING id`,
+      [ids.client1, `fixture-private/${randomUUID()}`])).rows[0].id;
+    const proof = await wise.submit(ids.client1, "replenishment", replenishment.body.replenishment.id,
+      "synthetic top-up claim", receipt);
+    assert.equal((await query(`SELECT payment_status FROM security_deposit_replenishments WHERE id=$1`,
+      [replenishment.body.replenishment.id])).rows[0].payment_status, "unpaid");
+    assert.equal((await query(`SELECT id FROM payouts WHERE talent_invoice_id=$1`, [nextDraft.rows[0].id])).rows.length, 0);
+    await wise.review(ids.admin, proof.id, { action:"verify", independentlyVerified:true,
+      reason:"Synthetic independent settlement evidence in disposable fixture only",
+      verifiedAmount:"187.50", verifiedCurrency:"USD", verifiedRecipient:"Synthetic fixture recipient",
+      verifiedReference:`fixture-settlement-${randomUUID()}`, settledAt:"2024-02-23" });
+    assert.equal((await query(`SELECT payment_status FROM security_deposit_replenishments WHERE id=$1`,
+      [replenishment.body.replenishment.id])).rows[0].payment_status, "paid");
+    for (const sql of [
+      "UPDATE security_deposit_replenishments SET amount=amount+1 WHERE id=$1",
+      "UPDATE security_deposit_replenishments SET reference='rewritten' WHERE id=$1",
+      "UPDATE security_deposit_replenishments SET payment_status='unpaid',verified_at=NULL WHERE id=$1",
+      "DELETE FROM security_deposit_replenishments WHERE id=$1",
+    ]) await assert.rejects(query(sql,[replenishment.body.replenishment.id]), /immutable/);
 
     await runTalentInvoiceAutomation(new Date("2024-02-23T17:00:00.000Z"));
     const secondPayout = await query(`SELECT * FROM payouts WHERE talent_invoice_id = $1`, [nextDraft.rows[0].id]);
@@ -1387,7 +1437,7 @@ it("ends signed engagements safely, preserves locked ledgers, and stops invoices
     assert.equal(guaranteedFinal.rows.length, 1);
     assert.equal(toDate(guaranteedFinal.rows[0].period_end), effectiveEndDate);
     assert.equal(Number(guaranteedFinal.rows[0].base_amount), guaranteedPeriodAmount(
-      3100, { start: halfMonthPeriod(effectiveEndDate).start, end: effectiveEndDate }, today,
+      3100, { start: halfMonthPeriod(effectiveEndDate).start, end: effectiveEndDate }, addDateDays(today, -60),
     ));
     assert.equal(Number(guaranteedFinal.rows[0].amount),
       Number(guaranteedFinal.rows[0].base_amount) + Number(guaranteedFinal.rows[0].credit_amount));

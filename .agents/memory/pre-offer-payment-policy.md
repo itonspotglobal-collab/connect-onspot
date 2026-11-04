@@ -11,6 +11,12 @@ The owner explicitly authorized ALL database-confirmed users with role `admin`, 
 
 **How to apply:** Default hiring remains deposit-first. Distinguish “Waived” from “Paid”; an administrative waiver cannot fund a payout, create held cash, or imply independent Wise verification. Agreement bypasses must remain visibly audited rather than populating signature fields. Require explicit real rate, USD currency and agreed start date for administrative offers/placements. Preserve existing invoices, accepted deferred obligations and settlement evidence.
 
+Deposit-billing tools (including their separate waiver action), onboarding prerequisites/repairs and offline MSA recording remain Super Admin only: database role `admin` and a NULL sub-role. The all-Admin hiring waiver remains available separately.
+
+**Why:** The owner explicitly excluded these financial/legal/repair tools from the broadened recruiting overrides. Reusing recruiting authorization accidentally granted Recruiting and Client Success access.
+
+**How to apply:** Keep these two authorization scopes distinct in services and UI. An Admin's permission to waive a hiring prerequisite is not permission to verify money, administer legal evidence or repair onboarding records.
+
 **Why:** On 2026-10-28 the owner explicitly superseded the signing-first sequence with payment before agreements and added shortlist/final-interview prerequisites. Neither a receipt, funded deposit, nor signatures alone establish an active new engagement.
 
 **How to apply:** Preserve original applications and normal shortlist/final-interview prerequisites, except explicitly authorized recruiting exceptions or the audited Admin actions above. Already-accepted historical offers keep their old path; never move, rebill or recontract them merely for release. A genuinely fresh acceptance after cutover (including counters, renewals or Admin-created offers on a legacy application) must instead be invoice-first. Keep the invitation click-through checkbox separate from hash-bound versioned MSA signatures. No active MSA blocks ordinary activation unless explicitly bypassed by an audited Admin exception. Do not invent legal documents or receiving instructions.

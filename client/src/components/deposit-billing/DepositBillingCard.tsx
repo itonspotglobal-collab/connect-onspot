@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, ExternalLink, FileUp, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
+import { depositToolError, useSuperAdminTools } from "./useSuperAdminTools";
 
 type BillingData = {
   canManage: boolean;
@@ -28,6 +29,7 @@ function dateLabel(value?: string | null) {
 }
 
 export function DepositBillingCard({ submissionId }: { submissionId: string }) {
+  const isSuperAdmin = useSuperAdminTools();
   const qc = useQueryClient();
   const [mode, setMode] = useState<"record_payment" | "defer" | "waive" | "resend_invoice" | "msa" | null>(null);
   const [reason, setReason] = useState("");
@@ -49,17 +51,18 @@ export function DepositBillingCard({ submissionId }: { submissionId: string }) {
     queryKey: ["/api/admin/onboarding-prerequisites"],
     queryFn: async () => (await apiRequest("GET", "/api/admin/onboarding-prerequisites")).json(),
     retry: false,
+    enabled: isSuperAdmin,
   });
   const billing = useQuery<BillingData>({
     queryKey: ["/api/admin/deposit-billing", submissionId],
     queryFn: async () => (await apiRequest("GET", `/api/admin/deposit-billing/${encodeURIComponent(submissionId)}`)).json(),
     retry: false,
-    enabled: access.data?.canManage === true,
+    enabled: isSuperAdmin && access.data?.canManage === true,
   });
   const documents = useQuery<{ items: MsaItem[] }>({
     queryKey: ["/api/admin/msa-documents"],
     queryFn: async () => (await apiRequest("GET", "/api/admin/msa-documents")).json(),
-    enabled: mode === "msa",
+    enabled: isSuperAdmin && mode === "msa",
     retry: false,
   });
   const activeMsa = documents.data?.items?.find((item) => item.active);
@@ -107,10 +110,12 @@ export function DepositBillingCard({ submissionId }: { submissionId: string }) {
   const current = billing.data;
   const deposit = current?.deposit;
 
+  if (!isSuperAdmin) return null;
+  if (access.isError) return <p role="alert" className="text-sm text-red-700">{depositToolError(access.error, "Deposit billing access could not be checked.")}</p>;
   if (access.isPending) return <section className="animate-pulse rounded-xl border border-[#dce5df] bg-white p-4" aria-label="Checking billing access"><div className="h-4 w-40 rounded bg-slate-200" /><div className="mt-3 h-10 rounded bg-slate-100" /></section>;
   if (access.isError || !access.data?.canManage) return null;
   if (billing.isPending) return <section className="animate-pulse rounded-xl border border-[#dce5df] bg-white p-4" aria-label="Loading deposit billing"><div className="h-4 w-40 rounded bg-slate-200" /><div className="mt-3 h-10 rounded bg-slate-100" /></section>;
-  if (billing.isError && (billing.error as { status?: number }).status === 403) return null;
+  if (billing.isError && (billing.error as { status?: number }).status === 403) return <p role="alert" className="text-sm text-red-700">{depositToolError(billing.error, billing.error.message)}</p>;
   if (billing.isError) return <section className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900"><AlertTriangle className="mr-2 inline h-4 w-4" />Deposit billing details are unavailable. <button className="underline" onClick={() => billing.refetch()}>Retry</button></section>;
   if (!current?.canManage || !deposit) return null;
 
@@ -158,7 +163,7 @@ export function DepositBillingCard({ submissionId }: { submissionId: string }) {
         <label className="block text-xs font-medium">Signer email<input type="email" value={signerEmail} onChange={(event) => setSignerEmail(event.target.value)} required className="mt-1 block w-full rounded-md border px-3 py-2 text-sm" /></label>
         {dateInput("Signed date", signedAt, setSignedAt)}
         <label className="block text-xs font-medium">Reason<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={2000} required className="mt-1 block min-h-20 w-full rounded-md border px-3 py-2 text-sm" /></label>
-        {msaUpload.isError && <p role="alert" className="text-sm text-red-700">{(msaUpload.error as Error).message}</p>}
+        {msaUpload.isError && <p role="alert" className="text-sm text-red-700">{depositToolError(msaUpload.error, (msaUpload.error as Error).message)}</p>}
         <Button size="sm" type="submit" disabled={!activeMsa || !validReason || !signedAt || msaUpload.isPending}>{msaUpload.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Upload signed MSA</Button>
       </form> : <div className="mt-3 space-y-3">
         {mode === "record_payment" && <>
@@ -176,7 +181,7 @@ export function DepositBillingCard({ submissionId }: { submissionId: string }) {
         {mode === "defer" && dateInput("New due date", dueDate, setDueDate)}
         {mode === "waive" && <label className="block text-xs font-medium">Arrangement note<textarea value={arrangementNote} onChange={(event) => setArrangementNote(event.target.value)} maxLength={2000} className="mt-1 block min-h-16 w-full rounded-md border px-3 py-2 text-sm" /></label>}
         <label className="block text-xs font-medium">Reason <span className="font-normal text-slate-500">({reason.trim().length}/2000; minimum 10)</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={2000} className="mt-1 block min-h-20 w-full rounded-md border px-3 py-2 text-sm" /></label>
-        {action.isError && <p role="alert" className="text-sm text-red-700">{(action.error as Error).message}</p>}
+        {action.isError && <p role="alert" className="text-sm text-red-700">{depositToolError(action.error, (action.error as Error).message)}</p>}
         <Button size="sm" disabled={!validReason || action.isPending || (mode === "record_payment" && (!validAmount || !validCurrency || !receivedAt || !reference.trim() || !verified || !fileOkay)) || (mode === "defer" && !dueDate)} onClick={() => action.mutate()}>{action.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{mode === "record_payment" ? "Confirm verified payment" : mode === "defer" ? "Confirm deferral" : mode === "waive" ? "Confirm waiver" : "Resend invoice"}</Button>
         {mode === "record_payment" && <p className="text-xs text-slate-500">{reasonHint}</p>}
       </div>}

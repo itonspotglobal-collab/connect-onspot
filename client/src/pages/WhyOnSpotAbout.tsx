@@ -157,7 +157,7 @@ const leaders: Array<{
     photo: valPhoto,
     photoAlt: "Portrait of Val Legaspi",
     imgPos: "50% 5%",
-    bio: "Biography pending approval",
+    bio: "5 years building software and scaling platforms for startups. Now engineering the Unified Outsourcing System behind the next generation of operations for OnSpot.",
   },
   {
     name: "Emmanuel Rogel (Emman)",
@@ -166,7 +166,7 @@ const leaders: Array<{
     photoAlt: "Portrait of Emmanuel Rogel (Emman)",
     imgPos: "50% 15%",
     photoBg: "linear-gradient(145deg, #E9EAF4 0%, #D9DCEE 52%, #C9CDE3 100%)",
-    bio: "Biography pending approval",
+    bio: "10 years shaping products where operations meets technology. Now leading product for the Unified Outsourcing System built to replace the old outsourcing model.",
   },
 ];
 

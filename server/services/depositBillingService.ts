@@ -1,5 +1,4 @@
 import type {Pool,PoolClient} from "pg";
-import {AdminHiringOverrideService} from "./adminHiringOverrideService";
 import {ManualWiseService} from "./manualWiseService";
 import {lockOnboarding,OnboardingError} from "./contractorOnboardingPolicy";
 import {queueHiringLifecycleEvent,tryActivateEngagement} from "./hiringLifecycleEvents";
@@ -8,11 +7,14 @@ import {contractBlobProvider,pdfHash,validateContractPdf,type ContractBlobProvid
 import {inspectWiseFile} from "./manualWiseFiles";
 const fail=(s:number,c:string,m:string):never=>{throw new OnboardingError(s,c,m);};
 export class DepositBillingService {
-  auth:AdminHiringOverrideService;
   constructor(private pool:Pool,private afterCommit?:()=>Promise<void>,private blobs:ContractBlobProvider=contractBlobProvider) {
-    this.auth=new AdminHiringOverrideService(pool);
   }
-  async authorize(actor:string){await this.auth.capabilities(actor);}
+  // Financial/legal tools are not part of the 2026-11-03 all-Admin hiring overrides.
+  async authorize(actor:string,db:Pick<PoolClient,"query">=this.pool) {
+    const a=(await db.query("SELECT role,admin_sub_role FROM users WHERE id=$1",[actor])).rows[0];
+    if(a?.role!=="admin"||a.admin_sub_role!==null)
+      fail(403,"SUPER_ADMIN_REQUIRED","Only a Super Admin may manage deposit billing, offline MSAs or onboarding repairs.");
+  }
   private async canonical(db:Pick<PoolClient,"query">,id:string) {
     const link=(await db.query("SELECT canonical_submission_id FROM onboarding_submission_links WHERE submission_id=$1",[id])).rows[0];
     return link?.canonical_submission_id??id;
@@ -50,7 +52,7 @@ export class DepositBillingService {
     }
     const db=await this.pool.connect();
     try {
-      await db.query("BEGIN");await this.auth.authorize(db,actor);
+      await db.query("BEGIN");await this.authorize(actor,db);
       id=await this.canonical(db,id);await lockOnboarding(db,id);
       const s=(await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE",[id])).rows[0];
       if(!s)fail(404,"APPLICATION_NOT_FOUND","Application not found.");
@@ -130,7 +132,7 @@ export class DepositBillingService {
     const db=await this.pool.connect();
     try{
       if(pdfHash(await this.blobs.read(key))!==meta.sha256)throw new Error("Private signed MSA integrity failure");
-      await db.query("BEGIN");await this.auth.authorize(db,actor);id=await this.canonical(db,id);
+      await db.query("BEGIN");await this.authorize(actor,db);id=await this.canonical(db,id);
       await lockOnboarding(db,id);
       const s=(await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE",[id])).rows[0];
       if(!s)fail(404,"APPLICATION_NOT_FOUND","Application not found.");

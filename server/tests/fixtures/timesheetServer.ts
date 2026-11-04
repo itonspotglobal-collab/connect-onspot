@@ -25,7 +25,7 @@ export async function initializeFixture() {
     CREATE TABLE notifications (id varchar PRIMARY KEY DEFAULT gen_random_uuid()::text,
       user_id varchar REFERENCES users, type text, title text, message text, related_id varchar,
       is_read boolean DEFAULT false, created_at timestamptz DEFAULT now());
-    CREATE TABLE platform_settings (key text PRIMARY KEY, value text);
+    CREATE TABLE platform_settings (key text PRIMARY KEY, value text, updated_at timestamptz DEFAULT now());
     CREATE TABLE jobs (id varchar PRIMARY KEY DEFAULT gen_random_uuid()::text, client_id varchar REFERENCES users,
       title text, description text, category text, experience_level text, status text,
       engagement_type text, billing_mode text, time_zone text, division text,

@@ -32,3 +32,9 @@ Also verify migrations through the application's actual runner, not only through
 **Why:** A fixture can successfully reconcile tables while concealing missing session-local helper setup in the normal startup path. Behavioral tests alone do not prove startup readiness.
 
 **How to apply:** Check helper initialization and finalization on the same runner connection/transaction and confirm the development application starts after a newly added reconciliation migration. Never use production as the integration-test target.
+
+Native local PostgreSQL fixtures need a native database adapter at the test boundary, not the application's hosted Neon WebSocket transport.
+
+**Why:** Finance integration imports reached a local HTTPS/WebSocket port instead of the disposable PostgreSQL port, even though the test URL itself was correct. Schema preparation succeeded while endpoint tests could not connect.
+
+**How to apply:** Bind production database imports to a guarded, disposable native adapter in the test build. Preserve the explicit fixture role/database checks and stripped provider credentials; do not change the production driver to accommodate tests.
