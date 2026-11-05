@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { LaunchBanner } from "./LaunchBanner";
 import { useSignupModal } from "@/components/SignupModalProvider";
 import { ErrorBoundaryWrapper } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
@@ -713,10 +714,14 @@ export function TopNavigation() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [activeDropdown, isMobileMenuOpen, moreMenuOpen]);
 
+  const showLaunchBanner =
+    location === "/" && !isLoading && !isAuthenticated && !user && !talentAuth;
+
   return (
-    <>
+    <div className="launch-banner-nav-shell" data-banner-visible={showLaunchBanner}>
+      {showLaunchBanner && <LaunchBanner />}
       {/* Navigation Spacer - prevents content overlap */}
-      <div style={{ height: 'var(--nav-h)' }} aria-hidden="true" />
+      <div style={{ height: 'calc(var(--nav-h) + var(--banner-h, 0px))' }} aria-hidden="true" />
 
       <nav
         ref={navRef}
@@ -724,6 +729,7 @@ export function TopNavigation() {
           isVisible ? "translate-y-0" : "-translate-y-full"
         } ${isScrolled ? "nav-scrolled" : ""}`}
         data-scrolled={isScrolled}
+        style={{ top: "var(--banner-h, 0px)" }}
       >
         <div 
           className="flex items-center relative w-full"
@@ -1519,7 +1525,7 @@ export function TopNavigation() {
           <div
             className="fixed left-0 right-0"
             style={{
-              top: "var(--nav-h)",
+              top: "calc(var(--nav-h) + var(--banner-h, 0px))",
               zIndex: 100,
             }}
             onMouseEnter={() => {
@@ -1657,7 +1663,8 @@ export function TopNavigation() {
           isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         style={{
-          top: 'var(--nav-h)',
+          top: 'calc(var(--nav-h) + var(--banner-h, 0px))',
+          maxHeight: 'calc(100vh - var(--nav-h) - var(--banner-h, 0px))',
           transform: isMobileMenuOpen ? 'translateY(0) scale(1)' : 'translateY(6px) scale(0.98)',
           zIndex: 40,
           background: 'rgba(44, 48, 114, 0.86)',
@@ -1670,7 +1677,7 @@ export function TopNavigation() {
           animation: isMobileMenuOpen ? 'menuBreathe 4s ease-in-out 1s infinite' : 'none',
         }}
       >
-        <div className="max-h-[calc(100vh-var(--nav-h))] overflow-y-auto px-4 py-6">
+        <div className="overflow-y-auto px-4 py-6" style={{ maxHeight: 'calc(100vh - var(--nav-h) - var(--banner-h, 0px))' }}>
           <div className="space-y-2">
             {visibleNavItems.map((item) => {
               const hasMegaMenu = "megaMenu" in item && item.megaMenu;
@@ -3112,6 +3119,6 @@ export function TopNavigation() {
         )}
       </Dialog>
 
-    </>
+    </div>
   );
 }

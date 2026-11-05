@@ -81,3 +81,4 @@
 - [Interview workflow policy](interview-workflow-policy.md) — recruiting exceptions, immutable outcomes, non-blocking calendars and pre-offer-only cohort repairs.
 - [Native HTTP test harness](native-http-test-environment.md) — distinguish Node test-worker IPC corruption from endpoint failures without weakening auth or assertions.
 - [Production visual isolation](production-visual-verification.md) — inventory startup dependencies; use owned TLS services and actual scrollbar-aware geometry.
+- [Homepage announcement scope](homepage-announcement-scope.md) — the reference authorizes the launch strip only, not changes to the hero or navigation design.

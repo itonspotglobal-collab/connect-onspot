@@ -1,0 +1,120 @@
+.launch-banner-nav-shell {
+  display: contents;
+  --banner-h: 0px;
+}
+
+.launch-banner-nav-shell[data-banner-visible="true"] {
+  --banner-h: 38px;
+}
+
+.launch-banner {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  box-sizing: border-box;
+  height: var(--banner-h, 38px);
+  min-height: 38px;
+  color: #272668;
+  font: inherit;
+}
+
+.launch-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.launch-banner-dot {
+  flex: 0 0 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #272668;
+}
+
+.launch-banner-copy {
+  min-width: 0;
+  margin: 0;
+  color: #272668;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.launch-banner-desktop-lead,
+.launch-banner-mobile-lead {
+  font-weight: 700;
+}
+
+.launch-banner-mobile-copy {
+  display: none;
+}
+
+.launch-banner-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 160ms ease;
+}
+
+.launch-banner-button:hover {
+  opacity: 0.88;
+}
+
+.launch-banner-button:focus-visible {
+  outline: 2px solid #272668;
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .launch-banner-nav-shell[data-banner-visible="true"] {
+    --banner-h: 56px;
+  }
+
+  .launch-banner {
+    min-height: 56px;
+  }
+
+  .launch-banner-content {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px 12px;
+  }
+
+  .launch-banner-copy {
+    flex: 1 1 auto;
+    font-size: 13px;
+  }
+
+  .launch-banner-desktop-lead,
+  .launch-banner-desktop-copy {
+    display: none;
+  }
+
+  .launch-banner-mobile-copy {
+    display: inline;
+  }
+
+  .launch-banner-button {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}

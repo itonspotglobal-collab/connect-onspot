@@ -1287,3 +1287,45 @@ mtime_ms = 1793894366271
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/b0bad482-7f6e-409c-ad3a-9969b98ecd1d/cb5465ba-6b3d-44d1-9078-1862750d7de4"
 storage_version_token = "1793894464426431"
 content_type = "text/html"
+
+[[outputs]]
+id = "AunpRLHgYmZpqOELixkZS"
+uri = "file://generated-artifacts/launch-banner/after-home-desktop.png"
+type = "image"
+title = "Homepage — desktop"
+description = "Logged-out homepage with the 38px launch announcement above the unchanged navigation and hero."
+logical_id = "79e5b688-4ca1-4d9b-9990-e679f2313199"
+content_hash = "sha256:95bb02c00f686813ae67a65da6b03cea04e67349f6b59c91a3abc3c7460d1400"
+size = 695104
+mtime_ms = 1793896392854
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/79e5b688-4ca1-4d9b-9990-e679f2313199/87c84a25-1bb8-4dfe-94e9-114d5598b5e1"
+storage_version_token = "1793896638544744"
+content_type = "image/png"
+
+[[outputs]]
+id = "AcZJiOc6hFNsz252Hy4dd"
+uri = "file://generated-artifacts/launch-banner/after-home-mobile.png"
+type = "image"
+title = "Homepage — mobile"
+description = "390px mobile layout with shortened announcement, waitlist link and correctly offset navigation."
+logical_id = "3c791f7b-a2fb-49d4-9d2a-3769431a84e5"
+content_hash = "sha256:40b1116baf63f0335dab0c2854472ceceeecbba97da70e7268f5a9e7446ae133"
+size = 238948
+mtime_ms = 1793896409128
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/3c791f7b-a2fb-49d4-9d2a-3769431a84e5/07fd3aa4-903e-435d-bbaa-48ded0a412b5"
+storage_version_token = "1793896641069279"
+content_type = "image/png"
+
+[[outputs]]
+id = "dMOTa9STyXg8q3ZBkZYaQ"
+uri = "file://generated-artifacts/launch-banner/after-find-work-desktop.png"
+type = "image"
+title = "Find Work — unchanged"
+description = "Other-page verification: no announcement, no extra offset, original navigation and hero layout."
+logical_id = "e0b72c78-3329-4400-9cf1-a8996a37ce9b"
+content_hash = "sha256:0db23c216c2e97e05576c90d86e4568c9ffda2134795ec2f035bc7fa57c73dd6"
+size = 592971
+mtime_ms = 1793896424011
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/e0b72c78-3329-4400-9cf1-a8996a37ce9b/d347d6ee-473f-4cec-b8e2-b9f6ec717407"
+storage_version_token = "1793896643971482"
+content_type = "image/png"
