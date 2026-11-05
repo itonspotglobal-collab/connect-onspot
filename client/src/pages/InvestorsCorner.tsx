@@ -404,6 +404,89 @@ export default function InvestorsCorner() {
           </div>
         </section>
 
+        <section
+          className="investor-ai"
+          aria-labelledby="investor-ai-title"
+        >
+          <span className="investor-ai-pattern" aria-hidden="true" />
+          <div className="investor-ai-grid">
+            <div className="investor-ai-side">
+              <h2 className="investor-ai-lead" id="investor-ai-title">
+                Every major technological revolution has transformed the workforce. Artificial intelligence will be no different, but its impact will extend further into cognitive and professional work.
+              </h2>
+              <svg className="investor-ai-art" viewBox="0 0 360 300" aria-hidden="true">
+                <defs>
+                  <linearGradient id="investorAiGradient" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#2533A2" />
+                    <stop offset="1" stopColor="#13176A" />
+                  </linearGradient>
+                </defs>
+                <circle cx="180" cy="150" r="128" fill="none" stroke="#D5DAF5" strokeWidth="1.5" />
+                <circle cx="180" cy="150" r="88" fill="none" stroke="#D5DAF5" strokeWidth="1.5" strokeDasharray="4 7" />
+                <path className="investor-ai-link" d="M98 150 C130 96 230 96 262 150" fill="none" stroke="#FAC333" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="6 8" />
+                <path className="investor-ai-link" d="M98 150 C130 204 230 204 262 150" fill="none" stroke="#2533A2" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="6 8" style={{ animationDirection: "reverse" }} />
+                <g transform="translate(58 110)">
+                  <rect width="80" height="80" rx="22" fill="url(#investorAiGradient)" />
+                  <rect x="22" y="22" width="36" height="36" rx="7" fill="none" stroke="#fff" strokeWidth="2.4" />
+                  <rect x="31" y="31" width="18" height="18" rx="3" fill="#FAC333" />
+                  <path d="M30 14v8M40 14v8M50 14v8M30 58v8M40 58v8M50 58v8M14 30h8M14 40h8M14 50h8M58 30h8M58 40h8M58 50h8" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" />
+                </g>
+                <g transform="translate(222 110)">
+                  <rect width="80" height="80" rx="40" fill="#FAC333" />
+                  <circle cx="40" cy="31" r="11" fill="none" stroke="#13176A" strokeWidth="3" />
+                  <path d="M20 62c3-11 11-17 20-17s17 6 20 17" fill="none" stroke="#13176A" strokeWidth="3" strokeLinecap="round" />
+                </g>
+                <circle cx="180" cy="22" r="6" fill="#FAC333" />
+                <circle cx="180" cy="278" r="6" fill="#2533A2" />
+                <circle cx="308" cy="150" r="4" fill="#9AA4E6" />
+                <circle cx="52" cy="150" r="4" fill="#9AA4E6" />
+              </svg>
+            </div>
+            <div className="investor-ai-main">
+              <p className="investor-ai-body">
+                As AI becomes increasingly accessible, automation will cease to be a differentiator in many industries. It will become standard infrastructure. Businesses will compete not only on how effectively they automate, but also on where they deliberately preserve human involvement.
+              </p>
+
+              <div className="investor-ai-shift">
+                <div className="investor-ai-shift-item">
+                  <span className="investor-ai-shift-ic investor-ai-s-out" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 12h12" /></svg>
+                  </span>
+                  <p>Some jobs will disappear.</p>
+                </div>
+                <div className="investor-ai-shift-item">
+                  <span className="investor-ai-shift-ic investor-ai-s-mid" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" /></svg>
+                  </span>
+                  <p>Others will evolve.</p>
+                </div>
+                <div className="investor-ai-shift-item">
+                  <span className="investor-ai-shift-ic investor-ai-s-in" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12" /></svg>
+                  </span>
+                  <p>New roles will emerge around AI systems.</p>
+                </div>
+              </div>
+
+              <p className="investor-ai-premium">
+                And in certain markets, <span>human attention</span>, <span>judgment</span>, <span>creativity</span>, and <span>relationships</span> may become premium services.
+                <strong>OnSpot is building for that transition.</strong>
+              </p>
+
+              <p className="investor-ai-body investor-ai-system">
+                As a unified outsourcing system, OnSpot combines technology with human deployment and operational accountability. Our long-term opportunity is to identify the capabilities businesses will continue to value, prepare professionals to deliver them, and make those capabilities accessible globally.
+              </p>
+
+              <div className="investor-ai-close">
+                <p>
+                  We are not building a company that depends on the survival of traditional outsourcing jobs.
+                  <strong>We are building a company designed to evolve with the future of work.</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="investor-vision-section" aria-label="Our vision and founders">
           <img
             className="investor-vision-photo"

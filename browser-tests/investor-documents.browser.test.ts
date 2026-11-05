@@ -10,8 +10,9 @@ import { chromium, type Browser, type Page } from "playwright";
 let vite: ViteDevServer;
 let browser: Browser;
 let base: string;
+let fixtureWarmed = false;
 const cacheDir = mkdtempSync(join(tmpdir(), "investor-docs-vite-"));
-const screenshotDir = resolve("screenshots/investor-request");
+const screenshotDir = resolve("generated-artifacts/investor-request");
 function markMockFixture(page: Page) {
   return page.evaluate(() => {
     const badge = document.createElement("div");
@@ -84,6 +85,12 @@ async function openPage(width = 1280, height = 900, statsHandler?: Parameters<Pa
     route.fulfill({ json: { totalGoal: 10_000, contractorGoal2027: 10_000, clientGoal2027: 1_000 } })));
   await page.goto(`${base}/investors`,{waitUntil:"domcontentloaded"});
   await page.locator("h1").waitFor();
+  // Let the isolated Vite dependency warm-up/reload finish before opening dialogs.
+  if (!fixtureWarmed) {
+    await page.waitForLoadState("networkidle");
+    await page.locator("h1").waitFor();
+    fixtureWarmed = true;
+  }
   return page;
 }
 
@@ -134,6 +141,8 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   }
   assert.equal(await page.locator("#investor-letter-title").innerText(), "A letter from the founders.");
   const teamPhoto = page.locator(".investor-letter-visual > img");
+  // Lazy images outside the initial viewport cannot finish decode until requested.
+  await teamPhoto.scrollIntoViewIfNeeded();
   await teamPhoto.evaluate((el: HTMLImageElement) => el.decode());
   assert.ok(await teamPhoto.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
   assert.doesNotMatch((await teamPhoto.getAttribute("src"))!, /unsplash/i);
@@ -153,6 +162,7 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   assert.equal(await founders.locator("img").count(), 3);
   for (const image of await founders.locator("img").all()) {
     assert.ok(await image.getAttribute("alt"));
+    await image.scrollIntoViewIfNeeded();
     await image.evaluate((el: HTMLImageElement) => el.decode());
     assert.ok(await image.evaluate((el: HTMLImageElement) => el.naturalWidth > 0));
   }
@@ -181,6 +191,98 @@ test("direct URL, refreshed content and unchanged reference narrative preserve i
   await reference.close();
   await page.close();
 });
+
+test("AI future-of-work section preserves reference copy, heading order, Inter and independent animation", async () => {
+  const page = await openPage();
+  const section = page.locator(".investor-ai");
+  assert.equal(await section.count(), 1);
+  assert.equal(await page.locator("h1").count(), 1);
+  assert.equal(await section.locator("h2").count(), 1);
+  const heading = section.locator("h2.investor-ai-lead");
+  assert.equal(await section.getAttribute("aria-labelledby"), await heading.getAttribute("id"));
+  assert.ok(await section.evaluate(el =>
+    el.previousElementSibling?.classList.contains("investor-letter") &&
+    el.nextElementSibling?.classList.contains("investor-vision-section")));
+  const reference = readFileSync("attached_assets/onspot_investors_polished_v8_1_1793893705548.html", "utf8")
+    .match(/<section class="ai">[\s\S]*?<\/section>/)![0];
+  const expected = await page.evaluate(html =>
+    new DOMParser().parseFromString(html, "text/html").body.textContent!.replace(/\s+/g, " ").trim(), reference);
+  assert.equal((await section.innerText()).replace(/\s+/g, " ").trim(), expected);
+  assert.doesNotMatch(await section.innerText(), /—/);
+  assert.equal(await section.locator(".investor-ai-body").count(), 2);
+  assert.ok(await section.evaluate(el => [...el.querySelectorAll("*")].every(child =>
+    getComputedStyle(child).fontFamily.includes("Inter") && Number(getComputedStyle(child).fontWeight) <= 700)));
+  assert.ok(await section.evaluate(el => [el, ...el.querySelectorAll("[class]")].every(child =>
+    [...child.classList].every(name => name === "investor-ai" || name.startsWith("investor-ai-")))));
+  assert.equal(await page.locator("#investorAiGradient").count(), 1);
+  assert.equal(await section.locator('svg:not([aria-hidden="true"])').count(), 0);
+  assert.equal(await section.locator(".investor-ai-pattern").getAttribute("aria-hidden"), "true");
+  assert.equal(await section.locator(".investor-ai-link").first().evaluate(el => getComputedStyle(el).animationName), "none");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  assert.equal(await section.locator(".investor-ai-link").first().evaluate(el => getComputedStyle(el).animationName), "investor-ai-dash");
+  const heroArc = page.locator(".hero-map .arc").first();
+  const heroAnimation = await heroArc.evaluate(el => ({
+    name: getComputedStyle(el).animationName,
+    running: el.getAnimations().some(animation => animation.playState === "running"),
+    offset: getComputedStyle(el).strokeDashoffset,
+  }));
+  assert.equal(heroAnimation.name, "investor-map-dash");
+  assert.equal(heroAnimation.running, true);
+  await page.waitForTimeout(120);
+  assert.notEqual(await heroArc.evaluate(el => getComputedStyle(el).strokeDashoffset), heroAnimation.offset);
+  await page.close();
+});
+
+for (const width of [320, 390, 768, 1024, 1440]) {
+  test(`AI future-of-work section is contained and responsive at ${width}px`, async () => {
+    const page = await openPage(width, 900);
+    const section = page.locator(".investor-ai");
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    assert.ok(await section.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return r.left >= 0 && r.right <= innerWidth;
+    }));
+    const layout = await section.evaluate(el => {
+      const style = (name: string) => getComputedStyle(el.querySelector(name)!);
+      const lead = style(".investor-ai-lead"), body = style(".investor-ai-body");
+      return { sticky: style(".investor-ai-side").position,
+        illustrationWidth: el.querySelector(".investor-ai-art")!.getBoundingClientRect().width,
+        headingSize: parseFloat(lead.fontSize), closingSize: parseFloat(style(".investor-ai-close strong").fontSize),
+        headingWeight: lead.fontWeight, headingSpacing: lead.letterSpacing,
+        bodySize: body.fontSize, bodyWeight: body.fontWeight, bodyLineHeight: body.lineHeight,
+        paddingTop: getComputedStyle(el).paddingTop,
+        background: getComputedStyle(el).backgroundColor };
+    });
+    assert.equal(layout.sticky, width <= 900 ? "static" : "sticky");
+    assert.ok(layout.illustrationWidth <= (width <= 900 ? 300 : 380));
+    assert.ok(layout.headingSize > layout.closingSize);
+    assert.equal(layout.headingWeight, "700");
+    assert.ok(Math.abs(parseFloat(layout.headingSpacing) / layout.headingSize + .025) < .001);
+    assert.equal(layout.bodySize, "17px");
+    assert.equal(layout.bodyWeight, "400");
+    assert.ok(Math.abs(parseFloat(layout.bodyLineHeight) - 28.9) < .1);
+    assert.equal(layout.paddingTop, width <= 600 ? "56px" : width <= 900 ? "72px" : "96px");
+    assert.equal(layout.background, "rgb(245, 246, 253)");
+    if (width > 900) {
+      await section.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + 170));
+      assert.ok(Math.abs(await section.locator(".investor-ai-side").evaluate(el => el.getBoundingClientRect().top) - 40) < 1,
+        "the sidebar really sticks to the viewport, not an overflow-hidden ancestor");
+    }
+    const cards = section.locator(".investor-ai-shift-item");
+    assert.equal(await cards.count(), 3);
+    const heights = await cards.evaluateAll(nodes => nodes.map(el => el.getBoundingClientRect().height));
+    assert.ok(Math.max(...heights) - Math.min(...heights) < 1, "shift cards remain equal peers");
+    if (width <= 600) {
+      assert.equal(await cards.first().evaluate(el => getComputedStyle(el).display), "flex");
+      for (const selector of [".investor-ai-premium", ".investor-ai-close"]) {
+        assert.equal(await section.locator(selector).evaluate(el => getComputedStyle(el).padding), "22px 20px");
+      }
+    }
+    await cards.first().hover();
+    assert.equal(await cards.first().evaluate(el => getComputedStyle(el).transform), "none", "reduced motion prevents hover lift");
+    await page.close();
+  });
+}
 
 for (const width of [320, 390, 768, 1024, 1440]) {
   test(`Investors hero phone canvas fits without scroll or headline overlap at ${width}px`, async () => {
@@ -254,9 +356,14 @@ for (const width of [320, 390, 768, 1024, 1440]) {
     assert.ok(await page.getByRole("button", { name: "Founding Team", exact: true, includeHidden: true }).count());
     const cards = team.locator(".about-grid-leaders > div");
     assert.equal(await cards.count(), 5);
+    // These previously-placeholder profiles already have supplied biographies.
+    // Assert the current baseline without altering the About page's content.
+    assert.match(await cards.nth(3).innerText(), /ENGINEER AND DEVELOPER/);
+    assert.match(await cards.nth(3).innerText(), /5 years building software and scaling platforms for startups/);
+    assert.match(await cards.nth(4).innerText(), /PRODUCT LEAD/);
+    assert.match(await cards.nth(4).innerText(), /10 years shaping products where operations meets technology/);
     for (const index of [3, 4]) {
-      assert.match(await cards.nth(index).innerText(), /pending approval/i);
-      assert.doesNotMatch(await cards.nth(index).innerText(), /Co-Founder|CEO|COO|President|years of|years in/);
+      assert.doesNotMatch(await cards.nth(index).innerText(), /pending approval|Co-Founder|CEO|COO|President/i);
     }
     assert.doesNotMatch(await cards.nth(4).innerText(), /photo.*pending|pending.*photo/i);
     const emmanuelPortrait = cards.nth(4).getByRole("img", { name: "Portrait of Emmanuel Rogel (Emman)", exact: true });

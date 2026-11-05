@@ -1245,3 +1245,45 @@ mtime_ms = 1793710948848
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/3670e360-6363-4620-9a80-67e712c2a1b6/f25475fd-b71d-4d4c-9702-ed565ffb2ffe"
 storage_version_token = "1793711155730602"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "xZleh0u5q7j0gI1iHLRcD"
+uri = "file://generated-artifacts/investor-ai/after-ai-1440.png"
+type = "image"
+title = "AI section — desktop, 1440px"
+description = "New future-of-work section captured in the development app."
+logical_id = "19a8c064-e960-4f8b-b4ee-2104a2d2dd50"
+content_hash = "sha256:68459933ce91a36478c94223538860e5fb3e0cdd696db8a9975e6edd57db377b"
+size = 295931
+mtime_ms = 1793894232562
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/19a8c064-e960-4f8b-b4ee-2104a2d2dd50/ce4b51e8-6b3a-42a6-b6ca-fcc39cdb33f6"
+storage_version_token = "1793894457861373"
+content_type = "image/png"
+
+[[outputs]]
+id = "VkYXHOmoTgnJt6LQIZ1IE"
+uri = "file://generated-artifacts/investor-ai/after-ai-390.png"
+type = "image"
+title = "AI section — mobile, 390px"
+description = "Single-column layout, stacked shift cards and the closing statement."
+logical_id = "74d76157-3187-47f6-a946-89ed0b9347ae"
+content_hash = "sha256:4f1faf117bbb1f6ab42996a0c4c9c4ae285a6b0423d386ff1c473753dc29f15f"
+size = 243526
+mtime_ms = 1793894249048
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/74d76157-3187-47f6-a946-89ed0b9347ae/cb0a305c-343f-469a-9ff4-4e442d576a32"
+storage_version_token = "1793894460066902"
+content_type = "image/png"
+
+[[outputs]]
+id = "1y3w8gdmb0r_DkDi1UxmP"
+uri = "file://generated-artifacts/investor-ai/screenshots.html"
+type = "html"
+title = "Letter and vision — before and after"
+description = "Self-contained gallery with desktop and mobile screenshots. Adjacent sections retain their content, dimensions and computed styles; rendering differences are disclosed."
+logical_id = "b0bad482-7f6e-409c-ad3a-9969b98ecd1d"
+content_hash = "sha256:dd846a2924f78695ea24a353a4021defc9fac708af119add6d9dbfbcae5f973d"
+size = 6782488
+mtime_ms = 1793894366271
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:8bbbaa9b-f07e-43a9-a3d9-cf820771ecf5/b0bad482-7f6e-409c-ad3a-9969b98ecd1d/cb5465ba-6b3d-44d1-9078-1862750d7de4"
+storage_version_token = "1793894464426431"
+content_type = "text/html"

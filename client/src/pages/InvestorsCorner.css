@@ -363,6 +363,274 @@
   }
 }
 
+/* AI / future of work section */
+/* Preserve page clipping without a scroll container that would trap AI stickiness. */
+.onspot-investors-page:has(.investor-ai) {
+  overflow: clip;
+}
+
+.onspot-investors-page .investor-ai {
+  position: relative;
+  overflow: clip;
+  padding: 96px 0;
+  background: var(--paper);
+  font-family: var(--font-sans);
+}
+
+.onspot-investors-page .investor-ai-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .5;
+  background-image:
+    linear-gradient(#e3e6f5 1px, transparent 1px),
+    linear-gradient(90deg, #e3e6f5 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(700px 500px at 15% 30%, #000, transparent 70%);
+  mask-image: radial-gradient(700px 500px at 15% 30%, #000, transparent 70%);
+}
+
+.onspot-investors-page .investor-ai-grid {
+  position: relative;
+  display: grid;
+  width: min(1160px, calc(100% - 44px));
+  margin-inline: auto;
+  grid-template-columns: .9fr 1.1fr;
+  align-items: start;
+  gap: 72px;
+}
+
+.onspot-investors-page .investor-ai-side {
+  position: sticky;
+  top: 40px;
+}
+
+.onspot-investors-page .investor-ai-lead {
+  margin: 0;
+  color: var(--deep);
+  font-size: clamp(1.6rem, 2.8vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.2;
+}
+
+.onspot-investors-page .investor-ai-art {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  margin-top: 36px;
+}
+
+.onspot-investors-page .investor-ai-link {
+  animation: investor-ai-dash 5s linear infinite;
+}
+
+.onspot-investors-page .investor-ai-body {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.onspot-investors-page .investor-ai-shift {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 30px 0;
+}
+
+.onspot-investors-page .investor-ai-shift-item {
+  display: flex;
+  min-height: 142px;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 22px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  transition: transform .2s, box-shadow .2s;
+}
+
+.onspot-investors-page .investor-ai-shift-item p {
+  margin: 14px 0 0;
+  color: var(--deep);
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.onspot-investors-page .investor-ai-shift-ic {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.onspot-investors-page .investor-ai-s-out {
+  color: #8a90b8;
+  background: #eef0f8;
+}
+
+.onspot-investors-page .investor-ai-s-mid {
+  color: var(--royal);
+  background: #eaedff;
+}
+
+.onspot-investors-page .investor-ai-s-in {
+  color: var(--deep);
+  background: var(--yellow);
+}
+
+.onspot-investors-page .investor-ai-premium {
+  margin: 0 0 30px;
+  padding: 26px 28px;
+  border-left: 4px solid var(--yellow);
+  border-radius: 16px;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(19, 23, 106, .06);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.onspot-investors-page .investor-ai-premium span {
+  color: var(--royal);
+  font-weight: 600;
+}
+
+.onspot-investors-page .investor-ai-premium strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--deep);
+  font-weight: 700;
+}
+
+.onspot-investors-page .investor-ai-system {
+  margin-bottom: 30px;
+}
+
+.onspot-investors-page .investor-ai-close {
+  position: relative;
+  overflow: hidden;
+  padding: 32px 34px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(130deg, var(--royal), var(--deep));
+  box-shadow: 0 22px 50px rgba(19, 23, 106, .25);
+}
+
+.onspot-investors-page .investor-ai-close::after {
+  position: absolute;
+  top: -90px;
+  right: -70px;
+  width: 220px;
+  height: 220px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 50%;
+  box-shadow: 0 0 0 30px rgba(255, 255, 255, .03);
+  content: "";
+  pointer-events: none;
+}
+
+.onspot-investors-page .investor-ai-close p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: rgba(255, 255, 255, .82);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.onspot-investors-page .investor-ai-close strong {
+  display: block;
+  margin-top: 10px;
+  color: #fac333;
+  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.25;
+}
+
+@keyframes investor-ai-dash {
+  to { stroke-dashoffset: -140; }
+}
+
+@media (hover: hover) {
+  .onspot-investors-page .investor-ai-shift-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(19, 23, 106, .08);
+  }
+}
+
+@media (max-width: 900px) {
+  .onspot-investors-page .investor-ai {
+    padding: 72px 0;
+  }
+
+  .onspot-investors-page .investor-ai-grid {
+    width: calc(100% - 32px);
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .onspot-investors-page .investor-ai-side {
+    position: static;
+  }
+
+  .onspot-investors-page .investor-ai-art {
+    max-width: 300px;
+    margin: 26px auto 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .onspot-investors-page .investor-ai {
+    padding: 56px 0;
+  }
+
+  .onspot-investors-page .investor-ai-shift {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .onspot-investors-page .investor-ai-shift-item {
+    min-height: 78px;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .onspot-investors-page .investor-ai-shift-item p {
+    margin: 0;
+  }
+
+  .onspot-investors-page .investor-ai-premium,
+  .onspot-investors-page .investor-ai-close {
+    padding: 22px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onspot-investors-page .investor-ai-link {
+    animation: none;
+  }
+
+  .onspot-investors-page .investor-ai-shift-item {
+    transition: none;
+  }
+
+  .onspot-investors-page .investor-ai-shift-item:hover {
+    transform: none;
+  }
+}
+
 /* OnSpot investor page redesign — styles remain deliberately page-scoped. */
 .onspot-investors-page {
   --deep: #13176a;

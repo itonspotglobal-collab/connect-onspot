@@ -38,3 +38,9 @@ Keep work scoped to Investors and its assets/tests; request-dialog behavior, rou
 **Why:** The owner explicitly limited the redesign scope and prohibited publishing.
 
 **How to apply:** Compare the implemented hero and letter beside the supplied HTML at desktop and mobile sizes before delivery. Preserve dialog focus and private request handling.
+
+The subsequent future-of-work HTML reference authorizes only the added AI section, not another whole-page redesign.
+
+**Why:** On 2026-11-05 the owner explicitly froze the surrounding letter, vision, hero, data and behavior while supplying new AI copy and illustration.
+
+**How to apply:** Keep the AI styles and animation names independent of the hero, with unique SVG identifiers. The owner's Inter/weight/tracking requirements override the mock. Preserve the earlier sections and compare their before/after captures rather than importing the reference's global CSS.
