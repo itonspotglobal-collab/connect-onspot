@@ -146,13 +146,14 @@ export async function notifyFounders(
   const row = (label: string, html: string) =>
     `<tr><th scope="row" style="text-align:left;vertical-align:top;padding:8px">${escHtml(label)}</th><td style="padding:8px">${html}</td></tr>`;
   const inquiry = request.inquiry || (!request.requestedDocument ? request.message : "") || "None provided";
+  const email = escHtml(request.email.trim());
   const submitted = `${saved.createdAt.toLocaleString("en-GB", {
     timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "long",
   })} (Asia/Manila) / ${saved.createdAt.toISOString()} (UTC)`;
   const details = [
     row("Request", escHtml(REQUEST_LABELS[request.requestType])),
     row("Name", escHtml(request.name)),
-    ...(request.firm ? [row("Firm or affiliation", escHtml(request.firm))] : []),
+    row("Email", `<a href="mailto:${email}">${email}</a>`),
     row("Contact number", request.phone
       ? `<a href="tel:${escHtml(request.phone.replace(/[^0-9+]/g, ""))}">${escHtml(request.phone)}</a>`
       : escHtml("None provided")),
@@ -163,7 +164,7 @@ export async function notifyFounders(
   return send({
     to: recipients,
     subject: `Investor request: ${REQUEST_LABELS[request.requestType]} from ${request.name.split(/\s+/)[0]}`,
-    bodyHtml: `<p>${escHtml("A new investor request was submitted through the OnSpot Investors page.")}</p><table>${details}</table><p>${escHtml("Reply to this email to respond directly to the investor.")}</p>`,
+    bodyHtml: `<p>${escHtml("A new investor request was submitted through the OnSpot Investors page.")}</p><table>${details}</table>`,
     replyTo: request.email,
     senderEmail,
   });

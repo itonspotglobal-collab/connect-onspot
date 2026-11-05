@@ -201,8 +201,11 @@ test("one founder email uses the investors sender, reference, timestamps and esc
       ["nur@onspotglobal.com", "Jake@onspotglobal.com", "Mark.Apostol@onspotglobal.com"]);
     assert.equal(calls[0].senderEmail, "investors@onspotglobal.com");
     assert.equal(calls[0].replyTo, lead.email);
-    assert.ok(!calls[0].bodyHtml.includes(lead.email), "contact email belongs in Reply-To, not the notification body");
-    assert.doesNotMatch(calls[0].bodyHtml, /mailto:|>Email<\/th>/);
+    assert.ok(calls[0].bodyHtml.includes(`<a href="mailto:${lead.email}">${lead.email}</a>`));
+    assert.doesNotMatch(calls[0].bodyHtml, /Reply to this email/);
+    assert.ok(calls[0].bodyHtml.endsWith("</table>"));
+    assert.deepEqual([...calls[0].bodyHtml.matchAll(/<th[^>]*>(.*?)<\/th>/g)].map(match => match[1]),
+      ["Request", "Name", "Email", "Contact number", "Inquiry", "Submitted", "Reference"]);
     assert.equal(calls[0].subject, "Investor request: Pitch deck from Avery");
     assert.match(calls[0].bodyHtml, /&lt;img src=x&gt;<br>/);
     assert.match(calls[0].bodyHtml, /href="tel:\+15551234567"/);
@@ -230,4 +233,28 @@ test("one founder email uses the investors sender, reference, timestamps and esc
     if (priorSender === undefined) delete process.env.INVESTORS_EMAIL; else process.env.INVESTORS_EMAIL = priorSender;
     if (priorTo === undefined) delete process.env.INVESTOR_NOTIFICATION_TO; else process.env.INVESTOR_NOTIFICATION_TO = priorTo;
   }
+});
+
+test("notification email is trimmed and HTML-escaped in both mailto and link text", async () => {
+  let html = "";
+  const result = await notifyFounders({
+    name: "Email escaping fixture", firm: "Example Ventures",
+    email: '  avery&partners"<>@example.org  ', requestType: "deck",
+  }, { id: "escaping-fixture", createdAt: new Date("2026-11-03T00:00:00Z") }, async options => {
+    html = options.bodyHtml;
+    return { success: true };
+  });
+  assert.equal(result.success, true);
+  assert.ok(html.includes('<a href="mailto:avery&amp;partners&quot;&lt;&gt;@example.org">avery&amp;partners&quot;&lt;&gt;@example.org</a>'));
+  assert.doesNotMatch(html, /Reply to this email/);
+  assert.ok(html.endsWith("</table>"));
+});
+
+test("website sent confirmation still contains no email address or email interpolation", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(new URL("../../client/src/components/InvestorDocumentDialog.tsx", import.meta.url), "utf8");
+  const sent = source.split('submission.kind === "sent" ? (')[1]?.split(') : submission.kind === "saved-notification-failed"')[0];
+  assert.ok(sent, "locate the sent confirmation independently from the failed state");
+  assert.doesNotMatch(sent, /@|\{email\}/);
+  assert.match(sent, /Our founders will review it personally/);
 });

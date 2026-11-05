@@ -33,6 +33,12 @@ When validating a new browser suite, run it by file as well as through the packa
 
 **How to apply:** Treat the changed suite's direct command and typecheck as the primary signal, then report unrelated aggregate-suite failures separately rather than changing product code to accommodate them.
 
+A source-fixture timeout does not establish that the same control is broken in the running development app.
+
+**Why:** An investor confirmation fixture timed out locating a submit button, while the unchanged development UI completed the same form and confirmation successfully. The fixture's underlying failure was not established.
+
+**How to apply:** Keep fixture failures explicit. When appropriate, verify the same public UI against development with the write endpoint intercepted, so verification sends no additional email or records. Do not change product behavior or claim the stalled fixture passed.
+
 Browser callbacks serialized by Playwright do not inherit tsx/esbuild's module-scoped function-name helper. Nested named or inferred-name functions in `evaluate` can therefore fail with `__name is not defined`.
 
 **Why:** The host compiler preserves function names, but the browser receives only the callback source, not the compiler runtime.

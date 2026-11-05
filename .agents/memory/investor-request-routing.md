@@ -19,13 +19,13 @@ Document intake is a request for personal founder follow-up, not automatic docum
 
 **Why:** On 2026-11-03 the owner explicitly requested confirmations describing founders reviewing the request and responding personally, while preserving honest notification-failure states.
 
-**How to apply:** Keep success copy about the saved request and founder follow-up; distinguish provider acceptance from actual inbox receipt during verification. Never send development test messages to the founders in place of an approved test inbox.
+**How to apply:** Keep success copy about the saved request and founder follow-up; distinguish provider acceptance from actual inbox receipt during verification. Use an approved test inbox by default; notify the normal founders in a development test only when the owner explicitly requests normal-recipient delivery.
 
-Omit the contact email row from investor notification bodies, while retaining the investor's address in Reply-To and storage. Website confirmations follow their own copy policy below.
+Founder notification bodies include the submitter's trimmed email as an HTML-escaped mailto link directly below Name. The message ends after the table, without reply instructions. Website confirmations follow their own separate copy policy below.
 
-**Why:** On 2026-11-03 the owner explicitly chose "Notification email body" when clarifying where the displayed email address should be removed.
+**Why:** On 2026-11-05 the owner explicitly superseded the earlier notification-body omission. The no-email rule applies to website confirmations, not private founder notifications.
 
-**How to apply:** Do not reintroduce an email table row or mailto link into founder notifications. Keep sender/recipient routing and direct-reply behavior intact.
+**How to apply:** Keep the notification row order Request, Name, Email, Contact number, Inquiry, Submitted, Reference. Preserve sender/recipient routing, subject, intro and investor Reply-To. Escape both the mailto attribute and link text; do not echo the address into successful website confirmations.
 
 Do not display any email address in document-request confirmations, except the shared investor contact mailbox in the saved-notification-failed state.
 

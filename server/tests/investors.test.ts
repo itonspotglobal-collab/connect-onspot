@@ -236,12 +236,19 @@ it("Graph keeps single-string recipients compatible and maps named arrays into o
     delete process.env.INVESTORS_EMAIL;
     delete process.env.INVESTOR_NOTIFICATION_TO;
     try {
-      await notifyFounders(sample, { id: "fixture-ref", createdAt: new Date("2026-11-03T00:00:00Z") });
+      const request = { ...sample, email: "avery&partners@example.org" };
+      await notifyFounders(request, { id: "fixture-ref", createdAt: new Date("2026-11-03T00:00:00Z") });
       assert.equal(payloads.length, 2);
       assert.equal(payloads[1].message.toRecipients.length, 3);
       assert.equal(payloads[1].message.from.emailAddress.address, "investors@onspotglobal.com");
       assert.equal(payloads[1].message.from.emailAddress.name, "OnSpot Investors");
-      assert.deepEqual(payloads[1].message.replyTo, [{ emailAddress: { address: sample.email } }]);
+      assert.deepEqual(payloads[1].message.replyTo, [{ emailAddress: { address: request.email } }]);
+      const html = payloads[1].message.body.content;
+      assert.ok(html.includes('<a href="mailto:avery&amp;partners@example.org">avery&amp;partners@example.org</a>'));
+      assert.doesNotMatch(html, /Reply to this email/);
+      assert.ok(html.endsWith("</table>"));
+      assert.deepEqual([...html.matchAll(/<th[^>]*>(.*?)<\/th>/g)].map(match => match[1]),
+        ["Request", "Name", "Email", "Contact number", "Inquiry", "Submitted", "Reference"]);
     } finally {
       if (previousSender === undefined) delete process.env.INVESTORS_EMAIL; else process.env.INVESTORS_EMAIL = previousSender;
       if (previousTo === undefined) delete process.env.INVESTOR_NOTIFICATION_TO; else process.env.INVESTOR_NOTIFICATION_TO = previousTo;
