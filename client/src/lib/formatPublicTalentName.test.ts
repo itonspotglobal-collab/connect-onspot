@@ -1,9 +1,14 @@
 /**
  * formatPublicTalentName.test.ts
  *
- * Run with: npx vitest run client/src/lib/formatPublicTalentName.test.ts
+ * Run with: npx vitest run --config vitest.unit.config.mts client/src/lib/formatPublicTalentName.test.ts
  */
 import { describe, it, expect } from "vitest";
+import { maskClientTalentName } from "@shared/talentName";
+import {
+  sanitizeSearchCandidate,
+  sanitizeFullProfileForClient,
+} from "../../../server/lib/clientSearchSanitize";
 import {
   formatPublicTalentName,
   formatPublicTalentNameFromFull,
@@ -14,21 +19,22 @@ import {
 // ─── formatPublicTalentName ───────────────────────────────────────────────────
 
 describe("formatPublicTalentName", () => {
-  // ── Acceptance-criteria cases from the spec ──
+  // Client privacy intentionally differs from private profile-name storage:
+  // retain only the first given-name token, never middle names or a surname.
   it("Oddie + Galang → Oddie G.", () => {
     expect(formatPublicTalentName("Oddie", "Galang")).toBe("Oddie G.");
   });
   it("Odie + Galang → Odie G.", () => {
     expect(formatPublicTalentName("Odie", "Galang")).toBe("Odie G.");
   });
-  it("Van Carlo + Labanan → Van Carlo L.", () => {
-    expect(formatPublicTalentName("Van Carlo", "Labanan")).toBe("Van Carlo L.");
+  it("Van Carlo + Labanan → Van L.", () => {
+    expect(formatPublicTalentName("Van Carlo", "Labanan")).toBe("Van L.");
   });
   it("Julie + Stramer → Julie S.", () => {
     expect(formatPublicTalentName("Julie", "Stramer")).toBe("Julie S.");
   });
-  it("Lesley Jean + Valencinerina → Lesley Jean V.", () => {
-    expect(formatPublicTalentName("Lesley Jean", "Valencinerina")).toBe("Lesley Jean V.");
+  it("Lesley Jean + Valencinerina → Lesley V.", () => {
+    expect(formatPublicTalentName("Lesley Jean", "Valencinerina")).toBe("Lesley V.");
   });
   it("Maria + De la Cruz → Maria D.", () => {
     expect(formatPublicTalentName("Maria", "De la Cruz")).toBe("Maria D.");
@@ -38,17 +44,17 @@ describe("formatPublicTalentName", () => {
   });
 
   // ── Edge cases ──
-  it("empty lastName → first name only, no trailing space or period", () => {
-    expect(formatPublicTalentName("Cher", "")).toBe("Cher");
+  it("empty lastName → empty string so the caller can use a safe fallback", () => {
+    expect(formatPublicTalentName("Cher", "")).toBe("");
   });
-  it("null lastName → first name only", () => {
-    expect(formatPublicTalentName("Cher", null)).toBe("Cher");
+  it("null lastName → empty string", () => {
+    expect(formatPublicTalentName("Cher", null)).toBe("");
   });
-  it("undefined lastName → first name only", () => {
-    expect(formatPublicTalentName("Cher", undefined)).toBe("Cher");
+  it("undefined lastName → empty string", () => {
+    expect(formatPublicTalentName("Cher", undefined)).toBe("");
   });
-  it("whitespace-only lastName → first name only", () => {
-    expect(formatPublicTalentName("Cher", "   ")).toBe("Cher");
+  it("whitespace-only lastName → empty string", () => {
+    expect(formatPublicTalentName("Cher", "   ")).toBe("");
   });
   it("missing firstName → empty string (never exposes last name)", () => {
     expect(formatPublicTalentName("", "Galang")).toBe("");
@@ -90,8 +96,8 @@ describe("formatPublicTalentNameFromFull", () => {
   it("multi-part name ignores middle names", () => {
     expect(formatPublicTalentNameFromFull("Mary Anne Cruz")).toBe("Mary C.");
   });
-  it("single name → returned as-is", () => {
-    expect(formatPublicTalentNameFromFull("Cher")).toBe("Cher");
+  it("single legacy token → initial and bullets, since it might be a surname", () => {
+    expect(formatPublicTalentNameFromFull("Cher")).toBe("C••••");
   });
   it("empty string → empty string", () => {
     expect(formatPublicTalentNameFromFull("")).toBe("");
@@ -110,8 +116,8 @@ describe("formatPublicTalentNameFromFull", () => {
 // ─── formatPublicTalentNameMasked ────────────────────────────────────────────
 
 describe("formatPublicTalentNameMasked", () => {
-  it("single name → returned as-is", () => {
-    expect(formatPublicTalentNameMasked("Cher")).toBe("Cher");
+  it("single legacy token → initial and bullets", () => {
+    expect(formatPublicTalentNameMasked("Cher")).toBe("C••••");
   });
   it("two names → First S.", () => {
     expect(formatPublicTalentNameMasked("John Smith")).toBe("John S.");
@@ -174,16 +180,79 @@ describe("getPrivacySafeTalentDisplayName", () => {
       maskedName: "R****",
     })).toBe("Robert S.");
   });
-  it("keeps a multi-word structured first name intact", () => {
+  it("omits additional structured given names on Client-facing surfaces", () => {
     expect(getPrivacySafeTalentDisplayName({
       firstName: "Mary Anne",
       lastName: "Cruz",
-    })).toBe("Mary Anne C.");
+    })).toBe("Mary C.");
   });
   it("uses a single full-name fallback without exposing its surname", () => {
     expect(getPrivacySafeTalentDisplayName({ fullName: "Jane Doe" })).toBe("Jane D.");
   });
   it("never renders a legacy mask when no structured name is available", () => {
     expect(getPrivacySafeTalentDisplayName({ fullName: "R****" })).toBe("Talent Profile");
+  });
+  it.each([
+    ["Jane Doe", "Jane D."],
+    ["Jane Anne Doe", "Jane D."],
+    ["Jane Anne D.", "Jane D."],
+    ["Jane D.", "Jane D."],
+    ["  Jane   Doe  ", "Jane D."],
+    ["Doe", "D••••"],
+    ["R****", "Talent Profile"],
+    ["R••••", "Talent Profile"],
+    ["", "Talent Profile"],
+  ])("normalizes the legacy maskedName fallback %j → %j", (maskedName, expected) => {
+    expect(getPrivacySafeTalentDisplayName({ maskedName })).toBe(expected);
+  });
+  it("does not let a legacy display value override authoritative structured fields", () => {
+    expect(getPrivacySafeTalentDisplayName({
+      firstName: "Jane Anne",
+      lastName: "Doe",
+      maskedName: "Other FullSurname",
+    })).toBe("Jane D.");
+  });
+  it("uses a safe combined-name fallback when the structured pair is incomplete", () => {
+    expect(getPrivacySafeTalentDisplayName({
+      firstName: "Jane",
+      lastName: null,
+      fullName: "Jane Anne Doe",
+    })).toBe("Jane D.");
+  });
+});
+
+describe("Client/server privacy contract", () => {
+  it.each([
+    { firstName: "John Benedict", lastName: "Acosta", fullName: "John Benedict Acosta", expected: "John A." },
+    { firstName: "Aaron Tristan", lastName: "Dela Cruz", expected: "Aaron D." },
+    { first_name: "Van Carlo", last_name: "Lopez", expected: "Van L." },
+    { fullName: "Mary Anne Cruz", expected: "Mary C." },
+    { full_name: "John Benedict A.", expected: "John A." },
+    { fullName: "Cher", expected: "C••••" },
+    { firstName: "Cher", lastName: null, expected: "Talent Profile" },
+    { fullName: "R****", expected: "Talent Profile" },
+    { firstName: "Élodie Anne", lastName: "O’Connor", expected: "Élodie O." },
+  ])("uses the same privacy mask for $expected", ({ expected, ...identity }) => {
+    expect(maskClientTalentName(identity)).toBe(expected);
+    expect(getPrivacySafeTalentDisplayName(identity)).toBe(expected);
+    for (const sanitize of [sanitizeSearchCandidate, sanitizeFullProfileForClient]) {
+      const safe = sanitize({
+        ...identity,
+        email: "private@example.test",
+        phone: "+1 202 555 0100",
+        resumeUrl: "https://private.example.test/resume.pdf",
+      });
+      expect(safe.maskedName).toBe(expected);
+      expect(safe.fullName).toBe(expected);
+      expect(safe.full_name).toBe(expected);
+      const serialized = JSON.stringify(safe);
+      expect(serialized).not.toContain("private@example.test");
+      expect(serialized).not.toContain("+1 202 555 0100");
+      expect(serialized).not.toContain("resume.pdf");
+      expect(safe).not.toHaveProperty("firstName");
+      expect(safe).not.toHaveProperty("lastName");
+      expect(safe).not.toHaveProperty("first_name");
+      expect(safe).not.toHaveProperty("last_name");
+    }
   });
 });

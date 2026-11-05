@@ -3,7 +3,7 @@ import {
   formatTalentDisplayNameFromFull,
 } from "@shared/talentName";
 
-/** Privacy-safe public format: full first name plus surname initial. */
+/** Client privacy format: first given-name token plus surname initial. */
 export function formatPublicTalentName(
   firstName: string | null | undefined,
   lastName: string | null | undefined,
@@ -46,8 +46,8 @@ export function getPrivacySafeTalentDisplayName(name: {
   const fromFullName = formatPublicTalentNameFromFull(name.fullName ?? name.full_name);
   if (fromFullName) return fromFullName;
 
-  const preformatted = (name.maskedName ?? "").trim();
-  if (preformatted && !/[•*]/.test(preformatted)) return preformatted;
+  const preformatted = formatPublicTalentNameMasked(name.maskedName);
+  if (preformatted) return preformatted;
 
   return "Talent Profile";
 }

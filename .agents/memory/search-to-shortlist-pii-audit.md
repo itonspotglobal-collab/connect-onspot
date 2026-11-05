@@ -34,3 +34,5 @@ Client-facing talent surfaces display only `FirstGivenName L.`. The server uses 
 **Why:** Multi-word given-name fields can contain middle names, so showing the full field leaks more identity than the Client privacy boundary allows. The API can provide masked `maskedName`, `fullName`, and `full_name` aliases, but never raw identity values.
 
 **How to apply:** Use the shared talent-name formatter for every new Client-facing talent surface. Prefer structured fields over legacy display/full-name strings. For a combined full-name fallback, use only its first and final tokens (ignore middle names), normalize existing one-letter surname initials, and keep single-token names in the bullet-masked form. Avatar initials must derive from the formatted result, not source identity fields.
+
+This is a Client-facing display restriction, not a stored-name normalization rule: private profile editing must retain compound given names. When older display tests expect all given-name tokens or an unmasked single legacy token, align the assertions with this privacy policy rather than relaxing the mask.
