@@ -78,6 +78,7 @@ import { PaymentVerificationCard, usePaymentSkip } from "@/components/hiring-pay
 import { InterviewOutcomeControls,InterviewOutcomeList } from "@/components/InterviewOutcomeControls";
 import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
 import { isContractorOfferAllowed } from "@/lib/contractorOnboarding";
+import { useClientJobs } from "@/hooks/useClientJobs";
 
 // ─── Name-masking helper ──────────────────────────────────────────────────────
 export interface JobSubmission {
@@ -688,6 +689,7 @@ export function ClientJobRow({
   onDelete,
   onView,
   onInvite,
+  onViewApplications,
   isToggling,
   isDeleting,
 }: {
@@ -697,6 +699,7 @@ export function ClientJobRow({
   onDelete: () => void;
   onView: () => void;
   onInvite: () => void;
+  onViewApplications?: () => void;
   isToggling: boolean;
   isDeleting: boolean;
 }) {
@@ -808,6 +811,22 @@ export function ClientJobRow({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {!isDraft && onViewApplications && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onViewApplications}
+              data-testid={`button-view-applications-${job.id}`}
+            >
+              <Users className="w-3 h-3 mr-1.5" />
+              View Applications
+              {(job.proposalCount ?? 0) > 0 && (
+                <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-white/10 dark:text-slate-300">
+                  {job.proposalCount}
+                </span>
+              )}
+            </Button>
+          )}
           {!isDraft && canInviteTalent && (
             <Button
               size="sm"
@@ -1305,6 +1324,7 @@ export function JobSubmissionsSection({
   onExtendOffer,
   requestedApplicationId,
   requestedInterviewId,
+  requestedJobId = null,
   nameRevealThreshold = "submitted",
   workspace = false,
 }: {
@@ -1312,11 +1332,13 @@ export function JobSubmissionsSection({
   onExtendOffer: (sub: JobSubmission) => void;
   requestedApplicationId: string | null;
   requestedInterviewId: string | null;
+  requestedJobId?: string | null;
   nameRevealThreshold?: string;
   workspace?: boolean;
 }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { jobsQuery } = useClientJobs();
   const { data: rawSubmissions = [], isLoading, isError, refetch } = useQuery<JobSubmission[]>({
     queryKey: ["/api/client/job-submissions"],
     queryFn: async () => {
@@ -1336,6 +1358,16 @@ export function JobSubmissionsSection({
   const onViewRef = useRef(onView);
   onViewRef.current = onView;
   const openedDeepLink = useRef<string | null>(null);
+  const appliedJobRequest = useRef<string | null>(null);
+  useEffect(() => {
+    const request = requestedJobId || "";
+    if (appliedJobRequest.current === request) return;
+    if (request && (jobsQuery.isLoading || !jobsQuery.data)) return;
+    const isOwnedJob = !!request && (jobsQuery.data ?? []).some((job) => job.id === request);
+    setJobFilter(isOwnedJob ? request : "all");
+    setPage(1);
+    appliedJobRequest.current = request;
+  }, [requestedJobId, jobsQuery.data, jobsQuery.isLoading]);
   useEffect(() => {
     if (!requestedApplicationId || isLoading || openedDeepLink.current === requestedApplicationId) return;
     const submission = submissions.find((item) => item.id === requestedApplicationId);
@@ -1449,7 +1481,7 @@ export function JobSubmissionsSection({
               <SelectTrigger aria-label="Filter applications by job posting" data-testid="select-submission-job"><SelectValue placeholder="All job postings" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All job postings</SelectItem>
-                {Array.from(new Map(submissions.map((sub) => [sub.jobId, sub.jobTitle])).entries()).map(([id, title]) => <SelectItem key={id} value={id}>{title}</SelectItem>)}
+                {(jobsQuery.data ?? []).map((job) => <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setPage(1); }}>

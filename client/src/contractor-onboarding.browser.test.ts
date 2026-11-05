@@ -33,20 +33,26 @@ before(async () => {
             import React, { useState } from "react";
             import { createRoot } from "react-dom/client";
             import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-            import { Route, Router, Switch, useLocation } from "wouter";
+              import { Route, Router, Switch, useLocation } from "wouter";
             import ClientMsa from "/src/pages/ClientMsa";
-            import { ContractorOnboardingTracker } from "/src/components/ContractorOnboarding";
+              import { ContractorOnboardingTracker } from "/src/components/ContractorOnboarding";
+              import { ClientJobRow, JobSubmissionsSection } from "/src/pages/ClientProfile";
             function TrackerFixture() {
               const [, navigate] = useLocation();
               const [shortlisted, setShortlisted] = useState(false);
+              const clientMessage = new URLSearchParams(window.location.search).get("message");
               const data = {
-                policy: "deposit_first", submissionId: "submission-fixture", status: "shortlisted",
+                policy: "deposit_first", submissionId: "submission-fixture", status: clientMessage ? "offer_accepted" : "shortlisted",
                 shortlistSatisfied: true, finalInterviewPassed: false, canScheduleInterview: true,
-                canSendOffer: false, defaultInterviewType: "final", offerId: null, deposit: null,
+                canSendOffer: false, defaultInterviewType: "final", offerId: null,
                 contract: { id: "contract-fixture", status: "draft", url: null },
                 msa: { version: "2026.1", signed: false, available: true, url: null },
                 conditions: { depositHeld: false, contractSigned: false, msaSigned: false },
                 canPrepareContract: false, missing: ["Passed final interview"], nextActor: "Client",
+                paymentState: clientMessage ? "Awaiting payment" : null,
+                offerAccepted: Boolean(clientMessage),
+                deposit: clientMessage ? { id: "pending-deposit", status: "pending", paymentStatus: "pending", invoiceUrl: null } : null,
+                setup: { wiseReady: false, msaReady: true, clientMessage },
                 stages: [
                   { key: "application", label: "Application", complete: true, current: false, actor: "Talent" },
                   { key: "shortlisted", label: "Shortlisted", complete: true, current: false, actor: "Client" },
@@ -56,11 +62,39 @@ before(async () => {
               };
               return <><output data-testid="current-path">{window.location.pathname + window.location.search}</output><div data-testid="shortlist-state">{String(shortlisted)}</div><ContractorOnboardingTracker data={data} onShortlist={() => setShortlisted(true)} /><button onClick={() => navigate("/contracts?id=" + encodeURIComponent(data.contract.id))}>Open agreement fixture</button></>;
             }
+            function ClientJobRowFixture() {
+              const [clicked, setClicked] = useState("none");
+              const props = {
+                onEdit: () => {}, onToggle: () => {}, onDelete: () => {}, onView: () => {},
+                onInvite: () => {}, isToggling: false, isDeleting: false,
+                onViewApplications: () => setClicked("open-job"),
+              };
+              return <><output data-testid="applications-clicked">{clicked}</output>
+                <ClientJobRow {...props} job={{ id: "open-job", title: "Open role", status: "open", proposalCount: 3 }} />
+                <ClientJobRow {...props} job={{ id: "draft-job", title: "Draft role", status: "draft", proposalCount: 8 }} />
+              </>;
+            }
+            function JobSubmissionsFixture() {
+              const [viewed, setViewed] = useState("none");
+              const params = new URLSearchParams(window.location.search);
+              return <><output data-testid="deep-link-viewed">{viewed}</output>
+                <JobSubmissionsSection
+                  workspace
+                  requestedJobId={params.get("jobId")}
+                  requestedApplicationId={params.get("applicationId")}
+                  requestedInterviewId={null}
+                  onView={(submission) => setViewed(submission.id)}
+                  onExtendOffer={() => {}}
+                />
+              </>;
+            }
             const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
             createRoot(document.getElementById("root")).render(
               <QueryClientProvider client={queryClient}><Router><Switch>
                 <Route path="/msa" component={ClientMsa} />
                 <Route path="/tracker" component={TrackerFixture} />
+                 <Route path="/row" component={ClientJobRowFixture} />
+                 <Route path="/submissions" component={JobSubmissionsFixture} />
               </Switch></Router></QueryClientProvider>
             );
           `;
@@ -140,5 +174,58 @@ test("tracker renders server blockers and contract links use the existing id que
     await page.getByRole("button", { name: "Manage agreement draft" }).click();
     await page.waitForURL(/\/contracts\?id=contract-fixture/);
     assert.equal(new URL(page.url()).searchParams.get("id"), "contract-fixture");
+  } finally { await context.close(); }
+});
+
+test("client setup notice appears only when the server supplies a client message", async () => {
+  const { context, page } = await fixture();
+  try {
+    await page.goto(`${baseUrl}/tracker`);
+    await page.getByRole("region", { name: "Contractor onboarding progress" }).waitFor();
+    await page.getByText("OnSpot is finalising payment details", { exact: false }).waitFor({ state: "detached" });
+    await page.getByText("Awaiting payment", { exact: false }).waitFor({ state: "detached" });
+    await page.goto(`${baseUrl}/tracker?message=Deposit%20verification%20is%20pending`);
+    await page.getByText("Deposit verification is pending").waitFor();
+  } finally { await context.close(); }
+});
+
+test("job rows show View Applications for non-drafts and invoke the callback with the existing count", async () => {
+  const { context, page } = await fixture();
+  try {
+    await page.goto(`${baseUrl}/row`);
+    const button = page.getByTestId("button-view-applications-open-job");
+    await button.waitFor();
+    assert.match(await button.innerText(), /View Applications\s*3/);
+    assert.equal(await page.getByTestId("button-view-applications-draft-job").count(), 0);
+    await button.click();
+    assert.equal(await page.getByTestId("applications-clicked").innerText(), "open-job");
+  } finally { await context.close(); }
+});
+
+test("async client-owned job loading applies the requested filter and preserves the application deep link", async () => {
+  const { context, page } = await fixture();
+  try {
+    await page.route("**/api/client/jobs", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.fulfill({ contentType: "application/json", body: JSON.stringify([
+        { id: "owned-job", title: "Owned role", status: "open" },
+        { id: "another-owned-job", title: "Another role", status: "open" },
+      ]) });
+    });
+    await page.route("**/api/client/job-submissions", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([
+        { id: "deep-linked-app", jobId: "owned-job", clientId: "client-fixture", applicantName: "Alex Doe", email: "alex@example.test", phone: null, location: null, resumeUrl: null, resumeFileName: null, portfolioUrl: null, coverLetter: null, expectedSalary: null, availability: null, status: "submitted", statusVersion: "1", submittedAt: "2026-05-01T12:00:00Z", jobTitle: "Owned role", jobCompany: null, jobEngagementType: null, initiated_by: "talent", hiringPipelineEligible: false },
+        { id: "other-app", jobId: "another-owned-job", clientId: "client-fixture", applicantName: "Sam Doe", email: "sam@example.test", phone: null, location: null, resumeUrl: null, resumeFileName: null, portfolioUrl: null, coverLetter: null, expectedSalary: null, availability: null, status: "submitted", statusVersion: "1", submittedAt: "2026-05-02T12:00:00Z", jobTitle: "Another role", jobCompany: null, jobEngagementType: null, initiated_by: "talent", hiringPipelineEligible: false },
+      ]),
+    }));
+    await page.route("**/api/me/message-threads", (route) => route.fulfill({
+      contentType: "application/json", body: JSON.stringify({ threads: [] }),
+    }));
+    await page.goto(`${baseUrl}/submissions?jobId=owned-job&applicationId=deep-linked-app`);
+    await page.getByTestId("client-application-deep-linked-app").waitFor();
+    await page.getByTestId("deep-link-viewed").getByText("deep-linked-app").waitFor();
+    await page.getByTestId("select-submission-job").getByText("Owned role").waitFor();
+    assert.equal(await page.getByTestId("client-application-other-app").count(), 0);
   } finally { await context.close(); }
 });

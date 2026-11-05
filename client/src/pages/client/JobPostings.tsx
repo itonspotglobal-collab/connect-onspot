@@ -128,6 +128,7 @@ export default function JobPostingsPage() {
               onDelete={() => deleteJobMutation.mutate(job.id)}
               onView={() => setViewingJob(job)}
               onInvite={() => setTalentSearchJob({ id: job.id, title: job.title })}
+              onViewApplications={() => navigate(`/client/job-submissions?jobId=${encodeURIComponent(job.id)}`)}
               isToggling={toggleStatusMutation.isPending}
               isDeleting={deleteJobMutation.isPending}
             />)}

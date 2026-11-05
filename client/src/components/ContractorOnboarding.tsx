@@ -37,7 +37,7 @@ export interface ContractorOnboarding {
   dataIssueMessage?: string;
   repairUrl?: string | null;
   paymentState?: string | null;
-  setup?: { wiseReady: boolean; msaReady: boolean; clientMessage: string };
+  setup?: { wiseReady: boolean; msaReady: boolean; clientMessage: string | null };
   isTalent?: boolean;
   nextActor: string | null;
   stages: OnboardingStage[];
@@ -116,7 +116,7 @@ export function ContractorOnboardingTracker({
       ) : <p className="mt-3 text-xs text-slate-500">Stage details have not been provided yet.</p>}
       {data.isTalent && <p className="mt-3 rounded-lg border border-[#dce5df] bg-white px-3 py-2 text-xs font-medium text-slate-700">Waiting on OnSpot/client paperwork</p>}
       {!data.isTalent && paymentStateLabel && <p className="mt-3 rounded-lg border border-[#dce5df] bg-white px-3 py-2 text-xs text-slate-700">{depositStatusCopy}</p>}
-      {!data.isTalent && data.setup && !data.setup.wiseReady && <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950">{data.setup.clientMessage || "OnSpot is finalising payment details — you will get an email shortly."}</p>}
+      {!data.isTalent && data.setup?.clientMessage && <p className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950">{data.setup.clientMessage}</p>}
       {!!(data.stageMissing??data.missing)?.length && !data.isTalent && <p className="mt-3 text-xs leading-relaxed text-amber-800">Still needed: {(data.stageMissing??data.missing).join(" · ")}</p>}
       {data.offerAccepted && !data.isTalent && data.deposit?.status==="pending" && data.deposit.invoiceUrl && (
         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">

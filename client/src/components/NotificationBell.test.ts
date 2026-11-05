@@ -10,6 +10,32 @@ import {
 } from "@/lib/notificationRouting";
 
 describe("notificationRouteForRole", () => {
+  it.each(["job_approved", "job_rejected", "job_pending"])("opens the Client job preview for %s", type => {
+    expect(notificationRouteForRole(type, "client", "/client-profile", "job", "job_123-A"))
+      .toBe("/client/job-postings?jobId=job_123-A");
+    expect(notificationRouteForRole(type, "admin", "/client-profile", "job", "job_123-A"))
+      .toBe("/admin/find-work");
+  });
+
+  it.each([null, "", "../other", "job?id=x", "https://bad.test", "x".repeat(129)])(
+    "uses safe Client and Talent fallbacks for invalid job ID %s", id => {
+      expect(notificationRouteForRole("job_approved", "client", "/client-profile", "job", id))
+        .toBe("/client/job-postings");
+      expect(notificationRouteForRole("job_application_status_changed", "talent", "/my-applications", "job_submission", "submission", id))
+        .toBe("/my-applications");
+    },
+  );
+
+  it("requires a job relationship for Client preview links", () => {
+    expect(notificationRouteForRole("job_approved", "client", "/client-profile", "user", "other"))
+      .toBe("/client/job-postings");
+  });
+
+  it.each(["Shortlisted", "Interview Stage", "Under Review"])("opens the job for Talent %s status alerts", () => {
+    expect(notificationRouteForRole("job_application_status_changed", "talent", "/my-applications",
+      "job_submission", "submission-456", "job-123")).toBe("/find-work/job/job-123");
+  });
+
   it("routes Admin application notifications to the Admin applications list", () => {
     expect(notificationRouteForRole("job_application_received", "admin", "/client-profile")).toBe(
       "/admin/job-applications",

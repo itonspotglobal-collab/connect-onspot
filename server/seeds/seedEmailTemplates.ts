@@ -7,6 +7,7 @@
  */
 import { createHash } from "node:crypto";
 import { query } from "../db.ts";
+import { button, jobApprovalEmailContent } from "../services/jobApprovalEmailContent";
 import {
   extractClientTemplateVariables,
   extractTemplateVariables,
@@ -35,13 +36,6 @@ function brandedTemplate(config: Omit<TemplateRow, "bodyHtml" | "variables"> & {
     variables: extractTemplateVariables(`${config.subject}\n${bodyHtml}`),
   };
 }
-
-const button = (href: string, label: string) => `
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:26px 0;">
-    <tr><td style="border-radius:6px;background-color:#474ead;">
-      <a href="${href}" style="display:inline-block;padding:12px 22px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:1.2;color:#ffffff;text-decoration:none;border-radius:6px;">${label}</a>
-    </td></tr>
-  </table>`;
 
 function brandedClientTemplate(
   config: Omit<TemplateRow, "bodyHtml" | "variables"> & { content: string },
@@ -199,12 +193,12 @@ ${button("{{job_url}}", "Review Job Posting")}
   }),
   brandedClientTemplate({
     name: "Job Post Approved", category: "job_approved", stage: null, isDefault: true,
-    subject: "Your job post has been approved — {{job_title}}",
-    content: `<p style="margin:0 0 16px;">Hi {{client_first_name}},</p>
-<p style="margin:0 0 16px;">Good news — your job posting for <strong>{{job_title}}</strong> has been approved.</p>
-<p style="margin:0 0 16px;">Your role is now available according to the current OnSpot publishing rules, and you can begin reviewing talent and applications.</p>
-${button("{{job_url}}", "View Job Posting")}
-<p style="margin:0;">Warm regards,<br />The OnSpot Hire Talent Team</p>`,
+    subject: "Your job post is live: {{job_title}}",
+    content: jobApprovalEmailContent({
+      firstName: "{{client_first_name}}", jobTitle: "{{job_title}}",
+      approvedDate: "{{job_approved_date}}", jobViewUrl: "{{job_view_url}}",
+      applicationsUrl: "{{job_applications_url}}",
+    }),
   }),
   brandedClientTemplate({
     name: "Job Post Rejected", category: "job_rejected", stage: null, isDefault: true,
@@ -336,6 +330,8 @@ ${button("{{portal_url}}", "View Application Status")}
 ];
 
 const LEGACY_TEMPLATE_HASHES = new Set([
+  // Previous stock Job Post Approved subject + branded HTML, not custom edits.
+  "45738009baa04013e9d3b394541ebda4f0e1e975d385e3e4fd0268891cfc20b8",
   "303f20be4bb5259bd17298286e6bba8ee368d8fa010f4f124d8c7b9cc26b3899",
   "013f3cec2ab9ed3b2fdd3909839f119414dd77b9c448332aa1b25fa1b443663c",
   "ffc3d4223ea7c621a61754430b9c1df994a9f7a8a0098f2e8aa7a1f87e902b3b",

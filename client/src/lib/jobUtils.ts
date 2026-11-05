@@ -187,14 +187,11 @@ export function isFeaturedJob(job: any): boolean {
 }
 
 /**
- * Priority score: Urgent+Featured=3, Urgent=2, Featured=1, Normal=0.
- * Matches the CASE WHEN expression used server-side in searchJobsPaginated.
+ * Only featured roles are pinned (1); all others have priority 0.
+ * Matches server-side searchJobsPaginated. Urgency is a badge, not a rank.
  */
 export function getJobPriorityScore(job: any): number {
-  let score = 0;
-  if (isFeaturedJob(job)) score += 1;
-  if (isUrgentJob(job))   score += 2;
-  return score;
+  return isFeaturedJob(job) ? 1 : 0;
 }
 
 // ── Sort Engine ───────────────────────────────────────────────────────────────
@@ -214,7 +211,7 @@ export function sortJobs(jobs: any[], sortBy: SortOption): any[] {
       .sort((a, b) => toMs(b) - toMs(a));
   }
 
-  // "recently-posted": priority-first (urgent > featured > normal), then recency within group.
+  // "recently-posted": featured first, then posted/created date and id descending.
   // Server-side searchJobsPaginated applies the same ordering before pagination, so this
   // client-side pass keeps per-page display consistent without re-fetching.
   if (sortBy === "recently-posted") {

@@ -333,7 +333,12 @@ describe("sendJobApprovalCompanionEmail", () => {
 
     assert.equal(capturedSends.length, 1);
     assert.equal(capturedSends[0].to, "client@acme.com");
-    assert.ok(capturedSends[0].subject.includes("approved"));
+    assert.equal(capturedSends[0].subject, "Your job post is live: Product Designer");
+    assert.match(capturedSends[0].bodyHtml, /View Job Post/);
+    assert.match(capturedSends[0].bodyHtml, /\/client\/job-postings\?jobId=j1/);
+    assert.match(capturedSends[0].bodyHtml, /\/client\/job-submissions\?jobId=j1/);
+    assert.match(capturedSends[0].bodyHtml, /#474ead/);
+    assert.doesNotMatch(capturedSends[0].bodyHtml, /\/edit|#6d5ef7/);
     // Privacy: email body must not include raw contact field labels
     assert.ok(!capturedSends[0].bodyHtml.includes("phone"));
   });

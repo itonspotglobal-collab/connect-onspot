@@ -18,6 +18,7 @@ export default function JobSubmissionsPage() {
   const params = new URLSearchParams(search);
   const applicationId = params.get("applicationId");
   const interviewId = params.get("interviewId");
+  const jobId = params.get("jobId");
   const [viewingSubmission, setViewingSubmission] = useState<JobSubmission | null>(null);
   const [extendingOfferFor, setExtendingOfferFor] = useState<JobSubmission | null>(null);
   const { data: settings, isLoading: settingsLoading, isError: settingsError, refetch } = useQuery<{ nameRevealThreshold: string }>({
@@ -47,6 +48,7 @@ export default function JobSubmissionsPage() {
           onExtendOffer={setExtendingOfferFor}
           requestedApplicationId={applicationId}
           requestedInterviewId={interviewId}
+          requestedJobId={jobId}
           nameRevealThreshold={settings?.nameRevealThreshold ?? "submitted"}
         />
       )}

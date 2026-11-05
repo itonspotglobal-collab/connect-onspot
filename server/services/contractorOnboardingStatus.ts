@@ -46,8 +46,8 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
   const accepted=offer&&["accepted","offer_accepted"].includes(offer.status);
   const dataIssue=["offer_accepted","contract_sent","contract_signed","hired"].includes(s.status)&&!accepted;
   const deferred=deposit?.status==="pending"&&arrangement?.waiver_type==="defer";
-  const paymentState=deposit?.status==="waived"?"Waived":conditions.depositHeld?"Paid":
-    deposit?.proof_status==="verification_pending"?"Verifying":deferred?"Deferred":"Awaiting payment";
+  const paymentState=!accepted||!deposit?null:deposit.status==="waived"?"Waived":conditions.depositHeld?"Paid":
+    deposit.proof_status==="verification_pending"?"Verifying":deferred?"Deferred":"Awaiting payment";
   const offerBlockers:string[]=[];
   if(!accepted&&depositFirst) {
     if(!shortlisted)offerBlockers.push("Shortlist this application");
@@ -77,7 +77,7 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
     repairUrl:dataIssue&&isSuper?`/admin/contractor-onboarding?applicationId=${encodeURIComponent(id)}#repairs`:null,
     paymentState:isTalent?null:paymentState,
     setup:isTalent?null:{wiseReady:setup.wiseReady,msaReady:setup.msaReady,
-      clientMessage:s.actor_role==="client"&&!setup.wiseReady&&deposit?.status==="pending"?
+      clientMessage:accepted&&s.actor_role==="client"&&!setup.wiseReady&&deposit?.status==="pending"?
         "OnSpot is finalising payment details — you'll get an email shortly":null},
     shortlistSatisfied:shortlisted,finalInterviewPassed:final,
     canScheduleInterview:depositFirst?["shortlisted","interviewing"].includes(s.status):["new","under_review","reviewed","shortlisted","interviewing"].includes(s.status),
@@ -99,7 +99,7 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
     canPrepareContract:!isTalent&&!!accepted&&(!depositFirst||conditions.depositHeld||deferred)&&(!contract||["void","voided"].includes(contract.status)),
     missing:dataIssue?["This application needs OnSpot review"]:active?[]:isTalent&&accepted?["Waiting on OnSpot/client paperwork"]:accepted?activationMissing:offerBlockers,
     nextActor:isTalent&&accepted?"OnSpot / Client":nextActor,
-    stages:keys.map((key,i)=>({key,label:key==="payment_verified"?paymentState:labels[i],complete:flags[i],current:i===current,actor:actors[i],
+    stages:keys.map((key,i)=>({key,label:key==="payment_verified"&&paymentState?paymentState:labels[i],complete:flags[i],current:i===current,actor:actors[i],
       overridden:key==="final_interview"?overrides.finalInterviewPassed:key==="agreements"?(overrides.skipContractorAgreement||overrides.skipMsa):
         key==="payment_verified"?deposit?.status==="waived":key==="interview"?(overrides.finalInterviewPassed||overrides.overriddenStages.includes("interviewing")):
         key==="shortlisted"?overrides.overriddenStages.includes("shortlisted"):key==="offer"?overrides.overriddenStages.some(x=>["offer_extended","offer_accepted","contract_sent","hired"].includes(x)):false}))

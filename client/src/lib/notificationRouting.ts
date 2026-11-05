@@ -41,7 +41,20 @@ export function notificationRouteForRole(
   type: string,
   role: string | null | undefined,
   existingRoute: string | null,
+  relatedType?: string | null,
+  relatedId?: string | null,
+  relatedJobId?: string | null,
 ): string | null {
+  const validId = (id: string | null | undefined): id is string =>
+    typeof id === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(id);
+  if (role === "client" && ["job_approved", "job_rejected", "job_pending"].includes(type)) {
+    return relatedType === "job" && validId(relatedId)
+      ? `/client/job-postings?jobId=${encodeURIComponent(relatedId)}`
+      : "/client/job-postings";
+  }
+  if (role === "talent" && type === "job_application_status_changed") {
+    return validId(relatedJobId) ? `/find-work/job/${encodeURIComponent(relatedJobId)}` : "/my-applications";
+  }
   if (type === "clock_activity_over_limit") return role === "talent" ? "/talent/clock" : null;
   if (type === "clock_adjustment_requested") return role === "client" ? "/client/timesheets" : null;
   if (type === "clock_adjustment_resolved") return role === "talent" ? "/talent/clock" : null;

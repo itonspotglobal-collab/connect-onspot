@@ -7,6 +7,7 @@
  */
 import { htmlToPlainText } from "../lib/htmlToPlainText.js";
 import { buildAppUrl, buildTalentApplicationsUrl } from "../lib/appUrl";
+import { formatJobApprovalDate } from "./jobApprovalEmailContent";
 
 export interface EmailVariableContext {
   talentName?: string;
@@ -41,6 +42,9 @@ export interface EmailVariableContext {
   approvalStatus?: string;
   rejectionReason?: string;
   jobUrl?: string;
+  jobViewUrl?: string;
+  jobApplicationsUrl?: string;
+  jobApprovedDate?: string;
 }
 
 /** Resolve at send time so configuration changes cannot leave a stale constant. */
@@ -81,6 +85,9 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
   approval_status: "approvalStatus",
   rejection_reason: "rejectionReason",
   job_url: "jobUrl",
+  job_view_url: "jobViewUrl",
+  job_applications_url: "jobApplicationsUrl",
+  job_approved_date: "jobApprovedDate",
 
   // Legacy aliases are supported for existing custom templates. New default
   // templates and the editor expose only the canonical names above.
@@ -93,7 +100,7 @@ const VARIABLE_MAP: Record<string, keyof EmailVariableContext> = {
 
 const TOKEN_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/g;
 const UNRESOLVED_TOKEN_PATTERN = /\{\{\s*[^}]+\s*\}\}/g;
-const URL_VARIABLES = new Set<keyof EmailVariableContext>(["portalUrl", "logoUrl", "jobUrl", "depositUrl"]);
+const URL_VARIABLES = new Set<keyof EmailVariableContext>(["portalUrl", "logoUrl", "jobUrl", "jobViewUrl", "jobApplicationsUrl", "depositUrl"]);
 const MULTILINE_TEXT_VARIABLES = new Set<keyof EmailVariableContext>(["jobDescription"]);
 const OPTIONAL_BLOCK_PATTERN = /\{\{#\s*([a-z0-9_]+)\s*\}\}([\s\S]*?)\{\{\/\s*\1\s*\}\}/gi;
 
@@ -346,6 +353,9 @@ export function buildClientEmailContext(opts: {
     rejectionReason: opts.rejectionReason?.trim() || undefined,
     portalUrl,
     jobUrl,
+    jobViewUrl: buildAppUrl(`/client/job-postings?jobId=${encodeURIComponent(opts.jobId)}`),
+    jobApplicationsUrl: buildAppUrl(`/client/job-submissions?jobId=${encodeURIComponent(opts.jobId)}`),
+    jobApprovedDate: formatJobApprovalDate(),
     logoUrl,
   };
 }
@@ -420,4 +430,7 @@ export const SUPPORTED_VARIABLES: { key: string; label: string; description: str
   { key: "approval_status", label: "Approval Status", description: "Job approval decision" },
   { key: "rejection_reason", label: "Rejection Reason", description: "Admin feedback when a job is rejected" },
   { key: "job_url", label: "Client Job URL", description: "Secure Client link to review the job" },
+  { key: "job_view_url", label: "Client Job Preview URL", description: "Secure Client link to the published job preview" },
+  { key: "job_applications_url", label: "Client Job Applications URL", description: "Secure Client link to applications filtered by job" },
+  { key: "job_approved_date", label: "Job Approved Date", description: "Approval date in UTC" },
 ];

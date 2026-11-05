@@ -30,15 +30,17 @@ const representativeContext: EmailVariableContext = {
   startDate: "2032-10-01",
   paymentAmount: "USD 100.00",
   paymentReference: "FIXTURE-REFERENCE",
+  dueDate: "October 8, 2032",
+  depositUrl: "https://talent.onspotglobal.com/client/payments/deposit/fixture",
   rejectionReason: "Fixture review reason",
 };
 
 describe("default applicant email templates", () => {
-  it("renders all 21 applicant/hiring templates with resolved subjects, branded HTML, and accurate metadata", () => {
+  it("renders all 42 applicant/hiring templates with resolved subjects, branded HTML, and accurate metadata", () => {
     const templates = DEFAULT_TEMPLATES.filter(
       (template) => !["job_approved", "job_rejected", "job_unapproved", "job_posted_on_behalf"].includes(template.category),
     );
-    assert.equal(templates.length, 21);
+    assert.equal(templates.length, 42);
 
     for (const template of templates) {
       const rendered = renderApplicantEmail(template, representativeContext);
@@ -73,6 +75,9 @@ describe("default applicant email templates", () => {
       jobStatus: "open",
       approvalStatus: "approved",
       jobUrl: "https://talent.onspotglobal.com/client/jobs/job-123/edit",
+      jobViewUrl: "https://talent.onspotglobal.com/client/job-postings?jobId=job-123",
+      jobApplicationsUrl: "https://talent.onspotglobal.com/client/job-submissions?jobId=job-123",
+      jobApprovedDate: "November 6, 2026",
       logoUrl: "https://talent.onspotglobal.com/new-onspot.png",
     };
     for (const template of templates) {

@@ -47,6 +47,7 @@ interface NotificationRow {
   title: string;
   message: string;
   relatedId: string | null;
+  relatedJobId?: string | null;
   relatedType: string | null;
   isRead: boolean;
   createdAt: string;
@@ -495,7 +496,10 @@ export function NotificationBell() {
     } else if (n.type === "new_message" && n.relatedId) {
       navigate(`/messages/${encodeURIComponent(n.relatedId)}`);
     } else if (cfg) {
-      const route = notificationRouteForRole(n.type, isTalentPortal ? "talent" : user?.role, cfg.route);
+      const route = notificationRouteForRole(
+        n.type, isTalentPortal ? "talent" : user?.role, cfg.route,
+        n.relatedType, n.relatedId, n.relatedJobId,
+      );
       if (route) navigate(route);
     }
   }

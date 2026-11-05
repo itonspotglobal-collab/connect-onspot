@@ -22,6 +22,7 @@
 
 import { query } from "../db.js";
 import { buildAppUrl, buildClientApplicationUrl } from "../lib/appUrl";
+import { formatJobApprovalDate, jobApprovalEmailContent } from "./jobApprovalEmailContent";
 import {
   sendApplicantEmail,
   isEmailServiceConfigured,
@@ -62,6 +63,10 @@ function escHtml(value: string): string {
 
 function resolveClientPortalUrl(jobId: string): string {
   return buildAppUrl(`/client/jobs/${encodeURIComponent(jobId)}/edit`);
+}
+
+export function resolveClientJobViewUrl(jobId: string): string {
+  return buildAppUrl(`/client/job-postings?jobId=${encodeURIComponent(jobId)}`);
 }
 
 function resolveMessagesUrl(threadId: string): string {
@@ -283,23 +288,12 @@ export async function sendJobApprovalCompanionEmail(
       let contentHtml: string;
 
       if (newStatus === "approved") {
-        subject = `Your job post "${jobTitle}" has been approved`;
-        contentHtml = `
-<h1 style="color:#25283d;font-size:24px;line-height:1.25;margin:0 0 16px;">Your job post is now live</h1>
-<p style="color:#444;font-size:15px;margin:12px 0;">Hi ${escHtml(firstName)},</p>
-<p style="color:#444;font-size:15px;margin:12px 0;">
-  Great news — your job post <strong>&ldquo;${safeTitle}&rdquo;</strong> has been reviewed and approved.
-  It is now live and visible to talent on OnSpot.
-</p>
-<p style="margin:26px 0 20px;">
-  <a href="${escHtml(portalUrl)}"
-     style="background:#6d5ef7;color:#fff;padding:13px 24px;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;display:inline-block;">
-    View your hiring pipeline
-  </a>
-</p>
-<p style="color:#6b7280;font-size:13px;margin:16px 0 0;">
-  Applications will appear in your OnSpot portal as candidates apply.
-</p>`.trim();
+        subject = `Your job post is live: ${jobTitle}`;
+        contentHtml = jobApprovalEmailContent({
+          firstName, jobTitle, approvedDate: formatJobApprovalDate(),
+          jobViewUrl: resolveClientJobViewUrl(jobId),
+          applicationsUrl: buildAppUrl(`/client/job-submissions?jobId=${encodeURIComponent(jobId)}`),
+        });
       } else {
         const reasonSection = rejectionReason?.trim()
           ? `<p style="color:#444;font-size:15px;margin:12px 0;"><strong>Reason:</strong> ${escHtml(rejectionReason.trim())}</p>`

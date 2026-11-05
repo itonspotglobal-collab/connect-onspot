@@ -675,9 +675,7 @@ export default function FindWorkAllJobs() {
       seen.add(j.id);
       return true;
     });
-    const featuredOnes = unique.filter((j) => (j as any).isFeatured === true);
-    const regularOnes  = unique.filter((j) => (j as any).isFeatured !== true);
-    return [...featuredOnes, ...regularOnes];
+    return unique;
   }, [openJobs, sort]);
 
   // Special sort modes filter the already-fetched result set (they return a subset of openJobs),

@@ -39,10 +39,11 @@ import {
   messages as messagesTable,
   certifications as certificationsTable,
   notifications as notificationsTable,
+  jobSubmissions as jobSubmissionsTable,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db, pool, query as dbQuery } from "./db";
-import { eq, ne, and, or, gte, ilike, desc, asc, sql as sqlOp } from "drizzle-orm";
+import { eq, ne, and, or, gte, ilike, desc, asc, getTableColumns, sql as sqlOp } from "drizzle-orm";
 import { BILLING_CURRENCY, isUsdCurrency, requireUsdCurrency } from "../shared/currency";
 import {
   getJobFunctionDisplay,
@@ -3786,20 +3787,13 @@ export class DbStorage extends MemStorage {
     const total: number = countRow?.total ?? 0;
 
     // ── Query 2: Page data (LIMIT/OFFSET) ─────────────────────────────────────
-    // Priority sort: urgent (2) > featured (1) > normal (0), then newest first, then id.
-    // This must happen BEFORE LIMIT/OFFSET so urgent jobs on page 40 bubble to page 1.
-    const priorityExpr = sqlOp<number>`
-      CASE
-        WHEN ${jobsTable.urgentlyHiring} = TRUE AND ${jobsTable.isFeatured} = TRUE THEN 3
-        WHEN ${jobsTable.urgentlyHiring} = TRUE THEN 2
-        WHEN ${jobsTable.isFeatured}      = TRUE THEN 1
-        ELSE 0
-      END`;
+    // Only featured jobs are pinned. Apply the full stable order before
+    // pagination so urgency never displaces a newer non-featured job.
     const items = await db
       .select()
       .from(jobsTable)
       .where(whereClause)
-      .orderBy(desc(priorityExpr), desc(jobsTable.createdAt), desc(jobsTable.id))
+      .orderBy(desc(jobsTable.isFeatured), desc(sqlOp`COALESCE(${jobsTable.postedAt}, ${jobsTable.createdAt})`), desc(jobsTable.id))
       .limit(pageSize)
       .offset(offset);
 
@@ -4378,8 +4372,12 @@ export class DbStorage extends MemStorage {
 
   async listNotificationsByUser(userId: string, unreadOnly?: boolean): Promise<Notification[]> {
     const rows = await db
-      .select()
+      .select({ ...getTableColumns(notificationsTable), relatedJobId: jobSubmissionsTable.jobId })
       .from(notificationsTable)
+      .leftJoin(jobSubmissionsTable, and(
+        eq(notificationsTable.relatedType, "job_submission"),
+        eq(jobSubmissionsTable.id, notificationsTable.relatedId),
+      ))
       .where(
         unreadOnly
           ? and(eq(notificationsTable.userId, userId), eq(notificationsTable.isRead, false))
