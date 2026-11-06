@@ -25,7 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InterviewSection, ScheduleInterviewDialog } from "@/components/InterviewWorkflowUi";
-import {InterviewOutcomeList} from "@/components/InterviewOutcomeControls";
+import { InterviewOutcomeControls, InterviewOutcomeList } from "@/components/InterviewOutcomeControls";
+import { InterviewDecisionPanel } from "@/components/InterviewDecisionPanel";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
 import { isTalentOfferExpired } from "@/components/talentOfferState";
@@ -37,7 +38,7 @@ import {
 import { lazy, Suspense } from "react";
 import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
-import { OverrideControls } from "@/components/admin-hiring-overrides/OverrideControls";
+import { NextStepBypassButton, OverrideControls } from "@/components/admin-hiring-overrides/OverrideControls";
 
 const ApplicantEmailComposer = lazy(() => import("@/components/ApplicantEmailComposer"));
 
@@ -293,8 +294,8 @@ async function getVideoBlob(applicationId: string): Promise<{ blob: Blob; filena
 }
 
 function DetailDialog({
-  applicationId, open, onClose,
-}: { applicationId: string | null; open: boolean; onClose: () => void }) {
+  applicationId, open, onClose, onRejectRequest,
+}: { applicationId: string | null; open: boolean; onClose: () => void; onRejectRequest?: () => void }) {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -311,6 +312,8 @@ function DetailDialog({
   const [videoPlayerUrl, setVideoPlayerUrl] = useState<string | null>(null);
   const [videoPlayerError, setVideoPlayerError] = useState<string | null>(null);
   const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
+  const [finalInterviewAdvanced,setFinalInterviewAdvanced]=useState(false);
+  const offerSectionRef=useRef<HTMLElement>(null);
   const [offerRate, setOfferRate] = useState("");
   const [offerStartDate, setOfferStartDate] = useState("");
   const [offerExpiryDate, setOfferExpiryDate] = useState("");
@@ -335,6 +338,17 @@ function DetailDialog({
     queryFn: () => apiFetch(`/api/admin/job-applications/${applicationId}`),
     enabled: !!applicationId && open,
   });
+  const { data: adminInterviews = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/interviews", "application-detail", applicationId],
+    queryFn: async () => {
+      const body = await apiFetch("/api/admin/interviews");
+      return (Array.isArray(body) ? body : body.interviews ?? []).filter((row: any) => String(row.submission_id ?? row.submissionId) === String(applicationId));
+    },
+    enabled: !!applicationId && open,
+  });
+  const currentInterview = adminInterviews.filter(row => row.status !== "cancelled").sort((a, b) =>
+    Number(b.round_number ?? b.roundNumber ?? 0) - Number(a.round_number ?? a.roundNumber ?? 0)
+  )[0];
   const { data: adminUsers = [] } = useQuery<Array<{ id: string; role?: string; adminSubRole?: string | null; admin_sub_role?: string | null }>>({
     queryKey: ["/api/admin/users"],
     queryFn: () => apiFetch("/api/admin/users"),
@@ -351,6 +365,7 @@ function DetailDialog({
 
   useEffect(() => {
     setOfferRate("");
+    setFinalInterviewAdvanced(false);
     setOfferStartDate("");
     setOfferExpiryDate("");
     setOfferOverrideReason("");
@@ -702,7 +717,27 @@ function DetailDialog({
                 </section>
               )}
 
-             <InterviewOutcomeList submissionId={detail.id} admin />
+              {currentInterview && <InterviewDecisionPanel
+                interview={currentInterview}
+                admin
+                onRejectBeforeStart={onRejectRequest}
+                onScheduleNext={() => setInterviewDialogOpen(true)}
+                onFinalAdvance={() => {
+                  setFinalInterviewAdvanced(true);
+                  void queryClient.invalidateQueries({ queryKey: ["/api/admin/job-applications", applicationId] });
+                  void refetchDetail();
+                  window.setTimeout(()=>offerSectionRef.current?.scrollIntoView({behavior:"smooth",block:"nearest"}),0);
+                }}
+              />}
+              {currentInterview && <InterviewOutcomeControls interview={currentInterview} admin />}
+              <NextStepBypassButton
+                submissionId={detail.id}
+                compact
+                initialRate={detail.acceptedOfferId ? detail.agreedRate : detail.latestOffer?.rate}
+                initialCurrency={detail.acceptedOfferId ? detail.agreedCurrency : detail.latestOffer?.rateCurrency}
+                initialStartDate={detail.acceptedOfferId ? detail.startDate : detail.latestOffer?.proposedStartDate}
+              />
+              <InterviewOutcomeList submissionId={detail.id} admin excludeId={currentInterview?.id} />
              <InterviewSection
                role="admin"
                applicantName={applicantName(detail)}
@@ -717,7 +752,7 @@ function DetailDialog({
              {persistedSuperAdmin && detail.hiringPipelineEligible === true
                && ["new", "under_review", "reviewed", "shortlisted", "interviewing", "offer_declined"].includes(detail.status)
                && (
-                 <section className="rounded-xl border border-[#cbd9cf] bg-[#f8fbf8] p-4">
+                 <section ref={offerSectionRef} className={`rounded-xl border border-[#cbd9cf] bg-[#f8fbf8] p-4 ${finalInterviewAdvanced?"ring-2 ring-emerald-500 ring-offset-2":""}`}>
                    <div className="flex items-start gap-3">
                      <div className="rounded-lg bg-[#e7efe9] p-2 text-[#45664d]"><FileText className="h-4 w-4" /></div>
                      <div className="min-w-0 flex-1">
@@ -1004,10 +1039,11 @@ function DetailDialog({
 // ─── Status Update Dialog ─────────────────────────────────────────────────────
 
 function StatusDialog({
-  currentStatus, open, onClose, onContinue,
+  currentStatus, open, onClose, onContinue, initialStatus = "",
 }: {
   applicationId: string | null;
   currentStatus: string;
+  initialStatus?:string;
   open: boolean;
   onClose: () => void;
   onContinue: (change: { status: string; note?: string }) => void;
@@ -1015,7 +1051,7 @@ function StatusDialog({
   const [status, setStatus] = useState("");
   const [note, setNote] = useState("");
 
-  useEffect(() => { if (open) { setStatus(""); setNote(""); } }, [open]);
+  useEffect(() => { if (open) { setStatus(initialStatus); setNote(""); } }, [open,initialStatus]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -1209,7 +1245,7 @@ export default function AdminJobApplications() {
   useEffect(() => {
     if (requestedApplicationId) setDetailId(requestedApplicationId);
   }, [requestedApplicationId]);
-  const [statusDialog, setStatusDialog] = useState<{ id: string; current: string } | null>(null);
+  const [statusDialog, setStatusDialog] = useState<{ id: string; current: string; initialStatus?:string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<Application | null>(null);
   const [emailDialog, setEmailDialog] = useState<Application | null>(null);
   const [reviewRequest, setReviewRequest] = useState<any | null>(null);
@@ -1774,7 +1810,10 @@ export default function AdminJobApplications() {
       </div>
 
       {/* Dialogs */}
-      <DetailDialog applicationId={detailId} open={!!detailId} onClose={() => setDetailId(null)} />
+      <DetailDialog applicationId={detailId} open={!!detailId} onClose={() => setDetailId(null)} onRejectRequest={() => {
+        const current = items.find(item => item.id === detailId);
+        if (current) setStatusDialog({ id: current.id, current: current.status, initialStatus:"rejected" });
+      }} />
       <Dialog open={!!reviewRequest} onOpenChange={(open) => !open && setReviewRequest(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Status Change Request</DialogTitle><DialogDescription>Client request — the application has not changed yet.</DialogDescription></DialogHeader>
@@ -1806,6 +1845,7 @@ export default function AdminJobApplications() {
       <StatusDialog
         applicationId={statusDialog?.id ?? null}
         currentStatus={statusDialog?.current ?? ""}
+        initialStatus={statusDialog?.initialStatus}
         open={!!statusDialog}
         onClose={() => setStatusDialog(null)}
         onContinue={handleStatusContinue}

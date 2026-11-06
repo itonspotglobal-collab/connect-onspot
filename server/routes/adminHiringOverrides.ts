@@ -17,6 +17,7 @@ export function registerAdminHiringOverrideRoutes(app:Express,service:AdminHirin
     return service.capabilities(r.user.id);
   }));
   app.get("/api/admin/hiring-overrides",authenticate,admin,handle(r=>service.history(r.user.id,String(r.query.submissionId??"").slice(0,150))));
+  app.get("/api/admin/hiring-overrides/next-step",authenticate,admin,handle(r=>service.nextStep(r.user.id,String(r.query.submissionId??"").slice(0,150))));
   for(const action of HIRING_OVERRIDE_ACTIONS)
     app.post(`/api/admin/hiring-overrides/${action}`,authenticate,admin,limiter,handle(r=>service.execute(r.user.id,action,r.body)));
 }

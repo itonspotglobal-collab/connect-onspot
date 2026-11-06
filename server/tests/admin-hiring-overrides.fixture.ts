@@ -6,7 +6,7 @@ import {readFileSync} from "node:fs";
 import type {Server} from "node:http";
 import express from "express";
 import {pool,query} from "./fixtures/hiring-db";
-import {AdminHiringOverrideService,HIRING_OVERRIDE_ACTIONS} from "../services/adminHiringOverrideService";
+import {AdminHiringOverrideService,HIRING_OVERRIDE_ACTIONS,resolveNextBypassStep} from "../services/adminHiringOverrideService";
 import {registerAdminHiringOverrideRoutes} from "../routes/adminHiringOverrides";
 import {onboardingStatus} from "../services/contractorOnboardingStatus";
 import {requirePaidContract,requireHiringStage} from "../services/contractorOnboardingPolicy";
@@ -40,6 +40,14 @@ async function app() {
     ON CONFLICT(submission_id) DO UPDATE SET workflow_version=2`,[id]);
   return id;
 }
+async function walkToAccepted(actor:string,id:string) {
+  for(let n=0;n<5;n++) {
+    const step=await resolveNextBypassStep(pool,id);
+    assert.ok(step);
+    await service.execute(actor,"skip_next_step",{submissionId:id,reason,...terms,
+      expectedStageKey:step.stageKey,expectedTargetStatus:step.targetStatus});
+  }
+}
 test("Legacy-only metadata failures allow audited Admin overrides without relaxing normal hiring",async()=>{
   const variants=[
     ["workflow_type","UPDATE job_submissions SET workflow_type='client_shortlist' WHERE id=$1"],
@@ -58,14 +66,14 @@ test("Legacy-only metadata failures allow audited Admin overrides without relaxi
       assert.equal((await query(`SELECT js.id FROM job_submissions js WHERE js.id=$1 AND js.${ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE}`,[id])).rows.length,1,variant);
       if(path==="hire_now")await service.execute(cs,"skip_stage",{submissionId:id,targetStatus:"hired",reason,...terms});
       else {
-        await service.execute(ta,"skip_stage",{submissionId:id,targetStatus:"offer_accepted",reason,...terms});
+        await walkToAccepted(ta,id);
         await service.execute(ta,"waive_deposit",{submissionId:id,reason});
         await service.execute(cs,"skip_agreements",{submissionId:id,reason,skipContractorAgreement:true,skipMsa:true});
       }
       assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"hired",`${variant}/${path}`);
       const d=(await query("SELECT status,held_at FROM security_deposits WHERE submission_id=$1",[id])).rows[0];
       assert.equal(d.status,"waived");assert.equal(d.held_at,null);
-      assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides WHERE submission_id=$1",[id])).rows[0].n,path==="hire_now"?1:3);
+      assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides WHERE submission_id=$1",[id])).rows[0].n,path==="hire_now"?1:7);
       const hc=(await query("SELECT talent_signed_at,onspot_signed_at FROM hiring_contracts WHERE submission_id=$1",[id])).rows[0];
       assert.equal(hc.talent_signed_at,null);assert.equal(hc.onspot_signed_at,null);
       assert.equal(await normal(),false,`${variant}: audit must not open normal hiring`);
@@ -106,9 +114,9 @@ test("Missing job billing classification returns a specific editor link through 
   assert.equal((await query("SELECT count(*)::int n FROM offers WHERE submission_id=$1",[id])).rows[0].n,0);
   await query("UPDATE jobs SET engagement_type='Standard',billing_mode='tracked' WHERE id=$1",[job]);
 });
-test("Clients and Talent receive 403 on every override endpoint, including capabilities/history",async()=>{
+test("Clients and Talent receive 403 on every override endpoint, including capabilities/history/next-step",async()=>{
   const before=(await query("SELECT count(*)::int n FROM admin_hiring_overrides")).rows[0].n;
-  for(const actor of [client,talent])for(const path of ["capabilities","",...HIRING_OVERRIDE_ACTIONS]) {
+  for(const actor of [client,talent])for(const path of ["capabilities","","next-step",...HIRING_OVERRIDE_ACTIONS]) {
     const method=HIRING_OVERRIDE_ACTIONS.includes(path as any)?"POST":"GET";
     const response=await fetch(`${base}/api/admin/hiring-overrides${path?`/${path}`:""}`,{method,
       headers:{"x-fixture-actor":actor,"Content-Type":"application/json"},...(method==="POST"?{body:JSON.stringify({reason})}:{})});
@@ -122,6 +130,8 @@ test("Stage overrides and safe reversal write immutable audit/history; Final ove
   await service.execute(admin,"skip_stage",{submissionId:id,targetStatus:"shortlisted",reason});
   await service.execute(admin,"revert_override",{submissionId:id,reason});
   assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"new");
+  await service.execute(admin,"skip_stage",{submissionId:id,targetStatus:"shortlisted",reason});
+  await service.execute(admin,"skip_stage",{submissionId:id,targetStatus:"interviewing",reason});
   await service.execute(admin,"skip_stage",{submissionId:id,targetStatus:"final_interview_passed",reason,notifyParties:true});
   const status=await onboardingStatus(pool,id,client);
   assert.equal(status.finalInterviewPassed,true);assert.equal(status.canSendOffer,true);
@@ -130,12 +140,12 @@ test("Stage overrides and safe reversal write immutable audit/history; Final ove
   const db=await pool.connect();
   try {await db.query("BEGIN");await requireHiringStage(db,id,"offer",client);await db.query("COMMIT");}
   finally {db.release();}
-  assert.equal((await service.history(admin,id)).items.length,3);
-  assert.equal((await query("SELECT count(*)::int n FROM job_application_status_history WHERE application_id=$1 AND note LIKE 'Admin override:%'",[id])).rows[0].n,3);
+  assert.equal((await service.history(admin,id)).items.length,5);
+  assert.equal((await query("SELECT count(*)::int n FROM job_application_status_history WHERE application_id=$1 AND note LIKE 'Admin override:%'",[id])).rows[0].n,5);
 });
 test("Accepted-stage override creates an invoice-first offer; waiver unblocks agreements without proof or claimed funds; explicit signature bypass activates",async()=>{
   const id=await app();
-  await service.execute(admin,"skip_stage",{submissionId:id,targetStatus:"offer_accepted",reason,...terms});
+  await walkToAccepted(admin,id);
   const d=(await query("SELECT * FROM security_deposits WHERE submission_id=$1",[id])).rows[0];
   assert.equal(d.status,"pending");
   const db=await pool.connect();
@@ -182,8 +192,8 @@ test("Every regular admin can use the four authorized overrides through HTTP; re
     assert.equal(capability.status,200);
     assert.deepEqual(await capability.json(),{canManage:true,canRevert:false});
     const id=await app();
+    await walkToAccepted(actor,id);
     for(const [action,body] of [
-      ["skip_stage",{submissionId:id,targetStatus:"offer_accepted",...terms}],
       ["waive_deposit",{submissionId:id}],
       ["skip_agreements",{submissionId:id,skipContractorAgreement:true,skipMsa:true}],
     ] as const) {
@@ -192,7 +202,7 @@ test("Every regular admin can use the four authorized overrides through HTTP; re
       assert.equal(response.status,200,await response.text());
     }
     assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"hired");
-    assert.equal((await service.history(actor,id)).items.length,3);
+    assert.equal((await service.history(actor,id)).items.length,7);
     await assert.rejects(service.execute(actor,"revert_override",{submissionId:id,reason}),(e:any)=>e.status===403);
     const placedTalent=`override-placed-${randomUUID()}`;
     await query("INSERT INTO users(id,email,role) VALUES($1,$2,'talent')",[placedTalent,`${placedTalent}@fixture.invalid`]);
@@ -253,6 +263,103 @@ test("Regular admin Hire now activates from early and offer stages with explicit
     assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides WHERE submission_id=$1 AND actor_id=$2",[id,cs])).rows[0].n,1);
     assert.equal((await query("SELECT count(*)::int n FROM job_application_status_history WHERE application_id=$1 AND new_status='hired'",[id])).rows[0].n>=1,true);
   }
+});
+test("Next-step resolver and HTTP execution walk exactly one step through activation, preserving sent terms and audit names",async()=>{
+  const id=await app();
+  const targets=["shortlisted","interviewing","final_interview_passed","offer_extended","offer_accepted",undefined,undefined];
+  const keys=["shortlisted","interview","final_interview","offer","offer","payment_verified","agreements"];
+  let sentOffer:any;
+  for(let i=0;i<keys.length;i++) {
+    const response=await fetch(`${base}/api/admin/hiring-overrides/next-step?submissionId=${id}`,{headers:{"x-fixture-actor":ta}});
+    assert.equal(response.status,200);
+    const {step}=await response.json() as any;
+    assert.equal(step.stageKey,keys[i]);assert.equal(step.targetStatus,targets[i]);
+    assert.ok(step.label);assert.ok(step.description);
+    if(i===4) {
+      sentOffer=(await query("SELECT * FROM offers WHERE submission_id=$1",[id])).rows[0];
+      assert.equal(step.rate,String(sentOffer.rate));assert.equal(step.currency,sentOffer.rate_currency);
+    }
+    const result=await fetch(`${base}/api/admin/hiring-overrides/skip_next_step`,{method:"POST",
+      headers:{"Content-Type":"application/json","x-fixture-actor":ta},
+      body:JSON.stringify({submissionId:id,reason,...terms,expectedStageKey:step.stageKey,expectedTargetStatus:step.targetStatus,
+        ...(step.action==="waive_deposit"?{depositId:randomUUID()}:{} )})});
+    assert.equal(result.status,200,await result.text());
+    if(i===4) {
+      const accepted=(await query("SELECT * FROM offers WHERE submission_id=$1",[id])).rows;
+      assert.equal(accepted.length,1);assert.equal(accepted[0].id,sentOffer.id);
+      assert.equal(accepted[0].rate,sentOffer.rate);assert.equal(accepted[0].status,"accepted");
+      assert.equal((await query("SELECT status FROM security_deposits WHERE submission_id=$1",[id])).rows[0].status,"pending");
+    }
+  }
+  assert.equal(await resolveNextBypassStep(pool,id),null);
+  assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"hired");
+  const history=(await service.history(ta,id)).items;
+  assert.equal(history.length,7);
+  assert.ok(history.every(row=>row.new_state.stepwise===true&&row.action!=="skip_next_step"&&!row.notify_parties&&row.reason===reason));
+  const hc=(await query("SELECT * FROM hiring_contracts WHERE submission_id=$1",[id])).rows[0];
+  assert.equal(hc.talent_signed_at,null);assert.equal(hc.onspot_signed_at,null);
+  assert.equal((await query("SELECT held_at FROM security_deposits WHERE submission_id=$1",[id])).rows[0].held_at,null);
+});
+test("STEP_CHANGED and ONE_STEP_ONLY leave no side effects, including same-key offer transitions",async()=>{
+  const id=await app();
+  const before=await service.history(admin,id);
+  await assert.rejects(service.execute(admin,"skip_next_step",{submissionId:id,reason,expectedStageKey:"offer",...terms}),
+    (e:any)=>e.status===409&&e.code==="STEP_CHANGED");
+  const response=await fetch(`${base}/api/admin/hiring-overrides/skip_stage`,{method:"POST",
+    headers:{"Content-Type":"application/json","x-fixture-actor":admin},
+    body:JSON.stringify({submissionId:id,reason,targetStatus:"offer_accepted",...terms})});
+  assert.equal(response.status,422);assert.equal((await response.json() as any).error,"ONE_STEP_ONLY");
+  assert.deepEqual((await service.history(admin,id)).items,before.items);
+  for(let i=0;i<4;i++) {
+    const step=(await resolveNextBypassStep(pool,id))!;
+    await service.execute(admin,"skip_next_step",{submissionId:id,reason,expectedStageKey:step.stageKey,expectedTargetStatus:step.targetStatus,...terms});
+  }
+  await assert.rejects(service.execute(admin,"skip_next_step",{submissionId:id,reason,expectedStageKey:"offer",expectedTargetStatus:"offer_extended",...terms}),
+    (e:any)=>e.code==="STEP_CHANGED");
+  assert.equal((await query("SELECT status FROM offers WHERE submission_id=$1",[id])).rows[0].status,"sent");
+});
+test("Concurrent next-step requests cannot skip two stages with one expected step",async()=>{
+  const id=await app();
+  const results=await Promise.allSettled([ta,cs].map(actor=>service.execute(actor,"skip_next_step",
+    {submissionId:id,reason,expectedStageKey:"shortlisted",expectedTargetStatus:"shortlisted"})));
+  assert.equal(results.filter(r=>r.status==="fulfilled").length,1);
+  const failed=results.find(r=>r.status==="rejected") as PromiseRejectedResult;
+  assert.equal(failed.reason.code,"STEP_CHANGED");
+  assert.equal((await service.history(admin,id)).items.length,1);
+  assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[id])).rows[0].status,"shortlisted");
+});
+test("Resolver handles review statuses, real passed finals, closed records and safe stepwise undo",async()=>{
+  for(const status of ["new","under_review","reviewed"]) {
+    const id=await app();await query("UPDATE job_submissions SET status=$2 WHERE id=$1",[id,status]);
+    assert.equal((await resolveNextBypassStep(pool,id))?.targetStatus,"shortlisted");
+  }
+  const id=await app();
+  await service.execute(admin,"skip_next_step",{submissionId:id,reason,expectedStageKey:"shortlisted"});
+  await service.execute(admin,"skip_next_step",{submissionId:id,reason,expectedStageKey:"interview"});
+  await service.execute(admin,"revert_override",{submissionId:id,reason});
+  assert.equal((await resolveNextBypassStep(pool,id))?.stageKey,"interview");
+  const early=await app();
+  await service.execute(admin,"skip_next_step",{submissionId:early,reason,expectedStageKey:"shortlisted"});
+  await service.execute(admin,"revert_override",{submissionId:early,reason});
+  assert.equal((await query("SELECT status FROM job_submissions WHERE id=$1",[early])).rows[0].status,"new");
+  await query("UPDATE job_submissions SET status='interviewing' WHERE id=$1",[id]);
+  await query(`INSERT INTO interviews(submission_id,round_number,interview_type,status,outcome,created_by)
+    VALUES($1,1,'final','completed','advance',$2)`,[id,admin]);
+  assert.equal((await resolveNextBypassStep(pool,id))?.targetStatus,"offer_extended");
+  for(const status of ["rejected","withdrawn","hired"]) {
+    await query("UPDATE job_submissions SET status=$2 WHERE id=$1",[id,status]);
+    assert.equal(await resolveNextBypassStep(pool,id),null);
+  }
+});
+test("Held deposits move to agreement exceptions without changing held funds",async()=>{
+  const id=await app();
+  await walkToAccepted(admin,id);
+  // Synthetic financial state in the owned disposable fixture, never a real settlement.
+  await query("UPDATE security_deposits SET status='held',held_at=now() WHERE submission_id=$1",[id]);
+  assert.equal((await resolveNextBypassStep(pool,id))?.stageKey,"agreements");
+  await service.execute(admin,"skip_next_step",{submissionId:id,reason,expectedStageKey:"agreements"});
+  assert.equal(await resolveNextBypassStep(pool,id),null);
+  assert.equal((await query("SELECT status FROM security_deposits WHERE submission_id=$1",[id])).rows[0].status,"held");
 });
 test("Migration is idempotent and does not destroy any deposit financial evidence",async()=>{
   const before=(await query("SELECT id,amount,currency,status,held_at,waived_at FROM security_deposits ORDER BY id")).rows;

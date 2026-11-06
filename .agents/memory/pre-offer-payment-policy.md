@@ -17,6 +17,12 @@ Deposit-billing tools (including their separate waiver action), onboarding prere
 
 **How to apply:** Keep these two authorization scopes distinct in services and UI. An Admin's permission to waive a hiring prerequisite is not permission to verify money, administer legal evidence or repair onboarding records.
 
+The standard Admin bypass control must skip exactly one hiring step per confirmation. Keep the separate, explicit Hire now exception and existing deposit/agreement exceptions; do not restore a general jump-to-any-stage picker. Client interview skipping remains unavailable.
+
+**Why:** The owner requested a sequential bypass for QA and approved exceptions while retaining the ordinary interview-start rule and the separately audited administrative exceptions.
+
+**How to apply:** Make the next step clear before confirmation, preserve accepted or sent financial terms, reject stale confirmations, and retain underlying audit/reversal semantics. Repeated skips may reach activation but must never create absent interviews, signatures or cash evidence.
+
 **Why:** On 2026-10-28 the owner explicitly superseded the signing-first sequence with payment before agreements and added shortlist/final-interview prerequisites. Neither a receipt, funded deposit, nor signatures alone establish an active new engagement.
 
 **How to apply:** Preserve original applications and normal shortlist/final-interview prerequisites, except explicitly authorized recruiting exceptions or the audited Admin actions above. Already-accepted historical offers keep their old path; never move, rebill or recontract them merely for release. A genuinely fresh acceptance after cutover (including counters, renewals or Admin-created offers on a legacy application) must instead be invoice-first. Keep the invitation click-through checkbox separate from hash-bound versioned MSA signatures. No active MSA blocks ordinary activation unless explicitly bypassed by an audited Admin exception. Do not invent legal documents or receiving instructions.

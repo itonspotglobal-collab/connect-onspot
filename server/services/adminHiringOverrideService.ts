@@ -4,11 +4,13 @@ import {lockOnboarding,issueAcceptedOfferDeposit,isDepositFirst,OnboardingError}
 import {queueHiringLifecycleEvent,tryActivateEngagement,activateFundedEngagement} from "./hiringLifecycleEvents";
 import {hiringOverrideState} from "./adminHiringOverrideState";
 import {ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE} from "../../shared/adminOverrideEligibilitySql";
+import {resolveNextBypassStep} from "./nextHiringBypassStep";
+export {resolveNextBypassStep} from "./nextHiringBypassStep";
 
 const fail=(status:number,code:string,message:string):never=>{throw new OnboardingError(status,code,message);};
 const ranks:Record<string,number>={new:0,under_review:0,reviewed:0,invited:0,shortlisted:1,interviewing:2,
   final_interview_passed:3,offer_declined:3,offer_extended:4,offer_expired:4,offer_accepted:5,contract_sent:6,contract_signed:6,hired:7};
-export const HIRING_OVERRIDE_ACTIONS=["skip_stage","waive_deposit","skip_agreements","direct_placement","revert_override"] as const;
+export const HIRING_OVERRIDE_ACTIONS=["skip_stage","skip_next_step","waive_deposit","skip_agreements","direct_placement","revert_override"] as const;
 export class AdminHiringOverrideService {
   constructor(private pool:Pick<Pool,"connect"|"query">,private afterCommit:()=>Promise<void>=async()=>{}){}
   async authorize(db:Pick<PoolClient,"query">,actorId:string) {
@@ -23,6 +25,10 @@ export class AdminHiringOverrideService {
   }
   async capabilities(actorId:string) {
     const actor=await this.authorize(this.pool,actorId);return {canManage:true,canRevert:actor.admin_sub_role===null};
+  }
+  async nextStep(actorId:string,id:string) {
+    await this.authorize(this.pool,actorId);
+    return {step:await resolveNextBypassStep(this.pool,id)};
   }
   private async record(db:PoolClient,actor:string,s:any,action:string,reason:string,notify:boolean,previous:any,next:any) {
     const row=(await db.query(`INSERT INTO admin_hiring_overrides(actor_id,submission_id,client_id,talent_id,action,previous_state,new_state,reason,notify_parties)
@@ -162,6 +168,16 @@ export class AdminHiringOverrideService {
         fail(409,"JOB_CLIENT_MISMATCH","The application's job belongs to a different Client. Correct the ownership relationship before hiring.");
       if(!s.override_eligible)fail(409,"ADMIN_OVERRIDE_INELIGIBLE","The application's status, linked Talent account or job ownership is invalid.");
       const state=await hiringOverrideState(db,id);
+      const stepwise=action==="skip_next_step";
+      if(stepwise) {
+        const step=await resolveNextBypassStep(db,id);
+        if(!step)throw new OnboardingError(409,"STEP_CHANGED","The application moved on — refresh and try again");
+        if(step.stageKey!==body.expectedStageKey||
+          (body.expectedTargetStatus!==undefined&&body.expectedTargetStatus!==step.targetStatus))
+          fail(409,"STEP_CHANGED","The application moved on — refresh and try again");
+        action=step.action;
+        body={...body,depositId:undefined,targetStatus:step.targetStatus,skipContractorAgreement:step.skipContractorAgreement,skipMsa:step.skipMsa};
+      }
       const previous:any={status:action==="direct_placement"?null:s.status,...state};
       let next:any={status:s.status};
       if(action==="revert_override") {
@@ -183,45 +199,9 @@ export class AdminHiringOverrideService {
         previous.depositId=d.id;previous.depositStatus=d.status;
         next={...next,depositId:d.id,depositStatus:"waived",previousDepositStatus:d.status};
       } else if(action==="skip_agreements") {
-        if(typeof body.skipContractorAgreement!=="boolean"||typeof body.skipMsa!=="boolean"||
-          (!body.skipContractorAgreement&&!body.skipMsa))fail(422,"AGREEMENT_SELECTION_REQUIRED","Select which agreement requirement is being bypassed.");
-        if(!["offer_accepted","contract_sent","contract_signed"].includes(s.status))fail(409,"ACCEPTANCE_REQUIRED","Accept the offer before bypassing agreements.");
-        const accepted=(await db.query(`SELECT * FROM offers WHERE submission_id=$1 AND status IN ('accepted','offer_accepted')
-          ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,[id])).rows[0];
-        if(!accepted)fail(409,"ACCEPTED_OFFER_REQUIRED","An accepted offer is required.");
-        await this.draft(db,s,accepted);
-        next={...next,skipContractorAgreement:body.skipContractorAgreement,skipMsa:body.skipMsa};
+        next={...next,...await this.skipAgreements(db,s,body)};
       } else if(action==="skip_stage") {
-        const target=body.targetStatus;
-        if(!["shortlisted","interviewing","final_interview_passed","offer_extended","offer_accepted","contract_sent","hired"].includes(target)||
-          ranks[target]<=ranks[s.status])fail(422,"LATER_STAGE_REQUIRED","Choose a later supported pipeline stage.");
-        next={status:target==="final_interview_passed"?"interviewing":target,finalInterviewPassed:ranks[target]>=3};
-        if(target==="hired")this.terms(body);
-        let offer=(await db.query(`SELECT *,proposed_start_date::date::text AS agreed_start_date FROM offers WHERE submission_id=$1 AND status IN ('accepted','offer_accepted','sent')
-          ORDER BY CASE WHEN status IN ('accepted','offer_accepted') THEN 0 ELSE 1 END,created_at DESC LIMIT 1 FOR UPDATE`,[id])).rows[0];
-        if(target==="hired"&&offer&&["accepted","offer_accepted"].includes(offer.status)&&
-          (Number(offer.rate)!==Number(body.rate)||offer.rate_currency!==body.currency||offer.agreed_start_date!==body.startDate))
-          fail(409,"ACCEPTED_TERMS_MISMATCH","Use the accepted offer's agreed rate, currency and start date. Existing accepted financial terms cannot be silently replaced.");
-        if(ranks[target]>=4) {
-          if(offer&&!["accepted","offer_accepted"].includes(offer.status)&&ranks[target]>=5) {
-            if(target!=="hired")fail(409,"PENDING_OFFER_EXISTS","A sent offer already exists. Use its normal acceptance or withdraw it before creating an administrative accepted offer.");
-            // A Hire now exception is explicit administrative placement, not
-            // fabricated Talent acceptance of the outstanding proposal.
-            this.terms(body);
-            previous.supersededOfferId=offer.id;
-            previous.supersededOfferStatus=offer.status;
-            await db.query("UPDATE offers SET status='withdrawn',updated_at=now() WHERE id=$1",[offer.id]);
-            offer=undefined;
-          }
-          if(!offer)offer=await this.offer(db,s,body,ranks[target]>=5);
-          if(ranks[target]>=5) {
-            await db.query("UPDATE job_submissions SET status='offer_accepted',updated_at=now() WHERE id=$1",[id]);
-            await issueAcceptedOfferDeposit(db,offer.id,id);
-            await this.draft(db,s,offer);
-          }
-        }
-        if(target==="hired")next={...next,skipContractorAgreement:true,skipMsa:true};
-        await db.query("UPDATE job_submissions SET status=$2,updated_at=now() WHERE id=$1",[id,target==="hired"?"offer_accepted":next.status]);
+        next=await this.skipStage(db,s,body,previous,state.finalInterviewPassed,stepwise);
       } else {
         const offer=await this.offer(db,s,body,true);
         await issueAcceptedOfferDeposit(db,offer.id,id);
@@ -230,6 +210,7 @@ export class AdminHiringOverrideService {
           skipMsa:body.skipMsa??true,directPlacement:true,offerId:offer.id,depositPolicy:body.depositPolicy??"waive"};
         if(next.depositPolicy==="waive")await this.waive(db,s,actor,reason);
       }
+      if(stepwise)next.stepwise=true;
       const audit=await this.record(db,actor,s,action,reason,notify,previous,next);
       if(action==="skip_stage"&&body.targetStatus==="hired") {
         const deposit=(await db.query("SELECT status FROM security_deposits WHERE submission_id=$1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE",[id])).rows[0];
@@ -255,5 +236,58 @@ export class AdminHiringOverrideService {
       return {id:audit.id,submissionId:id,status:current.status,action};
     } catch(e) {await db.query("ROLLBACK").catch(()=>{});throw e;}
     finally {db.release();}
+  }
+  private async skipAgreements(db:PoolClient,s:any,body:any) {
+    if(typeof body.skipContractorAgreement!=="boolean"||typeof body.skipMsa!=="boolean"||
+      (!body.skipContractorAgreement&&!body.skipMsa))fail(422,"AGREEMENT_SELECTION_REQUIRED","Select which agreement requirement is being bypassed.");
+    if(!["offer_accepted","contract_sent","contract_signed"].includes(s.status))fail(409,"ACCEPTANCE_REQUIRED","Accept the offer before bypassing agreements.");
+    const accepted=(await db.query(`SELECT * FROM offers WHERE submission_id=$1 AND status IN ('accepted','offer_accepted')
+      ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,[s.id])).rows[0];
+    if(!accepted)fail(409,"ACCEPTED_OFFER_REQUIRED","An accepted offer is required.");
+    await this.draft(db,s,accepted);
+    return {skipContractorAgreement:body.skipContractorAgreement,skipMsa:body.skipMsa};
+  }
+  private async skipStage(db:PoolClient,s:any,body:any,previous:any,finalPassed:boolean,stepwise:boolean) {
+    const target=body.targetStatus;
+    const actualFinal=finalPassed||!!(await db.query(`SELECT 1 FROM interviews WHERE submission_id=$1 AND interview_type='final'
+      AND status='completed' AND lower(btrim(outcome)) IN ('advance','passed') LIMIT 1`,[s.id])).rows.length;
+    const effectiveRank=s.status==="interviewing"&&actualFinal?3:ranks[s.status];
+    if(!["shortlisted","interviewing","final_interview_passed","offer_extended","offer_accepted","contract_sent","hired"].includes(target))
+      fail(422,"LATER_STAGE_REQUIRED","Choose a later supported pipeline stage.");
+    if(target!=="hired"&&ranks[target]!==effectiveRank+1)
+      fail(422,"ONE_STEP_ONLY","Only the next hiring step can be bypassed.");
+    if(target==="hired"&&ranks[target]<=effectiveRank)fail(422,"LATER_STAGE_REQUIRED","Choose a later supported pipeline stage.");
+    let next:any={status:target==="final_interview_passed"?"interviewing":target,finalInterviewPassed:ranks[target]>=3};
+    if(target==="hired")this.terms(body);
+    let offer=(await db.query(`SELECT *,proposed_start_date::date::text AS agreed_start_date FROM offers WHERE submission_id=$1 AND status IN ('accepted','offer_accepted','sent')
+      ORDER BY CASE WHEN status IN ('accepted','offer_accepted') THEN 0 ELSE 1 END,created_at DESC LIMIT 1 FOR UPDATE`,[s.id])).rows[0];
+    if(target==="hired"&&offer&&["accepted","offer_accepted"].includes(offer.status)&&
+      (Number(offer.rate)!==Number(body.rate)||offer.rate_currency!==body.currency||offer.agreed_start_date!==body.startDate))
+      fail(409,"ACCEPTED_TERMS_MISMATCH","Use the accepted offer's agreed rate, currency and start date. Existing accepted financial terms cannot be silently replaced.");
+    if(ranks[target]>=4) {
+      if(offer&&!["accepted","offer_accepted"].includes(offer.status)&&ranks[target]>=5) {
+        if(stepwise&&target==="offer_accepted") {
+          offer=(await db.query(`UPDATE offers SET status='accepted',accepted_at=now(),updated_at=now()
+            WHERE id=$1 RETURNING *`,[offer.id])).rows[0];
+          await queueHiringLifecycleEvent(db,`offer-accepted:${offer.id}`,"offer_accepted",{submissionId:s.id,offerId:offer.id});
+        } else {
+          if(target!=="hired")fail(409,"PENDING_OFFER_EXISTS","A sent offer already exists. Use its normal acceptance or the audited next-step bypass.");
+          this.terms(body);
+          previous.supersededOfferId=offer.id;previous.supersededOfferStatus=offer.status;
+          await db.query("UPDATE offers SET status='withdrawn',updated_at=now() WHERE id=$1",[offer.id]);
+          offer=undefined;
+        }
+      }
+      if(stepwise&&target==="offer_accepted"&&!offer)fail(409,"SENT_OFFER_REQUIRED","Refresh and extend an offer before accepting it.");
+      if(!offer)offer=await this.offer(db,s,body,ranks[target]>=5);
+      if(ranks[target]>=5) {
+        await db.query("UPDATE job_submissions SET status='offer_accepted',updated_at=now() WHERE id=$1",[s.id]);
+        await issueAcceptedOfferDeposit(db,offer.id,s.id);
+        await this.draft(db,s,offer);
+      }
+    }
+    if(target==="hired")next={...next,skipContractorAgreement:true,skipMsa:true};
+    await db.query("UPDATE job_submissions SET status=$2,updated_at=now() WHERE id=$1",[s.id,target==="hired"?"offer_accepted":next.status]);
+    return next;
   }
 }

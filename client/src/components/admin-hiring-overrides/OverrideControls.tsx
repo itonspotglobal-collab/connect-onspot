@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, History, ShieldCheck, Undo2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 type OverrideAction = "skip_stage" | "waive_deposit" | "skip_agreements" | "revert_override";
 type OverrideItem = {
@@ -126,7 +127,7 @@ export function OverrideControls({
   const actionDescription = useMemo(() => {
     if(action==="skip_stage"&&targetStatus==="hired")return "Hire this talent now using the agreed rate and start date. This audited exception bypasses unmet pipeline steps, waives a pending deposit, and bypasses Contractor Agreement and MSA signatures. Existing held funds remain unchanged. No payment, settlement, or signatures will be fabricated.";
     if(action==="skip_stage"&&targetStatus==="contract_sent")return "Bypass interview and offer prerequisites, create an accepted offer and deposit invoice when needed, and move to the agreements stage. A draft bookkeeping contract is created; this does not send or sign a legal document. The deposit is still required unless separately waived.";
-    if (action === "skip_stage") return `Move this application directly to ${formatAction(targetStatus)}, bypassing any unmet pipeline prerequisites${targetStatus === "final_interview_passed" || ["offer_extended", "offer_accepted", "contract_sent", "hired"].includes(targetStatus) ? ". No interview record will be created." : "."}`;
+    if (action === "skip_stage") return "Hire this talent now using the agreed rate and start date. This audited exception bypasses unmet pipeline steps. No payment, settlement, or signatures will be fabricated.";
     if (action === "waive_deposit") return "Waive the security deposit for this application without payment proof. This is an audited waiver, not a payment verification.";
     if (action === "skip_agreements") return `Allow activation without ${[skipContractorAgreement && "a fully signed Contractor Agreement", skipMsa && "a fully signed MSA"].filter(Boolean).join(" and ") || "any agreement bypass selected"}. No signatures will be created.`;
     if (action === "revert_override") return "Attempt to undo the most recent override on this application. The server will refuse if the change is no longer safe to reverse.";
@@ -158,16 +159,17 @@ export function OverrideControls({
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-amber-950">Admin hiring overrides</h3>
-          <p className="mt-1 text-xs text-amber-900/80">Exceptional workflow changes are recorded with an audit reason.</p>
+        <h3 className="text-sm font-semibold text-amber-950">Admin bypass</h3>
+          <p className="mt-1 text-xs text-amber-900/80">Skip hiring steps one at a time for testing or approved exceptions. Every skip is audited.</p>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" onClick={() => { setTargetStatus("hired"); setAction("skip_stage"); }}>Hire now</Button>
-        <Button size="sm" variant="outline" onClick={() => setAction("skip_stage")}>Skip pipeline stage</Button>
         {(depositId || hasAcceptedOffer) && <Button size="sm" variant="outline" onClick={() => setAction("waive_deposit")}>Waive deposit</Button>}
         <Button size="sm" variant="outline" onClick={() => setAction("skip_agreements")}>Skip agreements</Button>
       </div>
+      <NextStepBypassButton submissionId={submissionId} initialRate={initialRate} initialCurrency={initialCurrency} initialStartDate={initialStartDate} />
+      <p className="text-[11px] text-amber-900/80">Testing: Use “Skip this step” repeatedly to walk an application through each stage.</p>
       {historyQuery.isLoading ? <div className="h-8 animate-pulse rounded bg-amber-100" /> : historyQuery.isError ? (
         <p role="alert" className="text-xs text-rose-700">Override history could not be loaded. <button className="underline" onClick={() => void historyQuery.refetch()}>Retry</button></p>
       ) : (
@@ -192,18 +194,16 @@ export function OverrideControls({
         <div className="max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-xl border bg-background p-5 shadow-xl">
           <div className="flex items-start gap-3"><AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-700" /><div><h3 className="text-lg font-semibold">Confirm {formatAction(action).toLowerCase()}</h3><p className="mt-1 text-sm text-muted-foreground">{actionDescription}</p></div></div>
           {action === "skip_stage" && <div className="mt-4 space-y-3">
-            <label className="block space-y-1 text-sm font-medium">Target stage<select className="h-10 w-full rounded-md border bg-background px-3 font-normal" value={targetStatus} onChange={(event) => setTargetStatus(event.target.value)}>
-              {["shortlisted", "interviewing", "final_interview_passed", "offer_extended", "offer_accepted", "contract_sent", "hired"].map((stage) => <option key={stage} value={stage}>{formatAction(stage)}</option>)}
-            </select></label>
+            <p className="text-sm font-semibold">Hire now</p>
             {["offer_extended","offer_accepted","contract_sent","hired"].includes(targetStatus) && <div className="grid gap-3 sm:grid-cols-3">
               <label className="space-y-1 text-sm font-medium">Rate<input className="h-10 w-full rounded-md border bg-background px-3 font-normal" type="number" min="0.01" step="0.01" value={rate} readOnly={hasAcceptedOffer} onChange={(event) => setRate(event.target.value)} /></label>
               <label className="space-y-1 text-sm font-medium">Currency<input className="h-10 w-full rounded-md border bg-background px-3 font-normal" maxLength={3} value={currency} readOnly={hasAcceptedOffer} onChange={(event) => setCurrency(event.target.value.toUpperCase())} /></label>
               <label className="space-y-1 text-sm font-medium">Start date<input className="h-10 w-full rounded-md border bg-background px-3 font-normal" type="date" value={startDate} readOnly={hasAcceptedOffer} onChange={(event) => setStartDate(event.target.value)} /></label>
             </div>}
           </div>}
-          {action === "skip_stage" && targetStatus === "hired" && hasAcceptedOffer && currency !== "USD" && <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">The accepted offer currency is {currency || "not available"}. Accepted terms cannot be silently repriced in this Hire now action. The USD rate is left blank; update the offer through its approved workflow before hiring.</p>}
-          {action === "skip_stage" && targetStatus === "hired" && hasAcceptedOffer && currency === "USD" && <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">The accepted USD rate and start date are retained as agreed and cannot be edited here.</p>}
-          {action === "skip_stage" && targetStatus === "hired" && !hasAcceptedOffer && sourceOfferCurrency && sourceOfferCurrency.toUpperCase() !== "USD" && <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">The existing offer is in {sourceOfferCurrency.toUpperCase()}. Its rate was not converted or reused. Hire now requires newly agreed USD terms.</p>}
+          {action === "skip_stage" && hasAcceptedOffer && currency !== "USD" && <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">The accepted offer currency is {currency || "not available"}. Accepted terms cannot be silently repriced in this Hire now action. The USD rate is left blank; update the offer through its approved workflow before hiring.</p>}
+          {action === "skip_stage" && hasAcceptedOffer && currency === "USD" && <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">The accepted USD rate and start date are retained as agreed and cannot be edited here.</p>}
+          {action === "skip_stage" && !hasAcceptedOffer && sourceOfferCurrency && sourceOfferCurrency.toUpperCase() !== "USD" && <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">The existing offer is in {sourceOfferCurrency.toUpperCase()}. Its rate was not converted or reused. Hire now requires newly agreed USD terms.</p>}
           {action === "waive_deposit" && <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">The server will waive the pending security deposit for this application, issuing it first if needed. This does not claim funds were received.</p>}
           {action === "skip_agreements" && <div className="mt-4 space-y-2 rounded-md border p-3 text-sm">
             <label className="flex items-start gap-2"><input type="checkbox" checked={skipContractorAgreement} onChange={(event) => setSkipContractorAgreement(event.target.checked)} /><span>Allow activation without a signed Contractor Agreement</span></label>
@@ -215,11 +215,97 @@ export function OverrideControls({
           <p className="text-right text-xs text-muted-foreground">{reason.trim().length}/2000</p>
           <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={notifyParties} onChange={(event) => setNotifyParties(event.target.checked)} /><span>Notify client and talent about this override</span></label>
           {mutation.error && <MutationError error={mutation.error} className="mt-3 rounded-md border border-rose-200 bg-rose-50 p-2 text-sm text-rose-800" />}
-          <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => { setAction(""); mutation.reset(); }}>Cancel</Button><Button onClick={submit} disabled={!canSubmit || (action === "skip_agreements" && !skipContractorAgreement && !skipMsa) || (action === "skip_stage" && ["offer_accepted", "hired"].includes(targetStatus) && (!rate || Number(rate) <= 0 || currency.trim().toUpperCase() !== "USD" || !startDate))}>{mutation.isPending ? "Recording…" : "Confirm override"}</Button></div>
+        <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={() => { setAction(""); mutation.reset(); }}>Cancel</Button><Button onClick={submit} disabled={!canSubmit || (action === "skip_agreements" && !skipContractorAgreement && !skipMsa) || (action === "skip_stage" && (!rate || Number(rate) <= 0 || currency.trim().toUpperCase() !== "USD" || !startDate))}>{mutation.isPending ? "Recording…" : "Confirm override"}</Button></div>
         </div>
       </div>}
     </section>
   );
+}
+
+type NextStep = { stageKey: string; action: "skip_stage" | "waive_deposit" | "skip_agreements"; targetStatus?: string; requiresTerms?: boolean; label: string; description: string; rate?: number | string; currency?: string; startDate?: string };
+
+export function NextStepBypassButton({ submissionId, initialRate, initialCurrency, initialStartDate, compact = false }: {
+  submissionId: string; initialRate?: number | string | null; initialCurrency?: string | null; initialStartDate?: string | null; compact?: boolean;
+}) {
+  const capability = useHiringOverrideCapability();
+  const client = useQueryClient();
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [notifyParties, setNotifyParties] = useState(false);
+  const [confirmedStep, setConfirmedStep] = useState<NextStep | null>(null);
+  const [rate, setRate] = useState(initialRate == null ? "" : String(initialRate));
+  const [currency, setCurrency] = useState(initialCurrency ?? "USD");
+  const [startDate, setStartDate] = useState(initialStartDate?.slice(0, 10) ?? "");
+  const query = useQuery<{ step: NextStep | null }>({
+    queryKey: ["/api/admin/hiring-overrides/next-step", submissionId],
+    queryFn: async () => (await apiRequest("GET", `/api/admin/hiring-overrides/next-step?submissionId=${encodeURIComponent(submissionId)}`)).json(),
+    enabled: capability.data?.canManage === true && !!submissionId,
+    retry: false,
+  });
+  const step = query.data?.step ?? null;
+  const mutation = useMutation({
+    mutationFn: async () => (await apiRequest("POST", "/api/admin/hiring-overrides/skip_next_step", {
+      submissionId, reason: reason.trim(), notifyParties, expectedStageKey: confirmedStep?.stageKey,
+      expectedTargetStatus: confirmedStep?.targetStatus,
+      ...(confirmedStep?.requiresTerms ? { rate: Number(rate), currency: currency.trim().toUpperCase(), startDate } : {}),
+    })).json(),
+    onSuccess: async () => {
+      const label = confirmedStep?.label ?? "next step";
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ["/api/admin/hiring-overrides"] }),
+        client.invalidateQueries({ queryKey: ["/api/admin/ledger"] }),
+        client.invalidateQueries({ queryKey: ["/api/admin/billing-contracts"] }),
+        client.invalidateQueries({ queryKey: ["/api/admin/contractor-onboarding"] }),
+        client.invalidateQueries({ queryKey: ["/api/hiring-payment-waivers"] }),
+        client.invalidateQueries({ queryKey: ["/api/admin/clients"] }),
+        client.invalidateQueries({ queryKey: ["/api/client/team-dashboard"] }),
+        client.invalidateQueries({ queryKey: ["/api/admin/job-applications"] }),
+        client.invalidateQueries({ queryKey: ["/api/admin/job-applications", submissionId] }),
+        client.invalidateQueries({ queryKey: ["/api/contractor-onboarding", submissionId] }),
+        client.invalidateQueries({ queryKey: ["/api/admin/hiring-overrides/next-step", submissionId] }),
+      ]);
+      toast({ title: `Step skipped: ${label}` });
+      setOpen(false); setReason(""); setNotifyParties(false);
+    },
+    onError: async (error: any) => {
+      await query.refetch();
+      const message = error?.data?.message ?? error?.message ?? "The step could not be skipped.";
+      toast({ title: "Could not skip step", description: message.includes("STEP_CHANGED") ? "The application moved on — refresh and try again" : String(message).replace(/^\d+:\s*/, ""), variant: "destructive" });
+    },
+  });
+  if (capability.data?.canManage !== true) return null;
+  const termsReady = !confirmedStep?.requiresTerms || (Number(rate) > 0 && currency.trim().length === 3 && !!startDate);
+  return <>
+    <div className={compact ? "mt-3" : "mt-2"}>
+      <Button type="button" variant="outline" className="w-full border-amber-300 bg-white text-amber-950 sm:w-auto" disabled={query.isLoading || query.isError || !step || mutation.isPending} onClick={() => { if (step) {
+        setConfirmedStep({...step});
+        setRate(step.rate != null ? String(step.rate) : initialRate == null ? "" : String(initialRate));
+        setCurrency(step.currency ?? initialCurrency ?? "USD");
+        setStartDate((step.startDate ?? initialStartDate)?.slice(0,10) ?? "");
+        setNotifyParties(false);mutation.reset();setOpen(true);
+      } }}>
+        {query.isLoading ? "Loading next step…" : query.isError ? "Next step unavailable" : step ? `Skip this step: ${step.label}` : "No steps left to bypass"}
+      </Button>
+      {query.isError && <button type="button" className="ml-2 text-xs underline" onClick={() => void query.refetch()}>Retry</button>}
+    </div>
+    {open && confirmedStep && <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/45 p-3" role="dialog" aria-modal="true" aria-label="Confirm next-step bypass">
+      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-xl border bg-background p-5 shadow-xl">
+        <h3 className="text-lg font-semibold">Skip {confirmedStep.label}?</h3>
+        <p className="mt-2 text-sm text-muted-foreground">{confirmedStep.description}</p>
+        <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs font-semibold text-amber-950">This skips one step only.</p>
+        {confirmedStep.requiresTerms && <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <label className="space-y-1 text-sm font-medium">Rate<input className="h-10 w-full rounded-md border bg-background px-3 font-normal" type="number" min="0.01" step="0.01" value={rate} onChange={e => setRate(e.target.value)} /></label>
+          <label className="space-y-1 text-sm font-medium">Currency<input className="h-10 w-full rounded-md border bg-background px-3 font-normal" maxLength={3} value={currency} onChange={e => setCurrency(e.target.value.toUpperCase())} /></label>
+          <label className="space-y-1 text-sm font-medium">Start date<input className="h-10 w-full rounded-md border bg-background px-3 font-normal" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></label>
+        </div>}
+        <label className="mt-4 block space-y-1 text-sm font-medium">Reason <span className="font-normal text-muted-foreground">(10–2,000 characters)</span><textarea className="min-h-24 w-full rounded-md border bg-background px-3 py-2 font-normal" maxLength={2000} value={reason} onChange={e => setReason(e.target.value)} /></label>
+        <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={notifyParties} onChange={e => setNotifyParties(e.target.checked)} /><span>Notify client and talent</span></label>
+        {mutation.error && <p role="alert" className="mt-3 text-sm text-rose-700">{(mutation.error as Error).message}</p>}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" disabled={mutation.isPending} onClick={() => { setOpen(false); mutation.reset(); }}>Cancel</Button><Button disabled={reason.trim().length < 10 || reason.trim().length > 2000 || mutation.isPending || !termsReady} onClick={() => mutation.mutate()}>{mutation.isPending ? "Recording…" : "Confirm skip"}</Button></div>
+      </div>
+    </div>}
+  </>;
 }
 
 export function WaiveDepositButton({ submissionId, depositId, className = "" }: { submissionId?: string; depositId?: string | null; className?: string }) {

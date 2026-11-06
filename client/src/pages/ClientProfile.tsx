@@ -76,7 +76,8 @@ import { JobRichText } from "@/components/JobRichText";
 import { ContractApplicationPanel } from "@/components/ContractApplicationPanel";
 import { OfferExpirationRenewal } from "@/components/OfferExpirationRenewal";
 import { PaymentVerificationCard, usePaymentSkip } from "@/components/hiring-payments/PaymentVerificationCard";
-import { InterviewOutcomeControls,InterviewOutcomeList } from "@/components/InterviewOutcomeControls";
+import { InterviewOutcomeControls, InterviewOutcomeList } from "@/components/InterviewOutcomeControls";
+import { InterviewDecisionPanel } from "@/components/InterviewDecisionPanel";
 import { ContractorOnboardingTracker, useContractorOnboarding } from "@/components/ContractorOnboarding";
 import { isContractorOfferAllowed } from "@/lib/contractorOnboarding";
 import { useClientJobs } from "@/hooks/useClientJobs";
@@ -184,6 +185,7 @@ export function ViewSubmissionModal({
   const [requestedStatus, setRequestedStatus] = useState<string>("");
   const [requestConfirmOpen, setRequestConfirmOpen] = useState(false);
   const [requestInterviewOpen, setRequestInterviewOpen] = useState(false);
+  const [finalInterviewAdvanced, setFinalInterviewAdvanced] = useState(false);
   const statusOperation = useRef<{ id: string; status: string } | null>(null);
   const statusBusy = useRef(false);
   const { data: interviewRows = [], isLoading: interviewRowsLoading, refetch: refetchInterviews } = useQuery<any[]>({
@@ -192,7 +194,7 @@ export function ViewSubmissionModal({
       const res = await apiRequest("GET", `/api/client/interviews?submissionId=${submission.id}`);
       return res.ok ? res.json() : [];
     },
-    enabled: Boolean(submission.interviewId || requestedInterviewId),
+    enabled: Boolean(submission.interviewId || requestedInterviewId || submission.status === "interviewing"),
   });
   const { data: submissionOffers = [] } = useQuery<OfferRecord[]>({
     queryKey: ["/api/client/offers", submission.id],
@@ -207,7 +209,8 @@ export function ViewSubmissionModal({
     : null;
   const currentInterview = requestedInterviewId
     ? requestedInterview
-    : interviewRows.find((row: any) => row.id === submission.interviewId);
+    : interviewRows.filter((row: any) => row.status !== "cancelled").sort((a:any,b:any)=>
+        Number(b.round_number??b.roundNumber??0)-Number(a.round_number??a.roundNumber??0))[0];
   const requestedInterviewNotFound = !!requestedInterviewId && !interviewRowsLoading && !requestedInterview;
   const requestedInterviewIsHistorical = !!requestedInterviewId &&
     requestedInterviewId !== submission.interviewId && !!requestedInterview;
@@ -290,7 +293,7 @@ export function ViewSubmissionModal({
   return (
     <>
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-muted-foreground" />
@@ -305,6 +308,7 @@ export function ViewSubmissionModal({
             isError={onboarding.isError}
             onRetry={() => void onboarding.refetch()}
             onShortlist={onboarding.data?.policy === "deposit_first" && !onboarding.data.shortlistSatisfied && !shortlisting ? shortlistApplication : undefined}
+            compact
           />
           {/* Job info */}
           <div className="rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-800/40">
@@ -332,7 +336,7 @@ export function ViewSubmissionModal({
                 Pending and declined invitations are locked — only the talent's respond
                 endpoint may transition those rows. */}
           </div>
-          {CLIENT_SETTABLE_STATUSES.some(status => canClientUpdateApplicationStatus(submission.status, status)) && (
+          {submission.status !== "interviewing" && CLIENT_SETTABLE_STATUSES.some(status => canClientUpdateApplicationStatus(submission.status, status)) && (
               <div className="space-y-2">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Update application status</Label>
                 <div className="flex gap-2">
@@ -347,7 +351,7 @@ export function ViewSubmissionModal({
           )}
 
            {/* Interview coordination */}
-            {submission.interviewId || requestedInterviewId ? (
+            {submission.interviewId || requestedInterviewId || currentInterview ? (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 dark:border-indigo-800/40 dark:bg-indigo-950/20">
                {requestedInterviewNotFound ? (
                  <p role="alert" className="text-sm text-amber-800 dark:text-amber-300">
@@ -384,7 +388,13 @@ export function ViewSubmissionModal({
                   Waiting for the talent to choose a time. {submission.proposalExchangeCount ? `${submission.proposalExchangeCount} time exchange${submission.proposalExchangeCount === 1 ? "" : "s"} so far.` : ""}
                 </p>
               )}
-              {currentInterview&&<InterviewOutcomeControls interview={currentInterview} />}
+              {currentInterview&&<InterviewDecisionPanel
+                interview={currentInterview}
+                onRejectBeforeStart={() => { setRequestedStatus("rejected"); setRequestConfirmOpen(true); }}
+                onScheduleNext={() => setRequestInterviewOpen(true)}
+                onFinalAdvance={() => setFinalInterviewAdvanced(true)}
+              />}
+              {currentInterview && <InterviewOutcomeControls interview={currentInterview} />}
               <InterviewOutcomeList submissionId={submission.id} excludeId={currentInterview?.id} />
               {(() => {
                 const interview = currentInterview;
@@ -513,7 +523,7 @@ export function ViewSubmissionModal({
           {submission.hiringPipelineEligible && OFFERABLE_STATUSES.has(submission.status) && !isPendingOrDeclinedInvite(submission.initiated_by, submission.status, isInvitationPending(submission)) && (
             <div className="border-t border-slate-100 dark:border-white/[0.08] pt-4">
               <Button
-                className="w-full gap-2 bg-[#474ead] hover:bg-[#3a3d8f] text-white"
+                className={`w-full gap-2 bg-[#474ead] hover:bg-[#3a3d8f] text-white ${finalInterviewAdvanced ? "ring-4 ring-emerald-300 ring-offset-2" : ""}`}
                 disabled={onboarding.data?.policy === "deposit_first" && !onboarding.data.canSendOffer}
                 onClick={() => { onClose(); onExtendOffer(submission); }}
               >
