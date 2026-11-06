@@ -1,4 +1,5 @@
 import { applySearchFilter } from "./lib/jobSearchFilter.js";
+import { stripTalentPartyDetails } from "../shared/contractPartyDetails";
 import {
   type User, type InsertUser, type UpsertUser,
   type Profile, type InsertProfile,
@@ -3554,24 +3555,24 @@ export class DbStorage extends MemStorage {
       ...data,
       preferences,
     }).returning();
-    return candidate;
+    return stripTalentPartyDetails(candidate);
   }
 
   async getCandidate(id: string): Promise<Candidate | undefined> {
     const [candidate] = await db.select().from(candidatesTable).where(eq(candidatesTable.id, id));
-    return candidate;
+    return candidate && stripTalentPartyDetails(candidate);
   }
 
   async getCandidateByEmail(email: string): Promise<Candidate | undefined> {
     const [candidate] = await db.select().from(candidatesTable)
       .where(sqlOp`lower(${candidatesTable.email}) = lower(${email})`);
-    return candidate;
+    return candidate && stripTalentPartyDetails(candidate);
   }
 
   async getCandidateByUserId(userId: string): Promise<Candidate | undefined> {
     const [candidate] = await db.select().from(candidatesTable)
       .where(eq(candidatesTable.userId, userId));
-    return candidate;
+    return candidate && stripTalentPartyDetails(candidate);
   }
 
   async getCandidates(): Promise<Candidate[]> {
@@ -3592,7 +3593,7 @@ export class DbStorage extends MemStorage {
         ),
       )
       .orderBy(desc(candidatesTable.createdAt));
-    return rows.map(({ candidate }) => candidate);
+    return rows.map(({ candidate }) => stripTalentPartyDetails(candidate));
   }
 
   async updateCandidate(id: string, updates: Partial<InsertCandidate>): Promise<Candidate | undefined> {
@@ -3616,7 +3617,7 @@ export class DbStorage extends MemStorage {
       normalizedUpdates = { ...updates, preferences: mergedPreferences };
     }
     const [updated] = await db.update(candidatesTable).set(normalizedUpdates).where(eq(candidatesTable.id, id)).returning();
-    return updated;
+    return updated && stripTalentPartyDetails(updated);
   }
 
   async upsertCultureEvaluation(

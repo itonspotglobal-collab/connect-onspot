@@ -1,4 +1,5 @@
 import { useLocation, useParams, Link } from "wouter";
+import { ContractPartyDetails } from "@/components/ContractPartyDetails";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AlertTriangle, ArrowLeft, Building2, Globe2, Loader2, Mail, RefreshCw, Trash2, UserMinus, Users, X } from "lucide-react";
@@ -594,6 +595,8 @@ export default function OrganizationDetail() {
           </Card>
         </CardContent>
       </Card>
+
+      {isOwner && <ContractPartyDetails scope="organization" organizationId={organizationId} />}
 
       {/* Danger zone — owner-only deletion */}
       {isOwner && !isPendingDeletion && (

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { ContractPartyDetails } from "@/components/ContractPartyDetails";
 import { uploadCandidateVideo } from "@/lib/uploadCandidateVideo";
 import { candidateVideoError } from "../../../shared/candidateVideo";
 import { ProfileRichTextEditor } from "@/components/ProfileRichTextEditor";
@@ -1715,6 +1716,10 @@ export default function TalentProfile() {
                 </div>
               )}
             </Section>
+
+            {showPrivateOwnerSections && (
+              <ContractPartyDetails scope="talent" candidateId={candidate.id} />
+            )}
 
             {/* Applications — private, only visible to authenticated owner (hidden in public preview) */}
             {showPrivateOwnerSections && (

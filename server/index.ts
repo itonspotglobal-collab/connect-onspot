@@ -11,6 +11,7 @@ import { setupAuth } from "./replitAuth";
 import { ogMiddleware } from "./ogMiddleware";
 import { query } from "./db";
 import { legacyAppRedirect } from "./lib/legacyAppRedirect";
+import { addressColumns, businessPartyColumns, talentPartyColumns } from "../shared/contractPartyDetails";
 
 // Extend Request interface to include requestId
 declare global {
@@ -727,6 +728,13 @@ app.use((req, res, next) => {
       if (sanitizedBody.password) delete sanitizedBody.password;
       if (sanitizedBody.token) delete sanitizedBody.token;
       if (sanitizedBody.secret) delete sanitizedBody.secret;
+      // Contract party data is never sent to error telemetry.
+      for (const [key, column] of Object.entries({
+        ...addressColumns, ...businessPartyColumns, ...talentPartyColumns,
+      })) {
+        delete sanitizedBody[key];
+        delete sanitizedBody[column];
+      }
       
       Sentry.captureException(err, {
         tags: {

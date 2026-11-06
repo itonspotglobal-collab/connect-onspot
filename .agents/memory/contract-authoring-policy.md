@@ -1,0 +1,28 @@
+---
+name: Contract authoring policy
+description: Owner requirements for template-based authoring layered onto existing contract and MSA signing.
+---
+
+Template generation and editing must produce ordinary versioned PDFs for the existing signing flows, not replace those flows. Continue supporting uploaded PDFs, document-hash binding, review-before-sign, immutable sent versions, audit events, notifications and legacy MSA signatures.
+
+**Why:** The owner explicitly requested “extend, don't replace”; the missing capability is authoring, not a new signing or activation system.
+
+**How to apply:** Freeze rendered content before send. Revisions must create new document versions without carrying signatures forward.
+
+Legal party identity is separate from public profile identity. Talent contract addresses and legal names are private owner data, not public/discovery fields. Keep legal names separate from display names, do not infer legal addresses from free-text locations, and collect at most an optional four-digit tax-ID suffix. Never collect payment card or bank-account details in these forms.
+
+**Why:** These fields exist for agreements; adding structured identity must not weaken existing Client-facing privacy or expose financial credentials.
+
+**How to apply:** Resolve private values server-side only under contract authority. Ordinary candidate/profile/discovery DTOs must stay private-field-free; authorized owners use dedicated private reads.
+
+The requested MSA template must use approved current OnSpot wording, excluding the ACH/credit-card authorization page. Do not invent missing legal text or OnSpot receiving/account details.
+
+**Why:** Templates are legal documents, not sample marketing content.
+
+**How to apply:** Obtain the authoritative document if its wording cannot be read from existing approved sources.
+
+An additional OnSpot MSA countersignature defaults to non-blocking for activation unless the owner explicitly changes that policy. This does not relax mandatory OnSpot signatures on hiring contracts.
+
+**Why:** The owner distinguished the new MSA countersign step from existing hiring-contract execution requirements.
+
+**How to apply:** Preserve existing activation and legacy-MSA validity while discussing the MSA countersignature stage.

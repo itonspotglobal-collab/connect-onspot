@@ -25,6 +25,7 @@
 - [Hiring pipeline — Phase 2 (offers)](hiring-pipeline-phase2.md) — engagement snapshot from jobs, mismatch flag rules, talent expectation lives in candidates.preferences, ownership + race patterns.
 - [Hiring pipeline — Phase 3](hiring-pipeline-phase3.md) — historical contract/signature context; activation now follows the deposit-funded hiring policy.
 - [Contract signing parties](contract-signing-policy.md) — OnSpot remains mandatory; Client/Organization agreements also require their authorized representative.
+- [Contract authoring policy](contract-authoring-policy.md) — templates must extend existing PDF signing; private party identity and MSA countersigning stay distinct from hiring signatures.
 - [Status rename audit](status-rename-audit.md) — 'submitted' → 'new' canonical rename; all write paths, name_reveal system, test files, and platform_settings migration fully closed.
 - [Resume auto-fill pipeline](resume-autofill-pipeline.md) — shared applyResumeToCandidate.ts calls after every upload; parser extended with workHistory/education/certifications/languages; merge is non-destructive (summary preserves manual edits).
 - [Status email retry invariant](status-email-retry.md) — failed applicant emails persist pending status intent so retries cannot deliver a transition without committing its status workflow.

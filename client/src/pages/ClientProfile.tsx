@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ContractPartyDetails } from "@/components/ContractPartyDetails";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1242,6 +1243,8 @@ function ClientProfileOverview() {
             )}
           </CardContent>
         </Card>
+
+        <ContractPartyDetails scope="client" />
 
         {/* ── MSA acceptance ───────────────────────────────────────────────── */}
         <Card className={msaStatus?.accepted ? "border-emerald-200 dark:border-emerald-800/40" : "border-amber-200 dark:border-amber-800/40"}>

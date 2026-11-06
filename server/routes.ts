@@ -72,6 +72,9 @@ import { sanitizeSearchCandidate, sanitizeFullProfileForClient } from "./lib/cli
 import { maskClientTalentName } from "../shared/talentName";
 import { activeHireExistsSQL, canSendHireMessage, hiredHistoryExistsSQL, listMessagingContacts, messagingNameRevealExistsSQL } from "./services/messagingContacts";
 import { createCandidateMeHandler } from "./lib/candidateMeHandler";
+import { registerContractPartyDetails } from "./routes/contractPartyDetails";
+import { createClientProfileUpdateHandler, createOrganizationUpdateHandler } from "./routes/businessPartyProfiles";
+import { businessPartyColumns, partyDetailsFromRow, stripTalentPartyDetails } from "../shared/contractPartyDetails";
 import { registerDisabledLinkedInImportRoutes } from "./lib/disabledLinkedInImport";
 import { hasEmailOwnership } from "./lib/emailOwnership";
 import { authenticatePassword } from "./lib/passwordAuthentication";
@@ -7495,7 +7498,7 @@ export async function registerRoutes(
 
   // Strip sensitive auth fields before sending candidate data to clients
   function sanitizeCandidate(c: any) {
-    const { passwordHash: _ph, ...safe } = c;
+    const { passwordHash: _ph, ...safe } = stripTalentPartyDetails(c);
     return safe;
   }
 
@@ -7649,6 +7652,7 @@ export async function registerRoutes(
   // Returns the same full DTO as GET /api/candidates/:id so all pages compute an identical
   // completion percentage regardless of which endpoint they use.
   app.get("/api/candidates/me", authenticateJWT, createCandidateMeHandler(query));
+  registerContractPartyDetails(app, authenticateJWT, query);
 
   app.get("/api/candidates/:id", async (req: any, res) => {
     try {
@@ -14714,6 +14718,7 @@ export async function registerRoutes(
   // ── Client Profile ────────────────────────────────────────────────────────
   // Helper: map snake_case client_profiles row → camelCase
   const mapClientProfileRow = (row: any) => ({
+    ...partyDetailsFromRow(row, businessPartyColumns),
     id: row.id,
     userId: row.user_id,
     companyName: row.company_name ?? null,
@@ -14751,7 +14756,8 @@ export async function registerRoutes(
     timezone: optionalOrganizationText(120),
   }).strict();
 
-  const mapOrganizationRow = (row: any) => ({
+  const mapOrganizationRow = (row: any, includePartyDetails = false) => ({
+    ...(includePartyDetails ? partyDetailsFromRow(row, businessPartyColumns) : {}),
     id: row.id,
     name: row.name,
     website: row.website ?? null,
@@ -14904,7 +14910,7 @@ export async function registerRoutes(
         [userId],
       );
       return res.json(result.rows.map((row: any) => ({
-        organization: mapOrganizationRow(row),
+        organization: mapOrganizationRow(row, row.membership_role === "owner"),
         membership: mapOrganizationMembership(row),
       })));
     } catch (err: any) {
@@ -14931,7 +14937,7 @@ export async function registerRoutes(
       if (!result.rows.length) return res.status(404).json({ error: "Organization not found" });
       const row = result.rows[0];
       return res.json({
-        organization: mapOrganizationRow(row),
+        organization: mapOrganizationRow(row, row.membership_role === "owner"),
         membership: mapOrganizationMembership(row),
       });
     } catch (err: any) {
@@ -14942,57 +14948,8 @@ export async function registerRoutes(
 
   // PATCH /api/organizations/:organizationId — owner-authorized update of organization fields.
   // All fields are optional so callers can send only what changed.
-  app.patch("/api/organizations/:organizationId", authenticateJWT, requireClient, async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id;
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
-    const { organizationId } = req.params;
-
-    try {
-      const membership = await requireOrganizationOwner(organizationId, userId);
-      if (!membership) return res.status(403).json({ error: "Only organization owners can update organization details" });
-
-      const updatePayloadSchema = z.object({
-        name: z.string().trim().min(1, "Name cannot be empty").max(200).optional(),
-        website: optionalOrganizationText(2048),
-        industry: optionalOrganizationText(120),
-        companySize: optionalOrganizationText(80),
-        location: optionalOrganizationText(200),
-        about: optionalOrganizationText(5000),
-        timezone: optionalOrganizationText(120),
-      }).strict();
-
-      const payload = updatePayloadSchema.parse(req.body ?? {});
-      if (Object.keys(payload).length === 0) {
-        return res.status(400).json({ error: "No fields provided to update" });
-      }
-
-      const sets: string[] = [];
-      const params: unknown[] = [];
-      let idx = 1;
-      if (payload.name !== undefined)        { sets.push(`name = $${idx++}`);                  params.push(payload.name); }
-      if (payload.website !== undefined)     { sets.push(`website = NULLIF($${idx++}, '')`);   params.push(payload.website); }
-      if (payload.industry !== undefined)    { sets.push(`industry = NULLIF($${idx++}, '')`);  params.push(payload.industry); }
-      if (payload.companySize !== undefined) { sets.push(`company_size = NULLIF($${idx++}, '')`); params.push(payload.companySize); }
-      if (payload.location !== undefined)    { sets.push(`location = NULLIF($${idx++}, '')`);  params.push(payload.location); }
-      if (payload.about !== undefined)       { sets.push(`about = NULLIF($${idx++}, '')`);     params.push(payload.about); }
-      if (payload.timezone !== undefined)    { sets.push(`timezone = NULLIF($${idx++}, '')`);  params.push(payload.timezone); }
-      sets.push("updated_at = NOW()");
-      params.push(organizationId);
-
-      const result = await query(
-        `UPDATE organizations SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`,
-        params,
-      );
-      if (!result.rows[0]) return res.status(404).json({ error: "Organization not found" });
-      return res.json({ organization: mapOrganizationRow(result.rows[0]) });
-    } catch (err: any) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ error: err.errors[0]?.message ?? "Invalid input" });
-      }
-      console.error("PATCH /api/organizations/:organizationId error:", err.message);
-      return res.status(500).json({ error: "Failed to update organization" });
-    }
-  });
+  app.patch("/api/organizations/:organizationId", authenticateJWT, requireClient,
+    createOrganizationUpdateHandler(query, requireOrganizationOwner, mapOrganizationRow));
 
   // Team membership is managed separately from the existing individual Client
   // account. Only an active organization owner can invite, revoke, or remove.
@@ -15885,52 +15842,8 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/client-profile/me", authenticateJWT, requireClient, async (req: Request, res: Response) => {
-    try {
-      const userId = (req as any).user?.id;
-      if (!userId) return res.status(401).json({ error: "Unauthorized" });
-      const {
-        companyName, contactPerson, email, phoneNumber, website, industry,
-        companySize, location, about, hiringNeeds, timezone,
-      } = req.body;
-      // Use $1::text so that empty strings are stored (not COALESCE'd away)
-      const r = await query(
-        `UPDATE client_profiles
-         SET company_name   = $1,
-             contact_person = $2,
-             email          = $3,
-             phone_number   = $4,
-             website        = $5,
-             industry       = $6,
-             company_size   = $7,
-             location       = $8,
-             about          = $9,
-             hiring_needs   = $10,
-             timezone       = $11,
-             updated_at     = NOW()
-         WHERE user_id = $12
-         RETURNING *`,
-        [
-          companyName   ?? null,
-          contactPerson ?? null,
-          email         ?? null,
-          phoneNumber   ?? null,
-          website       ?? null,
-          industry      ?? null,
-          companySize   ?? null,
-          location      ?? null,
-          about         ?? null,
-          hiringNeeds   ?? null,
-          timezone      ?? null,
-          userId,
-        ],
-      );
-      if (r.rows.length === 0) return res.status(404).json({ error: "Profile not found" });
-      return res.json(mapClientProfileRow(r.rows[0]));
-    } catch (err: any) {
-      return res.status(500).json({ error: err.message });
-    }
-  });
+  app.put("/api/client-profile/me", authenticateJWT, requireClient,
+    createClientProfileUpdateHandler(query, mapClientProfileRow));
 
   // ── Client Jobs ───────────────────────────────────────────────────────────
   // GET /api/client/invitation-readiness — returns the client's complete
