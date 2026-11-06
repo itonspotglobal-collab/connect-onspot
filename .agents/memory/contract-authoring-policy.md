@@ -44,3 +44,15 @@ Activating template-based per-client MSAs must not invalidate Clients' previousl
 **Why:** Authoring rollout is not authorization to require every existing Client to sign again. Only explicit issuance of a personalized replacement starts a new signature requirement; signatures never transfer to it.
 
 **How to apply:** Keep signed legacy documents usable during the transition. Unsigned Clients need a personalized issued agreement when the MSA template is active; never present an unfilled shared source as their new agreement.
+
+Executed copies must not guess signature positions in uploaded or older PDFs. Preserve their original pages and use clearly labelled additional signature pages when no reserved blocks exist.
+
+**Why:** Automatically placing signatures over arbitrary uploaded legal text can obscure or appear to modify agreed terms. Generated agreements may reserve explicit blocks before anyone signs.
+
+**How to apply:** Always keep original bytes and hash unchanged, bind the derived copy to real recorded signatures, and append the audit record. An activation exception is never permission to fabricate execution.
+
+Check the actual glyphs in executed legal PDFs, not just successful generation. A font can accept Unicode text but silently render missing characters as blank.
+
+**Why:** The signing regression test exposed missing non-Latin legal names despite successful PDF generation. Database evidence alone does not make the executed copy readable.
+
+**How to apply:** Bundle deployable font coverage rather than relying on host fonts; fail explicitly for unsupported characters instead of silently removing or transliterating names in signature blocks.

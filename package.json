@@ -20,6 +20,7 @@
   "dependencies": {
     "@firebase/app": "^0.16.1",
     "@firebase/auth": "^1.13.5",
+    "@fontsource/noto-sans-sc": "^5.2.9",
     "@google-cloud/storage": "^8.0.1",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",

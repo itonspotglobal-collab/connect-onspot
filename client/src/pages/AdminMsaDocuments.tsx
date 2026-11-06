@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, ShieldCheck, Loader2, AlertCircle, RotateCw, CircleCheck, Eye, X } from "lucide-react";
-import { ClientMsaAuthoring, type ClientMsaDocument, type ClientMsaEngagement } from "@/components/ClientMsaAuthoring";
+import { ClientMsaAuthoring, type ClientMsaDocument, type ClientMsaEngagement, type MsaSignerProfile } from "@/components/ClientMsaAuthoring";
 
 interface MsaDocument {
   id: string; version: string; sha256: string; effectiveAt: string; active: boolean; filename: string; viewUrl: string;
@@ -35,7 +35,7 @@ export default function AdminMsaDocuments() {
     queryKey: ["/api/admin/msa-documents"],
     queryFn: async () => (await apiRequest("GET", "/api/admin/msa-documents")).json(),
   });
-  const clientMsas = useQuery<{ engagements: ClientMsaEngagement[]; documents: ClientMsaDocument[]; countersignatureBlocksActivation: false }>({
+  const clientMsas = useQuery<{ engagements: ClientMsaEngagement[]; documents: ClientMsaDocument[]; signerProfile?: MsaSignerProfile; countersignatureBlocksActivation: false }>({
     queryKey: ["/api/admin/client-msas"],
     queryFn: async () => (await apiRequest("GET", "/api/admin/client-msas")).json(),
   });
@@ -101,7 +101,7 @@ export default function AdminMsaDocuments() {
        </div>
        {clientMsas.isLoading ? <div className="h-24 animate-pulse rounded-xl bg-white" /> : clientMsas.isError ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><AlertCircle className="mr-2 inline h-4 w-4" />Could not load client MSA preparation data. <button className="underline" onClick={() => void clientMsas.refetch()}>Retry</button></div> : !clientMsas.data?.engagements.length ? <div className="rounded-xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-500">No eligible client engagements are available for personalized MSA preparation.</div> : <>
          <div className="max-w-xl space-y-2"><Label htmlFor="msa-client-select">Client engagement</Label><select id="msa-client-select" value={selectedEngagement ? `${selectedEngagement.clientId}:${selectedEngagement.submissionId}` : ""} onChange={(event) => setSelectedEngagementKey(event.target.value)} className="h-10 w-full rounded-md border border-[#cbd9cf] bg-white px-3 text-sm text-slate-800">{clientMsas.data.engagements.map((engagement) => <option key={`${engagement.clientId}:${engagement.submissionId}`} value={`${engagement.clientId}:${engagement.submissionId}`}>{engagement.clientName} · {engagement.jobTitle}</option>)}</select></div>
-         {selectedEngagement && <ClientMsaAuthoring key={`${selectedEngagement.clientId}:${selectedEngagement.submissionId}`} engagement={selectedEngagement} documents={clientMsas.data.documents} onChanged={async () => { await clientMsas.refetch(); }} />}
+          {selectedEngagement && <ClientMsaAuthoring key={`${selectedEngagement.clientId}:${selectedEngagement.submissionId}`} engagement={selectedEngagement} documents={clientMsas.data.documents} signerProfile={clientMsas.data.signerProfile} onChanged={async () => { await clientMsas.refetch(); }} />}
        </>}
      </section>
     <div className="grid gap-6 lg:grid-cols-[.85fr_1.15fr]">

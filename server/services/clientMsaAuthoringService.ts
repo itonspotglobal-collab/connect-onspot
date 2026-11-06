@@ -6,6 +6,7 @@ import {contractBlobProvider,pdfHash,validateContractPdf,type ContractBlobProvid
 import {resolveMergeData,renderContractTemplate,sanitizeTemplateBody} from "./contractMergeService";
 import {composeDraft,checkDraftEdits,draftClauses} from "./contractDraftService";
 import {renderContractPdf} from "./contractPdfRenderer";
+import {signerProfile} from "./signatureEvidence";
 import {verifiedDeferredHiringPayment} from "./hiringPaymentWaiverService";
 import {depositArrangement} from "./depositArrangementState";
 import {queueHiringLifecycleEvent} from "./hiringLifecycleEvents";
@@ -84,15 +85,17 @@ export class ClientMsaAuthoringService {
     const documents=(await this.pool.query(`SELECT d.id,d.version,d.filename,d.sha256,d.effective_at AS "effectiveAt",
       c.client_id AS "clientId",c.status,c.template_version AS "templateVersion",c.submission_id AS "submissionId",
       COALESCE(cp.legal_entity_name,u.company,'Client') AS "clientName",
-      s.signer_name AS "clientSignerName",s.signed_at AS "clientSignedAt",
-      cs.legal_name AS "onspotSignerName",cs.signed_at AS "onspotSignedAt",
-      '/api/client/msa/'||d.id||'/pdf' AS "viewUrl"
+      s.signer_name AS "clientSignerName",s.signed_at AS "clientSignedAt",s.signer_title AS "clientSignerTitle",s.signature_png IS NOT NULL AS "clientHasDrawnSignature",
+      cs.legal_name AS "onspotSignerName",cs.signed_at AS "onspotSignedAt",cs.signer_title AS "onspotSignerTitle",cs.signature_png IS NOT NULL AS "onspotHasDrawnSignature",
+      '/api/client/msa/'||d.id||'/pdf' AS "viewUrl",
+      CASE WHEN EXISTS(SELECT 1 FROM client_msa_executed_copies ec WHERE ec.document_id=d.id AND ec.client_id=c.client_id)
+        THEN '/api/client/msa/'||d.id||'/executed' ELSE NULL END AS "executedUrl"
       FROM client_msa_documents c JOIN msa_documents d ON d.id=c.document_id JOIN users u ON u.id=c.client_id
       LEFT JOIN client_profiles cp ON cp.user_id=u.id
       LEFT JOIN client_msa_signatures s ON s.document_id=d.id AND s.client_id=c.client_id AND s.document_sha256=d.sha256
       LEFT JOIN client_msa_countersignatures cs ON cs.document_id=d.id AND cs.document_sha256=d.sha256
       ORDER BY c.created_at DESC LIMIT 200`)).rows;
-    return {engagements,documents,countersignatureBlocksActivation:false};
+    return {engagements,documents,countersignatureBlocksActivation:false,signerProfile:await signerProfile(this.pool,actor,"onspot")};
   }
   async detail(actor:string,clientId:string) {
     return this.tx(async db=>{

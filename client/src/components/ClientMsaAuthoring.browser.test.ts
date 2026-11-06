@@ -22,8 +22,8 @@ before(async()=>{
         import{ClientMsaAuthoring}from"/src/components/ClientMsaAuthoring";import"/src/index.css";
         const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});
         function Admin(){const q=useQuery({queryKey:["list"],queryFn:async()=>fetch("/api/admin/client-msas").then(r=>r.json())});
-          return q.data?<ClientMsaAuthoring engagement={q.data.engagements[0]} documents={q.data.documents} onChanged={()=>q.refetch()}/>:<p>Loading</p>}
-        createRoot(document.getElementById("root")).render(<QueryClientProvider client={qc}><main className="p-6">{location.search.includes("admin")?<Admin/>:<ClientMsa/>}</main></QueryClientProvider>);`;},
+          return q.data?<ClientMsaAuthoring engagement={q.data.engagements[0]} documents={q.data.documents} signerProfile={q.data.signerProfile} onChanged={()=>q.refetch()}/>:<p>Loading</p>}
+        createRoot(document.getElementById("root")).render(<QueryClientProvider client={qc}><main className="p-6"><button onClick={()=>qc.invalidateQueries()}>Refresh fixture</button>{location.search.includes("admin")?<Admin/>:<ClientMsa/>}</main></QueryClientProvider>);`;},
       configureServer(server){server.middlewares.use(async(req,res,next)=>{
         if(req.url?.split("?")[0]!=="/__msa")return next();res.setHeader("Content-Type","text/html");
         res.end(await server.transformIndexHtml("/__msa",'<html><body><div id="root"></div><script type="module" src="/__msa.tsx"></script></body></html>'));
@@ -34,7 +34,7 @@ before(async()=>{
 });
 after(async()=>{await browser?.close();await vite?.close();if(cache)rmSync(cache,{recursive:true,force:true});});
 test("Client reviews personalized PDF, signs exact hash, sees non-blocking countersign and returns from archive",async()=>{
-  const page=await browser.newPage();
+  const page=await browser.newPage({viewport:{width:402,height:874}});
   let signed=false;const sent:any[]=[];
   await page.route("**/api/**",async route=>{
     const url=new URL(route.request().url());
@@ -43,16 +43,36 @@ test("Client reviews personalized PDF, signs exact hash, sees non-blocking count
     return route.fulfill({json:{document:{id:docId,version:"fixture-client-v1",sha256:sha,effectiveAt:"2026-01-01",viewUrl:`/api/client/msa/${docId}/pdf`},
       signature:signed?{id:"signature",signerName:"Fixture Client",signedAt:"2026-01-02"}:null,
       requiresSignature:!signed,issued:true,personalized:true,countersignature:null,countersignatureBlocksActivation:false,
+      signerProfile:{userId:"fixture-client",legalName:"Profile Client",title:"Profile Director"},
       history:[{id:oldId,version:"legacy-v1",sha256:"b".repeat(64),effectiveAt:"2025-01-01",signedAt:"2025-01-02",signerName:"Fixture Client",personalized:false,status:"historical",viewUrl:`/api/client/msa/${oldId}/pdf`}] }});
   });
   await page.goto(`${origin}/__msa`);
   await page.getByText("Your client-specific agreement",{exact:true}).waitFor();
   await page.locator('iframe[title="Client MSA version fixture-client-v1"]').waitFor();
+  assert.equal(await page.getByLabel("Full legal name",{exact:true}).inputValue(),"Profile Client");
   await page.getByLabel("Full legal name",{exact:true}).fill("Fixture Client");
+  await page.getByLabel(/^Title/).fill("Manual Director");
+  const canvas=page.getByLabel("Optional signature drawing area");
+  await canvas.scrollIntoViewIfNeeded();
+  const bounds=(await canvas.boundingBox())!;
+  await page.mouse.move(bounds.x+15,bounds.y+25);await page.mouse.down();
+  await page.mouse.move(bounds.x+55,bounds.y+40,{steps:5});await page.mouse.up();
+  assert.equal(await page.getByRole("button",{name:"Sign current agreement"}).isDisabled(),true,"drawing never replaces consent");
+  await page.getByRole("button",{name:"Clear drawn signature"}).click();
+  await canvas.scrollIntoViewIfNeeded();
+  const secondBounds=(await canvas.boundingBox())!;
+  await page.mouse.move(secondBounds.x+20,secondBounds.y+20);await page.mouse.down();
+  await page.mouse.move(secondBounds.x+70,secondBounds.y+45,{steps:5});await page.mouse.up();
+  assert.equal(await page.getByRole("button",{name:"Clear drawn signature"}).isEnabled(),true);
+  await page.getByRole("button",{name:"Refresh fixture",exact:true}).click();
+  assert.equal(await page.getByLabel("Full legal name",{exact:true}).inputValue(),"Fixture Client","refetch must preserve edits");
   await page.getByRole("checkbox").check();
   await page.getByRole("button",{name:"Sign current agreement"}).click();
   await page.getByText("OnSpot countersignature is pending.",{exact:false}).waitFor();
   assert.equal(sent.length,1);assert.equal(sent[0].documentId,docId);assert.equal(sent[0].documentSha256,sha);
+  assert.equal(sent[0].signerTitle,"Manual Director");assert.match(sent[0].drawnSignature,/^data:image\/png;base64,/);
+  const png=Buffer.from(sent[0].drawnSignature.slice(22),"base64");assert.equal(png.readUInt32BE(16),1000);assert.equal(png.readUInt32BE(20),320);
+  assert.equal(await page.getByRole("button",{name:"Open executed copy",exact:true}).count(),0,"a Client-only signature is not a fully executed MSA");
   assert.match(await page.locator("body").innerText(),/not required for activation/);
   await page.getByRole("button",{name:"Review signed copy"}).click();
   await page.locator('iframe[title="OnSpot MSA version legacy-v1"]').waitFor();
@@ -81,7 +101,7 @@ test("Admin countersign requires review, name and consent; fresh generation need
   await page.getByRole("button",{name:"Open exact signed PDF"}).click();
   await button.click();
   assert.equal(posts[0].path,`/api/admin/msa-documents/${docId}/countersign`);
-  assert.deepEqual(posts[0].body,{documentSha256:sha,legalName:"Fixture OnSpot",consent:true});
+  assert.deepEqual(posts[0].body,{documentSha256:sha,legalName:"Fixture OnSpot",consent:true,drawnSignature:null});
   await page.getByText("OnSpot countersignature recorded.",{exact:false}).waitFor();
   await page.getByRole("button",{name:"Prepare a new version"}).click();
   assert.equal(posts.length,1,"opening replacement confirmation must not create a version");

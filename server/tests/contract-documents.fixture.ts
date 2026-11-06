@@ -14,6 +14,7 @@ import { contractBlobProvider, validateContractPdf, pdfHash, type ContractBlobPr
 import { deliverContractEmails } from "../services/contractDeliveryService";
 import { updateHiringContract } from "../services/hiringContractService";
 import { ObjectStorageService } from "../objectStorage";
+import {registerSignaturePolishTests} from "./signature-polish-tests";
 
 const suffix = randomUUID(), client = `doc-client-${suffix}`, admin = `doc-admin-${suffix}`, talent = `doc-talent-${suffix}`;
 const other = `doc-other-${suffix}`, otherTalent = `doc-other-talent-${suffix}`, owner = `doc-owner-${suffix}`, member = `doc-member-${suffix}`;
@@ -259,3 +260,4 @@ test("optional actual private object provider round-trip, with fixture PDF delet
     throw new Error("Actual private object-provider round-trip failed");
   } finally { if (key) await contractBlobProvider.remove(key); }
 });
+registerSignaturePolishTests({pool,query,client,talent,admin,org,owner,prepare,acceptedOffer,blobs:externalBlobTransport});

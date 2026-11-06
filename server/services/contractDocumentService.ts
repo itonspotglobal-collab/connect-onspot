@@ -6,6 +6,7 @@ import { FORMAL_PIPELINE_PREDICATE } from "./formalPipelineGuard";
 import { AUDITED_ADMIN_OVERRIDE_ELIGIBILITY_PREDICATE } from "../../shared/adminOverrideEligibilitySql";
 import { contractBlobProvider, executedContractPdf, pdfHash, validateContractPdf, type ContractBlobProvider } from "./contractBlobStore";
 import { isDepositFirst, requirePaidContract, lockOnboarding } from "./contractorOnboardingPolicy";
+import {signatureEvidence,signerProfile} from "./signatureEvidence";
 
 export type ContractActor = { id: string };
 const deny = () => new ContractError(404, { error: "Contract not found or forbidden" });
@@ -251,7 +252,7 @@ export async function contractDetail(id: string, actor: ContractActor) {
     const { row, permissions } = await load(tx, id, actor, false);
     const document = await currentDocument(tx, id);
     const signatures = document ? (await tx.query(
-      `SELECT s.signer_role,s.legal_name,s.signed_at,s.signature_method,s.document_version,s.document_sha256,
+      `SELECT s.signer_role,s.legal_name,s.signer_title,s.signature_png IS NOT NULL AS has_drawn_signature,s.signed_at,s.signature_method,s.document_version,s.document_sha256,
         org.name AS organization_name FROM contract_signatures s LEFT JOIN organizations org ON org.id=s.organization_id
         WHERE s.document_id=$1 ORDER BY s.signed_at`, [document.id])).rows : [];
     const timeline = (await tx.query(`SELECT e.action,e.created_at,COALESCE(NULLIF(TRIM(CONCAT(u.first_name,' ',u.last_name)),''),'Account') AS actor_name
@@ -267,7 +268,8 @@ export async function contractDetail(id: string, actor: ContractActor) {
     }
     const attachments = (await tx.query(`SELECT id,original_filename AS "originalFilename",file_size AS "fileSize",
       sha256,version,status FROM contract_attachments WHERE hiring_contract_id=$1 AND status<>'removed' ORDER BY version`, [id])).rows;
-    return { contract: safe, document: document ?? null, signatures, timeline, permissions, attachments };
+    return { contract: safe, document: document ?? null, signatures, timeline, permissions, attachments,
+      signerProfile:permissions.signerRole?await signerProfile(tx,actor.id,permissions.signerRole,row.organization_id):{userId:actor.id,legalName:"",title:""} };
   });
 }
 export async function listContracts(actor: ContractActor) {
@@ -349,6 +351,7 @@ export async function signContractPdf(id: string, actor: ContractActor, body: an
       assertActive(row);
       const document = await currentDocument(tx, id);
       if (!permissions.canSign || !document || !["sent_for_signature", "talent_signed", "countersigned"].includes(document.status)) throw new ContractError(409, { error: "contract_not_signable" });
+      const evidence=await signatureEvidence(body);
       if (body.documentId !== document.id || body.sha256 !== document.sha256) throw new ContractError(409, { error: "document_version_changed" });
       if (!(await tx.query("SELECT 1 FROM contract_document_reviews WHERE document_id=$1 AND user_id=$2 AND sha256=$3",
         [document.id, actor.id, document.sha256])).rows.length) throw new ContractError(409, { error: "review_pdf_first" });
@@ -358,11 +361,11 @@ export async function signContractPdf(id: string, actor: ContractActor, body: an
       if ((await tx.query("SELECT 1 FROM contract_signatures WHERE document_id=$1 AND signer_role=$2", [document.id, role])).rows.length) {
         throw new ContractError(409, { error: "already_signed" });
       }
-      await tx.query(`INSERT INTO contract_signatures(document_id,signer_user_id,signer_role,legal_name,document_version,document_sha256,organization_id,authority_context,audit_metadata)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)`,
+      await tx.query(`INSERT INTO contract_signatures(document_id,signer_user_id,signer_role,legal_name,document_version,document_sha256,organization_id,authority_context,audit_metadata,signer_title,signature_png)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11)`,
         [document.id, actor.id, role, name, document.version, document.sha256,
           role === "organization" ? row.organization_id : null,
-          role === "organization" ? "active organization owner" : role === "onspot" ? row.signing_entity : "canonical hiring party", JSON.stringify(audit)]);
+          role === "organization" ? "active organization owner" : role === "onspot" ? row.signing_entity : "canonical hiring party", JSON.stringify(audit),evidence.title,evidence.png]);
       await event(tx, id, document.id, actor.id, `${role}_signed`);
       const signatures = (await tx.query(`SELECT s.*,org.name AS organization_name FROM contract_signatures s
         LEFT JOIN organizations org ON org.id=s.organization_id WHERE document_id=$1 ORDER BY signed_at`, [document.id])).rows;

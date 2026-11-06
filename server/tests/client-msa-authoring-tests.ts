@@ -8,6 +8,7 @@ import {ContractTemplateService} from "../services/contractTemplateService";
 import {currentClientMsa} from "../services/currentClientMsa";
 import {msaSignatureExists} from "../services/depositArrangementState";
 import {tryActivateEngagement} from "../services/hiringLifecycleEvents";
+import {registerMsaSignaturePolishTests} from "./msa-signature-polish-tests";
 
 export function registerClientMsaAuthoringTests(c:any) {
   const {pool,query,client,other,talent,admin,limited,blobs,files,accepted,verifiedPayment,signContract,msa,tx,status}=c;
@@ -138,4 +139,5 @@ export function registerClientMsaAuthoringTests(c:any) {
     await assert.rejects(msa.sign(client,{documentId:issued.id,documentSha256:issued.sha256,signerName:"Fixture Client",consent:true},{ip:"127.0.0.1",userAgent:"fixture"}));
     assert.equal(await status(scenario.submissionId),"hired","existing active engagement is never rewritten by replacement issuance");
   });
+  registerMsaSignaturePolishTests(c);
 }

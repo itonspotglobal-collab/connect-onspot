@@ -17,6 +17,7 @@ import { fallbackContractsLocation, getContractListLocation, getTrustedPreviousL
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { getDeepLinkResourceIds } from "@/lib/deepLinks";
 import { ContractDraftEditor } from "@/components/ContractDraftEditor";
+import { SignatureInput } from "@/components/SignatureInput";
 
 export interface ContractRow {
   id: string;
@@ -52,9 +53,10 @@ interface ContractContext {
 }
 interface ContractDetail {
   contract: ContractRow;
-  document: null | { id: string; version: number; sha256: string; original_filename: string; mime_type: string; file_size: number; status: string; sent_at: string | null; executed_at: string | null };
+  signerProfile?: { userId: string; legalName: string; title: string };
+  document: null | { id: string; version: number; sha256: string; original_filename: string; mime_type: string; file_size: number; status: string; sent_at: string | null; executed_at: string | null; executedUrl?: string | null };
   attachments?: Array<{ id: string; originalFilename: string; fileSize: number; sha256: string; version: number; status: string }>;
-  signatures: Array<{ signer_role: string; legal_name: string; signed_at: string; organization_name: string | null }>;
+  signatures: Array<{ signer_role: string; legal_name: string; signer_title?: string | null; has_drawn_signature?: boolean; signed_at: string; organization_name: string | null }>;
   timeline: Array<{ action: string; actor_name: string | null; created_at: string }>;
   permissions: { canPrepare: boolean; canManage?: boolean; canSend: boolean; canSign: boolean; canVoid: boolean; canDecline: boolean; signerRole: string | null };
 }
@@ -460,7 +462,10 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
   const [emailBusy, setEmailBusy] = useState(false);
   const [emailResult, setEmailResult] = useState<"accepted" | "failed" | "skipped" | null>(null);
   const [legalName, setLegalName] = useState("");
+  const [signerTitle, setSignerTitle] = useState("");
+  const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
+  const initializedSignerKey = useRef("");
   const [reason, setReason] = useState("");
   const [reasonAction, setReasonAction] = useState<"void" | "decline" | null>(null);
   const [revisionReason, setRevisionReason] = useState("");
@@ -477,10 +482,14 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
     queryFn: () => jsonRequest("GET", `/api/contracts/${encodeURIComponent(id!)}`),
     enabled: open && !!id,
   });
+  const signerFormKey = `${id ?? ""}:${data?.document?.id ?? ""}:${data?.document?.version ?? ""}:${data?.permissions.signerRole ?? ""}:${data?.signerProfile?.userId ?? ""}`;
   useEffect(() => {
     setPdfError("");
     setLegalName("");
+    setSignerTitle("");
+    setDrawnSignature(null);
     setConsent(false);
+    initializedSignerKey.current = "";
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     if (executedPdfUrl) URL.revokeObjectURL(executedPdfUrl);
     setPdfUrl(null);
@@ -493,6 +502,18 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
   // reset securely when switching contract / closing dialog
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, open]);
+  useEffect(() => {
+    if (!data?.document || !data.permissions.signerRole || initializedSignerKey.current === signerFormKey) return;
+    initializedSignerKey.current = signerFormKey;
+    setLegalName(data.signerProfile?.legalName ?? "");
+    setSignerTitle(data.signerProfile?.title ?? "");
+    setDrawnSignature(null);
+    setConsent(false);
+    setPdfError("");
+    setPdfUrl((old) => { if (old) URL.revokeObjectURL(old); return null; });
+    setExecutedPdfError("");
+    setExecutedPdfUrl((old) => { if (old) URL.revokeObjectURL(old); return null; });
+  }, [data?.document?.id, data?.document?.version, data?.permissions.signerRole, signerFormKey]);
   useEffect(() => () => { if (pdfUrl) URL.revokeObjectURL(pdfUrl); }, [pdfUrl]);
   useEffect(() => () => { if (executedPdfUrl) URL.revokeObjectURL(executedPdfUrl); }, [executedPdfUrl]);
   useEffect(() => () => { if (supportingPreview?.url) URL.revokeObjectURL(supportingPreview.url); }, [supportingPreview]);
@@ -672,7 +693,7 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
   const canSign = !!detail?.permissions.canSign && !!detail.document;
   const signed = detail?.signatures ?? [];
   const isTerminal = ["executed", "countersigned", "voided", "declined"].includes(detail?.contract.status ?? "");
-  const hasExecutedCopy = Boolean(detail?.document?.executed_at || ["executed", "countersigned"].includes(detail?.contract.status ?? ""));
+  const hasExecutedCopy = Boolean(detail?.document?.executedUrl);
   const canManageEmail = Boolean(detail?.permissions.canPrepare || detail?.permissions.canSend);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -762,14 +783,16 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
               {detail.permissions.signerRole && <p className="mt-2 text-xs text-slate-600">Signing as: <span className="font-semibold capitalize">{detail.permissions.signerRole.replaceAll("_", " ")}</span></p>}
               <div className="mt-3 space-y-3">
                 <div className="space-y-1.5"><Label htmlFor="contract-legal-name">Full legal name</Label><Input id="contract-legal-name" value={legalName} onChange={(e) => setLegalName(e.target.value)} autoComplete="name" maxLength={180} /></div>
+                <div className="space-y-1.5"><Label htmlFor="contract-signer-title">{detail.permissions.signerRole?.includes("onspot") ? "OnSpot title" : "Client / organization title"} <span className="font-normal text-slate-400">Optional</span></Label><Input id="contract-signer-title" value={signerTitle} onChange={(e) => setSignerTitle(e.target.value)} maxLength={160} placeholder="Your role or title" /></div>
+                <SignatureInput value={drawnSignature} onChange={setDrawnSignature} id="contract-drawn-signature" />
                 <label className="flex cursor-pointer items-start gap-2.5 text-sm leading-5 text-slate-700"><Checkbox checked={consent} onCheckedChange={(checked) => setConsent(checked === true)} /><span>I confirm that I reviewed this contract and intend to sign it.</span></label>
               </div>
-              <Button className="mt-4 bg-[#474ead] text-white hover:bg-[#3d439c]" disabled={!pdfUrl || !legalName.trim() || !consent} onClick={() => runMutation(`/api/contracts/${encodeURIComponent(id!)}/sign`, { documentId: detail.document!.id, sha256: detail.document!.sha256, legalName: legalName.trim(), consent: true })}><ShieldCheck className="mr-2 h-4 w-4" />Sign Contract</Button>
+              <Button className="mt-4 bg-[#474ead] text-white hover:bg-[#3d439c]" disabled={!pdfUrl || !legalName.trim() || !consent} onClick={() => runMutation(`/api/contracts/${encodeURIComponent(id!)}/sign`, { documentId: detail.document!.id, sha256: detail.document!.sha256, legalName: legalName.trim(), consent: true, signerTitle: signerTitle.trim().slice(0, 160) || undefined, drawnSignature })}><ShieldCheck className="mr-2 h-4 w-4" />Sign Contract</Button>
               {!pdfUrl && <p className="mt-2 text-xs text-amber-700">Open and review the private PDF before signing.</p>}
             </section>}
             <section>
               <h3 className="mb-3 text-sm font-semibold text-slate-900">Signature record</h3>
-              {signed.length ? <div className="space-y-2">{signed.map((signature, index) => <div key={`${signature.signer_role}-${signature.signed_at}-${index}`} className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3"><CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-700" /><div><p className="text-sm font-medium text-slate-800">{signature.legal_name} · {signature.signer_role.replaceAll("_", " ")}</p><p className="text-xs text-slate-600">{signature.organization_name ? `For ${signature.organization_name} · ` : ""}{dateLabel(signature.signed_at)}</p></div></div>)}</div> : <p className="text-sm text-slate-500">No signatures recorded yet.</p>}
+               {signed.length ? <div className="space-y-2">{signed.map((signature, index) => <div key={`${signature.signer_role}-${signature.signed_at}-${index}`} className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3"><CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-700" /><div><p className="text-sm font-medium text-slate-800">{signature.legal_name} · {signature.signer_role.replaceAll("_", " ")}</p><p className="text-xs text-slate-600">{[signature.signer_title, signature.organization_name ? `For ${signature.organization_name}` : null, dateLabel(signature.signed_at), "Signature recorded"].filter(Boolean).join(" · ")}</p>{signature.has_drawn_signature && <p className="text-[11px] text-slate-500">Drawn signature recorded</p>}</div></div>)}</div> : <p className="text-sm text-slate-500">No signatures recorded yet.</p>}
             </section>
             <section><h3 className="mb-3 text-sm font-semibold text-slate-900">Activity</h3>
               {detail.timeline.length ? <ol className="space-y-3 border-l border-slate-200 pl-4">{detail.timeline.map((event, index) => <li key={`${event.action}-${event.created_at}-${index}`} className="relative"><span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-indigo-500 ring-1 ring-slate-300" /><p className="text-sm font-medium text-slate-800">{event.action.replaceAll("_", " ")}</p><p className="text-xs text-slate-500">{event.actor_name || "System"} · {new Date(event.created_at).toLocaleString()}</p></li>)}</ol> : <p className="text-sm text-slate-500">Activity will appear here as the contract progresses.</p>}

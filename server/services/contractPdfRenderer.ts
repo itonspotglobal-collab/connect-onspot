@@ -2,20 +2,49 @@ import PdfPrinter from "pdfmake";
 import { parseDocument } from "htmlparser2";
 import { createRequire } from "node:module";
 import { sanitizeTemplateBody } from "./contractMergeService";
+import {PDFDocument,PDFName,PDFString,rgb,StandardFonts} from "pdf-lib";
+import {readFileSync} from "node:fs";
+import {dirname,join} from "node:path";
+import {ContractError} from "./hiringContractService";
 
 const require = createRequire(import.meta.url);
 // Bundled pdfmake VFS fonts work in production without system fonts or Chromium.
 const fontModule = require("pdfmake/build/vfs_fonts.js");
 const vfs = fontModule.pdfMake?.vfs ?? fontModule;
 const font = (name: string) => Buffer.from(vfs[name], "base64");
-const printer = new PdfPrinter({ Roboto: {
+const cssPath=require.resolve("@fontsource/noto-sans-sc/400.css");
+const fallbackFonts:any={},ranges:Array<{font:string;ranges:number[][]}>=[];
+for(const block of readFileSync(cssPath,"utf8").split("@font-face").slice(1)) {
+  const file=block.match(/url\(\.\/([^)]*\.woff)\)/)?.[1],range=block.match(/unicode-range:\s*([^;]+)/)?.[1];
+  if(!file||!range)continue;
+  const name=`Noto${ranges.length}`,path=join(dirname(cssPath),file);
+  fallbackFonts[name]={normal:path,bold:path,italics:path,bolditalics:path};
+  ranges.push({font:name,ranges:range.split(",").map(part=>{const [start,end]=part.trim().replace(/^U\+/i,"").split("-");return[parseInt(start,16),parseInt(end??start,16)];})});
+}
+const printer = new PdfPrinter({ ...fallbackFonts,Roboto: {
   normal: font("Roboto-Regular.ttf"), bold: font("Roboto-Medium.ttf"),
   italics: font("Roboto-Italic.ttf"), bolditalics: font("Roboto-MediumItalic.ttf"),
 } });
+const fallbackCache=new Map<number,string>();
+function unicodeText(text:string,style:any={}) {
+  const spans:any[]=[];
+  for(const character of Array.from(text)) {
+    const code=character.codePointAt(0)!;
+    let family="Roboto";
+    if(code>0x2ff) {
+      family=fallbackCache.get(code)??ranges.find(entry=>entry.ranges.some(([a,b])=>code>=a&&code<=b))?.font??"";
+      if(!family)throw new ContractError(422,{error:"unsupported_document_character",message:"A document character is not supported by the bundled PDF fonts. No executed copy was produced; contact OnSpot to add the required font."});
+      fallbackCache.set(code,family);
+    }
+    const last=spans[spans.length-1];
+    if(last?.font===family)last.text+=character;else spans.push({text:character,...style,font:family});
+  }
+  return spans;
+}
 
 function children(node: any): any[] { return node.children ?? []; }
 function inline(node: any, style: any = {}): any[] {
-  if (node.type === "text") return [{ text: node.data, ...style }];
+  if (node.type === "text") return unicodeText(node.data,style);
   if (node.name === "br") return [{ text: "\n", ...style }];
   const next = { ...style, ...(["b","strong"].includes(node.name) ? { bold: true } : {}),
     ...(["i","em"].includes(node.name) ? { italics: true } : {}),
@@ -28,7 +57,7 @@ function descendants(node: any, name: string): any[] {
   return children(node).flatMap(child => child.name === name ? [child] : descendants(child, name));
 }
 function blocks(node: any): any[] {
-  if (node.type === "text") return node.data.trim() ? [{ text: node.data }] : [];
+  if (node.type === "text") return node.data.trim() ? [{ text: unicodeText(node.data) }] : [];
   if (node.attribs?.["data-page-break"]==="before") {
     const copy={...node,attribs:{...node.attribs,"data-page-break":undefined}};
     return [{stack:blocks(copy),pageBreak:"before"}];
@@ -61,13 +90,10 @@ function blocks(node: any): any[] {
 }
 export async function renderContractPdf(html: string, kind: string, version: string, roles: string[]) {
   const content = blocks(parseDocument(sanitizeTemplateBody(html)));
-  content.push({ text:"Signatures",bold:true,fontSize:16,pageBreak:"before",margin:[0,0,0,20] });
-  for (const role of roles) content.push({unbreakable:true,stack:[
-    {text:role === "onspot" ? "OnSpot" : role[0].toUpperCase()+role.slice(1),bold:true,margin:[0,8,0,12]},
-    {text:"Signature: __________________________________________",margin:[0,0,0,12]},
-    {text:"Full legal name: _____________________________________",margin:[0,0,0,12]},
-    {text:"Title (if applicable): _________________________________",margin:[0,0,0,12]},
-    {text:"Date: ______________________________________________",margin:[0,0,0,20]},
+  for (const role of roles) content.push({pageBreak:"before",stack:[
+    {text:"Signatures",bold:true,fontSize:16,margin:[0,0,0,20]},
+    {text:role === "onspot" ? "OnSpot" : role[0].toUpperCase()+role.slice(1),bold:true,fontSize:12},
+    {text:"Reserved for this party's electronic signature, legal name, title and signing date.",fontSize:9,margin:[0,12,0,0]},
   ]});
   const pdf = printer.createPdfKitDocument({
     pageSize:"A4",pageMargins:[44,54,44,54],defaultStyle:{font:"Roboto",fontSize:10,lineHeight:1.25},
@@ -78,8 +104,31 @@ export async function renderContractPdf(html: string, kind: string, version: str
     ],fontSize:8,color:"#64748b",margin:[44,16,44,0]}),
     content,
   } as any);
-  return new Promise<Buffer>((resolve,reject)=>{
+  const raw=await new Promise<Buffer>((resolve,reject)=>{
     const chunks:Buffer[]=[]; pdf.on("data",(c:Buffer)=>chunks.push(c));pdf.on("error",reject);
     pdf.on("end",()=>resolve(Buffer.concat(chunks)));pdf.end();
   });
+  const final=await PDFDocument.load(raw);
+  const slots=roles.map((role,index)=>({role,page:final.getPageCount()-roles.length+index,x:44,y:350,width:507,height:340}));
+  const labelFont=await final.embedFont(StandardFonts.Helvetica);
+  for(const slot of slots) {
+    const page=final.getPage(slot.page);
+    page.drawRectangle({x:slot.x,y:slot.y,width:slot.width,height:slot.height,borderWidth:0.7,borderColor:rgb(.7,.72,.8)});
+    page.drawText("Signature:",{x:slot.x+16,y:slot.y+slot.height-16,size:9,font:labelFont});
+  }
+  final.catalog.set(PDFName.of("OnSpotSignatureSlots"),PDFString.of(JSON.stringify(slots)));
+  return Buffer.from(await final.save());
+}
+
+/** Literal text with embedded Unicode fonts, not interpreted HTML. */
+export async function renderSignatureTextPdf(signature:any) {
+  const pdf=printer.createPdfKitDocument({pageSize:{width:475,height:200},pageMargins:[0,0,0,0],
+    defaultStyle:{font:"Roboto",fontSize:10},content:[
+      {text:unicodeText(`${signature.signer_role}: ${signature.legal_name}`),bold:true,margin:[0,0,0,12]},
+      ...(signature.signer_title?[{text:unicodeText(`Title: ${signature.signer_title}`),margin:[0,0,0,12]}]:[]),
+      {text:`Signed: ${new Date(signature.signed_at).toISOString()}`,margin:[0,0,0,12]},
+      {text:signature.signature_png?"Method: typed name, explicit consent and optional drawn signature":"Method: typed name and explicit consent",fontSize:9},
+    ]} as any);
+  return new Promise<Buffer>((resolve,reject)=>{const chunks:Buffer[]=[];pdf.on("data",(chunk:Buffer)=>chunks.push(chunk));
+    pdf.on("error",reject);pdf.on("end",()=>resolve(Buffer.concat(chunks)));pdf.end();});
 }

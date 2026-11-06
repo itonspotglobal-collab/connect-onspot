@@ -2000,6 +2000,7 @@ export const contractSignatures = pgTable("contract_signatures", {
   documentId: uuid("document_id").notNull().references(() => contractDocuments.id),
   signerUserId: varchar("signer_user_id").notNull().references(() => users.id),
   signerRole: text("signer_role").notNull(), legalName: text("legal_name").notNull(),
+  signerTitle:text("signer_title"),signaturePng:text("signature_png"),
   signatureMethod: text("signature_method").notNull().default("typed_name_consent"),
   signedAt: timestamp("signed_at", { withTimezone: true }).notNull().defaultNow(),
   documentVersion: integer("document_version").notNull(),
@@ -2684,9 +2685,25 @@ export const clientMsaCountersignatures=pgTable("client_msa_countersignatures",{
   id:uuid("id").primaryKey().defaultRandom(),documentId:uuid("document_id").notNull().unique().references(()=>msaDocuments.id),
   documentSha256:text("document_sha256").notNull(),signerUserId:text("signer_user_id").notNull().references(()=>users.id),
   signerRole:text("signer_role").notNull().default("onspot"),legalName:text("legal_name").notNull(),
+  signerTitle:text("signer_title"),signaturePng:text("signature_png"),
   signedAt:timestamp("signed_at",{withTimezone:true}).notNull().defaultNow(),
   consentText:text("consent_text").notNull(),ipAddress:text("ip_address").notNull(),userAgent:text("user_agent").notNull(),
 },t=>[check("client_msa_countersignatures_signer_role_check",sql`${t.signerRole}='onspot'`)]);
+export const clientMsaSignatures=pgTable("client_msa_signatures",{
+  id:uuid("id").primaryKey().defaultRandom(),clientId:text("client_id").notNull().references(()=>users.id),
+  msaVersion:text("msa_version").notNull().references(()=>msaDocuments.version),documentId:uuid("document_id").notNull().references(()=>msaDocuments.id),
+  documentSha256:text("document_sha256").notNull(),signedAt:timestamp("signed_at",{withTimezone:true}).notNull().defaultNow(),
+  signerName:text("signer_name").notNull(),signerEmail:text("signer_email").notNull(),
+  signerTitle:text("signer_title"),signaturePng:text("signature_png"),
+  ipAddress:text("ip_address").notNull(),userAgent:text("user_agent").notNull(),consentText:text("consent_text").notNull(),
+},t=>[unique("client_msa_signatures_client_id_msa_version_key").on(t.clientId,t.msaVersion)]);
+export const clientMsaExecutedCopies=pgTable("client_msa_executed_copies",{
+  documentId:uuid("document_id").notNull().references(()=>msaDocuments.id),clientId:text("client_id").notNull().references(()=>users.id),
+  clientSignatureId:uuid("client_signature_id").notNull().references(()=>clientMsaSignatures.id),
+  onspotSignatureId:uuid("onspot_signature_id").notNull().references(()=>clientMsaCountersignatures.id),
+  objectKey:text("object_key").notNull(),sha256:text("sha256").notNull(),
+  createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[primaryKey({columns:[t.documentId,t.clientId]}),check("client_msa_executed_copies_sha256_check",sql`length(${t.sha256})=64`)]);
 export const clientMsaDocumentEvents=pgTable("client_msa_document_events",{
   id:uuid("id").primaryKey().defaultRandom(),clientId:text("client_id").notNull().references(()=>users.id),
   documentId:uuid("document_id").references(()=>msaDocuments.id),draftId:uuid("draft_id").references(()=>contractDrafts.id),

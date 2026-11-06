@@ -100,6 +100,12 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
       "Content-Security-Policy":"sandbox","Content-Disposition":`inline; filename="msa.pdf"; filename*=UTF-8''${encodeURIComponent(pdf.filename)}`});
     res.end(pdf.bytes);
   }));
+  router.get("/api/client/msa/:id/executed",handle(async(req,res)=>{
+    const pdf=await msa.executedPdf(req.onboardingActor.id,req.params.id);
+    res.set({"Content-Type":"application/pdf","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff",
+      "Content-Security-Policy":"sandbox","Content-Disposition":`inline; filename="msa-executed.pdf"; filename*=UTF-8''${encodeURIComponent(pdf.filename)}`});
+    res.end(pdf.bytes);
+  }));
   router.post("/api/client/msa/sign",limiter,handle(async(req,res)=>res.json(await msa.sign(req.onboardingActor.id,req.body,
     {ip:req.ip??"",userAgent:req.get("user-agent")??""}))));
   router.get("/api/admin/msa-documents",handle(async(req,res)=>res.json(await msa.list(req.onboardingActor.id))));

@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SignatureInput } from "@/components/SignatureInput";
 
 export interface ClientMsaEngagement {
   clientId: string;
@@ -27,11 +28,17 @@ export interface ClientMsaDocument {
   templateVersion: string;
   submissionId: string;
   clientSignerName: string | null;
+  clientSignerTitle?: string | null;
+  clientHasDrawnSignature?: boolean;
   clientSignedAt: string | null;
   onspotSignerName: string | null;
+  onspotSignerTitle?: string | null;
+  onspotHasDrawnSignature?: boolean;
   onspotSignedAt: string | null;
   viewUrl: string;
+  executedUrl?: string | null;
 }
+export interface MsaSignerProfile { userId: string; legalName: string; title: string; }
 function adminAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("onspot_jwt_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -46,9 +53,10 @@ function errorMessage(error: unknown) {
   return error.message;
 }
 
-export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
+export function ClientMsaAuthoring({ engagement, documents, signerProfile, onChanged }: {
   engagement: ClientMsaEngagement;
   documents: ClientMsaDocument[];
+  signerProfile?: MsaSignerProfile;
   onChanged: () => void;
 }) {
   const base = `/api/admin/client-msas/${encodeURIComponent(engagement.clientId)}/authoring`;
@@ -59,6 +67,8 @@ export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
   const [replacementTemplate, setReplacementTemplate] = useState("");
   const [onspotNames, setOnspotNames] = useState<Record<string, string>>({});
   const [onspotConsent, setOnspotConsent] = useState<Record<string, boolean>>({});
+  const [onspotTitles, setOnspotTitles] = useState<Record<string, string>>({});
+  const [onspotDrawings, setOnspotDrawings] = useState<Record<string, string | null>>({});
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -67,6 +77,7 @@ export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
   const [loadingPdf, setLoadingPdf] = useState<string | null>(null);
   const [authoringBlocksIssue,setAuthoringBlocksIssue]=useState(true);
   const currentUrl = useRef("");
+  const signerContextKey = `${engagement.clientId}:${engagement.submissionId}:${signerProfile?.userId ?? ""}:${documents.filter((item) => item.clientId === engagement.clientId).map((item) => `${item.id}:${item.sha256}`).join("|")}`;
   const { data: authoring, isLoading, isError, refetch } = useQuery<{ draft: { status: string; rendered_document_id?: string | null } | null; templates?: Array<{ id: string; name: string; version: string }> }>({
     queryKey,
     queryFn: async () => (await apiRequest("GET", base)).json(),
@@ -86,6 +97,8 @@ export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
     setReviewedId(null);
     setReason("");
     setOnspotConsent({});
+    setOnspotTitles({});
+    setOnspotDrawings({});
     setError("");
     setNotice("");
     setPreview((old) => {
@@ -93,7 +106,7 @@ export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
       currentUrl.current = "";
       return null;
     });
-  }, [engagement.clientId]);
+  }, [signerContextKey]);
 
   async function createReplacement() {
     if (!replacementTemplate) return;
@@ -148,11 +161,13 @@ export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
   }
 
   async function countersign(document: ClientMsaDocument) {
-    if (!document.clientSignedAt || !document.sha256 || reviewedId !== document.id || !onspotConsent[document.id] || !onspotNames[document.id]?.trim()) return;
+    if (!document.clientSignedAt || !document.sha256 || reviewedId !== document.id || !onspotConsent[document.id] || !(onspotNames[document.id] ?? signerProfile?.legalName ?? document.onspotSignerName)?.trim()) return;
     setBusy(true); setError(""); setNotice("");
     try {
       await apiRequest("POST", `/api/admin/msa-documents/${encodeURIComponent(document.id)}/countersign`, {
-        documentSha256: document.sha256, legalName: (onspotNames[document.id] ?? document.onspotSignerName ?? "").trim(), consent: true,
+        documentSha256: document.sha256, legalName: (onspotNames[document.id] ?? signerProfile?.legalName ?? document.onspotSignerName ?? "").trim(), consent: true,
+        signerTitle: (onspotTitles[document.id] ?? signerProfile?.title ?? document.onspotSignerTitle ?? "").trim().slice(0, 160) || undefined,
+        drawnSignature: onspotDrawings[document.id] ?? null,
       });
       await onChanged();
       setNotice("OnSpot countersignature recorded. This status is informational and does not block activation.");
@@ -172,7 +187,7 @@ export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
         <span className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-900">{eligibleToCountersign.length} countersign pending</span>
       </div>
     </div>
-    {activeIssued && <div className="flex items-start gap-2 rounded-lg border border-[#dce5df] bg-white p-3 text-xs leading-relaxed text-slate-600"><LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-[#557064]" /><p>Current client version <strong>{activeIssued.version}</strong>{activeIssued.clientSignedAt ? ` · Client signed by ${activeIssued.clientSignerName || "authorized signer"} on ${new Date(activeIssued.clientSignedAt).toLocaleDateString()}` : " · awaiting client signature"}. OnSpot countersignature is tracked separately and is <strong>not an activation requirement</strong>.</p></div>}
+    {activeIssued && <div className="flex items-start gap-2 rounded-lg border border-[#dce5df] bg-white p-3 text-xs leading-relaxed text-slate-600"><LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-[#557064]" /><p>Current client version <strong>{activeIssued.version}</strong>{activeIssued.clientSignedAt ? ` · Client signature recorded by ${activeIssued.clientSignerName || "authorized signer"}${activeIssued.clientSignerTitle ? `, ${activeIssued.clientSignerTitle}` : ""}${activeIssued.clientHasDrawnSignature ? " · drawn signature recorded" : ""} on ${new Date(activeIssued.clientSignedAt).toLocaleDateString()}` : " · awaiting client signature"}. OnSpot countersignature is tracked separately and is <strong>not an activation requirement</strong>.</p></div>}
     {draftLocked ? <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <div><p className="text-sm font-semibold text-amber-950">This draft has been sent or locked</p><p className="mt-1 text-xs leading-relaxed text-amber-900">Sent versions cannot be edited. Generate a fresh version to prepare changes. This creates a new signature requirement when issued; earlier signatures are retained. Merely rendering a draft does not invalidate an issued document.</p></div>
       {!confirmReplacement ? <Button onClick={() => setConfirmReplacement(true)} className="bg-[#405f4d] text-white hover:bg-[#344d3e]"><FileText className="mr-2 h-4 w-4" />Prepare a new version</Button> : <div className="space-y-3 rounded-lg border border-amber-300 bg-white p-3">
@@ -195,16 +210,19 @@ export function ClientMsaAuthoring({ engagement, documents, onChanged }: {
         <div><p className="text-sm font-semibold text-slate-800">Version {document.version}</p><p className="text-xs text-slate-500">Client signed by {document.clientSignerName || "authorized signer"} · {document.clientSignedAt ? new Date(document.clientSignedAt).toLocaleString() : ""}</p><p className="mt-1 break-all font-mono text-[10px] text-slate-400">SHA-256 {document.sha256}</p></div>
         <Button size="sm" variant="outline" disabled={!!loadingPdf} onClick={() => void openPdf(document, true)}>{loadingPdf === document.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}{reviewedId === document.id ? "Re-open exact signed PDF" : "Open exact signed PDF"}</Button>
         {preview?.id === document.id && <iframe title={`Signed MSA version ${document.version}`} src={preview.url} className="h-[min(55vh,560px)] w-full rounded-lg border border-slate-200 bg-slate-100" />}
-        <div className="max-w-md space-y-2"><Label htmlFor={`onspot-legal-name-${document.id}`}>OnSpot legal name</Label><Input id={`onspot-legal-name-${document.id}`} autoComplete="name" maxLength={180} value={onspotNames[document.id] ?? document.onspotSignerName ?? ""} onChange={(event) => setOnspotNames((current) => ({ ...current, [document.id]: event.target.value }))} placeholder="Authorized OnSpot signatory's full legal name" /></div>
+        <div className="max-w-md space-y-2"><Label htmlFor={`onspot-legal-name-${document.id}`}>OnSpot legal name</Label><Input id={`onspot-legal-name-${document.id}`} autoComplete="name" maxLength={180} value={onspotNames[document.id] ?? signerProfile?.legalName ?? document.onspotSignerName ?? ""} onChange={(event) => setOnspotNames((current) => ({ ...current, [document.id]: event.target.value }))} placeholder="Authorized OnSpot signatory's full legal name" /></div>
+        <div className="max-w-md space-y-2"><Label htmlFor={`onspot-title-${document.id}`}>OnSpot title <span className="font-normal text-slate-400">Optional</span></Label><Input id={`onspot-title-${document.id}`} maxLength={160} value={onspotTitles[document.id] ?? signerProfile?.title ?? document.onspotSignerTitle ?? ""} onChange={(event) => setOnspotTitles((current) => ({ ...current, [document.id]: event.target.value }))} placeholder="Authorized signatory title" /></div>
+        <SignatureInput id={`onspot-drawing-${document.id}`} label="OnSpot drawn signature" value={onspotDrawings[document.id] ?? null} onChange={(value) => setOnspotDrawings((current) => ({ ...current, [document.id]: value }))} />
         <div className="flex items-start gap-2"><Checkbox id={`onspot-consent-${document.id}`} checked={!!onspotConsent[document.id]} onCheckedChange={(value) => setOnspotConsent((current) => ({ ...current, [document.id]: value === true }))} /><Label htmlFor={`onspot-consent-${document.id}`} className="text-xs leading-relaxed">I reviewed the exact PDF and confirm the legal name above is the authorized OnSpot signatory.</Label></div>
-        <Button size="sm" onClick={() => void countersign(document)} disabled={busy || reviewedId !== document.id || !onspotConsent[document.id] || !(onspotNames[document.id] ?? document.onspotSignerName)?.trim()} className="bg-[#405f4d] text-white hover:bg-[#344d3e]"><ShieldCheck className="mr-2 h-4 w-4" />Record OnSpot countersignature</Button>
+        <Button size="sm" onClick={() => void countersign(document)} disabled={busy || reviewedId !== document.id || !onspotConsent[document.id] || !(onspotNames[document.id] ?? signerProfile?.legalName ?? document.onspotSignerName)?.trim()} className="bg-[#405f4d] text-white hover:bg-[#344d3e]"><ShieldCheck className="mr-2 h-4 w-4" />Record OnSpot countersignature</Button>
       </div>)}
     </section>}
     <section className="space-y-2">
       <h3 className="font-semibold text-[#20352a]">Personalized version history</h3>
       {issuedDocuments.length ? issuedDocuments.map((document) => <div key={document.id} className="rounded-xl border border-[#dce5df] bg-white p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold text-slate-800">Version {document.version} <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-600">{document.status}</span></p><p className="mt-1 text-xs text-slate-500">{document.filename} · Effective {new Date(document.effectiveAt).toLocaleDateString()} · Template {document.templateVersion}</p><p className="mt-1 text-xs text-slate-600">{document.clientSignedAt ? `Client signed by ${document.clientSignerName || "authorized signer"} on ${new Date(document.clientSignedAt).toLocaleDateString()}` : "Client signature pending"} · {document.onspotSignedAt ? `OnSpot signed by ${document.onspotSignerName || "authorized signer"} on ${new Date(document.onspotSignedAt).toLocaleDateString()}` : "OnSpot countersignature pending (non-blocking)"}</p><p className="mt-1 break-all font-mono text-[10px] text-slate-400">SHA-256 {document.sha256}</p></div>
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold text-slate-800">Version {document.version} <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-600">{document.status}</span></p><p className="mt-1 text-xs text-slate-500">{document.filename} · Effective {new Date(document.effectiveAt).toLocaleDateString()} · Template {document.templateVersion}</p><p className="mt-1 text-xs text-slate-600">{document.clientSignedAt ? `Client signature recorded · ${document.clientSignerName || "authorized signer"}${document.clientSignerTitle ? `, ${document.clientSignerTitle}` : ""}${document.clientHasDrawnSignature ? " · drawn signature recorded" : ""} · ${new Date(document.clientSignedAt).toLocaleDateString()}` : "Client signature pending"} · {document.onspotSignedAt ? `OnSpot signature recorded · ${document.onspotSignerName || "authorized signer"}${document.onspotSignerTitle ? `, ${document.onspotSignerTitle}` : ""}${document.onspotHasDrawnSignature ? " · drawn signature recorded" : ""} · ${new Date(document.onspotSignedAt).toLocaleDateString()}` : "OnSpot countersignature pending (non-blocking)"}</p><p className="mt-1 break-all font-mono text-[10px] text-slate-400">SHA-256 {document.sha256}</p></div>
           <Button size="sm" variant="outline" disabled={!!loadingPdf} onClick={() => void openPdf(document)}>{loadingPdf === document.id ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Eye className="mr-1.5 h-3.5 w-3.5" />}Review private PDF</Button>
+          {document.executedUrl && <Button size="sm" variant="outline" onClick={async () => { const response = await fetch(`/api/client/msa/${encodeURIComponent(document.id)}/executed`, { credentials: "include", headers: adminAuthHeaders() }); if (!response.ok) { const body = await response.json().catch(() => ({})); setError(body.message || body.error || "Executed copy unavailable."); return; } const blob = await response.blob(); if (blob.type !== "application/pdf") { setError("The authorized response was not an executed PDF."); return; } const url = URL.createObjectURL(blob); const anchor = window.document.createElement("a"); anchor.href = url; anchor.download = `msa-${document.version}-executed.pdf`; anchor.click(); URL.revokeObjectURL(url); }}>Download executed copy</Button>}
         </div>{preview?.id === document.id && <iframe title={`Private MSA version ${document.version}`} src={preview.url} className="mt-3 h-[min(55vh,560px)] w-full rounded-lg border border-slate-200 bg-slate-100" />}
       </div>) : <div className="rounded-xl border border-dashed border-slate-300 bg-white/70 p-5 text-sm text-slate-500">No personalized versions issued for this client yet.</div>}
     </section>

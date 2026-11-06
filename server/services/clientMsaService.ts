@@ -1,9 +1,10 @@
 import type { Pool, PoolClient } from "pg";
-import { contractBlobProvider, pdfHash, validateContractPdf, type ContractBlobProvider } from "./contractBlobStore";
+import { contractBlobProvider, executedContractPdf, pdfHash, validateContractPdf, type ContractBlobProvider } from "./contractBlobStore";
 import { OnboardingError } from "./contractorOnboardingPolicy";
 import { queueHiringLifecycleEvent, tryActivateEngagement } from "./hiringLifecycleEvents";
 import {msaSignatureExists} from "./depositArrangementState";
 import {currentClientMsa} from "./currentClientMsa";
+import {signatureEvidence,signerProfile} from "./signatureEvidence";
 
 export class ClientMsaService {
   constructor(private pool:Pool,private blobs:ContractBlobProvider=contractBlobProvider,private afterCommit?:()=>Promise<void>) {}
@@ -75,28 +76,32 @@ export class ClientMsaService {
   }
   async status(id:string) {
     await this.actor(this.pool,id);
+    const profile=await signerProfile(this.pool,id,"client");
     const d=await currentClientMsa(this.pool,id);
     const history=(await this.pool.query(`SELECT d.id,d.version,d.sha256,d.effective_at AS "effectiveAt",
-      s.signed_at AS "signedAt",s.signer_name AS "signerName",c.document_id IS NOT NULL AS personalized,
+      s.signed_at AS "signedAt",s.signer_name AS "signerName",s.signer_title AS "signerTitle",c.document_id IS NOT NULL AS personalized,
       COALESCE(c.status,CASE WHEN d.active THEN 'active' ELSE 'historical' END) AS status,
-      '/api/client/msa/'||d.id||'/pdf' AS "viewUrl" FROM msa_documents d
+      '/api/client/msa/'||d.id||'/pdf' AS "viewUrl",
+      CASE WHEN EXISTS(SELECT 1 FROM client_msa_executed_copies ec WHERE ec.document_id=d.id AND ec.client_id=$1)
+        THEN '/api/client/msa/'||d.id||'/executed' ELSE NULL END AS "executedUrl" FROM msa_documents d
       LEFT JOIN client_msa_documents c ON c.document_id=d.id
       LEFT JOIN client_msa_signatures s ON s.document_id=d.id AND s.client_id=$1 AND s.document_sha256=d.sha256
       WHERE (c.document_id IS NULL OR (c.client_id=$1 AND c.status IN ('issued','superseded'))) AND ((c.client_id=$1 AND c.status IN ('issued','superseded'))
         OR s.id IS NOT NULL OR EXISTS(SELECT 1 FROM client_msa_requests r WHERE r.msa_document_id=d.id AND r.client_id=$1)
         OR EXISTS(SELECT 1 FROM client_msa_offline_evidence e WHERE e.document_id=d.id AND e.client_id=$1))
       ORDER BY d.created_at DESC LIMIT 100`,[id])).rows;
-    if(!d)return {document:null,signature:null,requiresSignature:true,issued:false,history,countersignature:null,countersignatureBlocksActivation:false,personalized:false};
-    const s=(await this.pool.query(`SELECT id,signed_at AS "signedAt",signer_name AS "signerName",'platform' AS source
+    if(!d)return {document:null,signature:null,requiresSignature:true,issued:false,history,countersignature:null,countersignatureBlocksActivation:false,personalized:false,signerProfile:profile};
+    const s=(await this.pool.query(`SELECT id,signed_at AS "signedAt",signer_name AS "signerName",'platform' AS source,signer_title AS "signerTitle",signature_png IS NOT NULL AS "hasDrawnSignature"
       FROM client_msa_signatures WHERE client_id=$1 AND document_id=$2 AND document_sha256=$3 AND msa_version=$4
-      UNION ALL SELECT id,signed_at,signer_name,'offline' AS source FROM client_msa_offline_evidence
+      UNION ALL SELECT id,signed_at,signer_name,'offline' AS source,NULL,false FROM client_msa_offline_evidence
       WHERE client_id=$1 AND document_id=$2 AND document_sha256=$3 AND msa_version=$4 LIMIT 1`,[id,d.id,d.sha256,d.version])).rows[0]??null;
     const issued=!!(await this.pool.query("SELECT 1 FROM client_msa_requests WHERE client_id=$1 AND msa_document_id=$2",[id,d.id])).rows.length;
-    const countersignature=(await this.pool.query(`SELECT legal_name AS "legalName",signed_at AS "signedAt"
+    const countersignature=(await this.pool.query(`SELECT legal_name AS "legalName",signed_at AS "signedAt",signer_title AS "signerTitle",signature_png IS NOT NULL AS "hasDrawnSignature"
       FROM client_msa_countersignatures WHERE document_id=$1 AND document_sha256=$2`,[d.id,d.sha256])).rows[0]??null;
     const personalized=!!(await this.pool.query("SELECT 1 FROM client_msa_documents WHERE document_id=$1 AND client_id=$2",[d.id,id])).rows.length;
-    return {document:{id:d.id,version:d.version,sha256:d.sha256,effectiveAt:d.effective_at,viewUrl:`/api/client/msa/${d.id}/pdf`},
-      signature:s,requiresSignature:!s,issued,history,countersignature,personalized,countersignatureBlocksActivation:false};
+    const executed=!!(await this.pool.query("SELECT 1 FROM client_msa_executed_copies WHERE document_id=$1 AND client_id=$2",[d.id,id])).rows.length;
+    return {document:{id:d.id,version:d.version,sha256:d.sha256,effectiveAt:d.effective_at,viewUrl:`/api/client/msa/${d.id}/pdf`,executedUrl:executed?`/api/client/msa/${d.id}/executed`:null},
+      signature:s,requiresSignature:!s,issued,history,countersignature,personalized,countersignatureBlocksActivation:false,signerProfile:profile};
   }
   async pdf(id:string,documentId:string) {
     return this.tx(async db=>{
@@ -126,6 +131,7 @@ export class ClientMsaService {
       throw new OnboardingError(422,"CONSENT_REQUIRED","Review the MSA, tick consent, and enter your full legal name.");
     const result=await this.tx(async db=>{
       const actor=await this.actor(db,id);
+      const evidence=await signatureEvidence(input);
       await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`msa-signature:${id}`]);
       const d=await currentClientMsa(db,id);
       if(!d)throw new OnboardingError(409,"ACTIVE_MSA_REQUIRED","OnSpot must upload and activate an approved MSA first.");
@@ -139,9 +145,9 @@ export class ClientMsaService {
         throw new OnboardingError(409,"REVIEW_PDF_FIRST","Open and review this exact MSA PDF before signing.");
       if(pdfHash(await this.blobs.read(d.object_key))!==d.sha256)throw new OnboardingError(409,"DOCUMENT_CHANGED","The stored MSA failed its integrity check.");
       const s=(await db.query(`INSERT INTO client_msa_signatures(client_id,msa_version,document_id,document_sha256,
-        signer_name,signer_email,ip_address,user_agent,consent_text) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+        signer_name,signer_email,ip_address,user_agent,consent_text,signer_title,signature_png) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
         [id,d.version,d.id,d.sha256,name,actor.email,String(audit.ip).slice(0,100),String(audit.userAgent).slice(0,1000),
-          "I have reviewed this exact Master Services Agreement and consent to sign electronically."])).rows[0];
+          "I have reviewed this exact Master Services Agreement and consent to sign electronically.",evidence.title,evidence.png])).rows[0];
       // Invitation click-through remains independent, in its own preserved fields.
       await db.query(`INSERT INTO client_profiles(id,user_id,msa_accepted_at,msa_version)
         VALUES($1,$2,now(),$3) ON CONFLICT(user_id) DO UPDATE SET msa_accepted_at=now(),msa_version=$3,updated_at=now()`,
@@ -175,8 +181,11 @@ export class ClientMsaService {
     const name=typeof input?.legalName==="string"?input.legalName.trim():"";
     if(input?.consent!==true||name.length<3||name.length>200||/[\x00-\x1f]/.test(name))
       throw new OnboardingError(422,"CONSENT_REQUIRED","Review the MSA, enter your full legal name, and confirm consent.");
-    const result=await this.tx(async db=>{
+    let executedKey:string|undefined;
+    let result:any;
+    try {result=await this.tx(async db=>{
       await this.actor(db,id,true);
+      const evidence=await signatureEvidence(input);
       const identity=(await db.query("SELECT client_id FROM client_msa_documents WHERE document_id=$1",[documentId])).rows[0];
       if(!identity)throw new OnboardingError(404,"MSA_NOT_FOUND","Personalized MSA not found.");
       await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`msa-signature:${identity.client_id}`]);
@@ -184,20 +193,45 @@ export class ClientMsaService {
       if(doc.status!=="issued"||doc.sha256!==input.documentSha256)throw new OnboardingError(409,"MSA_VERSION_CHANGED","Review the current issued MSA.");
       if(!(await db.query("SELECT 1 FROM client_msa_signatures WHERE document_id=$1 AND client_id=$2 AND document_sha256=$3 AND msa_version=$4",
         [doc.id,identity.client_id,doc.sha256,doc.version])).rows.length)throw new OnboardingError(409,"CLIENT_SIGNATURE_REQUIRED","The Client must sign this exact MSA first.");
-      const prior=(await db.query("SELECT id,legal_name,signed_at FROM client_msa_countersignatures WHERE document_id=$1",[doc.id])).rows[0];
-      if(prior)return {id:prior.id,legalName:prior.legal_name,signedAt:prior.signed_at,alreadySigned:true,countersignatureBlocksActivation:false};
+      const prior=(await db.query("SELECT * FROM client_msa_countersignatures WHERE document_id=$1",[doc.id])).rows[0];
+      if(prior&&(await db.query("SELECT 1 FROM client_msa_executed_copies WHERE document_id=$1 AND client_id=$2",[doc.id,identity.client_id])).rows.length)
+        return {id:prior.id,legalName:prior.legal_name,signedAt:prior.signed_at,alreadySigned:true,countersignatureBlocksActivation:false};
       if(!(await db.query("SELECT 1 FROM msa_document_reviews WHERE document_id=$1 AND user_id=$2 AND sha256=$3",[doc.id,id,doc.sha256])).rows.length)
         throw new OnboardingError(409,"REVIEW_PDF_FIRST","Open and review this exact MSA before countersigning.");
       if(pdfHash(await this.blobs.read(doc.object_key))!==doc.sha256)throw new OnboardingError(409,"DOCUMENT_CHANGED","The stored MSA failed its integrity check.");
-      const signature=(await db.query(`INSERT INTO client_msa_countersignatures(document_id,document_sha256,signer_user_id,legal_name,consent_text,ip_address,user_agent)
-        VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,legal_name AS "legalName",signed_at AS "signedAt"`,
-      [doc.id,doc.sha256,id,name,"I have reviewed this exact MSA and consent to countersign electronically on behalf of OnSpot.",String(audit.ip).slice(0,100),String(audit.userAgent).slice(0,1000)])).rows[0];
-      await db.query(`INSERT INTO client_msa_document_events(client_id,document_id,draft_id,actor_id,action)
+      const signature=prior??(await db.query(`INSERT INTO client_msa_countersignatures(document_id,document_sha256,signer_user_id,legal_name,consent_text,ip_address,user_agent,signer_title,signature_png)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [doc.id,doc.sha256,id,name,"I have reviewed this exact MSA and consent to countersign electronically on behalf of OnSpot.",String(audit.ip).slice(0,100),String(audit.userAgent).slice(0,1000),evidence.title,evidence.png])).rows[0];
+      const clientSignature=(await db.query(`SELECT *,client_id AS signer_user_id,signer_name AS legal_name,'client' AS signer_role
+        FROM client_msa_signatures WHERE client_id=$1 AND document_id=$2 AND document_sha256=$3`,[identity.client_id,doc.id,doc.sha256])).rows[0];
+      const personal=(await db.query("SELECT template_id FROM client_msa_documents WHERE document_id=$1",[doc.id])).rows[0];
+      const original=await this.blobs.read(doc.object_key);
+      if(pdfHash(original)!==doc.sha256)throw new OnboardingError(409,"DOCUMENT_CHANGED","The stored MSA failed its integrity check.");
+      const executed=await executedContractPdf(original,{...doc,version:doc.version,template_id:personal.template_id},[clientSignature,signature]);
+      executedKey=await this.blobs.save(executed);
+      const hash=pdfHash(executed);
+      if(pdfHash(await this.blobs.read(executedKey))!==hash)throw new OnboardingError(502,"EXECUTED_COPY_FAILED","The executed copy could not be verified.");
+      await db.query(`INSERT INTO client_msa_executed_copies(document_id,client_id,client_signature_id,onspot_signature_id,object_key,sha256)
+        VALUES($1,$2,$3,$4,$5,$6)`,[doc.id,identity.client_id,clientSignature.id,signature.id,executedKey,hash]);
+      if(!prior)await db.query(`INSERT INTO client_msa_document_events(client_id,document_id,draft_id,actor_id,action)
         VALUES($1,$2,$3,$4,'onspot_signed')`,[identity.client_id,doc.id,doc.draft_id,id]);
       await queueHiringLifecycleEvent(db,`msa-countersigned:${doc.id}`,"msa_countersigned",
         {submissionId:doc.submission_id,msaDocumentId:doc.id,clientId:identity.client_id,payerId:identity.client_id});
-      return {...signature,countersignatureBlocksActivation:false};
-    });
+      return {id:signature.id,legalName:signature.legal_name,signedAt:signature.signed_at,alreadySigned:!!prior,countersignatureBlocksActivation:false};
+    });}catch(error){if(executedKey)await this.blobs.remove(executedKey).catch(()=>{});throw error;}
     void this.afterCommit?.().catch(()=>{});return result;
+  }
+  async executedPdf(id:string,documentId:string) {
+    return this.tx(async db=>{
+      const actor=(await db.query("SELECT role,admin_sub_role FROM users WHERE id=$1",[id])).rows[0];
+      const admin=actor?.role==="admin"&&actor.admin_sub_role===null;
+      if(!admin&&actor?.role!=="client")throw new OnboardingError(403,"FORBIDDEN","Client or Super Admin access required.");
+      const copy=(await db.query(`SELECT ec.object_key,ec.sha256,d.filename FROM client_msa_executed_copies ec
+        JOIN msa_documents d ON d.id=ec.document_id WHERE ec.document_id=$1 AND ($2::boolean OR ec.client_id=$3)`,[documentId,admin,id])).rows[0];
+      if(!copy)throw new OnboardingError(404,"EXECUTED_MSA_NOT_FOUND","An executed MSA is not available to your account.");
+      const bytes=await this.blobs.read(copy.object_key);
+      if(pdfHash(bytes)!==copy.sha256)throw new OnboardingError(409,"DOCUMENT_CHANGED","The executed MSA failed its integrity check.");
+      return {bytes,filename:copy.filename.replace(/\.pdf$/i,"")+"-executed.pdf"};
+    });
   }
 }
