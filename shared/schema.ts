@@ -45,6 +45,8 @@ export const contractDrafts = pgTable("contract_drafts", {
   status: text("status").notNull().default("draft"),
   revision: integer("revision").notNull().default(1),
   renderedDocumentId: uuid("rendered_document_id").references(()=>contractDocuments.id),
+  msaSubmissionId: text("msa_submission_id").references(()=>jobSubmissions.id),
+  renderedMsaDocumentId: uuid("rendered_msa_document_id").references(()=>msaDocuments.id),
   updatedBy: text("updated_by").notNull().references(()=>users.id),
   updatedAt: timestamp("updated_at",{withTimezone:true}).notNull().defaultNow(),
 },table=>[
@@ -2658,6 +2660,39 @@ export const msaDocuments=pgTable("msa_documents",{
   activationReason:text("activation_reason"),activatedAt:timestamp("activated_at",{withTimezone:true}),createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
 },t=>[uniqueIndex("msa_documents_one_active").on(t.active).where(sql`${t.active}`),
   check("msa_documents_sha256_check",sql`length(${t.sha256})=64`)]);
+export const clientMsaDocuments=pgTable("client_msa_documents",{
+  documentId:uuid("document_id").primaryKey().references(()=>msaDocuments.id),
+  clientId:text("client_id").notNull().references(()=>users.id),
+  submissionId:text("submission_id").notNull().references(()=>jobSubmissions.id),
+  draftId:uuid("draft_id").notNull().references(()=>contractDrafts.id),
+  templateId:uuid("template_id").notNull().references(()=>contractTemplates.id),
+  templateVersion:text("template_version").notNull(),
+  finalFieldValues:jsonb("final_field_values").notNull(),authoringSnapshot:jsonb("authoring_snapshot").notNull(),
+  status:text("status").notNull().default("draft"),
+  createdBy:text("created_by").notNull().references(()=>users.id),
+  createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+  issuedAt:timestamp("issued_at",{withTimezone:true}),issueReason:text("issue_reason"),
+},t=>[
+  check("client_msa_documents_status_check",sql`${t.status} IN ('draft','issued','voided','superseded')`),
+  uniqueIndex("client_msa_documents_one_issued").on(t.clientId).where(sql`${t.status}='issued'`),
+]);
+export const msaDocumentReviews=pgTable("msa_document_reviews",{
+  documentId:uuid("document_id").notNull().references(()=>msaDocuments.id),userId:text("user_id").notNull().references(()=>users.id),
+  sha256:text("sha256").notNull(),reviewedAt:timestamp("reviewed_at",{withTimezone:true}).notNull().defaultNow(),
+},t=>[primaryKey({columns:[t.documentId,t.userId]})]);
+export const clientMsaCountersignatures=pgTable("client_msa_countersignatures",{
+  id:uuid("id").primaryKey().defaultRandom(),documentId:uuid("document_id").notNull().unique().references(()=>msaDocuments.id),
+  documentSha256:text("document_sha256").notNull(),signerUserId:text("signer_user_id").notNull().references(()=>users.id),
+  signerRole:text("signer_role").notNull().default("onspot"),legalName:text("legal_name").notNull(),
+  signedAt:timestamp("signed_at",{withTimezone:true}).notNull().defaultNow(),
+  consentText:text("consent_text").notNull(),ipAddress:text("ip_address").notNull(),userAgent:text("user_agent").notNull(),
+},t=>[check("client_msa_countersignatures_signer_role_check",sql`${t.signerRole}='onspot'`)]);
+export const clientMsaDocumentEvents=pgTable("client_msa_document_events",{
+  id:uuid("id").primaryKey().defaultRandom(),clientId:text("client_id").notNull().references(()=>users.id),
+  documentId:uuid("document_id").references(()=>msaDocuments.id),draftId:uuid("draft_id").references(()=>contractDrafts.id),
+  actorId:text("actor_id").notNull().references(()=>users.id),action:text("action").notNull(),fieldKey:text("field_key"),
+  createdAt:timestamp("created_at",{withTimezone:true}).notNull().defaultNow(),
+});
 export const clientMsaOfflineEvidence=pgTable("client_msa_offline_evidence",{
   id:uuid("id").primaryKey().defaultRandom(),clientId:text("client_id").notNull().references(()=>users.id),
   documentId:uuid("document_id").notNull().references(()=>msaDocuments.id),documentSha256:text("document_sha256").notNull(),msaVersion:text("msa_version").notNull(),

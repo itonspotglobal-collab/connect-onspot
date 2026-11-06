@@ -3,7 +3,8 @@ import {queueHiringLifecycleEvent} from "./hiringLifecycleEvents";
 export async function onboardingPrerequisites(db:Pick<PoolClient,"query">) {
   const r=(await db.query(`SELECT EXISTS(SELECT 1 FROM manual_wise_config WHERE active AND revoked_at IS NULL
     AND config_status='active' AND deposit_funding_confirmed AND currency='USD') AS wise,
-    EXISTS(SELECT 1 FROM msa_documents WHERE active AND effective_at<=now()) AS msa`)).rows[0];
+    (EXISTS(SELECT 1 FROM msa_documents WHERE active AND effective_at<=now())
+      OR EXISTS(SELECT 1 FROM contract_templates WHERE kind='msa' AND status='active')) AS msa`)).rows[0];
   return {canManage:true,wiseReady:!!r.wise,msaReady:!!r.msa,wiseUrl:"/admin/ledger#manual-wise-admin",msaUrl:"/admin/msa-documents"};
 }
 export async function enqueueOnboardingSetupAlerts(db:Pick<PoolClient,"query">) {

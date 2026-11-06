@@ -5,6 +5,8 @@ export async function depositArrangement(db:Pick<PoolClient,"query">,id:string) 
 }
 export async function msaSignatureExists(db:Pick<PoolClient,"query">,clientId:string,msa:any) {
   if(!msa)return false;
+  const ownership=(await db.query("SELECT client_id,status FROM client_msa_documents WHERE document_id=$1",[msa.id])).rows[0];
+  if(ownership&&(ownership.client_id!==clientId||ownership.status!=="issued"))return false;
   return !!(await db.query(`SELECT 1 FROM client_msa_signatures WHERE client_id=$1 AND document_id=$2
     AND msa_version=$3 AND document_sha256=$4
     UNION ALL SELECT 1 FROM client_msa_offline_evidence WHERE client_id=$1 AND document_id=$2

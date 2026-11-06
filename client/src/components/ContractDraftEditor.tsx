@@ -82,8 +82,11 @@ function fieldGroup(key: string) {
 
 const groups = ["Client", "Talent", "OnSpot", "Deal terms"] as const;
 
-export function ContractDraftEditor({ contractId, onChanged, onSendReadinessChange }: {
+export function ContractDraftEditor({ contractId, authoringUrl, createContext, documentNoun = "agreement", onChanged, onSendReadinessChange }: {
   contractId: string;
+  authoringUrl?: string;
+  createContext?: { submissionId: string };
+  documentNoun?: string;
   onChanged?: () => void;
   onSendReadinessChange?: (blocked: boolean) => void;
 }) {
@@ -108,8 +111,8 @@ export function ContractDraftEditor({ contractId, onChanged, onSendReadinessChan
   const initializedDraft = useRef<string | null>(null);
   const sequence = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const base = `/api/contracts/${encodeURIComponent(contractId)}/authoring`;
-  const queryKey = useMemo(() => ["/api/contracts", contractId, "authoring"], [contractId]);
+  const base = authoringUrl ?? `/api/contracts/${encodeURIComponent(contractId)}/authoring`;
+  const queryKey = useMemo(() => authoringUrl ? [base, "authoring"] : ["/api/contracts",contractId,"authoring"], [authoringUrl,base,contractId]);
   const { data, isLoading, isError, refetch } = useQuery<AuthoringData>({
     queryKey,
     queryFn: () => json("GET", base),
@@ -212,17 +215,17 @@ export function ContractDraftEditor({ contractId, onChanged, onSendReadinessChan
 
   async function reloadAuthoring() {
     await refetch();
-    await qc.invalidateQueries({ queryKey: ["/api/contracts", contractId] });
+      if (!authoringUrl) await qc.invalidateQueries({ queryKey: ["/api/contracts", contractId] });
   }
 
   async function createDraft() {
     if (!selectedTemplate) return;
     setSaving(true); setError(""); setNotice("");
     try {
-      await json("POST", base, { templateId: selectedTemplate });
+      await json("POST", base, { templateId: selectedTemplate, ...createContext });
       await reloadAuthoring();
       markNeedsRender();
-      setNotice("Agreement draft created. Review the populated fields, save edits, then generate its PDF.");
+      setNotice(`${documentNoun[0].toUpperCase()}${documentNoun.slice(1)} draft created. Review the populated fields, save edits, then generate its PDF.`);
       onChanged?.();
     } catch (cause) { setError(messageFor(cause)); }
     finally { setSaving(false); }
@@ -321,7 +324,7 @@ export function ContractDraftEditor({ contractId, onChanged, onSendReadinessChan
       markNeedsRender();
       setProfileFieldSave({});
       setSaveAddressToProfile({ client: false, talent: false });
-      setNotice("Changes saved to this agreement revision. Generate a new PDF before sending.");
+      setNotice(authoringUrl ? `Changes saved to this ${documentNoun} revision. Generate a new PDF before issuing.` : "Changes saved to this agreement revision. Generate a new PDF before sending.");
       await reloadAuthoring();
       onChanged?.();
     } catch (cause) {
@@ -378,8 +381,8 @@ export function ContractDraftEditor({ contractId, onChanged, onSendReadinessChan
       const parentRefresh = onChanged?.();
       setNeedsRender(false);
       onSendReadinessChange?.(false);
-      setNotice("PDF generated as a versioned contract document. Use Review PDF below before sending.");
-      await Promise.all([reloadAuthoring(), qc.invalidateQueries({ queryKey: ["/api/contracts"] }), parentRefresh]);
+      setNotice(authoringUrl ? "PDF generated as a versioned private document. Review it below before issuing." : "PDF generated as a versioned contract document. Use Review PDF below before sending.");
+      await Promise.all([reloadAuthoring(), authoringUrl ? Promise.resolve() : qc.invalidateQueries({ queryKey: ["/api/contracts"] }), parentRefresh]);
     } catch (cause) {
       const description = messageFor(cause);
       setError(/409|conflict|revision|stale/i.test(description)
@@ -406,7 +409,7 @@ export function ContractDraftEditor({ contractId, onChanged, onSendReadinessChan
   return <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 sm:p-5" aria-label="Editable agreement authoring">
     <header className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-indigo-700">Auditable agreement draft</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-indigo-700">Auditable {documentNoun} draft</p>
         <h3 className="mt-1 text-base font-semibold text-slate-900">{hasDraft ? "Edit agreement details" : "Start from an approved template"}</h3>
         <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-600">This authoring flow creates a versioned PDF alongside uploaded PDFs. Profile updates are separate and opt-in; this does not replace uploaded-PDF signing.</p>
       </div>

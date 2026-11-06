@@ -12,17 +12,22 @@ import {OnboardingRepairService} from "../services/onboardingRepairService";
 import {onboardingPrerequisites} from "../services/onboardingPrerequisites";
 import {WiseError} from "../services/manualWiseService";
 import {ZodError} from "zod";
+import {ClientMsaAuthoringService} from "../services/clientMsaAuthoringService";
+import {ContractTemplateError} from "../services/contractMergeService";
+import {msaSourceAvailable} from "../services/currentClientMsa";
 
 export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:RequestHandler) {
   const router=Router();
   const msa=new ClientMsaService(pool,undefined,dispatchHiringLifecycleEvents);
+  const authoring=new ClientMsaAuthoringService(pool,undefined,dispatchHiringLifecycleEvents);
   const billing=new DepositBillingService(pool,dispatchHiringLifecycleEvents);
   const repairs=new OnboardingRepairService(pool);
   router.use((req,_res,next)=>{
-    if(!/^\/api\/(?:contractor-onboarding(?:\/|$)|admin\/(?:contractor-onboarding|msa-documents|msa-offline|deposit-billing|deposit-receipts|onboarding-repairs|onboarding-prerequisites)(?:\/|$)|client\/(?:msa|pending-deposits)(?:\/|$))/.test(req.path))return next("router");
+    if(!/^\/api\/(?:contractor-onboarding(?:\/|$)|admin\/(?:contractor-onboarding|client-msas|msa-documents|msa-offline|deposit-billing|deposit-receipts|onboarding-repairs|onboarding-prerequisites)(?:\/|$)|client\/(?:msa|pending-deposits)(?:\/|$))/.test(req.path))return next("router");
     next();
   });
   router.use(authenticate);
+  router.use((_req,res,next)=>{res.set("Cache-Control","private, no-store");next();});
   router.use(async(req:any,res,next)=>{
     try {
       let id=req.user?.id;
@@ -85,7 +90,7 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
     if(req.onboardingActor.role!=="admin")throw new OnboardingError(403,"FORBIDDEN","Admin access required.");
     const rows=(await query("SELECT id FROM job_submissions WHERE status IN ('offer_accepted','contract_sent','contract_signed') ORDER BY updated_at DESC LIMIT 200")).rows;
     const items=[];for(const r of rows)items.push(await onboardingStatus(pool,r.id,req.onboardingActor.id));
-    const activeMsaExists=(await query("SELECT EXISTS(SELECT 1 FROM msa_documents WHERE active AND effective_at<=now()) AS present")).rows[0].present;
+    const activeMsaExists=await msaSourceAvailable(pool);
     res.json({items,activeMsaExists,canManageMsa:req.onboardingActor.admin_sub_role===null});
   }));
   router.get("/api/client/msa",handle(async(req,res)=>res.json(await msa.status(req.onboardingActor.id))));
@@ -106,7 +111,19 @@ export function contractorOnboardingRouter(authenticate:RequestHandler,limiter:R
     res.status(201).json(await msa.upload(req.onboardingActor.id,req.file,req.body.version,req.body.effectiveAt));
   }));
   router.post("/api/admin/msa-documents/:id/activate",limiter,handle(async(req,res)=>res.json(await msa.activate(req.onboardingActor.id,req.params.id,req.body))));
+  router.post("/api/admin/msa-documents/:id/countersign",limiter,handle(async(req,res)=>res.json(await msa.countersign(req.onboardingActor.id,req.params.id,req.body,
+    {ip:req.ip??"",userAgent:req.get("user-agent")??""}))));
+  router.get("/api/admin/client-msas",handle(async(req,res)=>res.json(await authoring.list(req.onboardingActor.id))));
+  router.get("/api/admin/client-msas/:clientId/authoring",handle(async(req,res)=>res.json(await authoring.detail(req.onboardingActor.id,req.params.clientId))));
+  router.post("/api/admin/client-msas/:clientId/authoring",limiter,handle(async(req,res)=>res.status(201).json(await authoring.create(req.onboardingActor.id,req.params.clientId,req.body))));
+  router.patch("/api/admin/client-msas/:clientId/authoring",limiter,handle(async(req,res)=>res.json(await authoring.update(req.onboardingActor.id,req.params.clientId,req.body))));
+  router.post("/api/admin/client-msas/:clientId/authoring/preview",limiter,handle(async(req,res)=>res.json(await authoring.update(req.onboardingActor.id,req.params.clientId,req.body,true))));
+  router.post("/api/admin/client-msas/:clientId/authoring/refresh-preview",limiter,handle(async(req,res)=>res.json(await authoring.refresh(req.onboardingActor.id,req.params.clientId))));
+  router.post("/api/admin/client-msas/:clientId/authoring/refresh",limiter,handle(async(req,res)=>res.json(await authoring.refresh(req.onboardingActor.id,req.params.clientId,req.body))));
+  router.post("/api/admin/client-msas/:clientId/authoring/render",limiter,handle(async(req,res)=>res.json(await authoring.render(req.onboardingActor.id,req.params.clientId,req.body))));
+  router.post("/api/admin/client-msas/:clientId/issue",limiter,handle(async(req,res)=>res.json(await authoring.issue(req.onboardingActor.id,req.params.clientId,req.body))));
   router.use((error:any,_req:any,res:any,next:any)=>{
+    if(error instanceof ContractTemplateError)return res.status(error.status).json({error:error.code,message:error.message});
     if(error instanceof WiseError)return res.status(error.status).json({error:"DEPOSIT_ACTION_FAILED",message:error.message});
     if(error instanceof ZodError)return res.status(422).json({error:"INVALID_DETAILS",message:error.issues.map(i=>i.message).join(" ")});
     if(error instanceof OnboardingError)return res.status(error.status).json({error:error.code,code:error.code,message:error.message});

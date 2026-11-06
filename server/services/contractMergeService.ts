@@ -10,7 +10,7 @@ export class ContractTemplateError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
 }
 export type MergeValue = { value: string | null; source: string; missing: boolean };
-export type MergeContext = { actorId: string; hiringContractId?: string; clientId?: string; organizationId?: string };
+export type MergeContext = { actorId: string; hiringContractId?: string; clientId?: string; organizationId?: string; msaSubmissionId?:string };
 type Db = Pick<Pool | PoolClient, "query">;
 export function escapeContractHtml(value: unknown) {
   return String(value ?? "").replace(/[&<>"']/g, char =>
@@ -99,6 +99,17 @@ export async function resolveMergeData(context: MergeContext, db: Db = pool): Pr
       if (!membership) throw new ContractTemplateError(403, "ORG_OWNER_REQUIRED", "Client must own the selected organization");
       organizationId = context.organizationId;
     }
+    if(context.msaSubmissionId) {
+      if(actor.role!=="admin" || actor.admin_sub_role!==null)
+        throw new ContractTemplateError(403,"MSA_PREPARER_REQUIRED","Only a Super Admin may prepare an engagement MSA.");
+      contract=(await db.query(`SELECT js.id AS submission_id,js.client_id,js.talent_id,js.job_id,o.id AS offer_id,
+        hc.id,hc.signing_entity,COALESCE(hc.effective_start_date,o.proposed_start_date) AS effective_start_date
+        FROM job_submissions js JOIN offers o ON o.submission_id=js.id AND o.status IN ('accepted','offer_accepted')
+        LEFT JOIN hiring_contracts hc ON hc.offer_id=o.id AND hc.status NOT IN ('void','voided','terminated')
+        WHERE js.id=$1 AND js.client_id=$2 ORDER BY o.created_at DESC,hc.created_at DESC NULLS LAST LIMIT 1`,
+      [context.msaSubmissionId,clientId])).rows[0];
+      if(!contract)throw new ContractTemplateError(404,"MSA_ENGAGEMENT_NOT_FOUND","Accepted Client engagement not found.");
+    }
   }
   const client = (await db.query("SELECT id FROM users WHERE id=$1 AND role='client'", [clientId])).rows[0];
   if (!client) throw new ContractTemplateError(404, "CLIENT_NOT_FOUND", "Client not found");
@@ -110,9 +121,9 @@ export async function resolveMergeData(context: MergeContext, db: Db = pool): Pr
     ORDER BY CASE WHEN user_id=$1 THEN 0 ELSE 1 END,id LIMIT 1`, [contract.talent_id])).rows[0] ?? {} : {};
   const offer = contract.offer_id ? (await db.query(`SELECT rate,rate_currency,engagement_type,proposed_start_date,status
     FROM offers WHERE id=$1`, [contract.offer_id])).rows[0] ?? {} : {};
-  if (contract.offer_id && offer.status !== "accepted") throw new ContractTemplateError(409, "ACCEPTED_OFFER_REQUIRED", "The contract's accepted offer is required");
+  if (contract.offer_id && !["accepted","offer_accepted"].includes(offer.status)) throw new ContractTemplateError(409, "ACCEPTED_OFFER_REQUIRED", "The contract's accepted offer is required");
   const job = contract.job_id ? (await db.query("SELECT title,description FROM jobs WHERE id=$1", [contract.job_id])).rows[0] ?? {} : {};
-  const deposit = contract.id ? (await db.query(`SELECT amount,currency FROM security_deposits
+  const deposit = contract.offer_id ? (await db.query(`SELECT amount,currency FROM security_deposits
     WHERE hiring_contract_id=$1 OR (offer_id=$2 AND submission_id=$3)
     ORDER BY (hiring_contract_id=$1) DESC NULLS LAST,created_at DESC,id DESC LIMIT 1`,
   [contract.id, contract.offer_id, contract.submission_id])).rows[0] ?? {} : {};

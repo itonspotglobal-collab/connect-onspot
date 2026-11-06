@@ -1,4 +1,5 @@
 import type {Pool,PoolClient} from "pg";
+import {currentClientMsa} from "./currentClientMsa";
 import {ManualWiseService} from "./manualWiseService";
 import {lockOnboarding,OnboardingError} from "./contractorOnboardingPolicy";
 import {queueHiringLifecycleEvent,tryActivateEngagement} from "./hiringLifecycleEvents";
@@ -136,7 +137,8 @@ export class DepositBillingService {
       await lockOnboarding(db,id);
       const s=(await db.query("SELECT * FROM job_submissions WHERE id=$1 FOR UPDATE",[id])).rows[0];
       if(!s)fail(404,"APPLICATION_NOT_FOUND","Application not found.");
-      const doc=(await db.query("SELECT * FROM msa_documents WHERE id=$1 AND active AND effective_at<=now() FOR SHARE",[input.documentId])).rows[0];
+      const current=await currentClientMsa(db,s.client_id);
+      const doc=current?.id===input.documentId?current:null;
       if(!doc)fail(409,"ACTIVE_MSA_REQUIRED","Upload and activate the approved canonical MSA version first. An uploaded signed copy cannot invent or activate a version.");
       await db.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`client-msa-offline:${s.client_id}:${doc.id}`]);
       const prior=(await db.query("SELECT * FROM client_msa_offline_evidence WHERE client_id=$1 AND document_id=$2",[s.client_id,doc.id])).rows[0];

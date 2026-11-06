@@ -5,6 +5,7 @@ import { queueHiringLifecycleEvent, tryActivateEngagement } from "./hiringLifecy
 import { verifiedDeferredHiringPayment } from "./hiringPaymentWaiverService";
 import {hiringOverrideState} from "./adminHiringOverrideState";
 import {depositArrangement,msaSignatureExists} from "./depositArrangementState";
+import {currentClientMsa} from "./currentClientMsa";
 
 /** Post-commit outbox work: idempotent drafts and MSA issuance, never sending PDFs automatically. */
 export async function preparePaidAgreements(pool:Pool,p:any) {
@@ -42,8 +43,11 @@ export async function preparePaidAgreements(pool:Pool,p:any) {
       return {contractId:null,eligible:false};
     }
     const override=await hiringOverrideState(db,source.submission_id);
-    const msa=(await db.query("SELECT id,version,sha256 FROM msa_documents WHERE active AND effective_at<=now() FOR SHARE")).rows[0];
-    if(!msa&&!override.skipMsa)await queueHiringLifecycleEvent(db,`msa-missing:${source.submission_id}`,"msa_missing",{submissionId:source.submission_id});
+    const msa=await currentClientMsa(db,source.client_id);
+    const hasTemplate=!!(await db.query("SELECT 1 FROM contract_templates WHERE kind='msa' AND status='active'")).rows.length;
+    if(!msa&&!override.skipMsa)await queueHiringLifecycleEvent(db,
+      `${hasTemplate?"msa-preparation":"msa-missing"}:${source.submission_id}`,
+      hasTemplate?"msa_preparation_required":"msa_missing",{submissionId:source.submission_id,clientId:source.client_id});
     else if(msa&&!override.skipMsa) {
       const signed=await msaSignatureExists(db,source.client_id,msa);
       if(!signed) {

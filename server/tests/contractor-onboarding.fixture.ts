@@ -25,6 +25,7 @@ import {offerHandler} from "./fixtures/onboarding-offer-handlers";
 import {HiringPaymentWaiverService,enqueueDeferredHiringReminders,twoBusinessDaysAfter,verifiedDeferredHiringPayment,activeHiringWaiver} from "../services/hiringPaymentWaiverService";
 import {HiringPaymentService,requireVerifiedHiringPayment} from "../services/hiringPaymentService";
 import {FORMAL_PIPELINE_PREDICATE} from "../../shared/formalPipelineSql";
+import {registerClientMsaAuthoringTests} from "./client-msa-authoring-tests";
 
 const suffix=randomUUID(),client=`onboard-client-${suffix}`,talent=`onboard-talent-${suffix}`;
 const candidate=`onboard-candidate-${suffix}`;
@@ -515,3 +516,4 @@ test("regular Admin deposit waiver unlocks real private agreement preparation; n
   assert.equal(hc.activation_override_id,null,"waiving a deposit does not bypass either agreement");
   assert.equal((await query("SELECT count(*)::int n FROM admin_hiring_overrides WHERE submission_id=$1 AND (new_state->>'skipMsa'='true' OR new_state->>'skipContractorAgreement'='true')",[a.submissionId])).rows[0].n,0);
 });
+registerClientMsaAuthoringTests({pool,query,client,other,talent,admin,limited,blobs,files,accepted,verifiedPayment,signContract,msa,tx,status});

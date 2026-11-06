@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, ShieldCheck, Loader2, AlertCircle, RotateCw, CircleCheck, Eye, X } from "lucide-react";
+import { ClientMsaAuthoring, type ClientMsaDocument, type ClientMsaEngagement } from "@/components/ClientMsaAuthoring";
 
 interface MsaDocument {
   id: string; version: string; sha256: string; effectiveAt: string; active: boolean; filename: string; viewUrl: string;
@@ -26,6 +27,7 @@ export default function AdminMsaDocuments() {
   const [activating, setActivating] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ id: string; url: string } | null>(null);
   const [previewing, setPreviewing] = useState<string | null>(null);
+  const [selectedEngagementKey, setSelectedEngagementKey] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -33,6 +35,11 @@ export default function AdminMsaDocuments() {
     queryKey: ["/api/admin/msa-documents"],
     queryFn: async () => (await apiRequest("GET", "/api/admin/msa-documents")).json(),
   });
+  const clientMsas = useQuery<{ engagements: ClientMsaEngagement[]; documents: ClientMsaDocument[]; countersignatureBlocksActivation: false }>({
+    queryKey: ["/api/admin/client-msas"],
+    queryFn: async () => (await apiRequest("GET", "/api/admin/client-msas")).json(),
+  });
+  const selectedEngagement = clientMsas.data?.engagements.find((engagement) => `${engagement.clientId}:${engagement.submissionId}` === selectedEngagementKey) ?? clientMsas.data?.engagements[0];
   useEffect(() => () => { if (preview?.url) URL.revokeObjectURL(preview.url); }, [preview]);
   async function uploadDraft(event: React.FormEvent) {
     event.preventDefault();
@@ -83,7 +90,20 @@ export default function AdminMsaDocuments() {
     finally { setPreviewing(null); }
   }
   return <div className="min-h-[100dvh] bg-[#f3f6f2]"><TopNavigation /><main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-    <div className="mb-7"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#557064]">Admin settings</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#20352a]">MSA documents</h1><p className="mt-2 max-w-2xl text-sm text-slate-600">Upload versioned agreements to private storage. Only an explicitly reviewed active version can be issued for client signature.</p></div>
+       <div className="mb-7"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#557064]">Admin settings</p><h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#20352a]">MSA documents</h1><p className="mt-2 max-w-2xl text-sm text-slate-600">Keep shared uploaded agreements intact while preparing private, auditable versions for each client.</p></div>
+     <section className="mb-7 space-y-4">
+       <div className="flex flex-col justify-between gap-3 rounded-2xl border border-[#dce5df] bg-white p-4 sm:flex-row sm:items-center sm:p-5">
+         <div><p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#557064]">Personalized agreements</p><h2 className="mt-1 text-lg font-semibold text-[#20352a]">Prepare per client</h2><p className="mt-1 text-xs text-slate-500">A private client-specific version runs alongside the shared MSA archive.</p></div>
+         <div className="grid grid-cols-2 gap-2 text-center sm:min-w-[260px]">
+           <div className="rounded-xl bg-[#f3f6f2] px-4 py-2"><p className="text-xl font-semibold text-[#20352a]">{clientMsas.data?.engagements.length ?? "—"}</p><p className="text-[10px] uppercase tracking-wider text-slate-500">Engagements</p></div>
+           <div className="rounded-xl bg-[#f3f6f2] px-4 py-2"><p className="text-xl font-semibold text-[#20352a]">{clientMsas.data?.documents.filter((document) => document.status === "issued").length ?? "—"}</p><p className="text-[10px] uppercase tracking-wider text-slate-500">Issued versions</p></div>
+         </div>
+       </div>
+       {clientMsas.isLoading ? <div className="h-24 animate-pulse rounded-xl bg-white" /> : clientMsas.isError ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><AlertCircle className="mr-2 inline h-4 w-4" />Could not load client MSA preparation data. <button className="underline" onClick={() => void clientMsas.refetch()}>Retry</button></div> : !clientMsas.data?.engagements.length ? <div className="rounded-xl border border-dashed border-slate-300 bg-white/70 p-6 text-sm text-slate-500">No eligible client engagements are available for personalized MSA preparation.</div> : <>
+         <div className="max-w-xl space-y-2"><Label htmlFor="msa-client-select">Client engagement</Label><select id="msa-client-select" value={selectedEngagement ? `${selectedEngagement.clientId}:${selectedEngagement.submissionId}` : ""} onChange={(event) => setSelectedEngagementKey(event.target.value)} className="h-10 w-full rounded-md border border-[#cbd9cf] bg-white px-3 text-sm text-slate-800">{clientMsas.data.engagements.map((engagement) => <option key={`${engagement.clientId}:${engagement.submissionId}`} value={`${engagement.clientId}:${engagement.submissionId}`}>{engagement.clientName} · {engagement.jobTitle}</option>)}</select></div>
+         {selectedEngagement && <ClientMsaAuthoring key={`${selectedEngagement.clientId}:${selectedEngagement.submissionId}`} engagement={selectedEngagement} documents={clientMsas.data.documents} onChanged={async () => { await clientMsas.refetch(); }} />}
+       </>}
+     </section>
     <div className="grid gap-6 lg:grid-cols-[.85fr_1.15fr]">
       <Card className="h-fit border-[#dce5df]"><CardContent className="p-5 sm:p-6"><div className="mb-5 flex items-center gap-3"><div className="rounded-xl bg-[#e7efe9] p-2.5 text-[#45664d]"><Upload className="h-5 w-5" /></div><div><h2 className="font-semibold text-slate-900">Add a draft version</h2><p className="text-xs text-slate-500">PDF only · private until activated</p></div></div>
         <form onSubmit={uploadDraft} className="space-y-4"><div className="space-y-2"><Label htmlFor="msa-version">Version</Label><Input id="msa-version" value={version} onChange={(e) => setVersion(e.target.value)} placeholder="e.g. 2025.2" maxLength={80} required /></div>

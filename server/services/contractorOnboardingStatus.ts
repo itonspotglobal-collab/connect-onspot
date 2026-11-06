@@ -3,6 +3,7 @@ import { isDepositFirst, OnboardingError } from "./contractorOnboardingPolicy";
 import {hiringOverrideState} from "./adminHiringOverrideState";
 import {depositArrangement,msaSignatureExists} from "./depositArrangementState";
 import {onboardingPrerequisites} from "./onboardingPrerequisites";
+import {currentClientMsa} from "./currentClientMsa";
 
 interface OnboardingStatusResult {
   stages:Array<{key:string;label:string;complete:boolean;current:boolean;actor:string;overridden:boolean}>;
@@ -30,7 +31,7 @@ export async function onboardingStatus(db:Pick<PoolClient,"query">,id:string,act
     LEFT JOIN manual_wise_obligations o ON o.deposit_id=d.id
     LEFT JOIN LATERAL(SELECT status FROM manual_wise_submissions WHERE obligation_id=o.id ORDER BY created_at DESC LIMIT 1)s ON true
     WHERE (d.offer_id=$1 OR d.hiring_contract_id=$2) ORDER BY d.created_at DESC LIMIT 1`,[offer?.id??null,contract?.id??null])).rows[0];
-  const msa=(await db.query("SELECT id,version,sha256 FROM msa_documents WHERE active AND effective_at<=now()")).rows[0];
+  const msa=await currentClientMsa(db,s.client_id);
   const msaSigned=await msaSignatureExists(db,s.client_id,msa);
   const arrangement=await depositArrangement(db,id);
   const setup=await onboardingPrerequisites(db);

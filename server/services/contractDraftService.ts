@@ -21,12 +21,12 @@ const profileChangesSchema=z.object({
 const edit = z.object({revision:z.number().int().positive(),fieldOverrides:maps.optional(),bodyOverrides:maps.optional(),
   profileChanges:profileChangesSchema.optional()}).strict();
 const hash = (data:unknown)=>createHash("sha256").update(JSON.stringify(data)).digest("hex");
-function clauses(body:string) {
+export function draftClauses(body:string) {
   const nodes = parseDocument(body).children.filter((n:any)=>n.type !== "text" || n.data.trim());
   return nodes.map((node,index)=>({id:`clause-${index+1}`,html:DomUtils.getOuterHTML(node)}));
 }
 export function composeDraft(body:string,overrides:Record<string,string>) {
-  const list=clauses(body);
+  const list=draftClauses(body);
   if(Object.keys(overrides).some(key=>!list.some(clause=>clause.id===key)))throw fail("unknown_clause",422);
   return list.map(c=>overrides[c.id] ?? c.html).join("\n");
 }
@@ -83,7 +83,7 @@ export class ContractDraftService {
     body=body.replace(/{{\s*([^{}]*?)\s*}}/g,(token,key)=>optionalMissing.has(key)?"":token);
     const preview=renderContractTemplate(body,values);
     preview.missingKeys=fields.filter((f:any)=>f.required && !String(values[f.key]??"").trim()).map((f:any)=>f.key);
-    return {draft,fields,clauses:clauses(template.body),preview,isAdmin:admin};
+    return {draft,fields,clauses:draftClauses(template.body),preview,isAdmin:admin};
   }
   async detail(id:string,actorId:string) {
     return this.transaction(async tx=>{

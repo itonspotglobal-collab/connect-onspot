@@ -209,6 +209,18 @@ async function deliverEvent(event:any) {
   } else if(event.event_type==="msa_required") {
     await notify(event,owner,"hiring_msa_required","monthly_client_invoice","Please review and sign the OnSpot Master Services Agreement",
       "Your verified payment allows agreement preparation. Review and sign the current MSA.","/client/msa",ctx);
+  } else if(event.event_type==="msa_countersigned") {
+    await notify(event,owner,"hiring_msa_countersigned","monthly_client_invoice","Your OnSpot MSA has been countersigned",
+      "OnSpot has countersigned the exact MSA you signed. Your agreement and signature status remain available in OnSpot.","/client/msa",ctx);
+  } else if(event.event_type==="msa_preparation_required"||event.event_type==="msa_countersign_required") {
+    const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
+    const countersign=event.event_type==="msa_countersign_required";
+    await Promise.all(admins.map(admin=>notify(event,admin,
+      countersign?"hiring_msa_countersign":"hiring_msa_prepare","hiring_payment_review",
+      countersign?"Client MSA signed — OnSpot countersignature requested":"Prepare this Client's personalized MSA",
+      countersign?"The Client signed their exact MSA. Review it before countersigning for OnSpot. This additional signature does not block activation.":
+        "Verified payment allows agreement preparation. Generate, review and issue a personalized MSA from the approved active template.",
+      "/admin/msa-documents",ctx)));
   } else if(event.event_type==="msa_missing") {
     const admins=(await query("SELECT id,email FROM users WHERE role='admin' AND admin_sub_role IS NULL")).rows;
     await Promise.all(admins.map(admin=>notify(event,admin,"hiring_msa_missing","hiring_payment_review",

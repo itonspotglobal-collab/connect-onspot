@@ -38,3 +38,9 @@ An additional OnSpot MSA countersignature defaults to non-blocking for activatio
 **Why:** The owner distinguished the new MSA countersign step from existing hiring-contract execution requirements.
 
 **How to apply:** Preserve existing activation and legacy-MSA validity while discussing the MSA countersignature stage.
+
+Activating template-based per-client MSAs must not invalidate Clients' previously signed shared MSAs, including approved offline signature evidence. A freshly prepared draft also leaves the currently issued agreement in force.
+
+**Why:** Authoring rollout is not authorization to require every existing Client to sign again. Only explicit issuance of a personalized replacement starts a new signature requirement; signatures never transfer to it.
+
+**How to apply:** Keep signed legacy documents usable during the transition. Unsigned Clients need a personalized issued agreement when the MSA template is active; never present an unfilled shared source as their new agreement.
