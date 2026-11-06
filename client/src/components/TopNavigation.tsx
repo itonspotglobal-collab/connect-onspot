@@ -414,6 +414,7 @@ export function TopNavigation() {
       { key: "find-work", label: "Find Work", route: "/admin/find-work", icon: Briefcase },
       { key: "job-applications", label: "Job Applications", route: "/admin/job-applications", icon: Users },
       { key: "contracts", label: "Contracts", route: "/contracts", icon: ClipboardList },
+      { key: "contract-templates", label: "Contract Templates", route: "/admin/contract-templates", icon: ClipboardList },
       { key: "email-templates", label: "Email Templates", route: "/admin/email-templates", icon: Mail },
       { key: "email-delivery-audit", label: "Email Delivery Audit", route: "/admin/email-deliveries", icon: Mail },
       { key: "insights", label: "Insights", route: "/admin/insights", icon: Eye },

@@ -62,6 +62,7 @@ import { registerContractTerminationRoutes } from "./routes/contractTerminations
 import { parsePagination, pageSlice } from "./lib/paginate";
 import { escHtml } from "./lib/escHtml";
 import { contractDocumentRouter } from "./contractDocumentRoutes";
+import { contractTemplatesRouter } from "./routes/contractTemplates";
 import { inferCategory } from "./lib/searchScaffold";
 import {
   normalizeInterviewTimeZone,
@@ -1548,6 +1549,7 @@ export async function registerRoutes(
       : authenticateJWT(req, res, next);
   };
   app.use("/api/contracts", contractDocumentRouter(contractAuth, pipelineMutationLimiter));
+  app.use("/api/admin/contract-templates", contractTemplatesRouter(pool, contractAuth, pipelineMutationLimiter));
   app.use(contractorOnboardingRouter(contractAuth,pipelineMutationLimiter));
   // Legacy API object lookup must never bypass contract-level authorization,
   // including the redundant objects/ prefix accepted by the generic route.

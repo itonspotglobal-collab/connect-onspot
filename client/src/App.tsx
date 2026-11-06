@@ -80,6 +80,7 @@ import AdminInterviews from "@/pages/AdminInterviews";
 import AdminEmailTemplates from "@/pages/AdminEmailTemplates";
 import AdminEmailTemplateEditor from "@/pages/AdminEmailTemplateEditor";
 import AdminMsaDocuments from "@/pages/AdminMsaDocuments";
+import AdminContractTemplates from "@/pages/AdminContractTemplates";
 import AdminContractorOnboarding from "@/pages/AdminContractorOnboarding";
 import ManagedServicesPage from "@/pages/ManagedServicesPage";
 import ResourcedServicesPage from "@/pages/ResourcedServicesPage";
@@ -326,6 +327,7 @@ function PublicRouter() {
           <Route path="/admin/job-applications" component={() => <AdminProtectedRoute><AdminJobApplications /></AdminProtectedRoute>} />
           <Route path="/admin/contractor-onboarding" component={() => <AdminProtectedRoute><AdminContractorOnboarding /></AdminProtectedRoute>} />
           <Route path="/admin/msa-documents" component={() => <AdminProtectedRoute><AdminMsaDocuments /></AdminProtectedRoute>} />
+          <Route path="/admin/contract-templates" component={() => <AdminProtectedRoute><AdminContractTemplates /></AdminProtectedRoute>} />
           <Route path="/admin/interviews" component={() => <AdminProtectedRoute><AdminInterviews /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates" component={() => <AdminProtectedRoute><AdminEmailTemplates /></AdminProtectedRoute>} />
           <Route path="/admin/email-templates/create" component={() => <AdminProtectedRoute><AdminEmailTemplateEditor /></AdminProtectedRoute>} />

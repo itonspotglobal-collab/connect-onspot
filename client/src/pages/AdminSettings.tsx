@@ -223,6 +223,7 @@ export default function AdminSettings() {
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate("/admin/msa-documents")}>Manage MSA documents</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/contract-templates")}>Contract templates</Button>
           <Button variant="outline" size="sm" onClick={() => navigate("/admin/contractor-onboarding")}>Contractor onboarding</Button>
         </div>
       </div>

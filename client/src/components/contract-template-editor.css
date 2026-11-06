@@ -1,0 +1,45 @@
+.contract-template-edit h1,
+.contract-template-edit h2,
+.contract-template-edit h3,
+.contract-template-edit h4 {
+  color: #203e42;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.15em 0 0.55em;
+}
+.contract-template-edit h1 { font-size: 1.65rem; }
+.contract-template-edit h2 { font-size: 1.35rem; }
+.contract-template-edit h3 { font-size: 1.12rem; }
+.contract-template-edit h4 { font-size: 1rem; }
+.contract-template-edit p { margin: 0.5em 0; }
+.contract-template-edit ul,
+.contract-template-edit ol { margin: 0.65em 0; padding-left: 1.6em; }
+.contract-template-edit ul { list-style: disc; }
+.contract-template-edit ol { list-style: decimal; }
+.contract-template-edit li { padding-left: 0.15em; }
+.contract-template-edit blockquote {
+  border-left: 3px solid #a8c1bb;
+  color: #5f7879;
+  margin: 1em 0;
+  padding-left: 1em;
+}
+.contract-template-edit table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  min-width: 100%;
+  table-layout: auto;
+}
+.contract-template-edit td,
+.contract-template-edit th {
+  border: 1px solid #c7d6d5;
+  min-width: 44px;
+  padding: 7px 9px;
+  vertical-align: top;
+}
+.contract-template-edit th { background: #f0f5f3; font-weight: 700; }
+.contract-template-edit [data-clause-id] { outline: none; }
+.contract-template-edit:empty::before {
+  color: #91a3a4;
+  content: "Write agreement language or paste plain text here…";
+  pointer-events: none;
+}

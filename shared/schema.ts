@@ -3,6 +3,34 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jso
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Versioned authoring templates; published versions are immutable (migration 0061).
+export const contractTemplates = pgTable("contract_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: text("kind").notNull(), name: text("name").notNull(), version: text("version").notNull(),
+  body: text("body").notNull(), status: text("status").notNull().default("draft"),
+  createdBy: text("created_by").references(() => users.id),
+  activatedBy: text("activated_by").references(() => users.id),
+  activationReason: text("activation_reason"), activatedAt: timestamp("activated_at", { withTimezone: true }),
+  sourceDocumentSha256: text("source_document_sha256"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [
+  unique("contract_templates_kind_version_key").on(table.kind, table.version),
+  uniqueIndex("contract_templates_one_active_kind").on(table.kind).where(sql`${table.status} = 'active'`),
+  check("contract_templates_kind_check", sql`${table.kind} IN ('msa','talent_agreement','sow')`),
+  check("contract_templates_status_check", sql`${table.status} IN ('draft','active','retired')`),
+  check("contract_templates_activation_check", sql`${table.status} <> 'active' OR
+    (${table.activatedBy} IS NOT NULL AND ${table.activatedAt} IS NOT NULL AND ${table.activationReason} IS NOT NULL AND length(trim(${table.activationReason})) > 0)`),
+]);
+export const contractTemplateFields = pgTable("contract_template_fields", {
+  templateId: uuid("template_id").notNull().references(() => contractTemplates.id, { onDelete: "cascade" }),
+  key: text("key").notNull(), label: text("label").notNull(), source: text("source").notNull(),
+  required: boolean("required").notNull().default(true), editableBy: text("editable_by").notNull(),
+}, table => [
+  primaryKey({ columns: [table.templateId, table.key] }),
+  check("contract_template_fields_editable_by_check", sql`${table.editableBy} IN ('admin','preparer','none')`),
+]);
+
 // Session storage table for Replit Auth
 export const sessions = pgTable(
   "sessions",

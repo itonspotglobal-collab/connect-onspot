@@ -21,6 +21,12 @@ The requested MSA template must use approved current OnSpot wording, excluding t
 
 **How to apply:** Obtain the authoritative document if its wording cannot be read from existing approved sources.
 
+The owner approved omitting legacy receiving-bank instructions from the imported template, in addition to the separate ACH/card authorization page. Keep the original uploaded MSA and historical signatures unchanged; the converted authoring template must begin as a draft requiring fresh review.
+
+**Why:** The current approved source includes legacy bank details and ACH instructions, whereas the authoring request forbids collecting bank/card credentials. Omission was explicitly approved rather than replaced with invented legal terms.
+
+**How to apply:** Preserve remaining approved wording and audit its source hash. Never treat the source PDF's approval as approval of the converted or subsequently edited template.
+
 An additional OnSpot MSA countersignature defaults to non-blocking for activation unless the owner explicitly changes that policy. This does not relax mandatory OnSpot signatures on hiring contracts.
 
 **Why:** The owner distinguished the new MSA countersign step from existing hiring-contract execution requirements.

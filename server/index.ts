@@ -586,6 +586,8 @@ app.use((req, res, next) => {
   // Seed default applicant email templates (idempotent — name-based deduplication)
   const { seedEmailTemplates } = await import('./seeds/seedEmailTemplates');
   await seedEmailTemplates();
+  const { seedContractTemplates } = await import('./seeds/seedContractTemplates');
+  await seedContractTemplates();
   
   await registerRoutes(app, server);
 
