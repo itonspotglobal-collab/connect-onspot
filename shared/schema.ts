@@ -32,6 +32,28 @@ export const contractTemplateFields = pgTable("contract_template_fields", {
 ]);
 
 // Session storage table for Replit Auth
+export const contractDrafts = pgTable("contract_drafts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: text("kind").notNull(),
+  hiringContractId: uuid("hiring_contract_id").references(()=>hiringContracts.id),
+  clientId: text("client_id").references(()=>users.id),
+  templateId: uuid("template_id").notNull().references(()=>contractTemplates.id),
+  templateVersion: text("template_version").notNull(),
+  fieldValues: jsonb("field_values").notNull().default({}),
+  fieldOverrides: jsonb("field_overrides").notNull().default({}),
+  bodyOverrides: jsonb("body_overrides").notNull().default({}),
+  status: text("status").notNull().default("draft"),
+  revision: integer("revision").notNull().default(1),
+  renderedDocumentId: uuid("rendered_document_id").references(()=>contractDocuments.id),
+  updatedBy: text("updated_by").notNull().references(()=>users.id),
+  updatedAt: timestamp("updated_at",{withTimezone:true}).notNull().defaultNow(),
+},table=>[
+  check("contract_drafts_kind_check",sql`${table.kind} IN ('msa','talent_agreement','sow')`),
+  check("contract_drafts_status_check",sql`${table.status} IN ('draft','sent','retired')`),
+  check("contract_drafts_target_check",sql`(${table.hiringContractId} IS NOT NULL) <> (${table.clientId} IS NOT NULL)`),
+  uniqueIndex("contract_drafts_live_hiring").on(table.hiringContractId).where(sql`${table.status} <> 'retired'`),
+  uniqueIndex("contract_drafts_live_client").on(table.clientId).where(sql`${table.status} <> 'retired'`),
+]);
 export const sessions = pgTable(
   "sessions",
   {
@@ -1953,6 +1975,10 @@ export const contractDocuments = pgTable("contract_documents", {
   executedAt: timestamp("executed_at", { withTimezone: true }),
   executedObjectKey: text("executed_object_key"),
   executedSha256: text("executed_sha256"),
+  templateId: uuid("template_id").references(()=>contractTemplates.id),
+  templateVersion: text("template_version"),
+  finalFieldValues: jsonb("final_field_values"),
+  authoringSnapshot: jsonb("authoring_snapshot"),
 }, table => [
   uniqueIndex("contract_documents_version").on(table.hiringContractId, table.version),
   uniqueIndex("contract_documents_current").on(table.hiringContractId).where(sql`${table.status} NOT IN ('superseded','voided','declined')`),
@@ -1987,6 +2013,7 @@ export const contractDocumentEvents = pgTable("contract_document_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   hiringContractId: uuid("hiring_contract_id").notNull().references(() => hiringContracts.id),
   documentId: uuid("document_id").references(() => contractDocuments.id),
+  fieldKey: text("field_key"),
   actorUserId: varchar("actor_user_id").notNull().references(() => users.id),
   action: text("action").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

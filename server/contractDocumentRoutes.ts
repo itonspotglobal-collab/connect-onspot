@@ -7,9 +7,14 @@ import * as contracts from "./services/contractDocumentService";
 import { deliverContractEmails } from "./services/contractDeliveryService";
 import { MAX_CONTRACT_PDF_BYTES } from "./services/contractBlobStore";
 import { OnboardingError } from "./services/contractorOnboardingPolicy";
+import { ContractDraftService } from "./services/contractDraftService";
+import { ContractTemplateError } from "./services/contractMergeService";
+import { ZodError } from "zod";
 
 export function contractDocumentRouter(authenticate: RequestHandler, limiter: RequestHandler) {
   const router = Router();
+  const authoring = new ContractDraftService();
+  router.use((_req,res,next)=>{res.set("Cache-Control","private, no-store");next();});
   router.use(authenticate);
   router.use(async (req: any, res, next) => {
     try {
@@ -47,6 +52,20 @@ export function contractDocumentRouter(authenticate: RequestHandler, limiter: Re
   router.get("/context", assertOffer, handle(async (req, res) => res.json(await contracts.contractOfferContext(req.query.offerId, req.contractActor))));
   router.post("/", limiter, assertOffer, handle(async (req, res) => res.status(201).json(await contracts.prepareContract(req.contractActor, req.body))));
   router.get("/:id", handle(async (req, res) => res.json(await contracts.contractDetail(req.params.id, req.contractActor))));
+  router.get("/:id/authoring",handle(async(req,res)=>res.json(await authoring.detail(req.params.id,req.contractActor.id))));
+  router.post("/:id/authoring",limiter,handle(async(req,res)=>res.status(201).json(await authoring.create(req.params.id,req.contractActor.id,req.body))));
+  router.patch("/:id/authoring",limiter,handle(async(req,res)=>res.json(await authoring.update(req.params.id,req.contractActor.id,req.body))));
+  router.post("/:id/authoring/preview",limiter,handle(async(req,res)=>res.json((await authoring.update(req.params.id,req.contractActor.id,req.body,true)).preview)));
+  router.post("/:id/authoring/refresh-preview",limiter,handle(async(req,res)=>res.json(await authoring.refresh(req.params.id,req.contractActor.id))));
+  router.post("/:id/authoring/refresh",limiter,handle(async(req,res)=>res.json(await authoring.refresh(req.params.id,req.contractActor.id,req.body))));
+  router.post("/:id/authoring/render",limiter,handle(async(req,res)=>res.json(await authoring.render(req.params.id,req.contractActor.id,req.body))));
+  for(const action of ["revise","request-changes"] as const) {
+    router.post(`/:id/${action}`,limiter,handle(async(req,res)=>{
+      const result=await authoring.revise(req.params.id,req.contractActor.id,req.body,action==="request-changes");
+      const email=await deliverContractEmails(req.params.id).catch(()=>({status:"failed"}));
+      res.json({...result,email});
+    }));
+  }
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_CONTRACT_PDF_BYTES, files: 1, fields: 0 } }).single("file");
   router.delete("/:id/document",limiter,handle(async(req,res)=>res.json(await contracts.removePrimaryDraftPdf(req.params.id,req.contractActor))));
   router.put("/:id/attachments", limiter, handle(async (req,res)=>{
@@ -106,6 +125,8 @@ export function contractDocumentRouter(authenticate: RequestHandler, limiter: Re
     }));
   }
   router.use((error: any, _req: any, res: any, _next: any) => {
+    if(error instanceof ZodError)return res.status(422).json({error:"invalid_authoring_request"});
+    if(error instanceof ContractTemplateError)return res.status(error.status).json({error:error.code,message:error.message});
     if (error instanceof OnboardingError) return res.status(error.status).json({error:error.code,code:error.code,message:error.message});
     if (error instanceof ContractError) return res.status(error.status).json(error.body);
     if (error instanceof multer.MulterError) return res.status(400).json({ error: "invalid_pdf_upload", message: "Upload one PDF no larger than 10 MB." });

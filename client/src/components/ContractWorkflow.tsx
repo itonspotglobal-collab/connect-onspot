@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fallbackContractsLocation, getContractListLocation, getTrustedPreviousLocation, getContractNavigationDocumentId } from "@/lib/contractNavigation";
 import { loadTalentAuth } from "@/components/TalentLoginModal";
 import { getDeepLinkResourceIds } from "@/lib/deepLinks";
+import { ContractDraftEditor } from "@/components/ContractDraftEditor";
 
 export interface ContractRow {
   id: string;
@@ -104,6 +105,7 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
 }) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const [, navigate] = useLocation();
   const [partyType, setPartyType] = useState<"onspot" | "client" | "organization">("onspot");
   const [organizationId, setOrganizationId] = useState("");
   const [title, setTitle] = useState("");
@@ -270,6 +272,29 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
       toast({ title: "Could not save contract draft", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     } finally { setBusy(false); }
   }
+  async function openTemplateDraft() {
+    if (!context) return;
+    const showEditor = (id:string) => {
+      if(onCreated)onCreated(id);
+      else { onOpenChange(false); navigate(`/contracts?id=${encodeURIComponent(id)}`); }
+    };
+    if (draftId) { showEditor(draftId); return; }
+    setBusy(true);
+    try {
+      const created = await jsonRequest<{ id: string }>("POST", "/api/contracts", {
+        offerId, partyType, ...(partyType === "organization" ? { organizationId } : {}),
+        ...(title.trim() ? { title: title.trim() } : {}),
+        ...(message.trim() ? { message: message.trim() } : {}),
+      });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["/api/contracts"] }),
+        qc.invalidateQueries({ queryKey: ["/api/contracts/accepted-offers"] }),
+      ]);
+      showEditor(created.id);
+    } catch (error) {
+      toast({ title: "Could not prepare template draft", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally { setBusy(false); }
+  }
   async function uploadDraft() {
     if (!context || !file) return;
     if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
@@ -401,6 +426,9 @@ export function PrepareContractDialog({ offerId, open, onOpenChange, onCreated }
           {!draftId && <Button variant="outline" onClick={persistDraft} disabled={!context || busy || (partyType === "organization" && !organizationId)}>
             {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save Draft"}
           </Button>}
+          <Button variant="outline" onClick={openTemplateDraft} disabled={!context || busy || (partyType === "organization" && !organizationId)}>
+            <PenLine className="mr-2 h-4 w-4" />Generate from template
+          </Button>
           {!draftId || uploadedKey !== selectedFileKey ? <Button onClick={uploadDraft} disabled={!context || !file || busy || (partyType === "organization" && !organizationId)} className="bg-[#474ead] text-white hover:bg-[#3d439c]">
             {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading…</> : <><Upload className="mr-2 h-4 w-4" />{draftId ? "Upload replacement PDF" : "Create draft & upload"}</>}
           </Button> : reviewedKey !== selectedFileKey || !serverPdfUrl ? <Button onClick={retryServerReview} disabled={busy} variant="outline">
@@ -435,6 +463,10 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
   const [consent, setConsent] = useState(false);
   const [reason, setReason] = useState("");
   const [reasonAction, setReasonAction] = useState<"void" | "decline" | null>(null);
+  const [revisionReason, setRevisionReason] = useState("");
+  const [revisionAction, setRevisionAction] = useState<"revise" | "request-changes" | null>(null);
+  const [revisionBusy, setRevisionBusy] = useState(false);
+  const [authoringBlocksSend, setAuthoringBlocksSend] = useState(true);
   const [draftFile, setDraftFile] = useState<File | null>(null);
   const [draftBusy, setDraftBusy] = useState(false);
   const [supportingFile, setSupportingFile] = useState<File | null>(null);
@@ -454,6 +486,10 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
     setPdfUrl(null);
     setExecutedPdfUrl(null);
     setEmailResult(null);
+    setRevisionReason("");
+    setRevisionAction(null);
+    setRevisionBusy(false);
+    setAuthoringBlocksSend(true);
   // reset securely when switching contract / closing dialog
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, open]);
@@ -507,8 +543,17 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
         qc.invalidateQueries({ queryKey: ["/api/contracts/accepted-offers"] }),
       ]);
       setReasonAction(null); setReason("");
+      setRevisionAction(null); setRevisionReason("");
+      setRevisionAction(null); setRevisionReason("");
       toast({ title: "Contract updated", description: "The latest signing status is shown below." });
     } catch (error) { toast({ title: "Contract action failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }); }
+  }
+  async function runRevisionMutation() {
+    if (!id || !revisionAction || !revisionReason.trim()) return;
+    setRevisionBusy(true);
+    try {
+      await runMutation(`/api/contracts/${encodeURIComponent(id)}/${revisionAction}`, { reason: revisionReason.trim() });
+    } finally { setRevisionBusy(false); }
   }
   async function uploadReplacement() {
     if (!draftFile || !id) return;
@@ -526,10 +571,22 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
         throw new Error(body.message || body.error || `Upload failed (${response.status})`);
       }
       setDraftFile(null);
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
       await refetch();
+      await qc.invalidateQueries({ queryKey: ["/api/contracts", id, "authoring"] });
       toast({ title: "Draft PDF replaced", description: "This version remains editable until sent for signature." });
     } catch (error) { toast({ title: "Could not upload PDF", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }); }
     finally { setDraftBusy(false); }
+  }
+  async function onAuthoringChanged() {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+    await Promise.all([
+      refetch(),
+      qc.invalidateQueries({ queryKey: ["/api/contracts", id] }),
+      qc.invalidateQueries({ queryKey: ["/api/contracts"] }),
+    ]);
   }
   async function removePersistedDocument() {
     if (!id || !window.confirm("Remove the saved primary contract PDF from this draft? The draft remains and a later upload creates a new document version.")) return;
@@ -636,13 +693,20 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
             {detail.contract.talent_message && <section className="rounded-xl border border-slate-200 p-4"><h3 className="text-sm font-semibold">Message from the preparer</h3><p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{detail.contract.talent_message}</p></section>}
             {detail.document && <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={loadPdf} disabled={pdfLoading}>{pdfLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}{pdfUrl ? "Reload private preview" : "Review PDF"}</Button>
               {pdfUrl && <Button size="sm" variant="outline" onClick={() => { const anchor = document.createElement("a"); anchor.href = pdfUrl; anchor.download = detail.document?.original_filename || "contract.pdf"; anchor.click(); }}><Download className="mr-2 h-4 w-4" />Download authorized copy</Button>}</div>}
+            {detail.contract.status === "draft" && detail.permissions.canPrepare && id && <ContractDraftEditor
+              contractId={id}
+              onChanged={onAuthoringChanged}
+              onSendReadinessChange={setAuthoringBlocksSend}
+            />}
             {detail.contract.status === "draft" && detail.permissions.canPrepare && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3">
               <label className="min-w-0 flex-1 text-xs text-amber-900">{draftFile ? `Selected: ${draftFile.name}` : "Replace or upload the draft PDF"}
                 <input type="file" accept="application/pdf,.pdf" className="mt-1 block max-w-full text-xs" onChange={(event) => setDraftFile(event.target.files?.[0] ?? null)} />
               </label>
               <Button size="sm" variant="outline" disabled={!draftFile || draftBusy} onClick={uploadReplacement}>{draftBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Upload PDF</Button>
               {detail.document && detail.permissions.canManage && <Button size="sm" variant="outline" disabled={draftBusy} onClick={removePersistedDocument}><X className="mr-2 h-4 w-4" />Remove saved PDF</Button>}
-              {detail.permissions.canSend && <Button size="sm" className="bg-[#474ead] text-white hover:bg-[#3d439c]" disabled={!detail.document || draftBusy} onClick={() => runMutation(`/api/contracts/${encodeURIComponent(id!)}/send`, {})}><Send className="mr-2 h-4 w-4" />Send for signature</Button>}
+              {detail.permissions.canSend && <Button size="sm" className="bg-[#474ead] text-white hover:bg-[#3d439c]" disabled={!detail.document || draftBusy || (detail.permissions.canPrepare && authoringBlocksSend) || !pdfUrl} onClick={() => runMutation(`/api/contracts/${encodeURIComponent(id!)}/send`, {})}><Send className="mr-2 h-4 w-4" />Send for signature</Button>}
+              {detail.permissions.canSend && !pdfUrl && <p className="w-full text-xs text-amber-900">Review the current PDF before sending. Generate a PDF for edited agreements, then use Review PDF above.</p>}
+              {detail.permissions.canSend && detail.permissions.canPrepare && authoringBlocksSend && pdfUrl && <p className="w-full text-xs text-amber-900">Save current authoring edits and generate a fresh PDF before sending.</p>}
             </div>}
             <section className="space-y-3 rounded-xl border border-slate-200 p-4">
               <div><h3 className="text-sm font-semibold text-slate-900">Supporting documents</h3><p className="mt-1 text-xs text-slate-500">Private attachments are separate from the primary PDF and are never part of its signature hash.</p></div>
@@ -677,6 +741,20 @@ function ContractDetailDialog({ id, open, onOpenChange, onBackToList }: {
             {canManageEmail && detail.document?.sent_at && <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
               <div><p className="text-sm font-medium text-slate-800">Contract email</p><p className="text-xs text-slate-500">{emailResult === "accepted" ? "Request accepted; delivery is not confirmed." : emailResult === "failed" ? "The last email request failed." : emailResult === "skipped" ? "No email was sent by the last request." : "Retry the contract notification for the authorized recipient."}</p></div>
               <Button size="sm" variant="outline" disabled={emailBusy} onClick={resendEmails}>{emailBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}Retry email</Button>
+            </section>}
+            {detail.contract.status === "sent" && (detail.permissions.canManage || detail.permissions.signerRole) && <section className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+              <div><h3 className="text-sm font-semibold text-slate-900">Changes to a sent agreement</h3><p className="mt-1 text-xs leading-relaxed text-amber-950">A revision voids the currently sent version. Existing signatures will not carry over; a new version must be reviewed and signed. This action is only available before execution.</p></div>
+              {revisionAction ? <div className="space-y-2">
+                <Label htmlFor="contract-revision-reason">{revisionAction === "revise" ? "Reason for revising" : "Requested changes"}</Label>
+                <Textarea id="contract-revision-reason" value={revisionReason} onChange={(event) => setRevisionReason(event.target.value)} maxLength={1000} rows={3} placeholder="Describe the correction needed" />
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" disabled={revisionBusy} onClick={() => { setRevisionAction(null); setRevisionReason(""); }}>Cancel</Button>
+                  <Button size="sm" variant="destructive" disabled={!revisionReason.trim() || revisionBusy} onClick={() => void runRevisionMutation()}>{revisionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Confirm {revisionAction === "revise" ? "revision" : "request"}</Button>
+                </div>
+              </div> : <div className="flex flex-wrap gap-2">
+                {detail.permissions.canManage && <Button size="sm" variant="outline" onClick={() => setRevisionAction("revise")}>Revise sent version</Button>}
+                {detail.permissions.signerRole && <Button size="sm" variant="outline" onClick={() => setRevisionAction("request-changes")}>Request changes</Button>}
+              </div>}
             </section>}
             {canSign && <section className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
               <div className="flex items-center gap-2"><PenLine className="h-4 w-4 text-indigo-700" /><h3 className="text-sm font-semibold text-slate-900">Sign this agreement</h3></div>

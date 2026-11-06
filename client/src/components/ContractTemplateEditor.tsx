@@ -17,7 +17,7 @@ export const TEMPLATE_BASE = "/api/admin/contract-templates";
 export const sanitizeContractHtml = (html: string) => {
   const safe = DOMPurify.sanitize(html, {
   ALLOWED_TAGS: ["section", "p", "br", "h1", "h2", "h3", "h4", "strong", "b", "em", "i", "u", "ul", "ol", "li", "table", "thead", "tbody", "tr", "th", "td", "blockquote", "span"],
-  ALLOWED_ATTR: ["data-clause-id", "colspan", "rowspan"],
+  ALLOWED_ATTR: ["data-clause-id", "data-page-break", "colspan", "rowspan"],
   ALLOW_DATA_ATTR: false,
   FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "a", "img"],
   FORBID_ATTR: ["style", "src", "href"],
@@ -28,6 +28,7 @@ export const sanitizeContractHtml = (html: string) => {
   template.content.querySelectorAll("*").forEach((element) => {
     Array.from(element.attributes).forEach((attribute) => {
       const allowed = (attribute.name === "data-clause-id" && ["SECTION", "P"].includes(element.tagName)) ||
+        (attribute.name === "data-page-break" && ["SECTION", "P"].includes(element.tagName) && attribute.value === "before") ||
         (["colspan", "rowspan"].includes(attribute.name) && ["TD", "TH"].includes(element.tagName) && /^\d{1,3}$/.test(attribute.value));
       if (!allowed) element.removeAttribute(attribute.name);
     });

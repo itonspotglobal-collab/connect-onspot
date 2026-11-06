@@ -70,9 +70,9 @@ function assertActive(row: any) {
     throw new ContractError(409, { error: "application_not_contractable", message: "This application is no longer awaiting contract signatures." });
   }
 }
-async function event(tx: PoolClient, contractId: string, documentId: string | null, actorId: string, action: string) {
-  await tx.query("INSERT INTO contract_document_events(hiring_contract_id,document_id,actor_user_id,action,created_at) VALUES($1,$2,$3,$4,clock_timestamp())",
-    [contractId, documentId, actorId, action]);
+async function event(tx: PoolClient, contractId: string, documentId: string | null, actorId: string, action: string, fieldKey: string|null=null) {
+  await tx.query("INSERT INTO contract_document_events(hiring_contract_id,document_id,actor_user_id,action,field_key,created_at) VALUES($1,$2,$3,$4,$5,clock_timestamp())",
+    [contractId, documentId, actorId, action,fieldKey]);
   if (documentId && ["sent", "talent_signed", "client_signed", "organization_signed", "onspot_signed", "executed", "voided", "declined"].includes(action)) {
     const recipients = await tx.query(
       `SELECT DISTINCT u.id FROM hiring_contracts hc JOIN job_submissions js ON js.id=hc.submission_id
@@ -90,6 +90,7 @@ async function event(tx: PoolClient, contractId: string, documentId: string | nu
     }
   }
 }
+export const recordContractEvent = event;
 export async function contractOfferContext(offerId: string, actor: ContractActor, existing?: PoolClient) {
   const own = !existing, tx = existing ?? await getClient();
   try {
@@ -170,11 +171,12 @@ export async function uploadContractPdf(id: string, actor: ContractActor, file: 
       assertActive(row);
       if (!permissions.canPrepare || !row.document_managed) throw new ContractError(409, { error: "draft_document_required" });
       const previous = await currentDocument(tx, id);
-      if (previous && previous.status !== "draft") throw new ContractError(409, { error: "document_immutable" });
+      if (previous && !["draft","voided"].includes(previous.status)) throw new ContractError(409, { error: "document_immutable" });
+      await tx.query("UPDATE contract_drafts SET status='retired',updated_by=$1,updated_at=NOW() WHERE hiring_contract_id=$2 AND status='draft'",[actor.id,id]);
       key = await blobs.save(file.buffer);
       // Verify actual bytes were stored, rather than trusting an upload response.
       if (pdfHash(await blobs.read(key)) !== validation.sha256) throw new ContractError(502, { error: "upload_verification_failed" });
-      if (previous) await tx.query("UPDATE contract_documents SET status='superseded' WHERE id=$1", [previous.id]);
+      if (previous?.status==="draft") await tx.query("UPDATE contract_documents SET status='superseded' WHERE id=$1", [previous.id]);
       const version = Number((await tx.query("SELECT COALESCE(max(version),0) AS version FROM contract_documents WHERE hiring_contract_id=$1",[id])).rows[0].version) + 1;
       const document = (await tx.query(
         `INSERT INTO contract_documents(hiring_contract_id,object_key,original_filename,mime_type,file_size,sha256,version,uploaded_by)
@@ -258,7 +260,11 @@ export async function contractDetail(id: string, actor: ContractActor) {
     if (!document || !["sent_for_signature", "talent_signed", "countersigned"].includes(document.status)) permissions.canSign = false;
     // Storage references and security audit data never enter ordinary DTOs.
     const { document_path, talent_email, client_email, ...safe } = row;
-    if (document) { delete document.object_key; delete document.executed_object_key; }
+    if (document) {
+      delete document.object_key; delete document.executed_object_key;
+      // Internal provenance can contain profile values not present in the rendered agreement.
+      delete document.authoring_snapshot; delete document.final_field_values;
+    }
     const attachments = (await tx.query(`SELECT id,original_filename AS "originalFilename",file_size AS "fileSize",
       sha256,version,status FROM contract_attachments WHERE hiring_contract_id=$1 AND status<>'removed' ORDER BY version`, [id])).rows;
     return { contract: safe, document: document ?? null, signatures, timeline, permissions, attachments };
@@ -309,6 +315,10 @@ export async function sendContract(id: string, actor: ContractActor, blobs = con
     if (!permissions.canSend) throw deny();
     const document = await currentDocument(tx, id);
     if (!document || document.status !== "draft") throw new ContractError(409, { error: "draft_pdf_required" });
+    const authoring=(await tx.query("SELECT id,rendered_document_id,status FROM contract_drafts WHERE hiring_contract_id=$1 AND status<>'retired' FOR UPDATE",[id])).rows[0];
+    if(authoring && (authoring.status!=="draft" || authoring.rendered_document_id!==document.id)) {
+      throw new ContractError(409,{error:"render_current_draft_first"});
+    }
     if (pdfHash(await blobs.read(document.object_key)) !== document.sha256) throw new ContractError(409, { error: "document_changed" });
     const reviewed = await tx.query("SELECT 1 FROM contract_document_reviews WHERE document_id=$1 AND user_id=$2 AND sha256=$3",
       [document.id, actor.id, document.sha256]);
@@ -319,6 +329,7 @@ export async function sendContract(id: string, actor: ContractActor, blobs = con
     }
     await tx.query("UPDATE contract_attachments SET status='frozen' WHERE hiring_contract_id=$1 AND status='draft'", [id]);
     await tx.query("UPDATE contract_documents SET status='sent_for_signature',sent_at=NOW() WHERE id=$1", [document.id]);
+    if(authoring)await tx.query("UPDATE contract_drafts SET status='sent' WHERE id=$1",[authoring.id]);
     await tx.query("UPDATE hiring_contracts SET status='sent',updated_at=NOW() WHERE id=$1", [id]);
     await tx.query("UPDATE job_submissions SET status='contract_sent',updated_at=NOW() WHERE id=$1", [row.submission_id]);
     await tx.query(`INSERT INTO job_application_status_history(application_id,previous_status,new_status,note,changed_by)

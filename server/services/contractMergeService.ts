@@ -19,7 +19,7 @@ export function escapeContractHtml(value: unknown) {
 export function sanitizeTemplateBody(body: string) {
   return sanitizeHtml(body, {
     allowedTags: templateHtmlTags,
-    allowedAttributes: { section: ["data-clause-id"], p: ["data-clause-id"], td: ["colspan", "rowspan"], th: ["colspan", "rowspan"] },
+    allowedAttributes: { section: ["data-clause-id","data-page-break"], p: ["data-clause-id","data-page-break"], td: ["colspan", "rowspan"], th: ["colspan", "rowspan"] },
     allowedSchemes: [], disallowedTagsMode: "discard",
   });
 }

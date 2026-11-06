@@ -9,6 +9,12 @@ Template generation and editing must produce ordinary versioned PDFs for the exi
 
 **How to apply:** Freeze rendered content before send. Revisions must create new document versions without carrying signatures forward.
 
+Generated agreements must be rendered and reviewed as the exact PDF before sending, rather than silently rendering unseen bytes inside the send action. Draft edits and source refreshes invalidate that PDF review.
+
+**Why:** The existing signing flow binds preparer review to a specific document hash; an HTML preview is not a review of the generated PDF's pagination and complete contents.
+
+**How to apply:** Preserve the Generate PDF → Review PDF → Send sequence. A source snapshot may change only through an explicit reviewed refresh, while manual overrides survive.
+
 Legal party identity is separate from public profile identity. Talent contract addresses and legal names are private owner data, not public/discovery fields. Keep legal names separate from display names, do not infer legal addresses from free-text locations, and collect at most an optional four-digit tax-ID suffix. Never collect payment card or bank-account details in these forms.
 
 **Why:** These fields exist for agreements; adding structured identity must not weaken existing Client-facing privacy or expose financial credentials.
