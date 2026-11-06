@@ -52,3 +52,9 @@ Focused fixtures must track the prerequisites of the production routes and UI th
 **Why:** Changes to shared hiring eligibility can require additional fixture schema, while navigation can acquire a required React provider. Those omissions fail before the feature under test and can look like application regressions.
 
 **How to apply:** Inspect transitive prerequisites when the first failure is a missing relation, column, or context. Update only the owned fixture; retain real authorization checks and assertions rather than bypassing the dependency.
+
+Native module-mocking tests require preserved module identities, not a flattened bundle.
+
+**Why:** Interview email tests register Node module mocks before dynamic imports. Bundling changes those boundaries, and Node's module-mock API is unavailable without its experimental flag.
+
+**How to apply:** Run those original tests with module mocking enabled and an owned-database resolver boundary. Keep provider credentials scrubbed and the scratch PostgreSQL adapter; never substitute the development database or rewrite service behavior merely to make mocks load.

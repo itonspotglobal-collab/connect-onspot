@@ -122,3 +122,9 @@ Browser layout tests for scroll locks must include visible classic scrollbars.
 **Why:** Playwright launches headless Chromium with hidden scrollbars by default. That makes scrollbar compensation zero and can let growing-margin modal regressions pass every ordinary width assertion.
 
 **How to apply:** Remove the launcher's hide-scrollbars default for these fixtures and assert a genuinely nonzero scrollbar width before testing role transitions. Check body margins/padding and background width across navigation, not just document overflow or screenshots.
+
+Clickable-card regression tests must distinguish the card body from embedded controls.
+
+**Why:** A centered click on an interview card landed on outcome controls that correctly stop propagation, falsely suggesting its details dialog was broken.
+
+**How to apply:** Click visible non-interactive card text for the body action, keep separate keyboard coverage, and test child actions independently. Do not remove propagation guards to satisfy a geometric test click.

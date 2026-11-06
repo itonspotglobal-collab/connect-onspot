@@ -1254,9 +1254,13 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
   const auth = loadTalentAuth();
   const authToken = auth?.token || "";
   const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [acceptingSlot, setAcceptingSlot] = useState<{ interviewId: string; start: string } | null>(null);
   const [counterTimes, setCounterTimes] = useState<Record<string, string>>({});
   const [errorMessages, setErrorMessages] = useState<Record<string, string>>({});
+  const [conflictInterview, setConflictInterview] = useState<TalentInterview | null>(null);
   const [selectedInterview, setSelectedInterview] = useState<TalentInterview | null>(null);
+  const [selectedAcceptance, setSelectedAcceptance] = useState<{ interview: TalentInterview; slot: TalentInterview["proposedTimes"][number] } | null>(null);
+  const { toast } = useToast();
   const openedRequestedInterviewId = useRef<string | null>(null);
   const { data: interviews = [], isLoading, refetch } = useQuery<TalentInterview[]>({
     queryKey: ["talent-interviews", authToken],
@@ -1285,11 +1289,23 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if(res.status===409)await refetch();
-        throw new Error(data.message || data.error || "Unable to update interview");
+        const responseError = new Error(data.message || data.error || "Unable to update interview");
+        if (res.status === 409) {
+          setConflictInterview(interview);
+          await refetch().catch(() => undefined);
+          setSelectedAcceptance(null);
+        }
+        throw responseError;
       }
       await refetch();
       refetchApplications();
+      if (action === "accept") {
+        toast({
+          title: "Interview confirmed",
+          description: "You'll receive a calendar invitation and meeting details by email.",
+        });
+        setSelectedAcceptance(null);
+      }
     } catch (err: any) {
       setErrorMessages((current) => ({ ...current, [interview.id]: err.message }));
     } finally {
@@ -1312,7 +1328,31 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
   }, [interviews, requestedInterviewId, requestedApplicationId]);
   const requestedInterviewMissing = !!requestedInterviewId && !isLoading && !interviews.some((item) =>
     matchesRequestedInterview(item, requestedInterviewId, requestedApplicationId));
-  if (isLoading || (interviews.length === 0 && !requestedInterviewId)) return null;
+  const conflictInterviewNotRendered = !!conflictInterview &&
+    !activeInterviews.some((item) => item.id === conflictInterview.id) &&
+    !cancelledInterviews.some((item) => item.id === conflictInterview.id);
+  if (isLoading || (interviews.length === 0 && !requestedInterviewId && !conflictInterviewNotRendered)) return null;
+  const confirmAcceptance = async () => {
+    if (!selectedAcceptance) return;
+    const { interview, slot } = selectedAcceptance;
+    if (new Date(slot.start).getTime() <= Date.now()) {
+      setErrorMessages((current) => ({ ...current, [interview.id]: "This proposed time has passed. Please suggest another time." }));
+      setInterviewNow(Date.now());
+      return;
+    }
+    const currentInterview = interviews.find((item) => item.id === interview.id);
+    const stillPending = currentInterview &&
+      (currentInterview.status === "proposed" || currentInterview.status === "rescheduled") &&
+      currentInterview.currentProposalOwner === "talent";
+    if (!stillPending) {
+      setErrorMessages((current) => ({ ...current, [interview.id]: "This interview is no longer awaiting your response." }));
+      setSelectedAcceptance(null);
+      return;
+    }
+    setAcceptingSlot({ interviewId: interview.id, start: slot.start });
+    await respond(currentInterview, "accept", slot.start);
+    setAcceptingSlot(null);
+  };
   return (
     <div className="mb-8">
       {requestedInterviewMissing && <p role="alert" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This interview is unavailable or is not associated with your account.</p>}
@@ -1389,29 +1429,61 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
               )}
               {pending && (
                 <>
-                  <p className="mt-3 text-xs font-medium text-slate-600 dark:text-slate-300">Choose one of the client's proposed times:</p>
-                  {!interview.proposedTimes.some(slot=>new Date(slot.start).getTime()>interviewNow)&&<p role="status" className="mt-2 text-xs text-amber-800">These times have passed — propose new times</p>}
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {interview.proposedTimes.filter(slot=>new Date(slot.start).getTime()>interviewNow).map((slot) => (
-                      <Button key={slot.start} size="sm" className="h-8 rounded-full bg-indigo-600 text-xs text-white hover:bg-indigo-700" disabled={respondingId === interview.id} onClick={() => respond(interview, "accept", slot.start)}>
-                        <Check className="mr-1 h-3 w-3" /> {formatInterviewTime(slot.start, slot.timezone ?? "UTC")}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {(() => {
+                    const futureSlots = interview.proposedTimes.filter((slot) => new Date(slot.start).getTime() > interviewNow);
+                    return (
+                      <>
+                        {futureSlots.length > 0 && <p className="mt-3 text-xs font-medium text-slate-600 dark:text-slate-300">
+                          {futureSlots.length === 1
+                            ? "The client proposed this time. Accept it or suggest another."
+                            : "Choose one of the client's proposed times:"}
+                        </p>}
+                        {futureSlots.length === 0 && <p role="status" className="mt-2 text-xs text-amber-800">These times have passed — propose new times</p>}
+                        <div className="mt-2 space-y-2">
+                          {futureSlots.map((slot) => (
+                            <div key={slot.start} className="flex min-h-12 flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-white/80 px-3 py-2 dark:border-indigo-800/40 dark:bg-slate-900/40">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                  {formatInterviewTime(slot.start, slot.timezone ?? "UTC")}
+                                </p>
+                                {interview.durationMinutes && (
+                                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{interview.durationMinutes} minutes</p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                className="min-h-9 shrink-0 bg-indigo-600 text-xs text-white hover:bg-indigo-700"
+                                disabled={respondingId === interview.id || new Date(slot.start).getTime() <= Date.now()}
+                                onClick={() => {
+                                  setErrorMessages((current) => ({ ...current, [interview.id]: "" }));
+                                  setSelectedAcceptance({ interview, slot });
+                                }}
+                              >
+                                {respondingId === interview.id && acceptingSlot?.interviewId === interview.id && acceptingSlot.start === slot.start
+                                  ? <><Loader2 className="h-4 w-4 animate-spin" /><span className="sr-only">Accept</span></>
+                                  : <><Check className="mr-1 h-3 w-3" />Accept</>}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-indigo-100 pt-3 dark:border-indigo-800/40">
                     <input
                       aria-label="Alternative interview time"
                       type="datetime-local"
                       min={new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16)}
                       value={counterTimes[interview.id] ?? ""}
                       onChange={(event) => setCounterTimes((current) => ({ ...current, [interview.id]: event.target.value }))}
-                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
+                      disabled={respondingId === interview.id}
+                      className="min-h-9 max-w-full rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800"
                     />
-                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs" disabled={respondingId === interview.id || !counterTimes[interview.id] || new Date(counterTimes[interview.id]).getTime()<=Date.now()} onClick={() => respond(interview, "counter", counterTimes[interview.id])}>
+                    <Button size="sm" variant="outline" className="min-h-9 rounded-full text-xs" disabled={respondingId === interview.id || !counterTimes[interview.id] || new Date(counterTimes[interview.id]).getTime()<=Date.now()} onClick={() => respond(interview, "counter", counterTimes[interview.id])}>
                       Suggest another time
                     </Button>
-                    <Button size="sm" variant="outline" className="h-8 rounded-full text-xs text-slate-500" disabled={respondingId === interview.id} onClick={() => respond(interview, "decline")}>
-                      <XCircle className="mr-1 h-3 w-3" /> Decline
+                    <Button size="sm" variant="outline" className="min-h-9 rounded-full text-xs text-slate-500" disabled={respondingId === interview.id} onClick={() => respond(interview, "decline")}>
+                      <XCircle className="mr-1 h-3 w-3" /> Decline interview
                     </Button>
                   </div>
                   {interview.nudge && (
@@ -1451,9 +1523,70 @@ function InterviewsSection({ refetchApplications, requestedInterviewId }: { refe
                 <p className="text-xs text-slate-600 dark:text-slate-300">{interview.cancellationReason}</p>
               </div>
             )}
+            {errorMessages[interview.id] && <p role="alert" className="mt-2 text-xs text-red-600">{errorMessages[interview.id]}</p>}
           </div>
         ))}
       </div>
+      {conflictInterviewNotRendered && conflictInterview && errorMessages[conflictInterview.id] && (
+        <div role="alert" className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
+          <p className="font-semibold">{conflictInterview.job.title} · {conflictInterview.job.company}</p>
+          <p className="mt-1">{errorMessages[conflictInterview.id]}</p>
+        </div>
+      )}
+      <Dialog
+        open={selectedAcceptance !== null}
+        onOpenChange={(open) => {
+          if (!open && respondingId !== selectedAcceptance?.interview.id) setSelectedAcceptance(null);
+        }}
+      >
+        <DialogContent
+          onEscapeKeyDown={(event) => {
+            if (respondingId === selectedAcceptance?.interview.id) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (respondingId === selectedAcceptance?.interview.id) event.preventDefault();
+          }}
+        >
+          {selectedAcceptance && (() => {
+            const { interview, slot } = selectedAcceptance;
+            const slotExpired = new Date(slot.start).getTime() <= interviewNow;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Accept this interview time?</DialogTitle>
+                  <DialogDescription>
+                    <span className="block font-medium text-slate-800 dark:text-slate-100">{interview.job.title}</span>
+                    <span className="mt-1 block">{interview.job.company} · Round {interview.roundNumber}</span>
+                    <span className="mt-2 block">{formatInterviewTime(slot.start, slot.timezone ?? "UTC")}</span>
+                    {interview.durationMinutes && <span className="mt-1 block">{interview.durationMinutes} minutes</span>}
+                  </DialogDescription>
+                </DialogHeader>
+                {slotExpired && <p role="alert" className="text-sm text-amber-800">This proposed time has passed. Please suggest another time.</p>}
+                {errorMessages[interview.id] && <p role="alert" className="text-sm text-red-600">{errorMessages[interview.id]}</p>}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={respondingId === interview.id}
+                    onClick={() => setSelectedAcceptance(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    className="bg-indigo-600 text-white hover:bg-indigo-700"
+                    disabled={respondingId === interview.id || slotExpired}
+                    onClick={confirmAcceptance}
+                  >
+                    {respondingId === interview.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Confirm interview
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
       <InterviewDetailsDialog
         open={selectedInterview !== null}
         onOpenChange={(open) => {

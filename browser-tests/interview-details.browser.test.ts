@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { chromium, Browser, Page, Route } from "playwright";
 
 const PORT = Number(process.env.BROWSER_TEST_PORT ?? 5173);
@@ -11,6 +14,7 @@ const INTERNAL_NOTE = "INTERNAL NOTE: never render this to a client or talent";
 
 let browser: Browser;
 let vite: ChildProcess | undefined;
+let viteCache: string | undefined;
 
 const clientInterview = {
   id: "interview-details-client",
@@ -124,7 +128,9 @@ async function authenticatedPage(
   });
   const page = await context.newPage();
   await page.route("**/api/**", routeApi);
-  await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+  // Settle the cold Vite dependency scan before an optimizer reload can erase
+  // an open dialog during the first test.
+  await page.goto(BASE_URL, { waitUntil: "networkidle" });
 
   await page.evaluate(({ role, talentToken }) => {
     localStorage.clear();
@@ -158,7 +164,7 @@ async function authenticatedPage(
 
   await page.goto(
     `${BASE_URL}${role === "client" ? "/client/interviews" : "/my-applications"}`,
-    { waitUntil: "domcontentloaded" },
+    { waitUntil: "networkidle" },
   );
   return page;
 }
@@ -197,10 +203,11 @@ before(async () => {
   if (!process.env.BROWSER_BASE_URL) {
     const viteEnv = { ...process.env };
     delete viteEnv.REPL_ID;
+    viteCache = mkdtempSync(join(tmpdir(), "interview-response-browser-"));
     vite = spawn(
       process.execPath,
       ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(PORT)],
-      { stdio: "pipe", env: { ...viteEnv, NODE_ENV: "development" } },
+      { stdio: "pipe", env: { ...viteEnv, NODE_ENV: "development", AUTH_BROWSER_CACHE_DIR: viteCache } },
     );
     vite.stderr?.on("data", (chunk) => process.stderr.write(chunk));
     await waitForUrl(BASE_URL);
@@ -221,6 +228,7 @@ after(async () => {
       new Promise((resolve) => setTimeout(resolve, 2_000)),
     ]);
   }
+  if (viteCache) rmSync(viteCache, { recursive: true, force: true });
 });
 
 test("Client interview details preserve keyboard access and meeting links", async () => {
@@ -230,7 +238,9 @@ test("Client interview details preserve keyboard access and meeting links", asyn
     const card = page.getByRole("button", { name: cardName });
     await card.waitFor({ state: "visible" });
 
-    await card.click();
+    // The card also contains outcome controls that intentionally stop clicks.
+    // Exercise its non-interactive title rather than its geometric center.
+    await card.getByText("Client Interview Details Role").click();
     const dialog = page.getByRole("dialog");
     await dialog.waitFor({ state: "visible" });
     await assertDialogHasFocus(page);
@@ -282,4 +292,172 @@ test("Talent interview details support keyboard access and missing-link fallback
   } finally {
     await page.context().close();
   }
+});
+
+// These exercise the real Applications UI with synthetic auth and mocked HTTP;
+// they do not establish real-account, email-delivery, or calendar-provider UAT.
+const proposedStart = "2035-08-23T09:00:00.000Z";
+const secondStart = "2035-08-24T09:00:00.000Z";
+async function pendingTalentPage(
+  starts = [proposedStart],
+  options: { failStatus?: number; conflictRemovesInterview?: boolean; owner?: string; hold?: Promise<void> } = {},
+) {
+  const page = await authenticatedPage("talent");
+  const sent: any[] = [];
+  let current: any = {
+    ...talentInterview, status: "proposed", confirmedTime: null,
+    currentProposalOwner: options.owner ?? "talent",
+    proposedTimes: starts.map((start) => ({ start, timezone: "Asia/Manila" })),
+  };
+  let failStatus = options.failStatus;
+  await page.route("**/api/talent/interviews", (route) =>
+    fulfillJson(route, current ? [current] : []));
+  await page.route("**/api/talent/interviews/*/respond", async (route) => {
+    const body = route.request().postDataJSON();
+    sent.push(body);
+    if (options.hold) await options.hold;
+    if (failStatus) {
+      const status = failStatus;
+      failStatus = undefined; // A deliberate retry may succeed.
+      if (status === 409) current = options.conflictRemovesInterview ? null : {
+        ...current, status: "confirmed", confirmedTime: proposedStart, currentProposalOwner: null,
+      };
+      return fulfillJson(route, { message: status === 409
+        ? "This interview is no longer awaiting your response."
+        : "Could not save the interview. Please try again." }, status);
+    }
+    current = {
+      ...current,
+      status: body.action === "accept" ? "confirmed" : body.action === "decline" ? "cancelled" : "rescheduled",
+      currentProposalOwner: body.action === "counter" ? "client" : null,
+      confirmedTime: body.action === "accept" ? body.selectedTime : null,
+      meetingLink: body.action === "accept" ? SAFE_MEETING_URL : null,
+    };
+    return fulfillJson(route, current);
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText(talentInterview.job.title, { exact: true }).waitFor();
+  return { page, sent };
+}
+
+test("Talent has an explicit mobile Accept action and must confirm the exact proposed time", async () => {
+  const { page, sent } = await pendingTalentPage([proposedStart, "2020-01-01T00:00:00.000Z"]);
+  try {
+    await page.setViewportSize({ width: 380, height: 900 });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    const accept = page.getByRole("button", { name: "Accept", exact: true });
+    await accept.waitFor();
+    assert.equal(await accept.count(), 1, "past slots must not get Accept actions");
+    await page.getByText("The client proposed this time. Accept it or suggest another.", { exact: true }).waitFor();
+    const bounds = (await accept.boundingBox())!;
+    assert.ok(bounds.height >= 36);
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 380);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await accept.click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("heading", { name: "Accept this interview time?" }).waitFor();
+    for (const text of [talentInterview.job.title, `${talentInterview.job.company} · Round 1`, "30 minutes"]) {
+      await dialog.getByText(text, { exact: true }).waitFor();
+    }
+    assert.match(await dialog.innerText(), /2035|Aug/);
+    assert.equal(sent.length, 0, "opening the dialog must not send acceptance");
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    assert.equal(sent.length, 0);
+    await accept.click();
+    await page.getByRole("button", { name: "Confirm interview", exact: true }).click();
+    await dialog.waitFor({ state: "hidden" });
+    assert.deepEqual(sent, [{ action: "accept", selectedTime: proposedStart }]);
+    await page.getByText("Confirmed", { exact: true }).waitFor();
+    await page.getByRole("link", { name: /Join meeting/i }).waitFor();
+    await page.getByText("Interview confirmed", { exact: true }).waitFor();
+    await page.getByText("You'll receive a calendar invitation and meeting details by email.", { exact: true }).waitFor();
+  } finally { await page.context().close(); }
+});
+
+test("Multiple slots keep selection-specific loading and disable every action while accepting", async () => {
+  let release!: () => void;
+  const hold = new Promise<void>((resolve) => { release = resolve; });
+  const { page, sent } = await pendingTalentPage([proposedStart, secondStart], { hold });
+  try {
+    await page.getByText("Choose one of the client's proposed times:", { exact: true }).waitFor();
+    const accepts = page.getByRole("button", { name: "Accept", exact: true });
+    await accepts.nth(1).click();
+    await page.getByRole("button", { name: "Confirm interview", exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll("button .animate-spin").length >= 2);
+    // Radix hides the background from accessibility while the dialog is open.
+    const buttons = page.getByRole("button", { name: "Accept", exact: true, includeHidden: true });
+    assert.equal(await buttons.count(), 2);
+    assert.equal(await buttons.nth(0).isDisabled(), true);
+    assert.equal(await buttons.nth(1).isDisabled(), true);
+    assert.equal(await buttons.nth(0).locator(".animate-spin").count(), 0);
+    assert.equal(await buttons.nth(1).locator(".animate-spin").count(), 1);
+    for (const name of ["Suggest another time", "Decline interview", "Cancel", "Confirm interview"]) {
+      assert.equal(await page.getByRole("button", { name, exact: true, includeHidden: true }).isDisabled(), true);
+    }
+    release();
+    await page.getByRole("dialog").waitFor({ state: "hidden" });
+    assert.deepEqual(sent, [{ action: "accept", selectedTime: secondStart }]);
+  } finally { release(); await page.context().close(); }
+});
+
+test("A non-conflict error stays in the confirmation dialog and allows a deliberate retry", async () => {
+  const { page, sent } = await pendingTalentPage([proposedStart], { failStatus: 503 });
+  try {
+    await page.getByRole("button", { name: "Accept", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Confirm interview" }).click();
+    await dialog.getByText("Could not save the interview. Please try again.", { exact: true }).waitFor();
+    assert.equal(await dialog.isVisible(), true);
+    assert.equal(sent.length, 1);
+    await dialog.getByRole("button", { name: "Confirm interview" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(sent.length, 2);
+  } finally { await page.context().close(); }
+});
+
+test("409 closes acceptance and preserves the error after changed or removed interview refetch", async () => {
+  for (const conflictRemovesInterview of [false, true]) {
+    const { page, sent } = await pendingTalentPage([proposedStart], { failStatus: 409, conflictRemovesInterview });
+    try {
+      await page.getByRole("button", { name: "Accept", exact: true }).click();
+      await page.getByRole("button", { name: "Confirm interview" }).click();
+      await page.getByRole("dialog").waitFor({ state: "hidden" });
+      await page.getByText("This interview is no longer awaiting your response.", { exact: true }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Accept", exact: true }).count(), 0);
+      assert.equal(sent.length, 1);
+      assert.equal(await page.getByText("Interview confirmed", { exact: true }).count(), 0);
+    } finally { await page.context().close(); }
+  }
+});
+
+test("Expired proposals retain counter-proposal and decline actions without acceptance", async () => {
+  for (const action of ["counter", "decline"]) {
+    const { page, sent } = await pendingTalentPage(["2020-01-01T00:00:00.000Z"]);
+    try {
+      await page.getByText("These times have passed — propose new times", { exact: true }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Accept", exact: true }).count(), 0);
+      const expectedCounterTime = await page.evaluate(() => new Date("2035-09-02T10:00").toISOString());
+      if (action === "counter") {
+        await page.getByLabel("Alternative interview time").fill("2035-09-02T10:00");
+        await page.getByRole("button", { name: "Suggest another time", exact: true }).click();
+      } else {
+        await page.getByRole("button", { name: "Decline interview", exact: true }).click();
+      }
+      await page.getByLabel("Alternative interview time").waitFor({ state: "hidden" });
+      assert.equal(sent.length, 1);
+      assert.equal(sent[0].action, action);
+      if (action === "counter") {
+        assert.equal(sent[0].proposedTimes[0].start, expectedCounterTime);
+        assert.ok(sent[0].proposedTimes[0].timezone);
+      } else assert.deepEqual(sent[0], { action: "decline" });
+    } finally { await page.context().close(); }
+  }
+});
+
+test("Talent cannot accept while the Client owes the next response", async () => {
+  const { page } = await pendingTalentPage([proposedStart], { owner: "client" });
+  try {
+    assert.equal(await page.getByRole("button", { name: "Accept", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Decline interview", exact: true }).count(), 0);
+  } finally { await page.context().close(); }
 });
